@@ -1,8 +1,6 @@
-import asyncio
 import logging
-import re
 from datetime import datetime
-from typing import Any, List, Optional, Pattern, Union
+from typing import Any, List, Optional, Union
 
 import discord
 from redbot.core import commands
@@ -10,97 +8,146 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.vendored.discord.ext import menus
 
-from .constants import TEAMS
+from .components import (
+    BackButton,
+    FilterButton,
+    FirstItemButton,
+    ForwardButton,
+    GameflowButton,
+    HeatmapButton,
+    HockeySelectGame,
+    HockeySelectPlayer,
+    LastItemButton,
+    SkipBackButton,
+    SkipForwardButton,
+    StopButton,
+)
 from .errors import NoSchedule
-from .helper import DATE_RE
-from .player import Player
-from .schedule import ScheduleList
-from .standings import Standings
+from .player import Player, SimplePlayer
+from .schedule import Schedule
 
 _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.hockey")
 
 
-class GamesMenu(menus.MenuPages, inherit_buttons=False):
+class GamesMenu(discord.ui.View):
     def __init__(
         self,
         source: menus.PageSource,
         cog: Optional[commands.Cog] = None,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
-        timeout: int = 60,
+        timeout: int = 180,
         message: discord.Message = None,
         **kwargs: Any,
     ) -> None:
-        super().__init__(
-            source,
-            clear_reactions_after=clear_reactions_after,
-            delete_message_after=delete_message_after,
-            timeout=timeout,
-            message=message,
-            **kwargs,
-        )
+        super().__init__(timeout=timeout)
         self.cog = cog
+        self.source = source
+        self.message = message
+        self.current_page = 0
+        self.ctx: commands.Context = None
+        self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
+        self.back_button = BackButton(discord.ButtonStyle.grey, 0)
+        self.first_item = SkipBackButton(discord.ButtonStyle.grey, 0)
+        self.last_item = SkipForwardButton(discord.ButtonStyle.grey, 0)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.filter_button = FilterButton(discord.ButtonStyle.primary, 1)
+        self.heatmap_button = HeatmapButton(discord.ButtonStyle.primary, 1)
+        self.gameflow_button = GameflowButton(discord.ButtonStyle.primary, 1)
+        self.add_item(self.stop_button)
+        self.add_item(self.first_item)
+        self.add_item(self.back_button)
+        self.add_item(self.forward_button)
+        self.add_item(self.last_item)
+        self.add_item(self.filter_button)
+        if isinstance(self.source, Schedule):
+            self.heatmap_button.label = _("Heatmap {style}").format(style=self.source.style)
+            corsi = "Corsi" if self.source.corsi else "Expected Goals"
+            self.gameflow_button.label = _("Gameflow {corsi} {strength}").format(
+                corsi=corsi, strength=self.source.strength
+            )
+            self.add_item(self.heatmap_button)
+            self.add_item(self.gameflow_button)
+        self.select_view: Optional[HockeySelectGame] = None
+        self.author = None
 
-    async def update(self, payload: discord.RawReactionActionEvent) -> None:
-        """|coro|
+    async def on_timeout(self):
+        await self.message.edit(view=None)
 
-        Updates the menu after an event has been received.
-
-        Parameters
-        -----------
-        payload: :class:`discord.RawReactionActionEvent`
-            The reaction event that triggered this update.
-        """
-        button = self.buttons[payload.emoji]
-        if not self._running:
-            return
-
-        try:
-            if button.lock:
-                async with self._lock:
-                    if self._running:
-                        await button(self, payload)
-            else:
-                await button(self, payload)
-        except Exception as exc:
-            log.debug("Ignored exception on reaction event", exc_info=exc)
+    async def start(self, ctx: commands.Context):
+        await self.source._prepare_once()
+        if hasattr(self.source, "select_options") and len(self.source.select_options) > 1:
+            self.select_view = HockeySelectGame(self.source.select_options[:25])
+            self.add_item(self.select_view)
+        self.ctx = ctx
+        if isinstance(ctx, discord.Interaction):
+            self.author = ctx.user
+        else:
+            self.author = ctx.author
+        self.message = await self.send_initial_message(ctx)
 
     async def show_page(
-        self, page_number: int, *, skip_next: bool = False, skip_prev: bool = False
+        self,
+        page_number: int,
+        *,
+        interaction: discord.Interaction,
+        skip_next: bool = False,
+        skip_prev: bool = False,
+        game_id: Optional[int] = None,
     ) -> None:
         try:
-            page = await self._source.get_page(
-                page_number, skip_next=skip_next, skip_prev=skip_prev
+            page = await self.source.get_page(
+                page_number, skip_next=skip_next, skip_prev=skip_prev, game_id=game_id
             )
         except NoSchedule:
-            team = ""
-            if self.source.team:
-                team = _("for {teams} ").format(teams=humanize_list(self.source.team))
-            msg = _("No schedule could be found {team}in dates between {last_searched}").format(
-                team=team, last_searched=self.source._last_searched
-            )
-            await self.message.edit(content=msg, embed=None)
+            if interaction.response.is_done():
+                await interaction.followup.edit(content=self.format_error(), embed=None, view=self)
+            else:
+                await interaction.response.edit_message(
+                    content=self.format_error(), embed=None, view=self
+                )
             return
+        if hasattr(self.source, "select_options") and len(self.source.select_options) > 1:
+            self.remove_item(self.select_view)
+            if page_number >= 12:
+                self.select_view = HockeySelectGame(
+                    self.source.select_options[page_number - 12 : page_number + 13]
+                )
+            else:
+                self.select_view = HockeySelectGame(self.source.select_options[:25])
+            self.add_item(self.select_view)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
-        await self.message.edit(**kwargs)
+        if interaction.response.is_done():
+            await interaction.followup.edit(**kwargs, view=self)
+        else:
+            await interaction.response.edit_message(**kwargs, view=self)
 
-    async def send_initial_message(
-        self, ctx: commands.Context, channel: discord.TextChannel
-    ) -> discord.Message:
+    async def _get_kwargs_from_page(self, page):
+        value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
+        if isinstance(value, dict):
+            return value
+        elif isinstance(value, str):
+            return {"content": value, "embed": None}
+        elif isinstance(value, discord.Embed):
+            return {"embed": value, "content": None}
+
+    async def send_initial_message(self, ctx: commands.Context) -> discord.Message:
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
-        try:
-            page = await self._source.get_page(0)
-        except (IndexError, NoSchedule):
+        self.author = ctx.author
 
-            return await channel.send(self.format_error())
+        try:
+            page = await self.source.get_page(0)
+        except (IndexError, NoSchedule):
+            return await ctx.send(self.format_error(), view=self)
         kwargs = await self._get_kwargs_from_page(page)
-        return await channel.send(**kwargs)
+        self.message = await ctx.send(**kwargs, view=self)
+        return self.message
 
     def format_error(self):
         team = ""
@@ -111,181 +158,21 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
         )
         return msg
 
-    async def show_checked_page(self, page_number: int) -> None:
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         try:
-            await self.show_page(page_number)
+            await self.show_page(page_number, interaction=interaction)
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
 
-    def reaction_check(self, payload: discord.RawReactionActionEvent) -> bool:
+    async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if payload.message_id != self.message.id:
+        if self.author and interaction.user.id != self.author.id:
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
             return False
-        if payload.user_id not in (*self.bot.owner_ids, self._author_id):
-            return False
-        return payload.emoji in self.buttons
-
-    def _skip_single_arrows(self) -> bool:
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages == 1
-
-    def _skip_double_arrows(self) -> bool:
-        if isinstance(self._source, ScheduleList):
-            return True
-        return False
-
-    @menus.button(
-        "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-        position=menus.First(1),
-    )
-    async def go_to_previous_page(self, payload: discord.RawReactionActionEvent) -> None:
-        """go to the previous page"""
-        await self.show_checked_page(self.current_page - 1)
-
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(0),
-    )
-    async def go_to_next_page(self, payload: discord.RawReactionActionEvent) -> None:
-        """go to the next page"""
-        # log.info(f"Moving to next page, {self.current_page + 1}")
-        await self.show_checked_page(self.current_page + 1)
-
-    @menus.button(
-        "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.First(0),
-        skip_if=_skip_double_arrows,
-    )
-    async def go_to_first_page(self, payload: discord.RawReactionActionEvent) -> None:
-        """go to the first page"""
-        await self.show_page(0, skip_prev=True)
-
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(1),
-        skip_if=_skip_double_arrows,
-    )
-    async def go_to_last_page(self, payload: discord.RawReactionActionEvent) -> None:
-        """go to the last page"""
-        # The call here is safe because it's guarded by skip_if
-        await self.show_page(0, skip_next=True)
-
-    @menus.button("\N{CROSS MARK}")
-    async def stop_pages(self, payload: discord.RawReactionActionEvent) -> None:
-        """stops the pagination session."""
-        self.stop()
-        await self.message.delete()
-
-    @menus.button("\N{TEAR-OFF CALENDAR}")
-    async def choose_date(self, payload: discord.RawReactionActionEvent) -> None:
-        """stops the pagination session."""
-        send_msg = await self.ctx.send(
-            _("Enter the date you would like to see `YYYY-MM-DD` format is accepted.")
-        )
-
-        def check(m: discord.Message):
-            return m.author == self.ctx.author and DATE_RE.search(m.clean_content)
-
-        try:
-            msg = await self.ctx.bot.wait_for("message", check=check, timeout=30)
-        except asyncio.TimeoutError:
-            await send_msg.delete()
-            return
-        search = DATE_RE.search(msg.clean_content)
-        if search:
-            date_str = f"{search.group(1)}-{search.group(3)}-{search.group(4)}"
-            date = datetime.strptime(date_str, "%Y-%m-%d")
-            # log.debug(date)
-            self.source.date = date
-            try:
-                await self.source.prepare()
-            except NoSchedule:
-                return await self.ctx.send(self.format_error())
-            await self.show_page(0)
-
-    @menus.button("\N{FAMILY}")
-    async def choose_teams(self, payload: discord.RawReactionActionEvent) -> None:
-        """stops the pagination session."""
-        send_msg = await self.ctx.send(_("Enter the team you would like to filter for."))
-
-        def check(m: discord.Message):
-            return m.author == self.ctx.author
-
-        try:
-            msg = await self.ctx.bot.wait_for("message", check=check, timeout=30)
-        except asyncio.TimeoutError:
-            await send_msg.delete()
-            return
-        potential_teams = msg.clean_content.split()
-        teams: List[str] = []
-        for team, data in TEAMS.items():
-            if "Team" in teams:
-                continue
-            nick = data["nickname"]
-            short = data["tri_code"]
-            pattern = fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split())
-            if nick:
-                pattern += r"|" + r"|".join(fr"\b{i}\b" for i in nick)
-            # log.debug(pattern)
-            reg: Pattern = re.compile(fr"\b{pattern}", flags=re.I)
-            for pot in potential_teams:
-                find = reg.findall(pot)
-                if find:
-                    teams.append(team)
-            self.source.team = teams
-        try:
-            await self.source.prepare()
-        except NoSchedule:
-            return await self.ctx.send(self.format_error())
-        await self.show_page(0)
-
-
-class StandingsPages(menus.ListPageSource):
-    def __init__(self, pages: list):
-        super().__init__(pages, per_page=1)
-        self.pages = pages
-
-    def is_paginating(self) -> bool:
         return True
-
-    async def format_page(self, menu: menus.MenuPages, page: List[Standings]) -> discord.Embed:
-        return await Standings.all_standing_embed(self.pages)
-
-
-class TeamStandingsPages(menus.ListPageSource):
-    def __init__(self, pages: list):
-        super().__init__(pages, per_page=1)
-
-    def is_paginating(self) -> bool:
-        return True
-
-    async def format_page(self, menu: menus.MenuPages, page: Standings) -> discord.Embed:
-        return await Standings.make_team_standings_embed(page)
-
-
-class ConferenceStandingsPages(menus.ListPageSource):
-    def __init__(self, pages: list):
-        super().__init__(pages, per_page=1)
-
-    def is_paginating(self) -> bool:
-        return True
-
-    async def format_page(self, menu: menus.MenuPages, page: List[Standings]) -> discord.Embed:
-        return await Standings.make_conference_standings_embed(page)
-
-
-class DivisionStandingsPages(menus.ListPageSource):
-    def __init__(self, pages: list):
-        super().__init__(pages, per_page=1)
-
-    def is_paginating(self) -> bool:
-        return True
-
-    async def format_page(self, menu: menus.MenuPages, page: List[Standings]) -> discord.Embed:
-        return await Standings.make_division_standings_embed(page)
 
 
 class LeaderboardPages(menus.ListPageSource):
@@ -296,18 +183,18 @@ class LeaderboardPages(menus.ListPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page: List[str]) -> discord.Embed:
+    async def format_page(self, view: discord.ui.View, page: List[str]) -> discord.Embed:
         em = discord.Embed(timestamp=datetime.now())
         description = ""
         for msg in page:
             description += msg
         em.description = description
         em.set_author(
-            name=menu.ctx.guild.name + _(" Pickems {style} Leaderboard").format(style=self.style),
-            icon_url=menu.ctx.guild.icon_url,
+            name=view.ctx.guild.name + _(" Pickems {style} Leaderboard").format(style=self.style),
+            icon_url=view.ctx.guild.icon.url,
         )
-        em.set_thumbnail(url=menu.ctx.guild.icon_url)
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_thumbnail(url=view.ctx.guild.icon.url)
+        em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -315,17 +202,28 @@ class PlayerPages(menus.ListPageSource):
     def __init__(self, pages: list, season: str):
         super().__init__(pages, per_page=1)
         self.pages: List[int] = pages
+        self.players = {p.id: p for p in pages}
         self.season: str = season
+        self.select_options = []
+        for count, player in enumerate(pages):
+            player_name = player.full_name
+            self.select_options.append(
+                discord.SelectOption(
+                    label=player_name[:50],
+                    description=f"Page {count + 1}",
+                    value=player.id,
+                )
+            )
 
     def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page: int) -> discord.Embed:
-        player = await Player.from_id(page, session=menu.cog.session)
+    async def format_page(self, view: discord.ui.View, player: SimplePlayer) -> discord.Embed:
+        # player = await Player.from_id(page, session=view.cog.session)
         log.debug(player)
-        player = await player.get_full_stats(self.season, session=menu.cog.session)
+        player = await player.get_full_stats(self.season, session=view.cog.session)
         em = player.get_embed()
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -336,13 +234,13 @@ class SimplePages(menus.ListPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page: Any) -> Union[discord.Embed, str]:
+    async def format_page(self, view: discord.ui.View, page: Any) -> Union[discord.Embed, str]:
         if isinstance(page, discord.Embed):
-            page.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+            page.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return page
 
 
-class BaseMenu(menus.MenuPages, inherit_buttons=False):
+class BaseMenu(discord.ui.View):
     def __init__(
         self,
         source: menus.PageSource,
@@ -350,23 +248,79 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         page_start: Optional[int] = 0,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
-        timeout: int = 60,
+        timeout: int = 180,
         message: discord.Message = None,
         **kwargs: Any,
     ) -> None:
-        super().__init__(
-            source,
-            clear_reactions_after=clear_reactions_after,
-            delete_message_after=delete_message_after,
-            timeout=timeout,
-            message=message,
-            **kwargs,
-        )
+        super().__init__(timeout=timeout)
         self.cog = cog
+        self._source = source
+        self.ctx: commands.Context = None
+        self.message: discord.Message = None
         self.page_start = page_start
+        self.current_page = page_start
+        self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
+        self.back_button = BackButton(discord.ButtonStyle.grey, 0)
+        self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
+        self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.add_item(self.stop_button)
+        self.add_item(self.first_item)
+        self.add_item(self.back_button)
+        self.add_item(self.forward_button)
+        self.add_item(self.last_item)
+        self.select_view = None
+        if hasattr(self.source, "select_options"):
+            self.select_view = HockeySelectPlayer(self.source.select_options[:25])
+            self.add_item(self.select_view)
+        self.author = None
+
+    @property
+    def source(self):
+        return self._source
+
+    async def on_timeout(self):
+        await self.message.edit(view=None)
+
+    async def start(
+        self, ctx: commands.Context, content: Optional[str] = None, ephemeral: bool = False
+    ):
+        await self.source._prepare_once()
+        self.ctx = ctx
+        self.message = await self.send_initial_message(ctx, content, ephemeral)
+
+    async def _get_kwargs_from_page(self, page):
+        value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
+        if isinstance(value, dict):
+            return value
+        elif isinstance(value, str):
+            return {"content": value, "embed": None}
+        elif isinstance(value, discord.Embed):
+            return {"embed": value, "content": None}
+
+    async def update_select_view(self, page_number: int):
+        if self.select_view is not None:
+            self.remove_item(self.select_view)
+        if not hasattr(self.source, "select_options"):
+            return
+        options = self.source.select_options[:25]
+        if page_number >= 12:
+            options = self.source.select_options[page_number - 12 : page_number + 13]
+        self.select_view = HockeySelectPlayer(options)
+        self.add_item(self.select_view)
+
+    async def show_page(self, page_number: int, interaction: discord.Interaction):
+        page = await self._source.get_page(page_number)
+        self.current_page = page_number
+        kwargs = await self._get_kwargs_from_page(page)
+        await self.update_select_view(page_number)
+        if interaction.response.is_done():
+            await interaction.followup.edit(**kwargs, view=self)
+        else:
+            await interaction.response.edit_message(**kwargs, view=self)
 
     async def send_initial_message(
-        self, ctx: commands.Context, channel: discord.TextChannel
+        self, ctx: commands.Context, content: Optional[str], ephemeral: bool
     ) -> discord.Message:
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
@@ -375,111 +329,32 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         """
         page = await self._source.get_page(self.page_start)
         kwargs = await self._get_kwargs_from_page(page)
-        return await channel.send(**kwargs)
+        if content and not kwargs.get("content", None):
+            kwargs["content"] = content
+        self.author = ctx.author
+        return await ctx.send(**kwargs, view=self, ephemeral=ephemeral)
 
-    async def update(self, payload: discord.RawReactionActionEvent) -> None:
-        """|coro|
-
-        Updates the menu after an event has been received.
-
-        Parameters
-        -----------
-        payload: :class:`discord.RawReactionActionEvent`
-            The reaction event that triggered this update.
-        """
-        button = self.buttons[payload.emoji]
-        if not self._running:
-            return
-
-        try:
-            if button.lock:
-                async with self._lock:
-                    if self._running:
-                        await button(self, payload)
-            else:
-                await button(self, payload)
-        except Exception as exc:
-            log.debug("Ignored exception on reaction event", exc_info=exc)
-
-    async def show_checked_page(self, page_number: int) -> None:
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()
         try:
             if max_pages is None:
                 # If it doesn't give maximum pages, it cannot be checked
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
             elif page_number >= max_pages:
-                await self.show_page(0)
+                await self.show_page(0, interaction)
             elif page_number < 0:
-                await self.show_page(max_pages - 1)
+                await self.show_page(max_pages - 1, interaction)
             elif max_pages > page_number >= 0:
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
 
-    def reaction_check(self, payload: discord.RawReactionActionEvent) -> bool:
+    async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if payload.message_id != self.message.id:
+        if self.author and interaction.user.id != self.author.id:
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
             return False
-        if payload.user_id not in (*self.bot.owner_ids, self._author_id):
-            return False
-        return payload.emoji in self.buttons
-
-    def _skip_single_arrows(self) -> bool:
-        if isinstance(self._source, StandingsPages):
-            return True
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages == 1
-
-    def _skip_double_triangle_buttons(self) -> bool:
-        if isinstance(self._source, StandingsPages):
-            return True
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages <= 2
-
-    @menus.button(
-        "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-        position=menus.First(1),
-        skip_if=_skip_single_arrows,
-    )
-    async def go_to_previous_page(self, payload: discord.RawReactionActionEvent) -> None:
-        """go to the previous page"""
-        await self.show_checked_page(self.current_page - 1)
-
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(0),
-        skip_if=_skip_single_arrows,
-    )
-    async def go_to_next_page(self, payload: discord.RawReactionActionEvent) -> None:
-        """go to the next page"""
-        await self.show_checked_page(self.current_page + 1)
-
-    @menus.button(
-        "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.First(0),
-        skip_if=_skip_double_triangle_buttons,
-    )
-    async def go_to_first_page(self, payload: discord.RawReactionActionEvent) -> None:
-        """go to the first page"""
-        await self.show_page(0)
-
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(1),
-        skip_if=_skip_double_triangle_buttons,
-    )
-    async def go_to_last_page(self, payload: discord.RawReactionActionEvent) -> None:
-        """go to the last page"""
-        # The call here is safe because it's guarded by skip_if
-        await self.show_page(self._source.get_max_pages() - 1)
-
-    @menus.button("\N{CROSS MARK}")
-    async def stop_pages(self, payload: discord.RawReactionActionEvent) -> None:
-        """stops the pagination session."""
-        self.stop()
-        await self.message.delete()
+        return True

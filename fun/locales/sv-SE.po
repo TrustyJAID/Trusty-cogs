@@ -1,0 +1,57 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/fun/locales/messages.pot\n"
+"X-Crowdin-File-ID: 620\n"
+"Language: sv_SE\n"
+
+#: fun/fun.py:85
+#, docstring
+msgid "Replaces all vowels in a word with a letter."
+msgstr ""
+
+#: fun/fun.py:93
+#, docstring
+msgid "Flip given text."
+msgstr ""
+
+#: fun/fun.py:101
+#, docstring
+msgid "Replace letters with regional indicator emojis."
+msgstr ""
+
+#: fun/fun.py:107
+#, docstring
+msgid "Add n spaces between each letter. Ex: `[p]space 2 thicc`."
+msgstr ""
+
+#: fun/fun.py:121
+#, docstring
+msgid "\n"
+"        React 🅾🇴🇫 to a message.\n\n"
+"        `[message]` Can be a message ID from the current channel, a jump URL,\n"
+"        or a channel_id-message_id from shift + copying ID on the message.\n"
+"        "
+msgstr ""
+
+#: fun/fun.py:148
+#, docstring
+msgid "\n"
+"        Add letter(s) as reaction to previous message.\n\n"
+"        `[message]` Can be a message ID from the current channel, a jump URL,\n"
+"        or a channel_id-message_id from shift + copying ID on the message.\n"
+"        "
+msgstr ""
+

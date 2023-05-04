@@ -10,9 +10,10 @@ python-dateutil
 pytz
 rapidfuzz
 reactivepy>=1.9.0.dev0
+skyfield
 tabulate
 tekore
-tweepy>=4.0.0,<=4.4.0
+tweepy>=4.10.0
 Unidecode
 unidecode
 wand

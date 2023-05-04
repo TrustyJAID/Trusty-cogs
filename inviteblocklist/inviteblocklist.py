@@ -123,7 +123,11 @@ class InviteBlocklist(commands.Cog):
             if await self.bot.cog_disabled_in_guild(self, guild):
                 return
         guild_settings = await self.config.guild(guild).all()
-        if guild_settings["blacklist"] or guild_settings["whitelist"] or guild_settings["all_invites"]:
+        if (
+            guild_settings["blacklist"]
+            or guild_settings["whitelist"]
+            or guild_settings["all_invites"]
+        ):
             try:
                 msg = await chan.fetch_message(payload.message_id)
             except (discord.errors.Forbidden, discord.errors.NotFound):

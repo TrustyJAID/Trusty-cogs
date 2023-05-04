@@ -1,30 +1,30 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Reddit commands for getting updates on specified subreddits.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Thanks for installing 1. Go to https://www.reddit.com/prefs/apps and select create another app...\n2. Give the app a name and description, specify that it's a script\n3. In the developed apps section under the apps name you provided before below `personal use script` copy that into `<client_id>` Use `https://127.0.0.1` or `https://localhost` for the redirect url.\n4. In the app box where it says `secret` copy the code after into `<client_secret>` if you don't see this click the edit button\n5. Fill out the rest of the following command with your accounts username and password\nNOTE: If you have 2FA enabled on your account this will not work, I'd recommend creating a new reddit account specifically for the bot if that's the case.\n`[p]set api reddit username <username> password <password> client_id <client_id> client_secret <client_secret>`",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Reddit commands for getting updates on specified subreddits.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Thanks for installing 1. Go to https://www.reddit.com/prefs/apps and select create another app...\n2. Give the app a name and description, specify that it's a script\n3. In the developed apps section under the apps name you provided before below `personal use script` copy that into `<client_id>` Use `https://127.0.0.1` or `https://localhost` for the redirect url.\n4. In the app box where it says `secret` copy the code after into `<client_secret>` if you don't see this click the edit button\n5. Fill out the rest of the following command with your accounts username and password\nNOTE: If you have 2FA enabled on your account this will not work, I'd recommend creating a new reddit account specifically for the bot if that's the case.\n`[p]set api reddit username <username> password <password> client_id <client_id> client_secret <client_secret>`",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Reddit",
-    "permissions" : [],
-    "required_cogs" : {},
-    "requirements" : [
+    "name": "Reddit",
+    "permissions": [],
+    "required_cogs": {},
+    "requirements": [
         "reactivepy>=1.9.0.dev0",
         "git+https://github.com/TrustyJAID/aPRAW@setup-fix"
     ],
-    "short" : "A cog to post updates from reddit.",
-    "tags" : [
+    "short": "A cog to post updates from reddit.",
+    "tags": [
         "reddit",
         "news"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

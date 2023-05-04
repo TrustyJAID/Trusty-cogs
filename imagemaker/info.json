@@ -1,38 +1,38 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID",
         "Ivan Seidel (isnowillegal.com)",
         "Bruno Lemos (isnowillegal.com)",
         "Jo\u00e3o Pedro (isnowillegal.com)"
     ],
-    "description" : "Show how you really feel. Make someone beautiful. Make something illegal.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "This cog contains a data folder with a single font and files to create your own `isnowillegal` image. Type `[p]help ImageMaker` to see available commands.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Show how you really feel. Make someone beautiful. Make something illegal.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "This cog contains a data folder with a single font and files to create your own `isnowillegal` image. Type `[p]help ImageMaker` to see available commands.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Imagemaker",
-    "permissions" : [
+    "name": "Imagemaker",
+    "permissions": [
         "attach_files"
     ],
-    "required_cogs" : {},
-    "requirements" : [
+    "required_cogs": {},
+    "requirements": [
         "pillow",
         "opencv-python",
         "numpy",
         "Unidecode"
     ],
-    "short" : "Create your own feels!",
-    "tags" : [
+    "short": "Create your own feels!",
+    "tags": [
         "fun",
         "memes",
         "meme"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

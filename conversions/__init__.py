@@ -9,4 +9,4 @@ with open(Path(__file__).parent / "info.json") as fp:
 
 async def setup(bot):
     n = Conversions(bot)
-    bot.add_cog(n)
+    await bot.add_cog(n)

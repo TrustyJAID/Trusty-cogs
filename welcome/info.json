@@ -1,28 +1,28 @@
 {
-    "author" : [
+    "author": [
         "irdumb",
         "TrustyJAID"
     ],
-    "description" : "Welcome new users to the server or say goodbye when they leave.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Use `[p]welcomeset` to see what options are available.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Welcome new users to the server or say goodbye when they leave.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Use `[p]welcomeset` to see what options are available.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Welcome",
-    "permissions" : [],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Welcome new users to the server",
-    "tags" : [
+    "name": "Welcome",
+    "permissions": [],
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Welcome new users to the server",
+    "tags": [
         "welcome",
         "utility"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

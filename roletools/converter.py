@@ -1,10 +1,11 @@
 import re
-import discord
 from typing import Tuple
-from discord.ext.commands import BadArgument, Converter
-from redbot.core.i18n import Translator
 
+import discord
+from discord.ext.commands import BadArgument, Converter
 from redbot.core import commands
+from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import humanize_list
 
 _ = Translator("RoleTools", __file__)
 
@@ -32,8 +33,12 @@ class RoleHierarchyConverter(commands.RoleConverter):
     """
 
     async def convert(self, ctx: commands.Context, argument: str) -> discord.Role:
-        if not ctx.me.guild_permissions.manage_roles:
+        if not ctx.guild.me.guild_permissions.manage_roles:
             raise BadArgument(_("I require manage roles permission to use this command."))
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+        else:
+            author = ctx.author
         try:
             role = await commands.RoleConverter().convert(ctx, argument)
         except commands.BadArgument:
@@ -59,13 +64,13 @@ class RoleHierarchyConverter(commands.RoleConverter):
                         "be assigned or removed by Nitro boosting the server."
                     ).format(role=role.mention)
                 )
-            if role >= ctx.me.top_role:
+            if role >= ctx.guild.me.top_role:
                 raise BadArgument(
                     _(
                         "The {role} role is higher than my highest role in the discord hierarchy."
                     ).format(role=role.mention)
                 )
-            if role >= ctx.author.top_role and ctx.author.id != ctx.guild.owner_id:
+            if role >= author.top_role and author.id != ctx.guild.owner_id:
                 raise BadArgument(
                     _(
                         "The {role} role is higher than your "
@@ -79,8 +84,12 @@ class SelfRoleConverter(commands.RoleConverter):
     """Converts a partial role name into a role object that can actually be applied."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> discord.Role:
-        if not ctx.me.guild_permissions.manage_roles:
+        if not ctx.guild.me.guild_permissions.manage_roles:
             raise BadArgument(_("I require manage roles permission to use this command."))
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+        else:
+            author = ctx.author
         role = None
         try:
             role = await commands.RoleConverter().convert(ctx, argument)
@@ -111,7 +120,7 @@ class SelfRoleConverter(commands.RoleConverter):
                         "be assigned or removed by Nitro boosting the server."
                     ).format(role=role.mention)
                 )
-            if role >= ctx.me.top_role:
+            if role >= ctx.guild.me.top_role:
                 raise BadArgument(
                     _(
                         "The {role} role is higher than my highest role in the discord hierarchy."
@@ -148,3 +157,18 @@ class RoleEmojiConverter(Converter):
         except commands.BadArgument:
             raise
         return role, custom_emoji
+
+
+class ButtonStyleConverter(Converter):
+    async def convert(self, ctx: commands.Context, argument: str) -> discord.ButtonStyle:
+        available_styles = [
+            i for i in dir(discord.ButtonStyle) if not i.startswith("_") and i != "try_value"
+        ]
+        if argument.lower() in available_styles:
+            return getattr(discord.ButtonStyle, argument.lower())
+        else:
+            raise BadArgument(
+                _("`{argument}` is not an available Style. Choose one from {styles}").format(
+                    argument=argument, styles=humanize_list(available_styles)
+                )
+            )

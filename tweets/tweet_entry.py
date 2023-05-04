@@ -1,7 +1,7 @@
 from __future__ import annotations
-from dataclasses import dataclass
 
-from typing import Dict, Union, Any
+from dataclasses import dataclass
+from typing import Any, Dict, Union
 
 
 @dataclass

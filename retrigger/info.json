@@ -1,29 +1,29 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Trigger events based on regex! Check out <https://regex101.com/> and <https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md> for help setting up the cog. Note: This cog can become quite resource heavy. Optional features are available if the requirements are present such as pillow for image resizing and pytesseract to scan images for text (OCR).",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog may store attachments and command information provided by Users for the purposes of performing actions.\nSome User ID's may be stored in the bots logging information.\nUsers may delete their own data with or without making a data request.",
-    "hidden" : false,
-    "install_msg" : "Add trigger responses to regex, see <https://regex101.com/> for help building regex expressions. This will create and save files/images locally for those triggers. To use resized images pillow must be installed although this is not a requirement for other triggers. For a simple guide on how to use the features of this cog check out https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md. Note: This cog can become quite resource heavy.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Trigger events based on regex! Check out <https://regex101.com/> and <https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md> for help setting up the cog. Note: This cog can become quite resource heavy. Optional features are available if the requirements are present such as pillow for image resizing and pytesseract to scan images for text (OCR).",
+    "disabled": false,
+    "end_user_data_statement": "This cog may store attachments and command information provided by Users for the purposes of performing actions.\nSome User ID's may be stored in the bots logging information.\nUsers may delete their own data with or without making a data request.",
+    "hidden": false,
+    "install_msg": "Add trigger responses to regex, see <https://regex101.com/> for help building regex expressions. This will create and save files/images locally for those triggers. To use resized images pillow must be installed although this is not a requirement for other triggers. For a simple guide on how to use the features of this cog check out https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md. Note: This cog can become quite resource heavy.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "ReTrigger",
-    "permissions" : [
+    "name": "ReTrigger",
+    "permissions": [
         "embed_links"
     ],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Trigger events via Regular Expressions!",
-    "tags" : [
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Trigger events via Regular Expressions!",
+    "tags": [
         "trigger",
         "reactions"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

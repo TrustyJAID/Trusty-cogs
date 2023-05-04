@@ -1,26 +1,26 @@
 {
-    "author" : [
+    "author": [
         "NotSoSuper",
         "TrustyJAID"
     ],
-    "description" : "Magick, trigger and manipulate images with many commands from NotSoSuper's NotSoBot. This cog has a lot of requirements, view the [cog README.md](https://github.com/TrustyJAID/Trusty-cogs/blob/master/notsobot/README.md) for details. ",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Please, read the README.md (https://github.com/TrustyJAID/Trusty-cogs/tree/master/notsobot) for instructions on how and what to install. `sudo apt-get install libmagickwand-dev libaa1-dev` and install all other requirements. Note some commands may be hidden if AALIB is not installed and AALIB will not work on Macs.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Magick, trigger and manipulate images with many commands from NotSoSuper's NotSoBot. This cog has a lot of requirements, view the [cog README.md](https://github.com/TrustyJAID/Trusty-cogs/blob/master/notsobot/README.md) for details. ",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Please, read the README.md (https://github.com/TrustyJAID/Trusty-cogs/tree/master/notsobot) for instructions on how and what to install. `sudo apt-get install libmagickwand-dev libaa1-dev` and install all other requirements. Note some commands may be hidden if AALIB is not installed and AALIB will not work on Macs.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "NotSoBot",
-    "permissions" : [
+    "name": "NotSoBot",
+    "permissions": [
         "attach_files"
     ],
-    "required_cogs" : {},
-    "requirements" : [
+    "required_cogs": {},
+    "requirements": [
         "pyfiglet",
         "numpy",
         "pillow",
@@ -28,11 +28,11 @@
         "wand",
         "unidecode"
     ],
-    "short" : "Some working commands from NotSoBot",
-    "tags" : [
+    "short": "Some working commands from NotSoBot",
+    "tags": [
         "fun",
         "memes",
         "images"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

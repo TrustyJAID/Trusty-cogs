@@ -1,21 +1,40 @@
-import asyncio
+from __future__ import annotations
+
+import json
 import logging
 import re
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Pattern, Tuple, Union
+from enum import Enum
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Literal,
+    NamedTuple,
+    Optional,
+    Pattern,
+    Tuple,
+    Union,
+)
 
 import discord
 import pytz
-from discord.ext.commands.converter import Converter, EmojiConverter
+from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 from redbot.core.bot import Red
 from redbot.core.commands import Context
+from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
-from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
+from redbot.core.utils import AsyncIter
 
 from .constants import TEAMS
+from .player import SimplePlayer
 from .teamentry import TeamEntry
+
+if TYPE_CHECKING:
+    from .game import Game
+    from .hockey import Hockey
+
 
 _ = Translator("Hockey", __file__)
 
@@ -31,10 +50,30 @@ YEAR_RE = re.compile(r"((19|20)\d\d)-?\/?((19|20)\d\d)?")
 
 TIMEZONE_RE = re.compile(r"|".join(re.escape(zone) for zone in pytz.common_timezones), flags=re.I)
 
+ACTIVE_TEAM_RE_STR = r"|".join(
+    rf"{team}|{data['tri_code']}|{'|'.join(n for n in data['nickname'])}"
+    for team, data in TEAMS.items()
+    if data["active"]
+)
+ACTIVE_TEAM_RE = re.compile(ACTIVE_TEAM_RE_STR, flags=re.I)
+
+VERSUS_RE = re.compile(r"vs\.?|versus", flags=re.I)
+
 
 def utc_to_local(utc_dt: datetime, new_timezone: str = "US/Pacific") -> datetime:
     eastern = pytz.timezone(new_timezone)
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=eastern)
+
+
+def get_chn_name(game: Game) -> str:
+    """
+    Creates game day channel name
+    """
+    timestamp = utc_to_local(game.game_start)
+    chn_name = "{}-vs-{}-{}-{}-{}".format(
+        game.home_abr, game.away_abr, timestamp.year, timestamp.month, timestamp.day
+    )
+    return chn_name.lower()
 
 
 class YearFinder(Converter):
@@ -44,7 +83,8 @@ class YearFinder(Converter):
     for use in the `[p]nhl games` command to pull up specific dates
     """
 
-    async def convert(self, ctx: Context, argument: str) -> re.Match:
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> re.Match:
         find = YEAR_RE.search(argument)
         if find:
             return find
@@ -52,67 +92,51 @@ class YearFinder(Converter):
             raise BadArgument(_("`{arg}` is not a valid year.").format(arg=argument))
 
 
-class DateFinder(Converter):
+class DateFinder(discord.app_commands.Transformer):
     """
     Converter for `YYYY-MM-DD` date formats
 
     for use in the `[p]nhl games` command to pull up specific dates
     """
 
-    async def convert(self, ctx: Context, argument: str) -> Optional[datetime]:
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> datetime:
+        if argument.lower() == "yesterday":
+            return datetime.now(timezone.utc) - timedelta(days=1)
+        if argument.lower() == "today":
+            return datetime.now(timezone.utc)
+        if argument.lower() == "tomorrow":
+            return datetime.now(timezone.utc) + timedelta(days=1)
         find = DATE_RE.search(argument)
         if find:
             date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
-            return datetime.strptime(date_str, "%Y-%m-%d")
+            return datetime.strptime(date_str, "%Y-%m-%d").astimezone(timezone.utc)
         else:
-            return datetime.utcnow()
+            raise BadArgument()
+
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> datetime:
+        ctx = await interaction.client.get_context(interaction)
+        return await cls.convert(ctx, value)
 
 
-class TimezoneFinder(Converter):
+class TeamFinder(discord.app_commands.Transformer):
     """
-    Converts user input into valid timezones for pytz to use
-    """
-
-    async def convert(self, ctx: Context, argument: str) -> str:
-        find = TIMEZONE_RE.search(argument)
-        if find:
-            return find.group(0)
-        else:
-            raise BadArgument(
-                _(
-                    "`{argument}` is not a valid timezone. Please see "
-                    "`{prefix}hockeyset timezone list`."
-                ).format(argument=argument, prefix=ctx.clean_prefix)
-            )
-
-
-class TeamDateFinder(Converter):
-    """
-    Converter to get both a team and a date from a string
+    Converter for Teams
     """
 
-    async def convert(
-        self, ctx: Context, argument: str
-    ) -> Dict[str, Optional[Union[datetime, List[str], str]]]:
-        result: Dict[str, Optional[Union[datetime, List[str], str]]] = {"team": []}
-        find = DATE_RE.search(argument)
-        day_ref = DAY_REF_RE.search(argument)
-        if find:
-            date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
-            result["date"] = datetime.strptime(date_str, "%Y-%m-%d")
-            argument = DATE_RE.sub("", argument)
-        if day_ref:
-            today = utc_to_local(datetime.utcnow())
-            if day_ref.group(1).lower() == "yesterday":
-                result["date"] = today + timedelta(days=-1)
-            elif day_ref.group(1).lower() == "tomorrow":
-                result["date"] = today + timedelta(days=+1)
-            else:
-                result["date"] = today
-            argument = DAY_REF_RE.sub("", argument)
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> str:
         potential_teams = argument.split()
+        result = set()
+        include_all = ctx.command.name in ["setup", "add", "otherdiscords"]
+        include_inactive = ctx.command.name in ["roster"]
+        if argument in TEAMS.keys():
+            return argument
         for team, data in TEAMS.items():
             if "Team" in team:
+                continue
+            if not include_inactive and not data["active"]:
                 continue
             nick = data["nickname"]
             short = data["tri_code"]
@@ -126,113 +150,331 @@ class TeamDateFinder(Converter):
                 if find:
                     log.debug(reg)
                     log.debug(find)
-                    result["team"].append(team)
+                    result.add(team)
+        if include_all and "all" in argument:
+            result.add("all")
+        if not result:
+            raise BadArgument(_("You must provide a valid current team."))
+        return list(result)[0]
 
-        return result
+    async def transform(self, interaction: discord.Interaction, argument: str) -> str:
+        ctx = await interaction.client.get_context(interaction)
+        return await self.convert(ctx, argument)
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice[str]]:
+        team_choices = []
+        include_all = interaction.command.name in ["setup", "add", "otherdiscords"]
+        include_inactive = interaction.command.name in ["roster", "games"]
+        ret = []
+        for t, d in TEAMS.items():
+            if not include_inactive and not d["active"]:
+                continue
+            team_choices.append(discord.app_commands.Choice(name=t, value=t))
+        if include_all:
+            team_choices.insert(0, discord.app_commands.Choice(name="All", value="all"))
+        for choice in team_choices:
+            if current.lower() in choice.name.lower():
+                ret.append(choice)
+        return ret[:25]
 
 
-class HockeyTeams(Converter):
+class PlayerFinder(discord.app_commands.Transformer):
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> List[SimplePlayer]:
+        cog = ctx.bot.get_cog("Hockey")
+        path = cog_data_path(cog) / "players.json"
+        await cls().check_and_download(cog)
+        with path.open(encoding="utf-8", mode="r") as f:
+
+            players = []
+            async for player in AsyncIter(json.loads(f.read())["data"], steps=100):
+                if argument.lower() in player["fullName"].lower():
+                    player = SimplePlayer(
+                        birth_city=player.pop("birthCity"),
+                        birth_country=player.pop("birthCountry"),
+                        birth_state_province=player.pop("birthStateProvince"),
+                        birth_date=player.pop("birthDate"),
+                        current_team_id=player.pop("currentTeamId"),
+                        full_name=player.pop("fullName"),
+                        home_town=player.pop("homeTown"),
+                        last_nhl_team_id=player.pop("lastNHLTeamId"),
+                        on_roster=player.pop("onRoster"),
+                        sweater_number=player.pop("sweaterNumber"),
+                        id=player.pop("id"),
+                        position=player.pop("position"),
+                        height=player.pop("height"),
+                        weight=player.pop("weight"),
+                        is_rookie=player.pop("isRookie"),
+                        is_retired=player.pop("isRetired"),
+                        is_junior=player.pop("isJunior"),
+                        is_suspended=player.pop("isSuspended"),
+                        deceased=player.pop("deceased"),
+                        date_of_death=player.pop("dateOfDeath"),
+                        nationality=player.pop("nationality"),
+                        long_term_injury=player.pop("longTermInjury"),
+                        shoots_catches=player.pop("shootsCatches"),
+                        ep_player_id=player.pop("epPlayerId"),
+                        dda_id=player.pop("ddaId", None),
+                    )
+                    if player.on_roster == "N":
+                        players.append(player)
+                    else:
+                        players.insert(
+                            0,
+                            player,
+                        )
+        return players
+
+    async def transform(
+        self, interaction: discord.Interaction, argument: str
+    ) -> List[SimplePlayer]:
+        ctx = await interaction.client.get_context(interaction)
+        return await self.convert(ctx, argument)
+
+    async def check_and_download(self, cog: Hockey):
+        now = datetime.utcnow()
+        saved = datetime.fromtimestamp(await cog.config.player_db())
+        path = cog_data_path(cog) / "players.json"
+        if (now - saved) > timedelta(days=1) or not path.exists():
+            url = (
+                "https://records.nhl.com/site/api/player?include=id"
+                "&include=fullName"
+                "&include=onRoster"
+                "&include=birthDate"
+                "&include=homeTown"
+                "&include=position"
+                "&include=height"
+                "&include=weight"
+                "&include=birthCity"
+                "&include=birthCountry"
+                "&include=birthStateProvince"
+                "&include=sweaterNumber"
+                "&include=lastNHLTeamId"
+                "&include=currentTeamId"
+                "&include=isRookie"
+                "&include=isRetired"
+                "&include=isJunior"
+                "&include=isSuspended"
+                "&include=deceased"
+                "&include=dateOfDeath"
+                "&include=nationality"
+                "&include=longTermInjury"
+                "&include=shootsCatches"
+                "&include=epPlayerId"
+            )
+            async with cog.session.get(url) as resp:
+                with path.open(encoding="utf-8", mode="w") as f:
+                    json.dump(await resp.json(), f)
+            await cog.config.player_db.set(int(now.timestamp()))
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        cog = interaction.client.get_cog("Hockey")
+        path = cog_data_path(cog) / "players.json"
+        ret = []
+        await self.check_and_download(cog)
+        with path.open(encoding="utf-8", mode="r") as f:
+            data = json.loads(f.read())["data"]
+            for player in data:
+                if current.lower() in player["fullName"].lower():
+                    ret.append(
+                        discord.app_commands.Choice(
+                            name=player["fullName"], value=player["fullName"]
+                        )
+                    )
+        return ret[:25]
+
+
+class TimezoneFinder(Converter):
     """
-    Converter for valid Hockey Teams to choose from
-
-    Guidance code on how to do this from:
-    https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
-    https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
+    Converts user input into valid timezones for pytz to use
     """
 
-    async def convert(
-        self, ctx: Context, argument: str
-    ) -> Optional[Union[List[Dict[str, dict]], str]]:
-        result: Optional[Union[List[Dict[str, dict]], str]] = []
-        team_list = await check_valid_team(argument)
-        my_perms = ctx.channel.permissions_for(ctx.guild.me)
-        if team_list == []:
-            raise BadArgument('Team "{}" not found'.format(argument))
-        if len(team_list) == 1:
-            result = team_list[0]
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> str:
+        find = TIMEZONE_RE.search(argument)
+        if find:
+            return find.group(0)
         else:
-            # This is just some extra stuff to correct the team picker
-            msg = _("There's multiple teams with that name, pick one of these:\n")
-            new_msg = None
-            if my_perms.add_reactions and my_perms.use_external_emojis:
-                new_msg = await ctx.send(msg)
-                team_emojis = [
-                    await EmojiConverter().convert(ctx, "<:" + TEAMS[team]["emoji"] + ">")
-                    for team in team_list
-                ]
-                log.debug(team_emojis)
-                log.debug(team_list)
-                pred = ReactionPredicate.with_emojis(team_emojis, message=new_msg)
-                start_adding_reactions(new_msg, team_emojis)
-                try:
-                    reaction, user = await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
-                except asyncio.TimeoutError:
-                    await new_msg.edit(content=_("I guess not."))
-                    return None
-                else:
-                    result = team_list[pred.result]
-                    log.debug(result)
-            else:
-                for i, team_name in enumerate(team_list):
-                    msg += "{}: {}\n".format(i + 1, team_name)
-
-                def msg_check(m):
-                    return m.author == ctx.message.author
-
-                try:
-                    msg = await ctx.bot.wait_for("message", check=msg_check, timeout=60)
-                except asyncio.TimeoutError:
-                    await new_msg.edit(content=_("I guess not."))
-                    return None
-
-                if msg.content.isdigit():
-                    msg = int(msg.content) - 1
-                    try:
-                        result = team_list[msg]
-                    except (IndexError, ValueError, AttributeError):
-                        pass
-                else:
-                    return_team = None
-                    for team in team_list:
-                        if msg.content.lower() in team.lower():
-                            return_team = team
-                    result = return_team
-            if new_msg:
-                await new_msg.delete()
-        return result
+            raise BadArgument(
+                _(
+                    "`{argument}` is not a valid timezone. Please see "
+                    "`{prefix}hockeyset timezone list`."
+                ).format(argument=argument, prefix=ctx.clean_prefix)
+            )
 
 
-class HockeyStandings(Converter):
-    """
-    Converter for valid Hockey Standings to choose from
+class LeaderboardType(Enum):
+    worst = 0
+    preseason = 1
+    preseason_weekly = 2
+    season = 3
+    weekly = 4
+    playoffs = 5
+    playoffs_weekly = 6
+    preseason_last_week = 7
+    last_week = 8
+    playoffs_last_week = 9
 
-    Guidance code on how to do this from:
-    https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
-    https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
-    """
+    def as_str(self) -> str:
+        return self.name.replace("_", " ").replace("preseason", "pre-season")
 
-    async def convert(self, ctx: Context, argument: str) -> Optional[str]:
-        result = None
-        team_list = await check_valid_team(argument, True)
-        if team_list == []:
-            raise BadArgument('Standing or Team "{}" not found'.format(argument))
-        if len(team_list) >= 1:
-            result = team_list[0]
-        return result
+    def key(self):
+        if self.value < 7:
+            return self.name.replace("preseason", "pre-season")
+        elif self.value == 7:
+            return "pre-season_weekly"
+        elif self.value == 8:
+            return "weekly"
+        else:
+            return "playoffs_weekly"
 
 
-class HockeyStates(Converter):
-    """
-    Converter for valid Hockey states to pick from
+class LeaderboardFinder(discord.app_commands.Transformer):
+    @classmethod
+    async def convert(self, ctx: Context, argument: str) -> LeaderboardType:
+        if argument.isdigit():
+            return LeaderboardType(int(argument))
+        leaderboard_type = argument.replace(" ", "_").lower()
+        if leaderboard_type in ["seasonal", "season"]:
+            return LeaderboardType(3)
+        if leaderboard_type in ["weekly", "week"]:
+            return LeaderboardType(4)
+        if leaderboard_type in ["playoffs", "playoff"]:
+            return LeaderboardType(5)
+        if leaderboard_type in ["playoffs_weekly", "playoff_weekly"]:
+            return LeaderboardType(6)
+        if leaderboard_type in ["pre-season", "preseason"]:
+            return LeaderboardType(1)
+        if leaderboard_type in ["pre-season_weekly", "preseason_weekly"]:
+            return LeaderboardType(2)
+        if leaderboard_type in ["worst"]:
+            return LeaderboardType(0)
+        if leaderboard_type in ["last_week"]:
+            return LeaderboardType(8)
+        if leaderboard_type in ["playoffs_last_week"]:
+            return LeaderboardType(9)
+        if leaderboard_type in ["pre-season_last_week", "preseason_last_week"]:
+            return LeaderboardType(7)
+        return LeaderboardType(4)
 
-        This is used to determine what game states the bot should post.
-    """
+    async def transform(self, interaction: discord.Interaction, argument: str) -> LeaderboardType:
+        ctx = interaction.client.get_context(interaction)
+        return await self.convert(ctx, argument)
 
-    async def convert(self, ctx: Context, argument: str) -> str:
-        state_list = ["preview", "live", "final", "goal", "periodrecap"]
-        if argument.lower() not in state_list:
+    async def autocomplete(
+        self, interaction: discord.Interaction, argument: str
+    ) -> List[discord.app_commands.Choice[str]]:
+        choices = [
+            discord.app_commands.Choice(name="Seasonal", value="season"),
+            discord.app_commands.Choice(name="Worst", value="worst"),
+            discord.app_commands.Choice(name="Playoffs", value="playoffs"),
+            discord.app_commands.Choice(name="Playoffs Weekly", value="playoffs_weekly"),
+            discord.app_commands.Choice(name="Pre-Season", value="pre-season"),
+            discord.app_commands.Choice(name="Pre-Season Weekly", value="pre-season_weekly"),
+            discord.app_commands.Choice(name="Weekly", value="weekly"),
+            discord.app_commands.Choice(name="Last Week", value="last_week"),
+            discord.app_commands.Choice(name="Playoffs Last Week", value="playoffs_last_week"),
+            discord.app_commands.Choice(name="Pre-season Last Week", value="pre-season_last_week"),
+        ]
+        return choices
+
+
+class HockeyStates(Enum):
+    preview = "Preview"
+    live = "Live"
+    goal = "Goal"
+    periodrecap = "Periodrecap"
+    final = "Final"
+
+
+class StateFinder(discord.app_commands.Transformer):
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> HockeyStates:
+        state_list = [i.value for i in HockeyStates]
+        if argument.title() not in state_list:
             raise BadArgument('"{}" is not a valid game state.'.format(argument))
-        return argument.title()
+        return HockeyStates(argument.title())
+
+    @classmethod
+    async def transform(self, interaction: discord.Interaction, argument: str) -> HockeyStates:
+        return await self.convert(interaction, argument)  # type: ignore
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, value: str
+    ) -> List[discord.app_commands.Choice[str]]:
+        return [
+            discord.app_commands.Choice(name=v.name.title(), value=v.value) for v in HockeyStates
+        ]
+
+
+class Divisions(Enum):
+    Metropolitan = "Metropolitan"
+    Atlantic = "Atlantic"
+    Central = "Central"
+    Pacific = "Pacific"
+
+
+class Conferences(Enum):
+    Eastern = "Eastern"
+    Western = "Western"
+
+
+class StandingsFinder(discord.app_commands.Transformer):
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> str:
+        ret = ""
+        try:
+            ret = Divisions(argument.title()).name
+        except ValueError:
+            pass
+        try:
+            ret = Conferences(argument.title()).name
+        except ValueError:
+            pass
+        if argument.lower() == "all":
+            ret = "all"
+        if argument.lower() == "league":
+            ret = "league"
+        if not ret:
+            for division in Divisions:
+                if argument.lower() in division.name.lower():
+                    ret = division.name
+            for conference in Conferences:
+                if argument.lower() in conference.name.lower():
+                    ret = conference.name
+        return ret.lower()
+
+    @classmethod
+    async def transform(cls, ctx: Context, argument: str) -> str:
+        ret = ""
+        try:
+            ret = Divisions(argument.title()).name
+        except ValueError:
+            pass
+        try:
+            ret = Conferences(argument.title()).name
+        except ValueError:
+            pass
+        if argument.lower() == "all":
+            ret = "all"
+        if argument.lower() == "league":
+            ret = "league"
+        return ret.lower()
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, argument: str
+    ) -> List[discord.app_commands.Choice[str]]:
+        choices = [
+            discord.app_commands.Choice(name="All", value="all"),
+            discord.app_commands.Choice(name="League", value="league"),
+        ]
+        choices += [discord.app_commands.Choice(name=d.name, value=d.name) for d in Divisions]
+        choices += [discord.app_commands.Choice(name=d.name, value=d.name) for d in Conferences]
+        return choices
 
 
 async def check_to_post(
@@ -276,73 +518,31 @@ async def get_team_role(guild: discord.Guild, home_team: str, away_team: str) ->
     return home_role, away_role
 
 
-async def get_team(bot: Red, team: str) -> TeamEntry:
+async def get_team(bot: Red, team: str, game_start: str, game_id: int = 0) -> dict:
     config = bot.get_cog("Hockey").config
     team_list = await config.teams()
     if team_list is None:
         team_list = []
-        team_entry = TeamEntry("Null", team, 0, [], {}, [], "")
+        team_entry = TeamEntry("Null", team, 0, [], {}, [], "", game_id)
         team_list.append(team_entry.to_json())
         await config.teams.set(team_list)
     for teams in team_list:
-        if team == teams["team_name"]:
+        if (
+            team == teams["team_name"]
+            and game_start == teams["game_start"]
+            and game_id == teams["game_id"]
+        ):
             return teams
     # Add unknown teams to the config to track stats
-    return_team = TeamEntry("Null", team, 0, [], {}, [], "")
+    return_team = TeamEntry("Null", team, 0, [], {}, [], "", game_id)
     team_list.append(return_team.to_json())
     await config.teams.set(team_list)
-    return return_team
+    return return_team.to_json()
 
 
-async def check_valid_team(team_name: str, standings: bool = False) -> List[str]:
-    """
-    Checks if this is a valid team name or all teams
-    useful for game day channel creation should impliment elsewhere
-    """
-    is_team = []
-    conference: List[str] = []  # ["eastern", "western", "conference"]
-    division = [
-        "central",
-        "discover",
-        "division",
-        "scotia",
-        "north",
-        "massmutual",
-        "east",
-        "honda",
-        "west",
-    ]
-    if team_name.lower() == "all":
-        return ["all"]
-    if team_name in conference and standings:
-        return [team_name]
-    if team_name.lower() in division and standings:
-        return [team_name]
-    for team in TEAMS:
-        if team_name.lower() in team.lower():
-            is_team.append(team)
-    if team_name.lower() in ["montreal canadiens", "habs", "montreal"]:
-        is_team.append("Montréal Canadiens")
-    if team_name.lower() == "avs":
-        is_team.append("Colorado Avalanche")
-    if team_name.lower() == "preds":
-        is_team.append("Nashville Predators")
-    if team_name.lower() == "bolts":
-        is_team.append("Tampa Bay Lightning")
-    if team_name.lower() in ["jackets", "bjs"]:
-        is_team.append("Columbus Blue Jackets")
-    if team_name.lower() == "isles":
-        is_team.append("New York Islanders")
-    if team_name.lower() == "sens":
-        is_team.append("Ottawa Senators")
-    if team_name.lower() == "pens":
-        is_team.append("Pittsburgh Penguins")
-    if team_name.lower() == "caps":
-        is_team.append("Washington Capitals")
-    return list(set(is_team))
-
-
-async def get_channel_obj(bot: Red, channel_id: int, data: dict) -> Optional[discord.TextChannel]:
+async def get_channel_obj(
+    bot: Red, channel_id: int, data: dict
+) -> Optional[Union[discord.TextChannel, discord.Thread]]:
     """
     Requires a bot object to access config, channel_id, and channel config data
     Returns the channel object and sets the guild ID if it's missing from config
@@ -351,22 +551,26 @@ async def get_channel_obj(bot: Red, channel_id: int, data: dict) -> Optional[dis
     between the two rather than duplicating the code
     """
     if not data["guild_id"]:
-        channel = bot.get_channel(id=channel_id)
+        channel = bot.get_channel(channel_id)
         if not channel:
-            await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
-            log.info(f"{channel_id} channel was removed because it no longer exists")
+            # await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
+            # log.info(f"{channel_id} channel was removed because it no longer exists")
+            log.info(f"{channel_id} Could not be found")
             return None
         guild = channel.guild
         await bot.get_cog("Hockey").config.channel(channel).guild_id.set(guild.id)
         return channel
     guild = bot.get_guild(data["guild_id"])
     if not guild:
-        await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
-        log.info(f"{channel_id} channel was removed because it no longer exists")
+        # await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
+        # log.info(f"{channel_id} channel was removed because it no longer exists")
+        log.info(f"{channel_id} Could not be found")
         return None
     channel = guild.get_channel(channel_id)
-    if channel is None:
-        await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
-        log.info(f"{channel_id} channel was removed because it no longer exists")
+    thread = guild.get_thread(channel_id)
+    if channel is None and thread is None:
+        # await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
+        # log.info(f"{channel_id} channel was removed because it no longer exists")
+        log.info(f"{channel_id} Could not be found")
         return None
-    return channel
+    return channel or thread

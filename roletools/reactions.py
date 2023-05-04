@@ -1,19 +1,20 @@
 import asyncio
 import logging
-
 from typing import Optional, Union
 
 import discord
 from redbot.core import commands
-from redbot.core.i18n import Translator
 from redbot.core.commands import Context
-from redbot.core.utils.chat_formatting import pagify, humanize_list
-from redbot.core.utils.predicates import ReactionPredicate
+from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.predicates import ReactionPredicate
 
-from .abc import RoleToolsMixin, roletools
+from .abc import RoleToolsMixin
 from .converter import RoleEmojiConverter, RoleHierarchyConverter
 from .menus import BaseMenu, ReactRolePages
+
+roletools = RoleToolsMixin.roletools
 
 log = logging.getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
@@ -22,7 +23,12 @@ _ = Translator("RoleTools", __file__)
 class RoleToolsReactions(RoleToolsMixin):
     """This class contains commands related to reaction roles."""
 
-    @roletools.command()
+    @roletools.group(name="reaction", aliases=["react", "reactions"])
+    async def react_coms(self, ctx: Context) -> None:
+        """Reaction role settings"""
+        pass
+
+    @react_coms.command(with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def cleanup(self, ctx: Context) -> None:
         """
@@ -61,9 +67,10 @@ class RoleToolsReactions(RoleToolsMixin):
                         pass
                     async with self.config.role_from_id(role_id).reactions() as reactions:
                         reactions.remove(key)
-        await ctx.send(_("I am finished deleting old settings."))
+        msg = _("I am finished deleting old settings.")
+        await ctx.send(msg)
 
-    @roletools.command(hidden=True)
+    @react_coms.command(hidden=True, with_app_command=False)
     @commands.is_owner()
     @commands.cooldown(1, 86400, commands.BucketType.default)
     async def ownercleanup(self, ctx: Context) -> None:
@@ -111,7 +118,7 @@ class RoleToolsReactions(RoleToolsMixin):
                             reactions.remove(key)
         await ctx.send(_("I am finished deleting old settings."))
 
-    @roletools.command(aliases=["reactionroles", "reactrole"])
+    @react_coms.command(aliases=["reactionroles", "reactrole"])
     @commands.admin_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def reactroles(self, ctx: Context) -> None:
@@ -119,32 +126,32 @@ class RoleToolsReactions(RoleToolsMixin):
         View current bound roles in the server
         """
         if ctx.guild.id not in self.settings:
-            await ctx.send(_("There are no bound roles in this server."))
+            msg = _("There are no bound roles in this server.")
+            await ctx.send(msg)
             return
-        async with ctx.typing():
-            msg = _("Reaction Roles in {guild}\n").format(guild=ctx.guild.name)
-            for key, role_id in self.settings[ctx.guild.id]["reaction_roles"].items():
-                channel_id, msg_id, emoji = key.split("-")
-                if emoji.isdigit():
-                    emoji = self.bot.get_emoji(int(emoji))
-                if not emoji:
-                    emoji = _("Emoji from another server")
-                role = ctx.guild.get_role(role_id)
-                channel = ctx.guild.get_channel(int(channel_id))
-                if channel:
-                    # This can be potentially a very expensive operation
-                    # so instead we fake the message link unless the channel is missing
-                    # this way they can check themselves without rate limitng
-                    # the bot trying to fetch something constantly that is broken.
-                    message = f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{msg_id}"
-                else:
-                    message = None
-                msg += _("{emoji} - {role} [Reaction Message]({message})\n").format(
-                    role=role.mention if role else _("None"),
-                    emoji=emoji,
-                    message=message if message else _("None"),
-                )
-            pages = list(pagify(msg))
+        msg = _("Reaction Roles in {guild}\n").format(guild=ctx.guild.name)
+        for key, role_id in self.settings[ctx.guild.id]["reaction_roles"].items():
+            channel_id, msg_id, emoji = key.split("-")
+            if emoji.isdigit():
+                emoji = self.bot.get_emoji(int(emoji))
+            if not emoji:
+                emoji = _("Emoji from another server")
+            role = ctx.guild.get_role(role_id)
+            channel = ctx.guild.get_channel(int(channel_id))
+            if channel:
+                # This can be potentially a very expensive operation
+                # so instead we fake the message link unless the channel is missing
+                # this way they can check themselves without rate limitng
+                # the bot trying to fetch something constantly that is broken.
+                message = f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{msg_id}"
+            else:
+                message = None
+            msg += _("{emoji} - {role} [Reaction Message]({message})\n").format(
+                role=role.mention if role else _("None"),
+                emoji=emoji,
+                message=message if message else _("None"),
+            )
+        pages = list(pagify(msg))
         await BaseMenu(
             source=ReactRolePages(
                 pages=pages,
@@ -156,7 +163,7 @@ class RoleToolsReactions(RoleToolsMixin):
             page_start=0,
         ).start(ctx=ctx)
 
-    @roletools.command(aliases=["clearreacts"])
+    @react_coms.command(aliases=["clearreacts"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_messages=True)
     async def clearreact(
@@ -177,10 +184,9 @@ class RoleToolsReactions(RoleToolsMixin):
         Note: This will only clear reactions which have a corresponding
         reaction role on it.
         """
-        if not message.channel.permissions_for(ctx.me).manage_messages:
-            await ctx.send(
-                _("I require manage messages in order to clear other people's reactions.")
-            )
+        if not message.channel.permissions_for(ctx.guild.me).manage_messages:
+            msg = _("I require manage messages in order to clear other people's reactions.")
+            await ctx.send(msg)
             return
         if emojis:
             for emoji in emojis:
@@ -199,7 +205,8 @@ class RoleToolsReactions(RoleToolsMixin):
             try:
                 await message.clear_reactions()
             except discord.HTTPException:
-                await ctx.send(_("There was an error clearing reactions on that message."))
+                msg = _("There was an error clearing reactions on that message.")
+                await ctx.send(msg)
                 return
             for key in self.settings[ctx.guild.id]["reaction_roles"].keys():
                 if f"{message.channel.id}-{message.id}" in key:
@@ -214,9 +221,9 @@ class RoleToolsReactions(RoleToolsMixin):
                         pass
         await ctx.send(_("Finished clearing reactions on that message."))
 
-    @roletools.command(aliases=["reacts"])
+    @react_coms.command(name="create", aliases=["make", "setup"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
-    async def react(
+    async def make_react(
         self,
         ctx: Context,
         message: discord.Message,
@@ -233,7 +240,8 @@ class RoleToolsReactions(RoleToolsMixin):
         `<role>` The role you want people to receive for reacting.
         """
         if not message.guild or message.guild.id != ctx.guild.id:
-            await ctx.send(_("You cannot add a Reaction Role to a message not in this guild."))
+            msg = _("You cannot add a Reaction Role to a message not in this guild.")
+            await ctx.send(msg)
             return
         async with self.config.guild(ctx.guild).reaction_roles() as cur_setting:
             if isinstance(emoji, discord.Emoji):
@@ -252,13 +260,12 @@ class RoleToolsReactions(RoleToolsMixin):
             cur_setting[key] = role.id
         async with self.config.role(role).reactions() as reactions:
             reactions.append(key)
-        await ctx.send(
-            _("Created the reaction role {role} to {emoji} on {message}").format(
-                role=role.name, emoji=emoji, message=message.jump_url
-            )
+        msg = _("Created the reaction role {role} to {emoji} on {message}").format(
+            role=role.name, emoji=emoji, message=message.jump_url
         )
+        await ctx.send(msg)
         if send_to_react:
-            await ctx.send(
+            await ctx.channel.send(
                 _(
                     "I couldn't add the emoji to the message. Please make "
                     "sure to add the emoji to the message for this to work."
@@ -275,7 +282,7 @@ class RoleToolsReactions(RoleToolsMixin):
             try:
                 await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
             except asyncio.TimeoutError:
-                await ctx.send(
+                await ctx.channel.send(
                     _("Okay I won't automatically make {role} self assignable.").format(
                         role=role.name
                     )
@@ -284,13 +291,13 @@ class RoleToolsReactions(RoleToolsMixin):
             if pred.result:
                 await self.config.role(role).selfassignable.set(True)
                 await self.config.role(role).selfremovable.set(True)
-                await ctx.send(
+                await ctx.channel.send(
                     _("{role} has been made self assignable and self removeable.").format(
                         role=role.name
                     )
                 )
 
-    @roletools.command(aliases=["remreacts"])
+    @react_coms.command(name="remove", aliases=["rem"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def remreact(
         self,
@@ -310,15 +317,16 @@ class RoleToolsReactions(RoleToolsMixin):
         Note: This will not remove the emoji reactions on the message.
         """
         if not message.guild or message.guild.id != ctx.guild.id:
-            await ctx.send(
-                _("You cannot remove a Reaction Role from a message not in this guild.")
-            )
+            msg = _("You cannot remove a Reaction Role from a message not in this guild.")
+            await ctx.send(msg)
             return
         if ctx.guild.id not in self.settings:
-            await ctx.send(_("There are no roletools settings on this server."))
+            msg = _("There are no roletools settings on this server.")
+            await ctx.send(msg)
             return
         if not self.settings[ctx.guild.id]["reaction_roles"]:
-            await ctx.send(_("There are no reaction roles setup for this guild."))
+            msg = _("There are no reaction roles setup for this guild.")
+            await ctx.send(msg)
             return
         found = False
         if isinstance(role_or_emoji, discord.Role):
@@ -353,19 +361,17 @@ class RoleToolsReactions(RoleToolsMixin):
             except Exception:
                 pass
 
-            await ctx.send(
-                _("Removed role reaction on {role} to {emoji} on {message}").format(
-                    role=role, emoji=emoji, message=message.jump_url
-                )
+            msg = _("Removed role reaction on {role} to {emoji} on {message}").format(
+                role=role, emoji=emoji, message=message.jump_url
             )
+            await ctx.send(msg)
         else:
-            await ctx.send(
-                _(
-                    "I could not find a reaction role on that message or for that role/emoji combination."
-                )
+            msg = _(
+                "I could not find a reaction role on that message or for that role/emoji combination."
             )
+            await ctx.send(msg)
 
-    @roletools.command(aliases=["bulksreacts"])
+    @react_coms.command(name="bulk", aliases=["bulkcreate", "bulkmake"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def bulkreact(
         self,
@@ -388,9 +394,8 @@ class RoleToolsReactions(RoleToolsMixin):
         `[p]roletools bulkreact 461417772115558410-821105109097644052 "Super Member-:frown:"`
         """
         if not message.guild or message.guild.id != ctx.guild.id:
-            return await ctx.send(
-                _("You cannot add a Reaction Role to a message not in this guild.")
-            )
+            await ctx.send(_("You cannot add a Reaction Role to a message not in this guild."))
+            return
         added = []
         not_added = []
         send_to_react = False

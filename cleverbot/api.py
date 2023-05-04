@@ -102,7 +102,7 @@ class CleverbotAPI:
         """
         This is called when we actually want to send a reply
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         try:
             response = await self.get_response(author, message)
         except NoCredentials:
@@ -155,7 +155,7 @@ class CleverbotAPI:
             return await self.bot.allowed_by_whitelist_blacklist(
                 message.author,
                 who_id=message.author.id,
-                guild_id=message.guild.id,
+                guild=message.guild,
                 role_ids=[r.id for r in message.author.roles],
             )
         except AttributeError:

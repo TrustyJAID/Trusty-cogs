@@ -1,29 +1,29 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Create a starboard channel to save those amazing posts!",
-    "disabled" : false,
-    "end_user_data_statement" : "This stores message information from Users for the purposes of tracking reactions to the message.",
-    "hidden" : false,
-    "install_msg" : "Create a starboard!",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.3.12",
-    "min_python_version" : [
+    "description": "Create a starboard channel to save those amazing posts!",
+    "disabled": false,
+    "end_user_data_statement": "This stores message information from Users for the purposes of tracking reactions to the message.",
+    "hidden": false,
+    "install_msg": "Create a starboard!",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Starboard",
-    "permissions" : [
+    "name": "Starboard",
+    "permissions": [
         "embed_links"
     ],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Starboard",
-    "tags" : [
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Starboard",
+    "tags": [
         "starboard",
         "star"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

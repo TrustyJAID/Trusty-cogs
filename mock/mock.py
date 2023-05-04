@@ -1,5 +1,5 @@
-import random
 import logging
+import random
 from typing import Optional, Union
 
 import discord
@@ -88,11 +88,11 @@ class Mock(commands.Cog):
         time = ctx.message.created_at
         embed = discord.Embed(description=result, timestamp=time)
         embed.colour = getattr(author, "colour", discord.Colour.default())
-        embed.set_author(name=author.display_name, icon_url=author.avatar_url)
+        embed.set_author(name=author.display_name, icon_url=author.display_avatar.url)
         embed.set_thumbnail(url="https://i.imgur.com/upItEiG.jpg")
         embed.set_footer(
             text=f"{ctx.message.author.display_name} mocked {author.display_name}",
-            icon_url=ctx.message.author.avatar_url,
+            icon_url=ctx.message.author.display_avatar.url,
         )
         if hasattr(msg, "attachments") and search_msg.attachments != []:
             embed.set_image(url=search_msg.attachments[0].url)

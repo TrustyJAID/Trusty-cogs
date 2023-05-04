@@ -1,7 +1,7 @@
 import asyncio
-import datetime
 import logging
 from copy import copy
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import Dict, List, Literal, Optional, Tuple, Union, cast
 
@@ -24,28 +24,22 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 
-from .converters import (
-    ChannelConverter,
-    FuzzyMember,
-    GuildConverter,
-    MultiGuildConverter,
-    PermissionConverter,
-)
-from .menus import AvatarPages, BaseMenu, GuildPages, ListPages
+from .converters import GuildConverter, MultiGuildConverter, PermissionConverter
+from .menus import AvatarPages, BaseView, GuildPages, ListPages
 
 _ = Translator("ServerStats", __file__)
 log = logging.getLogger("red.trusty-cogs.ServerStats")
 
 
 @cog_i18n(_)
-class ServerStats(commands.Cog):
+class ServerStats(commands.GroupCog):
     """
     Gather useful information about servers the bot is in
     A lot of commands are bot owner only
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.6.9"
+    __version__ = "1.7.0"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -84,20 +78,19 @@ class ServerStats(commands.Cog):
             if save:
                 await self.config.guild_from_id(guild_id).set(data)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
-    async def avatar(self, ctx: commands.Context, *, members: Optional[FuzzyMember]):
+    async def avatar(self, ctx: commands.Context, *, member: Optional[discord.Member]):
         """
         Display a users avatar in chat
         """
-        if members is None:
+        if member is None:
             members = [ctx.author]
+        else:
+            members = [member]
 
-        await BaseMenu(
+        await BaseView(
             source=AvatarPages(members=members),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
         ).start(ctx=ctx)
 
@@ -108,7 +101,8 @@ class ServerStats(commands.Cog):
         if channel_id is None:
             return
         channel = self.bot.get_channel(channel_id)
-        passed = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+        passed = f"<t:{int(guild.created_at.timestamp())}:R>"
+
         created_at = _(
             "{bot} has joined a server!\n "
             "That's **{num}** servers now!\n"
@@ -119,7 +113,7 @@ class ServerStats(commands.Cog):
             bot=channel.guild.me.mention,
             num=humanize_number(len(self.bot.guilds)),
             users=humanize_number(len(self.bot.users)),
-            since=f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>",
+            since=f"<t:{int(guild.created_at.timestamp())}:D>",
             passed=passed,
         )
         try:
@@ -148,26 +142,22 @@ class ServerStats(commands.Cog):
                 num /= 1000.0
             return "{0:.1f}{1}".format(num, "YB")
 
-        passed = (datetime.datetime.utcnow() - guild.created_at).days
         created_at = _("Created on {date}. That's over {num}!").format(
-            date=bold(
-                f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
-            ),
-            num=bold(
-                f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
-            ),
+            date=bold(f"<t:{int(guild.created_at.timestamp())}:D>"),
+            num=bold(f"<t:{int(guild.created_at.timestamp())}:R>"),
         )
         total_users = humanize_number(guild.member_count)
         try:
             joined_at = guild.me.joined_at
         except AttributeError:
-            joined_at = datetime.datetime.utcnow()
-        bot_joined = f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
-        since_joined = f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+            joined_at = datetime.now(timezone.utc)
+        bot_joined = f"<t:{int(joined_at.timestamp())}:D>"
+        since_joined = f"<t:{int(joined_at.timestamp())}:R>"
         joined_on = _(
             "**{bot_name}** joined this server on **{bot_join}**.\n"
             "That's over **{since_join}**!"
-        ).format(bot_name=self.bot.user.name, bot_join=bot_joined, since_join=since_joined)
+        ).format(bot_name=self.bot.user.mention, bot_join=bot_joined, since_join=since_joined)
+
         shard = (
             _("\nShard ID: **{shard_id}/{shard_count}**").format(
                 shard_id=humanize_number(guild.shard_id + 1),
@@ -206,37 +196,13 @@ class ServerStats(commands.Cog):
         text_channels = len(guild.text_channels)
         nsfw_channels = len([c for c in guild.text_channels if c.is_nsfw()])
         voice_channels = len(guild.voice_channels)
-
-        vc_regions = {
-            "vip-us-east": _("__VIP__ US East ") + "\U0001F1FA\U0001F1F8",
-            "vip-us-west": _("__VIP__ US West ") + "\U0001F1FA\U0001F1F8",
-            "vip-amsterdam": _("__VIP__ Amsterdam ") + "\U0001F1F3\U0001F1F1",
-            "eu-west": _("EU West ") + "\U0001F1EA\U0001F1FA",
-            "eu-central": _("EU Central ") + "\U0001F1EA\U0001F1FA",
-            "europe": _("Europe ") + "\U0001F1EA\U0001F1FA",
-            "london": _("London ") + "\U0001F1EC\U0001F1E7",
-            "frankfurt": _("Frankfurt ") + "\U0001F1E9\U0001F1EA",
-            "amsterdam": _("Amsterdam ") + "\U0001F1F3\U0001F1F1",
-            "us-west": _("US West ") + "\U0001F1FA\U0001F1F8",
-            "us-east": _("US East ") + "\U0001F1FA\U0001F1F8",
-            "us-south": _("US South ") + "\U0001F1FA\U0001F1F8",
-            "us-central": _("US Central ") + "\U0001F1FA\U0001F1F8",
-            "singapore": _("Singapore ") + "\U0001F1F8\U0001F1EC",
-            "sydney": _("Sydney ") + "\U0001F1E6\U0001F1FA",
-            "brazil": _("Brazil ") + "\U0001F1E7\U0001F1F7",
-            "hongkong": _("Hong Kong ") + "\U0001F1ED\U0001F1F0",
-            "russia": _("Russia ") + "\U0001F1F7\U0001F1FA",
-            "japan": _("Japan ") + "\U0001F1EF\U0001F1F5",
-            "southafrica": _("South Africa ") + "\U0001F1FF\U0001F1E6",
-            "india": _("India ") + "\U0001F1EE\U0001F1F3",
-            "south-korea": _("South Korea ") + "\U0001f1f0\U0001f1f7",
-        }  # Unicode is needed because bold() is escaping emojis for some reason in this case.
         verif = {
             "none": _("0 - None"),
             "low": _("1 - Low"),
             "medium": _("2 - Medium"),
             "high": _("3 - High"),
             "extreme": _("4 - Extreme"),
+            "highest": _("4 - Highest"),
         }
 
         features = {
@@ -268,21 +234,21 @@ class ServerStats(commands.Cog):
             + f"{created_at}\n{joined_on}",
             colour=colour,
         )
+        author_icon = None
+        if "VERIFIED" in guild.features:
+            author_icon = "https://cdn.discordapp.com/emojis/457879292152381443.png"
+        if "PARTNERED" in guild.features:
+            author_icon = "https://cdn.discordapp.com/emojis/508929941610430464.png"
+        guild_icon = "https://cdn.discordapp.com/embed/avatars/1.png"
+        if guild.icon:
+            guild_icon = guild.icon.url
         em.set_author(
             name=guild.name,
-            icon_url="https://cdn.discordapp.com/emojis/457879292152381443.png"
-            if "VERIFIED" in guild.features
-            else "https://cdn.discordapp.com/emojis/508929941610430464.png"
-            if "PARTNERED" in guild.features
-            else discord.Embed.Empty,
-            url=guild.icon_url
-            if guild.icon_url
-            else "https://cdn.discordapp.com/embed/avatars/1.png",
+            icon_url=author_icon,
+            url=guild_icon,
         )
         em.set_thumbnail(
-            url=guild.icon_url
-            if guild.icon_url
-            else "https://cdn.discordapp.com/embed/avatars/1.png"
+            url=guild.icon.url if guild.icon else "https://cdn.discordapp.com/embed/avatars/1.png"
         )
         em.add_field(name=_("Members:"), value=member_msg)
         em.add_field(
@@ -343,7 +309,7 @@ class ServerStats(commands.Cog):
             )
             em.add_field(name=_("Nitro Boost:"), value=nitro_boost)
         if guild.splash:
-            em.set_image(url=guild.splash_url_as(format="png"))
+            em.set_image(url=guild.splash.url)
         return em
 
     @commands.Cog.listener()
@@ -353,7 +319,7 @@ class ServerStats(commands.Cog):
         if channel_id is None:
             return
         channel = self.bot.get_channel(channel_id)
-        passed = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+        passed = f"<t:{int(guild.created_at.timestamp())}:R>"
         created_at = _(
             "{bot} has left a server!\n "
             "That's **{num}** servers now!\n"
@@ -364,7 +330,7 @@ class ServerStats(commands.Cog):
             bot=channel.guild.me.mention,
             num=humanize_number(len(self.bot.guilds)),
             users=humanize_number(len(self.bot.users)),
-            since=f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>",
+            since=f"<t:{int(guild.created_at.timestamp())}:D>",
             passed=passed,
         )
         try:
@@ -374,16 +340,14 @@ class ServerStats(commands.Cog):
         except Exception:
             log.error(f"Error creating guild embed for old guild ID {guild.id}", exc_info=True)
 
-    @commands.command()
-    async def emoji(
-        self, ctx: commands.Context, emoji: Union[discord.Emoji, discord.PartialEmoji, str]
-    ) -> None:
+    @commands.hybrid_command()
+    async def emoji(self, ctx: commands.Context, emoji: str) -> None:
         """
         Post a large size emojis in chat
         """
-        await ctx.channel.trigger_typing()
-        if type(emoji) in [discord.PartialEmoji, discord.Emoji]:
-            d_emoji = cast(discord.Emoji, emoji)
+        await ctx.channel.typing()
+        d_emoji = discord.PartialEmoji.from_str(emoji)
+        if d_emoji.is_custom_emoji():
             ext = "gif" if d_emoji.animated else "png"
             url = "https://cdn.discordapp.com/emojis/{id}.{ext}?v=1".format(id=d_emoji.id, ext=ext)
             filename = "{name}.{ext}".format(name=d_emoji.name, ext=ext)
@@ -406,18 +370,14 @@ class ServerStats(commands.Cog):
         file = discord.File(image, filename=filename)
         await ctx.send(file=file)
 
-    @commands.command()
+    @commands.hybrid_command()
     async def botstats(self, ctx: commands.Context) -> None:
         """Display stats about the bot"""
         async with ctx.typing():
             servers = humanize_number(len(ctx.bot.guilds))
             members = humanize_number(len(self.bot.users))
-            passed = (
-                f"<t:{int(ctx.me.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
-            )
-            since = (
-                f"<t:{int(ctx.me.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
-            )
+            passed = f"<t:{int(ctx.me.created_at.timestamp())}:R>"
+            since = f"<t:{int(ctx.me.created_at.timestamp())}:D>"
             msg = _(
                 "{bot} is on {servers} servers serving {members} members!\n"
                 "{bot} was created on **{since}**.\n"
@@ -435,20 +395,20 @@ class ServerStats(commands.Cog):
             if ctx.guild:
                 em.set_author(
                     name=f"{ctx.me} {f'~ {ctx.me.nick}' if ctx.me.nick else ''}",
-                    icon_url=ctx.me.avatar_url,
+                    icon_url=ctx.me.avatar.url,
                 )
             else:
                 em.set_author(
                     name=f"{ctx.me}",
-                    icon_url=ctx.me.avatar_url,
+                    icon_url=ctx.me.avatar.url,
                 )
-            em.set_thumbnail(url=ctx.me.avatar_url)
-            if ctx.channel.permissions_for(ctx.me).embed_links:
-                await ctx.send(embed=em)
-            else:
-                await ctx.send(msg)
+            em.set_thumbnail(url=ctx.me.avatar.url)
+        if ctx.channel.permissions_for(ctx.me).embed_links:
+            await ctx.send(embed=em)
+        else:
+            await ctx.send(msg)
 
-    @commands.command()
+    @commands.hybrid_command()
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
     async def topic(
@@ -474,7 +434,7 @@ class ServerStats(commands.Cog):
         )
         await ctx.tick()
 
-    @commands.group()
+    @commands.hybrid_group()
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
     async def channeledit(self, ctx: commands.Context) -> None:
@@ -485,7 +445,11 @@ class ServerStats(commands.Cog):
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
     async def channel_name(
-        self, ctx: commands.Context, channel: Optional[ChannelConverter], *, name: str
+        self,
+        ctx: commands.Context,
+        channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel],
+        *,
+        name: str,
     ) -> None:
         """Edit a channels name"""
         if not channel:
@@ -499,7 +463,10 @@ class ServerStats(commands.Cog):
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
     async def channel_position(
-        self, ctx: commands.Context, channel: Optional[ChannelConverter], position: int
+        self,
+        ctx: commands.Context,
+        channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel],
+        position: int,
     ) -> None:
         """Edit a channels position"""
         if not channel:
@@ -517,7 +484,10 @@ class ServerStats(commands.Cog):
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
     async def channel_sync(
-        self, ctx: commands.Context, channel: Optional[ChannelConverter], toggle: bool
+        self,
+        ctx: commands.Context,
+        channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel],
+        toggle: bool,
     ) -> None:
         """Set whether or not to sync permissions with the channels Category"""
         if not channel:
@@ -597,14 +567,16 @@ class ServerStats(commands.Cog):
             return
         await ctx.tick()
 
-    @channeledit.command(name="permissions", aliases=["perms", "permission"])
+    @channeledit.command(
+        name="permissions", aliases=["perms", "permission"], with_app_command=False
+    )
     @checks.mod_or_permissions(manage_permissions=True)
     @checks.bot_has_permissions(manage_permissions=True)
     async def edit_channel_perms(
         self,
         ctx: commands.Context,
         permission: PermissionConverter,
-        channel: Optional[ChannelConverter],
+        channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel],
         true_or_false: Optional[bool],
         *roles_or_users: Union[discord.Member, discord.Role, str],
     ) -> None:
@@ -648,20 +620,22 @@ class ServerStats(commands.Cog):
             not channel.permissions_for(ctx.author).manage_permissions
             or not channel.permissions_for(ctx.author).manage_channels
         ):
-            return await ctx.send(
+            await ctx.send(
                 _("You do not have the correct permissions to edit {channel}.").format(
                     channel=channel.mention
                 )
             )
+            return
         if (
             not channel.permissions_for(ctx.me).manage_permissions
             or not channel.permissions_for(ctx.author).manage_channels
         ):
-            return await ctx.send(
+            await ctx.send(
                 _("I do not have the correct permissions to edit {channel}.").format(
                     channel=channel.mention
                 )
             )
+            return
         targets = list(roles_or_users)
         for r in roles_or_users:
             if isinstance(r, str):
@@ -671,9 +645,10 @@ class ServerStats(commands.Cog):
                 else:
                     targets.remove(r)
         if not targets:
-            return await ctx.send(
+            await ctx.send(
                 _("You need to provide a role or user you want to edit permissions for")
             )
+            return
         overs = channel.overwrites
         for target in targets:
             if target in overs:
@@ -697,7 +672,7 @@ class ServerStats(commands.Cog):
             )
         except Exception:
             log.exception(f"Error editing permissions in channel {channel.name}")
-            return await ctx.send(_("There was an issue editing permissions on that channel."))
+            await ctx.send(_("There was an issue editing permissions on that channel."))
 
     async def ask_for_invite(self, ctx: commands.Context) -> Optional[str]:
         """
@@ -726,7 +701,7 @@ class ServerStats(commands.Cog):
         days: int,
         role: Union[discord.Role, Tuple[discord.Role], None],
     ) -> List[discord.Member]:
-        now = datetime.datetime.utcnow()
+        now = datetime.now(timezone.utc)
         after = now - datetime.timedelta(days=days)
         member_list = []
         if role:
@@ -766,7 +741,8 @@ class ServerStats(commands.Cog):
         List the users who have not talked in x days
         """
         if days < 1:
-            return await ctx.send(_("You must provide a value of more than 0 days."))
+            await ctx.send(_("You must provide a value of more than 0 days."))
+            return
         member_list = await self.get_members_since(ctx, days, role)
         x = [member_list[i : i + 10] for i in range(0, len(member_list), 10)]
         msg_list = []
@@ -782,7 +758,7 @@ class ServerStats(commands.Cog):
                     )
                     em.add_field(name=_("Discord Estimate"), value=str(estimate))
                 em.description = "\n".join(m.mention for m in page)
-                em.set_author(name=f"{ctx.guild.name}", icon_url=ctx.guild.icon_url)
+                em.set_author(name=f"{ctx.guild.name}", icon_url=ctx.guild.icon.url)
                 em.title = _("Estimated members to be pruned ") + str(len(member_list))
                 em.set_footer(text="Page {} of {}".format(count, len(x)))
                 count += 1
@@ -803,13 +779,9 @@ class ServerStats(commands.Cog):
                 count += 1
                 msg_list.append(msg)
         if msg_list != []:
-            await BaseMenu(
+            await BaseView(
                 source=ListPages(pages=msg_list),
-                delete_message_after=False,
-                clear_reactions_after=True,
-                timeout=60,
                 cog=self,
-                page_start=0,
             ).start(ctx=ctx)
         else:
             await ctx.send(_("No one was found to be inactive in this time."))
@@ -991,11 +963,9 @@ class ServerStats(commands.Cog):
         if not is_cheater:
             await ctx.send(_("Not a cheater"))
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def whois(
-        self, ctx: commands.Context, *, user_id: Union[int, discord.Member, discord.User]
-    ) -> None:
+    async def whois(self, ctx: commands.Context, *, user_id: discord.User) -> None:
         """
         Display servers a user shares with the bot
 
@@ -1003,7 +973,8 @@ class ServerStats(commands.Cog):
         """
         async with ctx.typing():
             if not user_id:
-                return await ctx.send(_("You need to supply a user ID for this to work properly."))
+                await ctx.send(_("You need to supply a user ID for this to work properly."))
+                return
             if isinstance(user_id, int):
                 try:
                     member = await self.bot.fetch_user(user_id)
@@ -1030,23 +1001,31 @@ class ServerStats(commands.Cog):
             embed_list = []
             robot = "\N{ROBOT FACE}" if member.bot else ""
             if guild_list != []:
+                url = "https://discord.com/channels/{guild_id}"
                 msg = f"**{member}** ({member.id}) {robot}" + _("is on:\n\n")
                 embed_msg = ""
                 for m in guild_list:
                     # m = guild.get_member(member.id)
+                    guild_join = ""
+                    guild_url = url.format(guild_id=m.guild.id)
+                    if m.joined_at:
+                        ts = int(m.joined_at.timestamp())
+                        guild_join = f"Joined the server <t:{ts}:R>"
                     is_owner = ""
                     nick = ""
                     if m.id == m.guild.owner_id:
                         is_owner = "\N{CROWN}"
                     if m.nick:
                         nick = f"`{m.nick}` in"
-                    msg += f"{is_owner}{nick} __{m.guild.name}__ ({m.guild.id})\n\n"
-                    embed_msg += f"{is_owner}{nick} __{m.guild.name}__ ({m.guild.id})\n\n"
+                    msg += f"{is_owner}{nick} __[{m.guild.name}]({guild_url})__ {guild_join}\n\n"
+                    embed_msg += (
+                        f"{is_owner}{nick} __[{m.guild.name}]({guild_url})__ {guild_join}\n\n"
+                    )
                 if ctx.channel.permissions_for(ctx.me).embed_links:
-                    for em in pagify(embed_msg, ["\n"], page_length=6000):
+                    for em in pagify(embed_msg, ["\n"], page_length=1024):
                         embed = discord.Embed()
-                        since_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
-                        user_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+                        since_created = f"<t:{int(member.created_at.timestamp())}:R>"
+                        user_created = f"<t:{int(member.created_at.timestamp())}:D>"
                         public_flags = ""
                         if version_info >= VersionInfo.from_str("3.4.0"):
                             public_flags = "\n".join(
@@ -1064,13 +1043,12 @@ class ServerStats(commands.Cog):
                             public_flags=public_flags,
                         )
                         embed.description = created_on
-                        embed.set_thumbnail(url=member.avatar_url)
+                        embed.set_thumbnail(url=member.display_avatar)
                         embed.colour = await ctx.embed_colour()
                         embed.set_author(
-                            name=f"{member} ({member.id}) {robot}", icon_url=member.avatar_url
+                            name=f"{member} ({member.id}) {robot}", icon_url=member.display_avatar
                         )
-                        for page in pagify(em, ["\n"], page_length=1024):
-                            embed.add_field(name=_("Shared Servers"), value=page)
+                        embed.add_field(name=_("Shared Servers"), value=em)
                         embed_list.append(embed)
                 else:
                     for page in pagify(msg, ["\n"]):
@@ -1078,8 +1056,8 @@ class ServerStats(commands.Cog):
             else:
                 if ctx.channel.permissions_for(ctx.me).embed_links:
                     embed = discord.Embed()
-                    since_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
-                    user_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+                    since_created = f"<t:{int(member.created_at.timestamp())}:R>"
+                    user_created = f"<t:{int(member.created_at.timestamp())}:D>"
                     public_flags = ""
                     if version_info >= VersionInfo.from_str("3.4.0"):
                         public_flags = "\n".join(
@@ -1093,22 +1071,18 @@ class ServerStats(commands.Cog):
                         public_flags=public_flags,
                     )
                     embed.description = created_on
-                    embed.set_thumbnail(url=member.avatar_url)
+                    embed.set_thumbnail(url=member.display_avatar)
                     embed.colour = await ctx.embed_colour()
                     embed.set_author(
-                        name=f"{member} ({member.id}) {robot}", icon_url=member.avatar_url
+                        name=f"{member} ({member.id}) {robot}", icon_url=member.display_avatar
                     )
                     embed_list.append(embed)
                 else:
                     msg = f"**{member}** ({member.id}) " + _("is not in any shared servers!")
                     embed_list.append(msg)
-            await BaseMenu(
+            await BaseView(
                 source=ListPages(pages=embed_list),
-                delete_message_after=False,
-                clear_reactions_after=True,
-                timeout=60,
                 cog=self,
-                page_start=0,
             ).start(ctx=ctx)
 
     @commands.command(hidden=True)
@@ -1120,60 +1094,52 @@ class ServerStats(commands.Cog):
         """
         guilds = sorted(list(self.bot.guilds), key=lambda s: s.member_count, reverse=True)
         msg = ""
-        msg_list = []
-        count = 0
-        for _, server in enumerate(guilds):
-            if count == 10:
-                msg_list.append(msg)
-                msg = ""
-                count = 0
+        for server in guilds:
+            ts = int(server.me.joined_at.timestamp())
             msg += (
                 f"{escape(server.name, mass_mentions=True, formatting=True)}: "
-                f"`{humanize_number(server.member_count)}`\n"
+                f"`{humanize_number(server.member_count)}` Joined <t:{ts}:R>\n"
             )
-            count += 1
-            msg_list.append(msg)
-        await BaseMenu(
+        msg_list = []
+        for page in pagify(msg, delims=["\n"], page_length=1000):
+            msg_list.append(
+                discord.Embed(
+                    colour=await self.bot.get_embed_colour(ctx.channel), description=page
+                )
+            )
+        await BaseView(
             source=ListPages(pages=msg_list),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
-            page_start=0,
         ).start(ctx=ctx)
 
     @commands.command(hidden=True)
     @checks.is_owner()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def newservers(self, ctx: commands.Context) -> None:
         """
         Lists servers by when the bot was added to the server
         """
-        guilds = sorted(list(self.bot.guilds), key=lambda s: s.me.joined_at)
+        guilds = sorted(list(self.bot.guilds), key=lambda s: s.me.joined_at, reverse=True)
         msg = ""
         msg_list = []
-        count = 0
-        for _, server in enumerate(guilds):
-            if count == 10:
-                msg_list.append(msg)
-                msg = ""
-                count = 0
+        for server in guilds:
+            ts = int(server.me.joined_at.timestamp())
             msg += (
                 f"{escape(server.name, mass_mentions=True, formatting=True)}: "
-                f"`{humanize_number(server.member_count)}`\n"
+                f"`{humanize_number(server.member_count)}` Joined <t:{ts}:R>\n"
             )
-            count += 1
-            msg_list.append(msg)
-        await BaseMenu(
+        for page in pagify(msg, delims=["\n"], page_length=1000):
+            msg_list.append(
+                discord.Embed(
+                    colour=await self.bot.get_embed_colour(ctx.channel), description=page
+                )
+            )
+        await BaseView(
             source=ListPages(pages=msg_list),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
-            page_start=0,
         ).start(ctx=ctx)
 
-    @commands.group()
+    @commands.hybrid_group()
     @checks.admin_or_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def guildedit(self, ctx: commands.Context) -> None:
@@ -1281,7 +1247,7 @@ class ServerStats(commands.Cog):
             return await ctx.send(_("I could not edit the servers afk timeout."))
         await ctx.send(_("Server AFK timeout set to {timeout} seconds.").format(timeout=timeout))
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
@@ -1303,7 +1269,7 @@ class ServerStats(commands.Cog):
         async with ctx.typing():
 
             def joined(member: discord.Member):
-                return getattr(member, "joined_at", None) or datetime.datetime.utcnow()
+                return getattr(member, "joined_at", None) or datetime.datetime.now(timezone.utc)
 
             member_list = sorted(guild.members, key=joined)
             is_embed = ctx.channel.permissions_for(ctx.me).embed_links
@@ -1327,20 +1293,23 @@ class ServerStats(commands.Cog):
                 if is_embed:
                     embed = discord.Embed(description=msg)
                     embed.set_author(
-                        name=guild.name + _(" first members"), icon_url=guild.icon_url
+                        name=guild.name + _(" first members"), icon_url=guild.icon.url
                     )
                     msg_list.append(embed)
 
                 else:
-                    msg_list.append(header_msg + msg)
-                await asyncio.sleep(0.1)
-        await BaseMenu(
+                    msg += f"{member_list.index(member)+1}. {member.name}\n"
+            if is_embed:
+                embed = discord.Embed(description=msg)
+                embed.set_author(name=guild.name + _(" first members"), icon_url=guild.icon.url)
+                msg_list.append(embed)
+
+            else:
+                msg_list.append(header_msg + msg)
+            await asyncio.sleep(0.1)
+        await BaseView(
             source=ListPages(pages=msg_list),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
-            page_start=0,
         ).start(ctx=ctx)
 
     @commands.command()
@@ -1394,7 +1363,9 @@ class ServerStats(commands.Cog):
             await ctx.send(_("Okay, not leaving {guild}.").format(guild=guild.name))
 
     @staticmethod
-    async def get_guild_invite(guild: discord.Guild, max_age: int = 86400) -> None:
+    async def get_guild_invite(
+        guild: discord.Guild, max_age: int = 86400
+    ) -> Optional[discord.Invite]:
         """Handles the reinvite logic for getting an invite
         to send the newly unbanned user
         :returns: :class:`Invite`
@@ -1421,7 +1392,8 @@ class ServerStats(commands.Cog):
                 return inv
         else:  # No existing invite found that is valid
             channels_and_perms = zip(
-                guild.text_channels, map(guild.me.permissions_in, guild.text_channels)
+                guild.text_channels,
+                map(lambda x: x.permissions_for(guild.me), guild.text_channels),
             )
             channel = next(
                 (channel for channel, perms in channels_and_perms if perms.create_instant_invite),
@@ -1435,7 +1407,7 @@ class ServerStats(commands.Cog):
             except discord.HTTPException:
                 return
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.bot_has_permissions(embed_links=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def getguild(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
@@ -1456,16 +1428,14 @@ class ServerStats(commands.Cog):
                 if guild:
                     page = ctx.bot.guilds.index(guild)
 
-        await BaseMenu(
+        await BaseView(
             source=GuildPages(guilds=guilds),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
             page_start=page,
+            ctx=ctx,
         ).start(ctx=ctx)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.bot_has_permissions(embed_links=True)
     @checks.admin()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
@@ -1480,16 +1450,13 @@ class ServerStats(commands.Cog):
             if not guilds:
                 guilds = ctx.bot.guilds
                 page = ctx.bot.guilds.index(ctx.guild)
-        await BaseMenu(
+        await BaseView(
             source=GuildPages(guilds=guilds),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
             page_start=page,
         ).start(ctx=ctx)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
     async def nummembers(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
@@ -1505,7 +1472,7 @@ class ServerStats(commands.Cog):
         )
 
     @commands.guild_only()
-    @commands.command(aliases=["rolestats"])
+    @commands.hybrid_command(aliases=["rolestats"])
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def getroles(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
@@ -1528,17 +1495,13 @@ class ServerStats(commands.Cog):
             if ctx.channel.permissions_for(ctx.me).embed_links:
                 embed = discord.Embed()
                 embed.description = page
-                embed.set_author(name=f"{guild.name} " + _("Roles"), icon_url=guild.icon_url)
+                embed.set_author(name=f"{guild.name} " + _("Roles"), icon_url=guild.icon.url)
                 msg_list.append(embed)
             else:
                 msg_list.append(page)
-        await BaseMenu(
+        await BaseView(
             source=ListPages(pages=msg_list),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
-            page_start=0,
         ).start(ctx=ctx)
 
     async def check_highest(self, data):
@@ -1550,7 +1513,7 @@ class ServerStats(commands.Cog):
                 users = user
         return highest, users
 
-    @commands.command(name="getreactions", aliases=["getreaction"])
+    @commands.hybrid_command(name="getreactions", aliases=["getreaction"])
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def get_reactions(self, ctx: commands.Context, message: discord.Message) -> None:
@@ -1579,13 +1542,9 @@ class ServerStats(commands.Cog):
             for page in temp_pages:
                 pages.append(f"`Page {i}/{max_i}`\n" + page)
                 i += 1
-        await BaseMenu(
+        await BaseView(
             source=ListPages(pages=pages),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
-            page_start=0,
         ).start(ctx=ctx)
 
     async def get_server_stats(
@@ -1693,7 +1652,7 @@ class ServerStats(commands.Cog):
             _ret = copy(to_return)
         return _ret
 
-    @commands.command(name="serverstats")
+    @commands.hybrid_command(name="serverstats")
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     @commands.guild_only()
@@ -1767,13 +1726,13 @@ class ServerStats(commands.Cog):
                     + _("\nMost posts by {}\n".format(maybe_guild))
                 )
             em = discord.Embed(colour=await self.bot.get_embed_colour(ctx))
-            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
+            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)
             em.description = f"{new_msg}{''.join(i for i in channel_messages)}"
 
             em.add_field(name=_("Top Members"), value="".join(i for i in member_messages))
         await ctx.send(embed=em)
 
-    @commands.command(name="channelstats")
+    @commands.hybrid_command(name="channelstats")
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
     async def channel_stats(
@@ -1831,14 +1790,14 @@ class ServerStats(commands.Cog):
             )
 
             em = discord.Embed(colour=await self.bot.get_embed_colour(ctx))
-            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
+            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)
             em.description = f"{new_msg}"
 
             em.add_field(name=_("Top Members"), value="".join(i for i in member_messages))
         await ctx.send(embed=em)
 
     @commands.guild_only()
-    @commands.command(aliases=["serveremojis"])
+    @commands.hybrid_command(aliases=["serveremojis"])
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def guildemojis(
         self,
@@ -1858,7 +1817,7 @@ class ServerStats(commands.Cog):
             guild = ctx.guild
         msg = ""
         embed = discord.Embed(timestamp=ctx.message.created_at)
-        embed.set_author(name=guild.name, icon_url=guild.icon_url)
+        embed.set_author(name=guild.name, icon_url=guild.icon.url)
         regular = []
         for emoji in guild.emojis:
             if id_emojis:
@@ -1877,7 +1836,7 @@ class ServerStats(commands.Cog):
         count = 1
         for page in x:
             em = discord.Embed(timestamp=ctx.message.created_at)
-            em.set_author(name=guild.name + _(" Emojis"), icon_url=guild.icon_url)
+            em.set_author(name=guild.name + _(" Emojis"), icon_url=guild.icon.url)
             regular = []
             msg = ""
             for emoji in page:
@@ -1889,11 +1848,7 @@ class ServerStats(commands.Cog):
         if len(emoji_embeds) == 0:
             await ctx.send(_("There are no emojis on {guild}.").format(guild=guild.name))
         else:
-            await BaseMenu(
+            await BaseView(
                 source=ListPages(pages=emoji_embeds),
-                delete_message_after=False,
-                clear_reactions_after=True,
-                timeout=60,
                 cog=self,
-                page_start=0,
             ).start(ctx=ctx)

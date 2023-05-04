@@ -1,0 +1,436 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/compliment/locales/messages.pot\n"
+"X-Crowdin-File-ID: 608\n"
+"Language: fr_FR\n"
+
+#: compliment/compliment.py:11
+msgid "Your smile is contagious."
+msgstr ""
+
+#: compliment/compliment.py:12
+msgid "You look great today."
+msgstr ""
+
+#: compliment/compliment.py:13
+msgid "You're a smart cookie."
+msgstr ""
+
+#: compliment/compliment.py:14
+msgid "I bet you make babies smile."
+msgstr ""
+
+#: compliment/compliment.py:15
+msgid "You have impeccable manners."
+msgstr ""
+
+#: compliment/compliment.py:16
+msgid "I like your style."
+msgstr ""
+
+#: compliment/compliment.py:17
+msgid "You have the best laugh."
+msgstr ""
+
+#: compliment/compliment.py:18
+msgid "I appreciate you."
+msgstr ""
+
+#: compliment/compliment.py:19
+msgid "You are the most perfect you there is."
+msgstr ""
+
+#: compliment/compliment.py:20
+msgid "You are enough."
+msgstr ""
+
+#: compliment/compliment.py:21
+msgid "You're strong."
+msgstr ""
+
+#: compliment/compliment.py:22
+msgid "Your perspective is refreshing."
+msgstr ""
+
+#: compliment/compliment.py:23
+msgid "You're an awesome friend."
+msgstr ""
+
+#: compliment/compliment.py:24
+msgid "You light up the room."
+msgstr ""
+
+#: compliment/compliment.py:25
+msgid "You deserve a hug right now."
+msgstr ""
+
+#: compliment/compliment.py:26
+msgid "You should be proud of yourself."
+msgstr ""
+
+#: compliment/compliment.py:27
+msgid "You're more helpful than you realize."
+msgstr ""
+
+#: compliment/compliment.py:28
+msgid "You have a great sense of humor."
+msgstr ""
+
+#: compliment/compliment.py:29
+msgid "You've got all the right moves!"
+msgstr ""
+
+#: compliment/compliment.py:30
+msgid "Is that your picture next to \"charming\" in the dictionary?"
+msgstr ""
+
+#: compliment/compliment.py:31
+msgid "Your kindness is a balm to all who encounter it."
+msgstr ""
+
+#: compliment/compliment.py:32
+msgid "You're all that and a super-size bag of chips."
+msgstr ""
+
+#: compliment/compliment.py:33
+msgid "On a scale from 1 to 10, you're an 11."
+msgstr ""
+
+#: compliment/compliment.py:34
+msgid "You are brave."
+msgstr ""
+
+#: compliment/compliment.py:35
+msgid "You're even more beautiful on the inside than you are on the outside."
+msgstr ""
+
+#: compliment/compliment.py:36
+msgid "You have the courage of your convictions."
+msgstr ""
+
+#: compliment/compliment.py:37
+msgid "Your eyes are breathtaking."
+msgstr ""
+
+#: compliment/compliment.py:38
+msgid "If cartoon bluebirds were real, a bunch of them would be sitting on your shoulders singing right now."
+msgstr ""
+
+#: compliment/compliment.py:41
+msgid "You are making a difference."
+msgstr ""
+
+#: compliment/compliment.py:42
+msgid "You're like sunshine on a rainy day."
+msgstr ""
+
+#: compliment/compliment.py:43
+msgid "You bring out the best in other people."
+msgstr ""
+
+#: compliment/compliment.py:44
+msgid "Your ability to recall random factoids at just the right time is impressive."
+msgstr ""
+
+#: compliment/compliment.py:45
+msgid "You're a great listener."
+msgstr ""
+
+#: compliment/compliment.py:46
+msgid "How is it that you always look great, even in sweatpants?"
+msgstr ""
+
+#: compliment/compliment.py:47
+msgid "Everything would be better if more people were like you!"
+msgstr ""
+
+#: compliment/compliment.py:48
+msgid "I bet you sweat glitter."
+msgstr ""
+
+#: compliment/compliment.py:49
+msgid "You were cool way before hipsters were cool."
+msgstr ""
+
+#: compliment/compliment.py:50
+msgid "That color is perfect on you."
+msgstr ""
+
+#: compliment/compliment.py:51
+msgid "Hanging out with you is always a blast."
+msgstr ""
+
+#: compliment/compliment.py:52
+msgid "You always know -- and say -- exactly what I need to hear when I need to hear it."
+msgstr ""
+
+#: compliment/compliment.py:53
+msgid "You smell really good."
+msgstr ""
+
+#: compliment/compliment.py:54
+msgid "You may dance like no one's watching, but everyone's watching because you're an amazing dancer!"
+msgstr ""
+
+#: compliment/compliment.py:57
+msgid "Being around you makes everything better!"
+msgstr ""
+
+#: compliment/compliment.py:58
+msgid "When you say, \"I meant to do that,\" I totally believe you."
+msgstr ""
+
+#: compliment/compliment.py:59
+msgid "When you're not afraid to be yourself is when you're most incredible."
+msgstr ""
+
+#: compliment/compliment.py:60
+msgid "Colors seem brighter when you're around."
+msgstr ""
+
+#: compliment/compliment.py:61
+msgid "You're more fun than a ball pit filled with candy. (And seriously, what could be more fun than that?)"
+msgstr ""
+
+#: compliment/compliment.py:64
+msgid "That thing you don't like about yourself is what makes you so interesting."
+msgstr ""
+
+#: compliment/compliment.py:65
+msgid "You're wonderful."
+msgstr ""
+
+#: compliment/compliment.py:66
+msgid "You have cute elbows. For reals! (You're halfway through the list. Don't stop now! You should be giving at least one awesome compliment every day!)"
+msgstr ""
+
+#: compliment/compliment.py:69
+msgid "Jokes are funnier when you tell them."
+msgstr ""
+
+#: compliment/compliment.py:70
+msgid "You're better than a triple-scoop ice cream cone. With sprinkles."
+msgstr ""
+
+#: compliment/compliment.py:71
+msgid "Your hair looks stunning."
+msgstr ""
+
+#: compliment/compliment.py:72
+msgid "You're one of a kind!"
+msgstr ""
+
+#: compliment/compliment.py:73
+msgid "You're inspiring."
+msgstr ""
+
+#: compliment/compliment.py:74
+msgid "If you were a box of crayons, you'd be the giant name-brand one with the built-in sharpener."
+msgstr ""
+
+#: compliment/compliment.py:77
+msgid "You should be thanked more often. So thank you!!"
+msgstr ""
+
+#: compliment/compliment.py:78
+msgid "Our community is better because you're in it."
+msgstr ""
+
+#: compliment/compliment.py:79
+msgid "Someone is getting through something hard right now because you've got their back."
+msgstr ""
+
+#: compliment/compliment.py:80
+msgid "You have the best ideas."
+msgstr ""
+
+#: compliment/compliment.py:81
+msgid "You always know how to find that silver lining."
+msgstr ""
+
+#: compliment/compliment.py:82
+msgid "Everyone gets knocked down sometimes, but you always get back up and keep going."
+msgstr ""
+
+#: compliment/compliment.py:83
+msgid "You're a candle in the darkness."
+msgstr ""
+
+#: compliment/compliment.py:84
+msgid "You're a great example to others."
+msgstr ""
+
+#: compliment/compliment.py:85
+msgid "Being around you is like being on a happy little vacation."
+msgstr ""
+
+#: compliment/compliment.py:86
+msgid "You always know just what to say."
+msgstr ""
+
+#: compliment/compliment.py:87
+msgid "You're always learning new things and trying to better yourself, which is awesome."
+msgstr ""
+
+#: compliment/compliment.py:88
+msgid "If someone based an Internet meme on you, it would have impeccable grammar."
+msgstr ""
+
+#: compliment/compliment.py:89
+msgid "You could survive a Zombie apocalypse."
+msgstr ""
+
+#: compliment/compliment.py:90
+msgid "You're more fun than bubble wrap."
+msgstr ""
+
+#: compliment/compliment.py:91
+msgid "When you make a mistake, you fix it."
+msgstr ""
+
+#: compliment/compliment.py:92
+msgid "Who raised you? They deserve a medal for a job well done."
+msgstr ""
+
+#: compliment/compliment.py:93
+msgid "You're great at figuring stuff out."
+msgstr ""
+
+#: compliment/compliment.py:94
+msgid "Your voice is magnificent."
+msgstr ""
+
+#: compliment/compliment.py:95
+msgid "The people you love are lucky to have you in their lives."
+msgstr ""
+
+#: compliment/compliment.py:96
+msgid "You're like a breath of fresh air."
+msgstr ""
+
+#: compliment/compliment.py:97
+msgid "You're gorgeous -- and that's the least interesting thing about you, too."
+msgstr ""
+
+#: compliment/compliment.py:98
+msgid "You're so thoughtful."
+msgstr ""
+
+#: compliment/compliment.py:99
+msgid "Your creative potential seems limitless."
+msgstr ""
+
+#: compliment/compliment.py:100
+msgid "Your name suits you to a T."
+msgstr ""
+
+#: compliment/compliment.py:101
+msgid "You're irresistible when you blush."
+msgstr ""
+
+#: compliment/compliment.py:102
+msgid "Actions speak louder than words, and yours tell an incredible story."
+msgstr ""
+
+#: compliment/compliment.py:103
+msgid "Somehow you make time stop and fly at the same time."
+msgstr ""
+
+#: compliment/compliment.py:104
+msgid "When you make up your mind about something, nothing stands in your way."
+msgstr ""
+
+#: compliment/compliment.py:105
+msgid "You seem to really know who you are."
+msgstr ""
+
+#: compliment/compliment.py:106
+msgid "Any team would be lucky to have you on it."
+msgstr ""
+
+#: compliment/compliment.py:107
+msgid "In high school I bet you were voted \"most likely to keep being awesome.\""
+msgstr ""
+
+#: compliment/compliment.py:108
+msgid "I bet you do the crossword puzzle in ink."
+msgstr ""
+
+#: compliment/compliment.py:109
+msgid "Babies and small animals probably love you."
+msgstr ""
+
+#: compliment/compliment.py:110
+msgid "If you were a scented candle they'd call it Perfectly Imperfect (and it would smell like summer)."
+msgstr ""
+
+#: compliment/compliment.py:113
+msgid "There's ordinary, and then there's you."
+msgstr ""
+
+#: compliment/compliment.py:114
+msgid "You're someone's reason to smile."
+msgstr ""
+
+#: compliment/compliment.py:115
+msgid "You're even better than a unicorn, because you're real."
+msgstr ""
+
+#: compliment/compliment.py:116
+msgid "How do you keep being so funny and making everyone laugh?"
+msgstr ""
+
+#: compliment/compliment.py:117
+msgid "You have a good head on your shoulders."
+msgstr ""
+
+#: compliment/compliment.py:118
+msgid "Has anyone ever told you that you have great posture?"
+msgstr ""
+
+#: compliment/compliment.py:119
+msgid "The way you treasure your loved ones is incredible."
+msgstr ""
+
+#: compliment/compliment.py:120
+msgid "You're really something special."
+msgstr ""
+
+#: compliment/compliment.py:121
+msgid "You're a gift to those around you."
+msgstr ""
+
+#: compliment/compliment.py:127
+#, docstring
+msgid "Compliment users because there's too many insults"
+msgstr ""
+
+#: compliment/compliment.py:150
+#, docstring
+msgid "\n"
+"        Compliment the user\n\n"
+"        `user` the user you would like to compliment\n"
+"        "
+msgstr ""
+
+#: compliment/compliment.py:160
+msgid "Hey, I appreciate the compliment! :smile:"
+msgstr ""
+
+#: compliment/compliment.py:161
+msgid "No ***YOU'RE*** awesome! :smile:"
+msgstr ""
+

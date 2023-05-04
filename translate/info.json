@@ -1,28 +1,28 @@
 {
-    "author" : [
+    "author": [
         "Aziz",
         "TrustyJAID"
     ],
-    "description" : "Add flag emojis to messages to translate to that language or translate messages by command.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users. However, this cog does pass user data to an external API for the purposes of analyzing and translating languages.",
-    "hidden" : false,
-    "install_msg" : "1. Go to Google Developers Console and log in with your Google account. (https://console.developers.google.com/)\n2. You should be prompted to create a new project (name does not matter).\n3. Click on Enable APIs and Services at the top.\n4. In the list of APIs choose or search for Cloud Translate API and click on it. Choose Enable.\n5. Click on Credentials on the left navigation bar.\n6. Click on Create Credential at the top.\n7. At the top click the link for \"API key\".\n8. No application restrictions are needed. Click Create at the bottom.\n9. You now have a key to add to `[p]translateset` Note: This cog may end up costing lots of money to use up to $20 per 1 million characters.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Add flag emojis to messages to translate to that language or translate messages by command.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users. However, this cog does pass user data to an external API for the purposes of analyzing and translating languages.",
+    "hidden": false,
+    "install_msg": "1. Go to Google Developers Console and log in with your Google account. (https://console.developers.google.com/)\n2. You should be prompted to create a new project (name does not matter).\n3. Click on Enable APIs and Services at the top.\n4. In the list of APIs choose or search for Cloud Translate API and click on it. Choose Enable.\n5. Click on Credentials on the left navigation bar.\n6. Click on Create Credential at the top.\n7. At the top click the link for \"API key\".\n8. No application restrictions are needed. Click Create at the bottom.\n9. You now have a key to add to `[p]translateset` Note: This cog may end up costing lots of money to use up to $20 per 1 million characters.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Translate",
-    "permissions" : [],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Translate messages using google translate!",
-    "tags" : [
+    "name": "Translate",
+    "permissions": [],
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Translate messages using google translate!",
+    "tags": [
         "utility",
         "translation"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

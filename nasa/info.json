@@ -1,0 +1,31 @@
+{
+    "author": [
+        "TrustyJAID"
+    ],
+    "description": "Get information from NASA's API",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "See `[p]nasa` for all available commands.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
+        3,
+        7,
+        2
+    ],
+    "name": "NASA",
+    "permissions": [
+        "embed_links"
+    ],
+    "required_cogs": {},
+    "requirements": [
+        "skyfield"
+    ],
+    "short": "Cog for getting info from NASA's API",
+    "tags": [
+        "NASA",
+        "Space"
+    ],
+    "type": "COG"
+}

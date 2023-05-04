@@ -1,17 +1,17 @@
 import asyncio
 import logging
-from typing import Optional, Mapping
+from typing import Mapping, Optional
 
 import aiohttp
 import apraw
 import discord
-from discord.ext import tasks
 from apraw.models import Submission, Subreddit
+from discord.ext import tasks
 from redbot.core import Config, checks, commands
-from redbot.core.utils import bounded_gather
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils import bounded_gather
 
-from .helpers import make_embed_from_submission, SubredditConverter
+from .helpers import SubredditConverter, make_embed_from_submission
 from .menus import BaseMenu, RedditMenu
 
 log = logging.getLogger("red.Trusty-cogs.reddit")
@@ -24,7 +24,7 @@ class Reddit(commands.Cog):
     A cog to get information from the Reddit API
     """
 
-    __version__ = "1.1.4"
+    __version__ = "1.2.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -36,7 +36,6 @@ class Reddit(commands.Cog):
         default = {"subreddits": {}}
         self.config.register_global(**default)
         self._ready: asyncio.Event = asyncio.Event()
-        self.bot.loop.create_task(self.initialize())
         self.stream_loop.start()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
@@ -58,14 +57,10 @@ class Reddit(commands.Cog):
             for sub, data in self.subreddits.items():
                 if sub not in self._streams:
                     subreddit = await self.login.subreddit(data["name"])
-                    self._streams[sub] = self.bot.loop.create_task(
-                        self._run_subreddit_stream(subreddit)
-                    )
+                    self._streams[sub] = asyncio.create_task(self._run_subreddit_stream(subreddit))
                 elif sub in self._streams and self._streams[sub].done():
                     subreddit = await self.login.subreddit(data["name"])
-                    self._streams[sub] = self.bot.loop.create_task(
-                        self._run_subreddit_stream(subreddit)
-                    )
+                    self._streams[sub] = asyncio.create_task(self._run_subreddit_stream(subreddit))
 
     @stream_loop.before_loop
     async def before_stream_loop(self):
@@ -90,8 +85,7 @@ class Reddit(commands.Cog):
             await self.initialize()
             self.stream_loop.restart()
 
-    async def initialize(self) -> None:
-        await self.bot.wait_until_red_ready()
+    async def cog_load(self) -> None:
         keys = await self.bot.get_shared_api_tokens("reddit")
         if not keys:
             return
@@ -107,10 +101,11 @@ class Reddit(commands.Cog):
             self.subreddits = await self.config.subreddits()
             self._ready.set()
         except KeyError:
-            log.error("You have not provided all the correct information I need to login to reddit.")
+            log.error(
+                "You have not provided all the correct information I need to login to reddit."
+            )
         except Exception:
             log.exception("Error logging into Reddit.")
-
 
     async def _run_subreddit_stream(self, subreddit: Subreddit) -> None:
         """
@@ -124,7 +119,7 @@ class Reddit(commands.Cog):
         except aiohttp.ContentTypeError:
             log.debug("Stream recieved incorrect data type.")
             # attempt to create the stream again.
-            self._streams[subreddit.id] = self.bot.loop.create_task(
+            self._streams[subreddit.id] = asyncio.create_task(
                 self._run_subreddit_stream(subreddit)
             )
         except Exception:
@@ -145,10 +140,12 @@ class Reddit(commands.Cog):
                 channel = self.bot.get_channel(channel_id)
                 if channel is None:
                     continue
+                if channel.guild.me.is_timed_out():
+                    continue
                 chan_perms = channel.permissions_for(channel.guild.me)
                 if not chan_perms.send_messages and not chan_perms.manage_webhooks:
                     continue
-                use_embed = True  # channel.id not in self.regular_embed_channels
+                use_embed = channel.permissions_for(channel.guild.me).embed_links
                 contents = await make_embed_from_submission(channel, subreddit, submission)
                 if not contents:
                     continue
@@ -197,10 +194,10 @@ class Reddit(commands.Cog):
             msg = "{0} from <#{1}>({1})".format(post_url, channel.id)
             log.exception(msg)
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         if self.login:
             try:
-                self.bot.loop.create_task(self.login.close())
+                await self.login.close()
                 log.debug("Closed the reddit login.")
             except Exception:
                 log.exception("Error closing the login.")
@@ -238,7 +235,7 @@ class Reddit(commands.Cog):
                 "name": subreddit.display_name,
                 "channels": [channel.id],
             }
-            self._streams[subreddit.id] = self.bot.loop.create_task(
+            self._streams[subreddit.id] = asyncio.create_task(
                 self._run_subreddit_stream(subreddit)
             )
             await self.config.subreddits.set_raw(subreddit.id, value=self.subreddits[subreddit.id])
@@ -335,7 +332,7 @@ class Reddit(commands.Cog):
         """
         Show 25 hotest posts on the desired subreddit
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         submissions = subreddit.hot()
         await BaseMenu(
             source=RedditMenu(subreddit=subreddit, submissions=submissions),
@@ -350,7 +347,7 @@ class Reddit(commands.Cog):
         """
         Show 25 newest posts on the desired subreddit
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         submissions = subreddit.new()
         await BaseMenu(
             source=RedditMenu(subreddit=subreddit, submissions=submissions),
@@ -365,7 +362,7 @@ class Reddit(commands.Cog):
         """
         Show 25 newest posts on the desired subreddit
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         submissions = subreddit.top()
         await BaseMenu(
             source=RedditMenu(subreddit=subreddit, submissions=submissions),
@@ -380,7 +377,7 @@ class Reddit(commands.Cog):
         """
         Show 25 newest posts on the desired subreddit
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         submissions = subreddit.rising()
         await BaseMenu(
             source=RedditMenu(subreddit=subreddit, submissions=submissions),
@@ -394,7 +391,7 @@ class Reddit(commands.Cog):
         """
         Pull a radom submission from the desired subreddit
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         submission = await subreddit.random()
         if submission.over_18 and not ctx.channel.is_nsfw():
             for i in range(0, 10):

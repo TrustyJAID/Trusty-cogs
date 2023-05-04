@@ -1,30 +1,32 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Show Information from the Destiny 2 API. Note: This cog requires downloading a ~160 MB manifest. You must acquire an API key from https://www.bungie.net/en/Application. Select **Create New App**. Choose **Confidential** OAuth client type. Select the scope you would like the bot to have access to. Set the redirect URL to https://localhost/. Users wishing to access commands after you have supplied the tokens will be asked to authorize their account on your app. Once they have approved it they will be granted access to use commands.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog stores User IDs linked to an external API token for the purposes of granting OAuth access and information about the external API for the user.",
-    "hidden" : false,
-    "install_msg" : "Use `[p]destiny` to see available commands. Note: This cog will download ~160 MB of data to more efficiently search for item names. You must acquire an API key from https://www.bungie.net/en/Application \n Select **Create New App** \n Choose **Confidential** OAuth client type \n Select the scope you would like the bot to have access to \n Set the redirect URL to https://localhost/. Users wishing to access commands after you have supplied the tokens will be asked to authorize their account on your app. Once they have approved it they will be granted access to use commands.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Show Information from the Destiny 2 API. Note: This cog requires downloading a ~160 MB manifest. You must acquire an API key from https://www.bungie.net/en/Application. Select **Create New App**. Choose **Confidential** OAuth client type. Select the scope you would like the bot to have access to. Set the redirect URL to https://localhost/. Users wishing to access commands after you have supplied the tokens will be asked to authorize their account on your app. Once they have approved it they will be granted access to use commands.",
+    "disabled": false,
+    "end_user_data_statement": "This cog stores User IDs linked to an external API token for the purposes of granting OAuth access and information about the external API for the user.",
+    "hidden": false,
+    "install_msg": "Use `[p]destiny` to see available commands. Note: This cog will download ~160 MB of data to more efficiently search for item names. You must acquire an API key from https://www.bungie.net/en/Application \n Select **Create New App** \n Choose **Confidential** OAuth client type \n Select the scope you would like the bot to have access to \n Set the redirect URL to https://localhost/. Users wishing to access commands after you have supplied the tokens will be asked to authorize their account on your app. Once they have approved it they will be granted access to use commands.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Destiny",
-    "permissions" : [
+    "name": "Destiny",
+    "permissions": [
         "embed_links"
     ],
-    "required_cogs" : {},
-    "requirements" : ["tabulate"],
-    "short" : "Destiny 2 information",
-    "tags" : [
+    "required_cogs": {},
+    "requirements": [
+        "tabulate"
+    ],
+    "short": "Destiny 2 information",
+    "tags": [
         "destiny",
         "gaming",
         "games"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

@@ -1,28 +1,28 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Encode messages into various types of encoding. Encoding types include: DNA, binary, Caeser cipher, hex, base 64, character, and braille.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Do `[p]encode`, `[p]decode` or `[p]help hash` to see available commands.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Encode messages into various types of encoding. Encoding types include: DNA, binary, Caeser cipher, hex, base 64, character, and braille.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Do `[p]encode`, `[p]decode` or `[p]help hash` to see available commands.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Encoding",
-    "permissions" : [],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Encode messages into various types of encoding.",
-    "tags" : [
+    "name": "Encoding",
+    "permissions": [],
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Encode messages into various types of encoding.",
+    "tags": [
         "encoding",
         "rot",
         "caeser cipher"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

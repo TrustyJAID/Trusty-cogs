@@ -1,11 +1,97 @@
+from __future__ import annotations
+
+import json
+import logging
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
+from typing import List, NamedTuple, Optional, Tuple, Union
 
+import aiohttp
+import discord
 import pytz
-from redbot.core.utils.chat_formatting import humanize_number
+from redbot.core.utils.chat_formatting import humanize_number, pagify
 from tabulate import tabulate
+
+HEADERS = {"User-Agent": f"Red-DiscordBot Trusty-cogs Runescape Cog"}
+
+log = logging.getLogger("red.trusty-cogs.runescape")
+
+
+class APIError(Exception):
+    pass
+
+
+class PrivateProfileError(APIError):
+    pass
+
+
+class PlayerID(NamedTuple):
+    id: int
+    name: str
+
+
+@dataclass
+class HiScorePlayer:
+    id: int
+    bossId: int
+    size: int
+    rank: int
+    enrage: int
+    killTimeSeconds: float
+    timeOfKill: int
+    members: List[PlayerID]
+
+    @classmethod
+    def from_json(cls, data: dict) -> HiScorePlayer:
+        members = [PlayerID(**i) for i in data.pop("members", [])]
+        return cls(members=members, **data)
+
+
+@dataclass
+class ZamorakHiScores:
+    content: List[HiScorePlayer]
+    totalElements: int
+    totalPages: int
+    first: bool
+    last: bool
+    numberOfElements: int
+    number: int
+    size: int
+    empty: bool
+    url: str = "https://secure.runescape.com/m=group_hiscores/v1//groups?groupSize={groupSize}&size={size}&bossId=1&page={page}"
+
+    @classmethod
+    def from_json(cls, data: dict) -> ZamorakHiScores:
+        content = [HiScorePlayer.from_json(i) for i in data.pop("content", [])]
+        return cls(content=content, **data)
+
+    @classmethod
+    async def get(
+        cls,
+        groupSize: int,
+        size: int,
+        page: int,
+        *,
+        session: Optional[aiohttp.ClientSession] = None,
+    ) -> ZamorakHiScores:
+        if session is None:
+            async with aiohttp.ClientSession(headers=HEADERS) as session:
+                async with session.get(
+                    cls.url.format(groupSize=groupSize, size=size, page=page)
+                ) as resp:
+                    if resp.status != 200:
+                        raise APIError
+                    data = await resp.json()
+        else:
+            async with session.get(
+                cls.url.format(groupSize=groupSize, size=size, page=page)
+            ) as resp:
+                if resp.status != 200:
+                    raise APIError
+                data = await resp.json()
+        return cls.from_json(data)
 
 
 class Skills(Enum):
@@ -87,9 +173,9 @@ class Activities:
         self.last_id: str = kwargs.get("last_id")
         self.last_timestamp = kwargs.get("last_timestamp")
         self.username: str = kwargs.get("username")
-        self.posted_activities: deque = deque(kwargs.get("posted_activities", []), 20)
+        self.posted_activities: deque = deque(kwargs.get("posted_activities", []), 40)
 
-    def to_json(self):
+    def to_json(self) -> dict:
         return {
             "channels": self.channels,
             "last_id": self.last_id,
@@ -118,49 +204,87 @@ class Skill:
         )
 
 
+@dataclass
+class PlayerDetails:
+    isSuffix: bool
+    name: str
+    title: str
+    recruiting: Optional[bool] = None
+    clan: Optional[str] = None
+    online: Optional[bool] = False
+    world: Optional[str] = None
+
+    @classmethod
+    def from_str(cls, data_str: str) -> PlayerDetails:
+        try:
+            data = json.loads(
+                data_str.replace("jQuery000000000000000_0000000000([", "").replace("]);", "")
+            )
+        except Exception:
+            log.exception("Error pulling player details")
+            raise APIError
+        return cls(**data)
+
+    @classmethod
+    async def get(
+        cls, runescape_name: str, *, session: Optional[aiohttp.ClientSession] = None
+    ) -> PlayerDetails:
+        url = f"https://secure.runescape.com/m=website-data/playerDetails.ws?names=%5B%22{runescape_name}%22%5D&callback=jQuery000000000000000_0000000000&_=0.format"
+        close_session = session is None
+        if session is None:
+            session = aiohttp.ClientSession(headers=HEADERS)
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                raise APIError
+            data = await resp.text()
+        if close_session:
+            await session.close()
+        return cls.from_str(data)
+
+
+@dataclass
 class Profile:
-    def __init__(self, **kwargs):
-        self.name = kwargs.get("name")
-        self.combatlevel = kwargs.get("combatlevel")
-        self.logged_in = kwargs.get("logged_in")
-        self.rank = kwargs.get("rank")
-        self.melee_total = kwargs.get("melee_total")
-        self.magic_total = kwargs.get("magic_total")
-        self.ranged_total = kwargs.get("ranged_total")
-        self.totalskill = kwargs.get("totalskill")
-        self.totalxp = kwargs.get("totalxp")
-        self.questsstarted = kwargs.get("questsstarted")
-        self.questscomplete = kwargs.get("questscomplete")
-        self.questsnotstarted = kwargs.get("questsnotstarted")
-        self.activities = kwargs.get("activities")
-        self.attack: Skill = kwargs.get("attack")
-        self.defence: Skill = kwargs.get("defence")
-        self.strength: Skill = kwargs.get("strength")
-        self.constitution: Skill = kwargs.get("constitution")
-        self.ranged: Skill = kwargs.get("ranged")
-        self.prayer: Skill = kwargs.get("prayer")
-        self.magic: Skill = kwargs.get("magic")
-        self.cooking: Skill = kwargs.get("cooking")
-        self.woodcutting: Skill = kwargs.get("woodcutting")
-        self.fletching: Skill = kwargs.get("fletching")
-        self.fishing: Skill = kwargs.get("fishing")
-        self.firemaking: Skill = kwargs.get("firemaking")
-        self.crafting: Skill = kwargs.get("crafting")
-        self.smithing: Skill = kwargs.get("smithing")
-        self.mining: Skill = kwargs.get("mining")
-        self.herblore: Skill = kwargs.get("herblore")
-        self.agility: Skill = kwargs.get("agility")
-        self.thieving: Skill = kwargs.get("thieving")
-        self.slayer: Skill = kwargs.get("slayer")
-        self.farming: Skill = kwargs.get("farming")
-        self.runecrafting: Skill = kwargs.get("runecrafting")
-        self.hunter: Skill = kwargs.get("hunter")
-        self.construction: Skill = kwargs.get("construction")
-        self.summoning: Skill = kwargs.get("summoning")
-        self.dungeoneering: Skill = kwargs.get("dungeoneering")
-        self.divination: Skill = kwargs.get("divination")
-        self.invention: Skill = kwargs.get("invention")
-        self.archaeology: Skill = kwargs.get("archaeology")
+    name: str
+    combatlevel: int
+    logged_in: bool
+    rank: int
+    melee_total: int
+    magic_total: int
+    ranged_total: int
+    totalskill: int
+    totalxp: int
+    questsstarted: int
+    questscomplete: int
+    questsnotstarted: int
+    activities: List[Activity]
+    attack: Skill
+    defence: Skill
+    strength: Skill
+    constitution: Skill
+    ranged: Skill
+    prayer: Skill
+    magic: Skill
+    cooking: Skill
+    woodcutting: Skill
+    fletching: Skill
+    fishing: Skill
+    firemaking: Skill
+    crafting: Skill
+    smithing: Skill
+    mining: Skill
+    herblore: Skill
+    agility: Skill
+    thieving: Skill
+    slayer: Skill
+    farming: Skill
+    runecrafting: Skill
+    hunter: Skill
+    construction: Skill
+    summoning: Skill
+    dungeoneering: Skill
+    divination: Skill
+    invention: Skill
+    archaeology: Skill
 
     def __str__(self):
         skills_list = [["Overall", self.totalskill, "{:,}".format(self.totalxp), self.rank]]
@@ -180,59 +304,81 @@ class Profile:
             skills_list.append([skill.name, level, humanize_number(xp), rank])
         return tabulate(skills_list, headers=["Skill", "Level", "Experience", "Rank"])
 
-    def to_json(self) -> dict:
-        return {
-            "name": self.name,
-            "combatlevel": self.combatlevel,
-            "logged_in": self.logged_in,
-            "rank": self.rank,
-            "melee_total": self.melee_total,
-            "magic_total": self.magic_total,
-            "ranged_total": self.ranged_total,
-            "totalskill": self.totalskill,
-            "totalxp": self.totalxp,
-            "questsstarted": self.questsstarted,
-            "questscomplete": self.questscomplete,
-            "questsnotstarted": self.questsnotstarted,
-            "activities": self.activities,
-            "attack": self.attack,
-            "defence": self.defence,
-            "strength": self.strength,
-            "constitution": self.constitution,
-            "ranged": self.ranged,
-            "prayer": self.prayer,
-            "magic": self.magic,
-            "cooking": self.cooking,
-            "woodcutting": self.woodcutting,
-            "fletching": self.fletching,
-            "fishing": self.fishing,
-            "firemaking": self.firemaking,
-            "crafting": self.crafting,
-            "smithing": self.smithing,
-            "mining": self.mining,
-            "herblore": self.herblore,
-            "agility": self.agility,
-            "thieving": self.thieving,
-            "slayer": self.slayer,
-            "farming": self.farming,
-            "runecrafting": self.runecrafting,
-            "hunter": self.hunter,
-            "construction": self.construction,
-            "summoning": self.summoning,
-            "dungeoneering": self.dungeoneering,
-            "divination": self.divination,
-            "invention": self.invention,
-            "archaeology": self.archaeology,
-        }
+    def stats_table(self) -> str:
+        table = str(self)
+        top_row_len = len(table.split("\n")[1])
+        top_row = top_row_len * "-"
+        title = f"RS3 Stats for {self.name}".center(top_row_len - 2)
+        skills = ("```css\n{top_row}\n|{title}|" "\n{top_row}\n{skills}\n{top_row}```").format(
+            top_row=top_row, title=title, skills=table
+        )
+        return skills
+
+    async def embed(self, details: Optional[PlayerDetails] = None) -> discord.Embed:
+        em = discord.Embed()
+        if details and details.isSuffix:
+            em.set_author(name="{} {}".format(self.name, details.title))
+        elif details:
+            em.set_author(name="{} {}".format(details.title, self.name))
+        else:
+            em.set_author(name=self.name)
+        activities = ""
+        for activity in self.activities:
+            activities += f"[<t:{int(activity.date.timestamp())}>] {activity.details}\n"
+
+        # em.colour = int(teams[_teams.name]["home"].replace("#", ""), 16)
+        em.set_thumbnail(
+            url="http://secure.runescape.com/m=avatar-rs/{}/chat.png".format(
+                self.name.replace(" ", "%20")
+            )
+        )
+        em.add_field(name="Combat Level", value=self.combatlevel)
+        em.add_field(name="Total Level", value=humanize_number(self.totalskill))
+        em.add_field(name="Total XP", value=humanize_number(self.totalxp))
+        quests = tabulate(
+            [[self.questsstarted, self.questsnotstarted, self.questscomplete]],
+            headers=["Started", "Not Started", "Complete"],
+        )
+        combat_xp = tabulate(
+            [
+                [
+                    humanize_number(self.magic_total),
+                    humanize_number(self.melee_total),
+                    humanize_number(self.ranged_total),
+                ]
+            ],
+            headers=["Magic", "Melee", "Ranged"],
+        )
+        em.add_field(
+            name="Combat XP Totals",
+            value=f"```\n{combat_xp}\n```",
+            inline=False,
+        )
+        em.add_field(
+            name="Quests",
+            value=f"```\n{quests}\n```",
+            inline=False,
+        )
+        if activities:
+            activities = list(pagify(activities, page_length=1024))[0]
+            em.add_field(name="Activities", value=activities)
+        if self.logged_in:
+            em.set_footer(
+                text="\N{LARGE GREEN CIRCLE} Online",
+            )
+        else:
+            em.set_footer(
+                text="\N{LARGE RED CIRCLE} Offline",
+            )
+        return em
 
     @classmethod
-    async def from_json(cls, data: dict):
-        def get_skill(skill_id):
-            for skill in data["skillvalues"]:
-                if skill["id"] == skill_id:
-                    return Skill.from_json(skill)
-
+    def from_json(cls, data: dict):
         logged_in = True if data["loggedIn"] == "true" else False
+        if "skillvalues" in data:
+            skills = {skill["id"]: Skill.from_json(skill) for skill in data["skillvalues"]}
+        else:
+            skills = {skill.value: 0 for skill in Skills}
 
         return cls(
             name=data["name"],
@@ -248,82 +394,334 @@ class Profile:
             questscomplete=data["questscomplete"],
             questsnotstarted=data["questsnotstarted"],
             activities=[Activity.from_json(i) for i in data["activities"]],
-            attack=get_skill(0),
-            defence=get_skill(1),
-            strength=get_skill(2),
-            constitution=get_skill(3),
-            ranged=get_skill(4),
-            prayer=get_skill(5),
-            magic=get_skill(6),
-            cooking=get_skill(7),
-            woodcutting=get_skill(8),
-            fletching=get_skill(9),
-            fishing=get_skill(10),
-            firemaking=get_skill(11),
-            crafting=get_skill(12),
-            smithing=get_skill(13),
-            mining=get_skill(14),
-            herblore=get_skill(15),
-            agility=get_skill(16),
-            thieving=get_skill(17),
-            slayer=get_skill(18),
-            farming=get_skill(19),
-            runecrafting=get_skill(20),
-            hunter=get_skill(21),
-            construction=get_skill(22),
-            summoning=get_skill(23),
-            dungeoneering=get_skill(24),
-            divination=get_skill(25),
-            invention=get_skill(26),
-            archaeology=get_skill(27),
+            attack=skills[0],
+            defence=skills[1],
+            strength=skills[2],
+            constitution=skills[3],
+            ranged=skills[4],
+            prayer=skills[5],
+            magic=skills[6],
+            cooking=skills[7],
+            woodcutting=skills[8],
+            fletching=skills[9],
+            fishing=skills[10],
+            firemaking=skills[11],
+            crafting=skills[12],
+            smithing=skills[13],
+            mining=skills[14],
+            herblore=skills[15],
+            agility=skills[16],
+            thieving=skills[17],
+            slayer=skills[18],
+            farming=skills[19],
+            runecrafting=skills[20],
+            hunter=skills[21],
+            construction=skills[22],
+            summoning=skills[23],
+            dungeoneering=skills[24],
+            divination=skills[25],
+            invention=skills[26],
+            archaeology=skills[27],
         )
 
     @classmethod
-    async def from_text(cls, data: str):
-        order = [
-            "Overall",
-            "Attack",
-            "Defence",
-            "Strength",
-            "Hitpoints",
-            "Ranged",
-            "Prayer",
-            "Magic",
-            "Cooking",
-            "Woodcutting",
-            "Fletching",
-            "Fishing",
-            "Firemaking",
-            "Crafting",
-            "Smithing",
-            "Mining",
-            "Herblore",
-            "Agility",
-            "Thieving",
-            "Slayer",
-            "Farming",
-            "Runecrafting",
-            "Hunter",
-            "Construction",
-            "Bounty Hunter - Hunter",
-            "Bounty Hunter - Rogues",
-            "Clue Scrolls All",
-            "Clue Scrolls Easy",
-            "Clue Scrolls Medium",
-            "Clue Scrolls Hard",
-            "Clue Scrolls Elite",
-            "Clue Scrolls Master",
-            "LMS Rank",
-        ]
-        skills_list = []
-        for line in enumerate(data.decode().split("\n")):
-            try:
-                xp = line[1].split(",")[2]
-                rank = line[1].split(",")[0]
-                level = line[1].split(",")[1]
-                skills_list.append([order[line[0]], level, xp, rank])
-            except Exception:
-                pass
-        return tabulate(
-            skills_list, headers=["Skill", "Level", "Experience", "Rank"], tablefmt="orgtbl"
+    async def get(
+        cls,
+        runescape_name: str,
+        number_of_activities: int = 5,
+        *,
+        session: Optional[aiohttp.ClientSession] = None,
+    ) -> Profile:
+        url = "https://apps.runescape.com/runemetrics/profile/profile"
+        close_session = session is None
+        params = {"user": runescape_name, "activities": number_of_activities}
+        if session is None:
+            session = aiohttp.ClientSession(headers=HEADERS)
+        async with session.get(url, params=params) as resp:
+            if resp.status != 200:
+                raise APIError
+            data = await resp.json()
+        if close_session:
+            await session.close()
+        if "error" in data:
+            if data["error"] == "PROFILE_PRIVATE":
+                raise PrivateProfileError(data["error"])
+            else:
+                raise APIError(data["error"])
+        return cls.from_json(data)
+
+
+class OSRSRank(NamedTuple):
+    name: str
+    rank: int
+    level: int
+    experience: Optional[int] = None
+
+
+@dataclass
+class OSRSProfile:
+    name: str
+    _raw_text: str
+    overall: Optional[OSRSRank] = None
+    attack: Optional[OSRSRank] = None
+    defence: Optional[OSRSRank] = None
+    strength: Optional[OSRSRank] = None
+    hitpoints: Optional[OSRSRank] = None
+    ranged: Optional[OSRSRank] = None
+    prayer: Optional[OSRSRank] = None
+    magic: Optional[OSRSRank] = None
+    cooking: Optional[OSRSRank] = None
+    woodcutting: Optional[OSRSRank] = None
+    fletching: Optional[OSRSRank] = None
+    fishing: Optional[OSRSRank] = None
+    firemaking: Optional[OSRSRank] = None
+    crafting: Optional[OSRSRank] = None
+    smithing: Optional[OSRSRank] = None
+    mining: Optional[OSRSRank] = None
+    herblore: Optional[OSRSRank] = None
+    agility: Optional[OSRSRank] = None
+    thieving: Optional[OSRSRank] = None
+    slayer: Optional[OSRSRank] = None
+    farming: Optional[OSRSRank] = None
+    runecrafting: Optional[OSRSRank] = None
+    hunter: Optional[OSRSRank] = None
+    construction: Optional[OSRSRank] = None
+
+    league_points: Optional[OSRSRank] = None
+    bounty_hunter_hunter: Optional[OSRSRank] = None
+    bounty_hunter_rogue: Optional[OSRSRank] = None
+    clue_scrolls_all: Optional[OSRSRank] = None
+    clue_scrolls_beginner: Optional[OSRSRank] = None
+    clue_scrolls_easy: Optional[OSRSRank] = None
+    clue_scrolls_medium: Optional[OSRSRank] = None
+    clue_scrolls_hard: Optional[OSRSRank] = None
+    clue_scrolls_elite: Optional[OSRSRank] = None
+    clue_scrolls_master: Optional[OSRSRank] = None
+    lms_rank: Optional[OSRSRank] = None
+    soul_wars_zeal: Optional[OSRSRank] = None
+    rofts_closed: Optional[OSRSRank] = None
+    abyssal_sire: Optional[OSRSRank] = None
+    alchemical_hydra: Optional[OSRSRank] = None
+    barrows_chests: Optional[OSRSRank] = None
+    bryophyta: Optional[OSRSRank] = None
+    callisto: Optional[OSRSRank] = None
+    cerberus: Optional[OSRSRank] = None
+    chambers_of_xeric: Optional[OSRSRank] = None
+    chambers_of_xeric_challenge: Optional[OSRSRank] = None
+    chaos_elemental: Optional[OSRSRank] = None
+    chaos_fanatic: Optional[OSRSRank] = None
+    command_zilyana: Optional[OSRSRank] = None
+    corporeal_beast: Optional[OSRSRank] = None
+    crazy_archaeologist: Optional[OSRSRank] = None
+    dagannoth_prime: Optional[OSRSRank] = None
+    dagannoth_rex: Optional[OSRSRank] = None
+    dagannot_supreme: Optional[OSRSRank] = None
+    deranged_archaeologist: Optional[OSRSRank] = None
+    general_graardor: Optional[OSRSRank] = None
+    giant_mole: Optional[OSRSRank] = None
+    grotesque_guardians: Optional[OSRSRank] = None
+    hespori: Optional[OSRSRank] = None
+    kalphite_queen: Optional[OSRSRank] = None
+    king_black_dragon: Optional[OSRSRank] = None
+    kraken: Optional[OSRSRank] = None
+    kree_arra: Optional[OSRSRank] = None
+    kril_tsutsaroth: Optional[OSRSRank] = None
+    mimic: Optional[OSRSRank] = None
+    nex: Optional[OSRSRank] = None
+    nightmare: Optional[OSRSRank] = None
+    phosanis_nightmare: Optional[OSRSRank] = None
+    obor: Optional[OSRSRank] = None
+    srachnis: Optional[OSRSRank] = None
+    scorpia: Optional[OSRSRank] = None
+    skotizo: Optional[OSRSRank] = None
+    tempoross: Optional[OSRSRank] = None
+    the_guantlet: Optional[OSRSRank] = None
+    the_corrupted_gauntlet: Optional[OSRSRank] = None
+    theatre_of_blood: Optional[OSRSRank] = None
+    theatre_of_blood_hard_mode: Optional[OSRSRank] = None
+    thermonuclear_smoke_devil: Optional[OSRSRank] = None
+    tzkal_zuk: Optional[OSRSRank] = None
+    tztok_jad: Optional[OSRSRank] = None
+    venenatis: Optional[OSRSRank] = None
+    vetion: Optional[OSRSRank] = None
+    vorkath: Optional[OSRSRank] = None
+    wintertodt: Optional[OSRSRank] = None
+    zalcano: Optional[OSRSRank] = None
+    zulrah: Optional[OSRSRank] = None
+    _ORDER: Tuple[str, ...] = (
+        "Overall",
+        "Attack",
+        "Defence",
+        "Strength",
+        "Hitpoints",
+        "Ranged",
+        "Prayer",
+        "Magic",
+        "Cooking",
+        "Woodcutting",
+        "Fletching",
+        "Fishing",
+        "Firemaking",
+        "Crafting",
+        "Smithing",
+        "Mining",
+        "Herblore",
+        "Agility",
+        "Thieving",
+        "Slayer",
+        "Farming",
+        "Runecrafting",
+        "Hunter",
+        "Construction",
+        "League Points",
+        "Bounty Hunter - Hunter",
+        "Bounty Hunter - Rogue",
+        "Clue Scrolls (all)",
+        "Clue Scrolls (beginner)",
+        "Clue Scrolls (easy)",
+        "Clue Scrolls (medium)",
+        "Clue Scrolls (hard)",
+        "Clue Scrolls (elite)",
+        "Clue Scrolls (master)",
+        "LMS - Rank",
+        "Soul Wars Zeal",
+        "Rifts closed",
+        "Abyssal Sire",
+        "Alchemical Hydra",
+        "Barrows Chests",
+        "Bryophyta",
+        "Callisto",
+        "Cerberus",
+        "Chambers of Xeric",
+        "Chambers of Xeric: Challenge Mode",
+        "Chaos Elemental",
+        "Chaos Fanatic",
+        "Commander Zilyana",
+        "Corporeal Beast",
+        "Crazy Archaeologist",
+        "Dagannoth Prime",
+        "Dagannoth Rex",
+        "Dagannoth Supreme",
+        "Deranged Archaeologist",
+        "General Graardor",
+        "Giant Mole",
+        "Grotesque Guardians",
+        "Hespori",
+        "Kalphite Queen",
+        "King Black Dragon",
+        "Kraken",
+        "Kree'Arra",
+        "K'ril Tsutsaroth",
+        "Mimic",
+        "Nex",
+        "Nightmare",
+        "Phosani's Nightmare",
+        "Obor",
+        "Sarachnis",
+        "Scorpia",
+        "Skotizo",
+        "Tempoross",
+        "The Gauntlet",
+        "The Corrupted Gauntlet",
+        "Theatre of Blood",
+        "Theatre of Blood: Hard Mode",
+        "Thermonuclear Smoke Devil",
+        "TzKal-Zuk",
+        "TzTok-Jad",
+        "Venenatis",
+        "Vet'ion",
+        "Vorkath",
+        "Wintertodt",
+        "Zalcano",
+        "Zulrah",
+    )
+
+    @classmethod
+    def from_str(cls, rsn: str, data: str) -> OSRSProfile:
+        data = data.replace(" ", "\n")
+        log.info(data)
+        final_data: List[Union[str, OSRSRank]] = [rsn, data]
+        for line_no, ranks in enumerate(data.split("\n")):
+            if line_no >= len(cls._ORDER):
+                # They added something new here so wait until we update
+                continue
+            r = [int(i) for i in ranks.split(",")]
+            if len(r) == 3:
+                final_data.append(
+                    OSRSRank(name=cls._ORDER[line_no], rank=r[0], level=r[1], experience=r[2])
+                )
+            else:
+                final_data.append(
+                    OSRSRank(name=cls._ORDER[line_no], rank=r[0], level=r[1], experience=None)
+                )
+        return cls(*final_data)
+
+    @classmethod
+    async def get(
+        cls, runescape_name: str, *, session: Optional[aiohttp.ClientSession] = None
+    ) -> OSRSProfile:
+        url = "https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws"
+        close_session = session is None
+        params = {"player": runescape_name}
+        if session is None:
+            session = aiohttp.ClientSession(headers=HEADERS)
+        async with session.get(url, params=params) as resp:
+            if resp.status != 200:
+                raise APIError
+            data = await resp.text()
+        if close_session:
+            await session.close()
+        return cls.from_str(runescape_name, data)
+
+    async def get_stats_table(self) -> str:
+        stats = await self.table_from_text(self._raw_text)
+        table = stats[0]
+        top_row_len = len(table.split("\n")[1])
+        top_row = top_row_len * "-"
+        title = f"OSRS Stats For {self.name}".center(top_row_len - 2)
+        skills = ("{top_row}\n|{title}|\n{top_row}\n" "{skills}\n{top_row}").format(
+            top_row=top_row, title=title, skills=table
         )
+        return skills
+
+    async def get_profile_table(self) -> str:
+        stats = await self.table_from_text(self._raw_text)
+        table = stats[1]
+        top_row_len = len(table.split("\n")[1])
+        top_row = top_row_len * "-"
+        title = f"OSRS Activities For {self.name}".center(top_row_len - 2)
+        skills = ("{top_row}\n|{title}|\n{top_row}\n" "{skills}\n{top_row}").format(
+            top_row=top_row, title=title, skills=table
+        )
+        return skills
+
+    @staticmethod
+    async def table_from_text(data: str) -> Tuple[str, str]:
+        skills_list = []
+        activities_list = []
+        data = data.replace(" ", "\n")
+        for line, ranks in enumerate(data.split("\n")):
+
+            if line >= len(OSRSProfile._ORDER):
+                continue
+            log.info(OSRSProfile._ORDER[line])
+            rank = [int(i) for i in ranks.split(",")]
+            if len(rank) == 3:
+                skills_list.append(
+                    [
+                        OSRSProfile._ORDER[line],
+                        rank[1],
+                        humanize_number(rank[2]),
+                        humanize_number(rank[0]),
+                    ]
+                )
+            else:
+                if rank[0] < 0:
+                    continue
+                activities_list.append(
+                    [OSRSProfile._ORDER[line], humanize_number(rank[0]), humanize_number(rank[1])]
+                )
+
+        skills = tabulate(skills_list, headers=["Skill", "Level", "Experience", "Rank"])
+        activities = tabulate(activities_list, headers=["Activity", "Rank", "Completed"])
+        return skills, activities

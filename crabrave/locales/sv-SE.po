@@ -1,0 +1,33 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/crabrave/locales/messages.pot\n"
+"X-Crowdin-File-ID: 464\n"
+"Language: sv_SE\n"
+
+#: crabrave/crabrave.py:95
+#, docstring
+msgid "Make crab rave videos\n\n"
+"        There must be exactly 1 `,` to split the message\n"
+"        "
+msgstr ""
+
+#: crabrave/crabrave.py:184
+#, docstring
+msgid "Make miku rave videos\n\n"
+"        There must be exactly 1 `,` to split the message\n"
+"        "
+msgstr ""
+

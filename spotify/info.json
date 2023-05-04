@@ -1,22 +1,30 @@
 {
-    "author" : ["TrustyJAID", "NeuroAssassin"],
-    "description" : "This cog allows you to control Spotify via OAuth through the bot on discord. Use `[p]spotify` to see available commands.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog stores OAuth tokens and refresh tokens for the purposes of interacting with the Spotify API with discord commands and reactions. This data can be deleted at any time either via revoking the authorization token on Spotify or through the `[p]mydata forgetme` command.",
-    "hidden" : false,
-    "install_msg" : "See `[p]spotify` for available commands. `[p]spotify set creds` will explain how to setup your API key so you and others can use the cog.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.3.0",
-    "min_python_version" : [
+    "author": [
+        "TrustyJAID",
+        "NeuroAssassin"
+    ],
+    "description": "This cog allows you to control Spotify via OAuth through the bot on discord. Use `[p]spotify` to see available commands.",
+    "disabled": false,
+    "end_user_data_statement": "This cog stores OAuth tokens and refresh tokens for the purposes of interacting with the Spotify API with discord commands and reactions. This data can be deleted at any time either via revoking the authorization token on Spotify or through the `[p]mydata forgetme` command.",
+    "hidden": false,
+    "install_msg": "See `[p]spotify` for available commands. `[p]spotify set creds` will explain how to setup your API key so you and others can use the cog.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         8,
         0
     ],
-    "name" : "Spotify",
-    "permissions" : [],
-    "required_cogs" : {},
-    "requirements" : ["tekore", "tabulate"],
-    "short" : "Control Spotify through Discord!",
-    "tags" : ["spotify"],
-    "type" : "COG"
+    "name": "Spotify",
+    "permissions": [],
+    "required_cogs": {},
+    "requirements": [
+        "tekore",
+        "tabulate"
+    ],
+    "short": "Control Spotify through Discord!",
+    "tags": [
+        "spotify"
+    ],
+    "type": "COG"
 }

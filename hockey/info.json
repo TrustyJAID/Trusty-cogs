@@ -1,34 +1,34 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "A cog to gather hockey scores, schedules, player data and more!",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog stores User ID's for the purposes of tracking votes in pickems.",
-    "hidden" : false,
-    "install_msg" : "Use `[p]hockey`, `[p]hockeyset` and `[p]gdc` to see what commands are available.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "A cog to gather hockey scores, schedules, player data and more!",
+    "disabled": false,
+    "end_user_data_statement": "This cog stores User ID's for the purposes of tracking votes in pickems.",
+    "hidden": false,
+    "install_msg": "Use `[p]hockey`, `[p]hockeyset` and `[p]gdc` to see what commands are available.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Hockey",
-    "permissions" : [
+    "name": "Hockey",
+    "permissions": [
         "embed_links",
         "manage_messages",
         "manage_channels"
     ],
-    "required_cogs" : {},
-    "requirements" : [
+    "required_cogs": {},
+    "requirements": [
         "pytz",
         "tabulate"
     ],
-    "short" : "Hockey commands",
-    "tags" : [
+    "short": "Hockey commands",
+    "tags": [
         "hockey",
         "nhl"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

@@ -1,29 +1,29 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Mock another user! If you need the core dev commands start the bot without the `--dev` flag and install the loaddev cog in my repo that allows you to replace `mock` with whatever you choose.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Type `[p]mock` to mock the last user to post. If you need the core dev commands start the bot without the `--dev` flag and install the dev cog in my repo allows you to replace `mock` with whatever you choose.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Mock another user! If you need the core dev commands start the bot without the `--dev` flag and install the loaddev cog in my repo that allows you to replace `mock` with whatever you choose.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Type `[p]mock` to mock the last user to post. If you need the core dev commands start the bot without the `--dev` flag and install the dev cog in my repo allows you to replace `mock` with whatever you choose.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Mock",
-    "permissions" : [
+    "name": "Mock",
+    "permissions": [
         "embed_links"
     ],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Mock another user!",
-    "tags" : [
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Mock another user!",
+    "tags": [
         "fun",
         "memes"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

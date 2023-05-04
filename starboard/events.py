@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Literal, Optional, Tuple, Union, cast
 
 import discord
@@ -33,7 +33,7 @@ class StarboardEvents:
         if message.embeds:
             em = message.embeds[0]
             if message.system_content:
-                if em.description != discord.Embed.Empty:
+                if em.description is not None:
                     em.description = "{}\n\n{}".format(message.system_content, em.description)[
                         :2048
                     ]
@@ -43,7 +43,7 @@ class StarboardEvents:
                     em.set_author(
                         name=author.display_name,
                         url=message.jump_url,
-                        icon_url=str(author.avatar_url),
+                        icon_url=author.display_avatar,
                     )
         else:
             em = discord.Embed(timestamp=message.created_at)
@@ -55,7 +55,7 @@ class StarboardEvents:
                 em.color = discord.Colour(starboard.colour)
             em.description = message.system_content
             em.set_author(
-                name=author.display_name, url=message.jump_url, icon_url=str(author.avatar_url)
+                name=author.display_name, url=message.jump_url, icon_url=author.display_avatar
             )
             if message.attachments:
                 attachment = message.attachments[0]
@@ -153,7 +153,9 @@ class StarboardEvents:
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
-        channel = guild.get_channel(payload.channel_id)
+        if guild.me.is_timed_out():
+            return
+        channel = guild.get_channel_or_thread(payload.channel_id)
 
         if guild.id not in self.starboards:
             return
@@ -289,7 +291,7 @@ class StarboardEvents:
         while True:
             total_pruned = 0
             guilds_ignored = 0
-            to_purge = datetime.utcnow() - purge
+            to_purge = datetime.now(timezone.utc) - purge
             # Prune only the last 30 days worth of data
             for guild_id, starboards in self.starboards.items():
                 guild = self.bot.get_guild(guild_id)
@@ -416,7 +418,7 @@ class StarboardEvents:
             return True
         log.debug("Editing starboard")
         count_message = f"{starboard.emoji} **#{count}**"
-        self.bot.loop.create_task(starboard_msg.edit(star_channel, count_message))
+        asyncio.create_task(starboard_msg.edit(star_channel, count_message))
         # create a task because otherwise we could wait up to an hour to open the lock.
         # This is thanks to announcement channels and published messages.
         return True

@@ -2,6 +2,10 @@ class Destiny2APIError(Exception):
     pass
 
 
+class ServersUnavailable(Destiny2APIError):
+    pass
+
+
 class Destiny2InvalidParameters(Destiny2APIError):
     pass
 

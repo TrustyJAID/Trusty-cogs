@@ -27,8 +27,8 @@ class Conversions(commands.Cog):
         self.session = aiohttp.ClientSession()
         self.coin_index: Dict[int, CoinBase] = {}
 
-    def cog_unload(self) -> None:
-        self.bot.loop.create_task(self.session.close())
+    async def cog_unload(self) -> None:
+        await self.session.close()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """

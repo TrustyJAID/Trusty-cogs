@@ -1,33 +1,33 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "A cog to grab Runescape and OSRS stats and profile information.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog may store User ID's linked with an external API name for the purposes of simplifying command usage.\nUsers may clear this saved information at any time by command.",
-    "hidden" : false,
-    "install_msg" : "Thanks for installing.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "A cog to grab Runescape and OSRS stats and profile information.",
+    "disabled": false,
+    "end_user_data_statement": "This cog may store User ID's linked with an external API name for the purposes of simplifying command usage.\nUsers may clear this saved information at any time by command.",
+    "hidden": false,
+    "install_msg": "Thanks for installing.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "runescape",
-    "permissions" : [
+    "name": "runescape",
+    "permissions": [
         "embed_links"
     ],
-    "required_cogs" : {},
-    "requirements" : [
+    "required_cogs": {},
+    "requirements": [
         "tabulate",
         "pytz"
     ],
-    "short" : "Show your Runescape stats in discord!",
-    "tags" : [
+    "short": "Show your Runescape stats in discord!",
+    "tags": [
         "runescape",
         "games",
         "osrs"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

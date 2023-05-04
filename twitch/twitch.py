@@ -7,9 +7,9 @@ from redbot.core import Config, checks, commands
 from redbot.core.commands.converter import TimedeltaConverter
 
 from .errors import TwitchError
+from .menus import BaseMenu, TwitchClipsPages, TwitchFollowersPages
 from .twitch_api import TwitchAPI
 from .twitch_models import TwitchFollower
-from .menus import BaseMenu, TwitchClipsPages, TwitchFollowersPages
 
 log = logging.getLogger("red.Trusty-cogs.Twitch")
 
@@ -22,7 +22,7 @@ class Twitch(TwitchAPI, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.7"
+    __version__ = "1.4.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -31,7 +31,7 @@ class Twitch(TwitchAPI, commands.Cog):
             "access_token": {},
             "twitch_accounts": [],
             "twitch_clips": {},
-            "version": self.__version__, # default value so that migrations are skipped on new installs
+            "version": self.__version__,  # default value so that migrations are skipped on new installs
         }
         user_defaults = {"id": "", "login": "", "display_name": ""}
         self.config.register_global(**global_defaults, force_registration=True)
@@ -143,7 +143,7 @@ class Twitch(TwitchAPI, commands.Cog):
             channel = ctx.channel
         if not channel.permissions_for(ctx.me).embed_links:
             return await ctx.send(f"I don't have embed links permission in {channel.mention}")
-        await ctx.trigger_typing()
+        await ctx.typing()
         try:
             profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
         except TwitchError as e:
@@ -201,7 +201,7 @@ class Twitch(TwitchAPI, commands.Cog):
             channel = ctx.channel
         if not channel.permissions_for(ctx.me).embed_links:
             return await ctx.send(f"I don't have embed links permission in {channel.mention}")
-        await ctx.trigger_typing()
+        await ctx.typing()
         try:
             profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
         except TwitchError as e:
@@ -211,7 +211,7 @@ class Twitch(TwitchAPI, commands.Cog):
             chan_data = {
                 "view_count": view_count,
                 "check_back": check_back.total_seconds() if check_back else None,
-                "clips": []
+                "clips": [],
             }
             if str(profile.id) not in cur_accounts:
                 try:
@@ -247,7 +247,7 @@ class Twitch(TwitchAPI, commands.Cog):
         """
         if channel is None:
             channel = ctx.channel
-        await ctx.trigger_typing()
+        await ctx.typing()
         try:
             profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
         except TwitchError as e:
@@ -293,7 +293,7 @@ class Twitch(TwitchAPI, commands.Cog):
         """
         if channel is None:
             channel = ctx.channel
-        await ctx.trigger_typing()
+        await ctx.typing()
         try:
             profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
         except TwitchError as e:
@@ -326,7 +326,7 @@ class Twitch(TwitchAPI, commands.Cog):
         """
         if channel is None:
             channel = ctx.channel
-        await ctx.trigger_typing()
+        await ctx.typing()
         try:
             profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
         except TwitchError as e:
@@ -364,7 +364,7 @@ class Twitch(TwitchAPI, commands.Cog):
         """
         Sets the twitch user info for individual users to make commands easier
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         try:
             profile = await self.get_profile_from_name(twitch_name)
         except TwitchError as e:
@@ -381,7 +381,7 @@ class Twitch(TwitchAPI, commands.Cog):
         """
         Get latest Twitch followers
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         try:
             profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
         except TwitchError as e:
@@ -406,7 +406,7 @@ class Twitch(TwitchAPI, commands.Cog):
         """
         Get latest twitch clips from a user
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         try:
             profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
         except TwitchError as e:
@@ -431,7 +431,7 @@ class Twitch(TwitchAPI, commands.Cog):
         """
         Shows basic Twitch profile information
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         try:
             profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
         except TwitchError as e:
@@ -459,6 +459,6 @@ class Twitch(TwitchAPI, commands.Cog):
         ).format(prefix=ctx.clean_prefix)
         await ctx.maybe_send_embed(msg)
 
-    def cog_unload(self):
+    async def cog_unload(self):
         if getattr(self, "loop", None):
             self.loop.cancel()

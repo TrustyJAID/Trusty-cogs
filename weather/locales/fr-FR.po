@@ -1,0 +1,184 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/weather/locales/messages.pot\n"
+"X-Crowdin-File-ID: 440\n"
+"Language: fr_FR\n"
+
+#: weather/weather.py:27
+msgid "`{units}` is not a vaild option!"
+msgstr "`{units}` n'est pas une option valide !"
+
+#: weather/weather.py:33
+#, docstring
+msgid "Get weather data from https://openweathermap.org"
+msgstr "Obtenir les données météo de https://openweathermap.org"
+
+#: weather/weather.py:72
+#, docstring
+msgid "\n"
+"        Display weather in a given location\n\n"
+"        `location` must take the form of `city, Country Code`\n"
+"        example: `[p]weather New York,US`\n"
+"        "
+msgstr "\n"
+"        Affiche la météo dans un emplacement donné\n\n"
+"        `location` doit prendre la forme de `city, Country Code`\n"
+"        exemple : `[p]weather New York,US`\n"
+"        "
+
+#: weather/weather.py:84
+#, docstring
+msgid "\n"
+"        Display weather in a given location\n\n"
+"        `zipcode` must be a valid ZIP code or `ZIP code, Country Code` (assumes US otherwise)\n"
+"        example: `[p]weather zip 20500`\n"
+"        "
+msgstr "\n"
+"        Afficher la météo dans un emplacement donné\n\n"
+"        `zipcode` doit être un code ZIP valide ou `code ZIP, Code du pays` (supposons le contraire aux États-Unis)\n"
+"        exemple : `[p]weather zip 20500`\n"
+"        "
+
+#: weather/weather.py:96
+#, docstring
+msgid "\n"
+"        Display weather in a given location\n\n"
+"        `cityid` must be a valid openweathermap city ID\n"
+"        (get list here: <https://bulk.openweathermap.org/sample/city.list.json.gz>)\n"
+"        example: `[p]weather cityid 2172797`\n"
+"        "
+msgstr "\n"
+"        Affiche la météo dans un emplacement donné\n\n"
+"        `cityid` doit être un ID de ville valide openweathermap\n"
+"        (obtenez la liste ici: <https://bulk.openweathermap.org/sample/city.list.json.gz>)\n"
+"        exemple : `[p]weather cityid 2172797`\n"
+"        "
+
+#: weather/weather.py:109
+#, docstring
+msgid "\n"
+"        Display weather in a given location\n\n"
+"        `lat` and `lon` specify a precise point on Earth using the\n"
+"        geographic coordinates specified by latitude (north-south) and longitude (east-west).\n"
+"        example: `[p]weather coordinates 35 139`\n"
+"        "
+msgstr "\n"
+"        Affiche la météo dans un emplacement donné\n\n"
+"        `lat` et `lon` spécifient un point précis sur Terre en utilisant les coordonnées géographiques\n"
+"        spécifiées par latitude (nord-sud) et longitude (est-ouest).\n"
+"        exemple : `[p]weather coordinates 35 139`\n"
+"        "
+
+#: weather/weather.py:121
+#, docstring
+msgid "Set user or guild default units"
+msgstr "Définir les unités par défaut de l'utilisateur ou de la guilde"
+
+#: weather/weather.py:128
+#, docstring
+msgid "\n"
+"        Sets the guild default weather units\n\n"
+"        `units` must be one of imperial, metric, or kelvin\n"
+"        "
+msgstr "\n"
+"        Définit les unités météo par défaut de guilde\n\n"
+"        `units` doivent être impériales, métriques ou kelvin\n"
+"        "
+
+#: weather/weather.py:135
+msgid "Server's default units set to `{units}`"
+msgstr "Les unités par défaut du serveur sont définies à `{units}`"
+
+#: weather/weather.py:140
+#, docstring
+msgid "\n"
+"        Sets the bots default weather units\n\n"
+"        `units` must be one of imperial, metric, or kelvin\n"
+"        "
+msgstr "\n"
+"        Définit les unités météo par défaut de guilde\n\n"
+"        `units` doivent être impériales, métriques ou kelvin\n"
+"        "
+
+#: weather/weather.py:146
+msgid "Bots default units set to {units}"
+msgstr "Unités par défaut définies à {units}"
+
+#: weather/weather.py:150
+#, docstring
+msgid "\n"
+"        Sets the user default weather units\n\n"
+"        `units` must be one of imperial, metric, or kelvin\n"
+"        Note: User settings override guild settings.\n"
+"        "
+msgstr "\n"
+"        Définit les unités météo par défaut de l'utilisateur\n\n"
+"        `units` doivent être l'une des unités impériales, métriques ou kelvin\n"
+"        Note : les paramètres de l'utilisateur remplacent les paramètres de guilde.\n"
+"        "
+
+#: weather/weather.py:159
+msgid "{author} default units set to `{units}`"
+msgstr "{author} unités par défaut définies à `{units}`"
+
+#: weather/weather.py:232
+msgid "🌍 **Location**"
+msgstr "🌍 **Emplacement**"
+
+#: weather/weather.py:235
+msgid "🌎 **Location**"
+msgstr "🌎 **Emplacement**"
+
+#: weather/weather.py:235
+msgid "*Unavailable*"
+msgstr "*Indisponible*"
+
+#: weather/weather.py:238
+msgid "📏 **Lat,Long**"
+msgstr "📏 **Lat, Long**"
+
+#: weather/weather.py:240
+msgid "☁ **Condition**"
+msgstr "☁ **État**"
+
+#: weather/weather.py:242
+msgid "😓 **Humidity**"
+msgstr "😓 **Humidité**"
+
+#: weather/weather.py:244
+msgid "💨 **Wind Speed**"
+msgstr "💨 **Vitesse du vent**"
+
+#: weather/weather.py:246
+msgid "🌡 **Temperature**"
+msgstr "🌡 **Température**"
+
+#: weather/weather.py:250
+msgid "🔆 **Min - Max**"
+msgstr "🔆 **Min - Max**"
+
+#: weather/weather.py:255
+msgid "🌄 **Sunrise**"
+msgstr "🌄 **Lever du soleil**"
+
+#: weather/weather.py:256
+msgid "🌇 **Sunset**"
+msgstr "🌇 **Le coucher du soleil**"
+
+#: weather/weather.py:257
+msgid "Powered by https://openweathermap.org"
+msgstr "Alimenté par https://openweathermap.org"
+

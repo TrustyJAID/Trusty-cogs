@@ -144,7 +144,7 @@ class AddImage(commands.Cog):
             return await self.bot.allowed_by_whitelist_blacklist(
                 message.author,
                 who_id=message.author.id,
-                guild_id=message.guild.id,
+                guild=message.guild,
                 role_ids=[r.id for r in author.roles],
             )
         except AttributeError:
@@ -227,7 +227,7 @@ class AddImage(commands.Cog):
         ignore_global = await self.config.guild(guild).ignore_global()
         if alias in [x["command_name"] for x in await self.config.images()] and not ignore_global:
             if channel.permissions_for(channel.guild.me).attach_files:
-                await channel.trigger_typing()
+                await channel.typing()
                 image = await self.get_image(alias)
                 async with self.config.images() as list_images:
                     list_images.remove(image)
@@ -243,7 +243,7 @@ class AddImage(commands.Cog):
 
         if alias in [x["command_name"] for x in await self.config.guild(guild).images()]:
             if channel.permissions_for(channel.guild.me).attach_files:
-                await channel.trigger_typing()
+                await channel.typing()
                 image = await self.get_image(alias, guild)
                 async with self.config.guild(guild).images() as guild_images:
                     guild_images.remove(image)
@@ -398,7 +398,7 @@ class AddImage(commands.Cog):
             await ctx.send(name + _(" is not an image for this guild!"))
             return
 
-        await channel.trigger_typing()
+        await channel.typing()
         all_imgs = await self.config.guild(guild).images()
         image = await self.get_image(name, guild)
         all_imgs.remove(image)
@@ -426,7 +426,7 @@ class AddImage(commands.Cog):
             await ctx.send(name + _(" is not a global image!"))
             return
 
-        await channel.trigger_typing()
+        await channel.typing()
         all_imgs = await self.config.images()
         image = await self.get_image(name)
         all_imgs.remove(image)

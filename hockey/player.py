@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json
+
 import logging
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,7 +11,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 from tabulate import tabulate
 
-from .constants import BASE_URL, HEADSHOT_URL, TEAMS
+from .constants import HEADSHOT_URL, TEAMS
 
 _ = Translator("Hockey", __file__)
 
@@ -139,78 +139,32 @@ FLAG_LOOKUP = {
 
 
 @dataclass
-class Player:
+class SimplePlayer:
     id: int
-    accrued_seasons: Optional[int]
-    add_names: Optional[str]
-    age_signed_waiver: Optional[int]
-    age_signel_fa: Optional[int]
-    alert: Literal["Y", "N"]
+    full_name: str
+    birth_date: Optional[str]
+    home_town: Optional[str]
+    position: Optional[Literal["L", "R", "C", "D", "G"]]
+    height: Optional[int]
+    weight: Optional[int]
     birth_city: Optional[str]
     birth_country: Optional[str]
-    birth_date: Optional[str]
     birth_state_province: Optional[str]
-    career_team_id: Optional[int]
-    central_registry_position: Optional[str]
-    club_elect_arb: Literal["Y", "N"]
-    current_team_id: Optional[int]
-    date_of_death: Optional[str]
-    dda_id: Optional[int]
-    deceased: bool
-    ep_player_id: Optional[int]
-    fa_group_after_season: Literal[None]
-    first_name: str
-    first_signed_by_team_id: Optional[int]
-    free_agent_group: Optional[str]
-    full_name: str
-    group_5_election: Literal["Y", "N"]
-    group_5_seasons_earned: Optional[int]
-    group_6_proration: Literal[None]
-    group_6_seasons_earned: Optional[int]
-    groups_earned_thru_season: Optional[int]
-    height: Optional[int]
-    hof_induction_year: Optional[int]
-    home_town: Optional[str]
-    iihf_hof_induction_year: Optional[int]
-    in_hockey_hof: bool
-    in_iihf_hof: int
-    in_top_100_all_time: int
-    in_us_hockey_hof: bool
-    is_defected: Literal["Y", "N"]
-    is_deleted: Literal["Y", "N"]
-    is_junior: Literal["Y", "N"]
-    is_retired: Literal[None]
-    is_rookie: Literal["Y", "N"]
-    is_suspended: Literal["Y", "N"]
-    last_ameteur_league_id: Optional[int]
-    last_ameteur_team_id: Optional[int]
-    last_nhl_team_id: Optional[int]
-    last_name: str
-    loan_cap_exception: Literal["Y", "N"]
-    long_term_injury: Literal["Y", "N"]
-    message: Optional[str]
-    middle_name: Optional[str]
-    nationality: Optional[str]
-    nhl_experience: Optional[int]
     on_roster: Literal["Y", "N"]
-    platform_year: Optional[int]
-    position: Optional[Literal["L", "R", "C", "D", "G"]]
-    pr_name: str
-    pr_stat: int
-    pro_year_reduction: Optional[int]
-    reenty_waivers: Optional[Literal["Y", "N"]]
-    roster_special_code: Optional[str]
-    salary_arbitration_exp: Optional[int]
-    shoots_catches: Optional[Literal["L", "R"]]
     sweater_number: Optional[int]
-    update_timestamp: str
-    us_hof_induction_year: Optional[int]
-    vet_cap_exception: Literal["Y", "N"]
-    waiver_amount: Optional[int]
-    waiver_draft: Optional[str]
-    waiver_status: Literal["Y", "N"]
-    weight: Optional[int]
-    years_pro: Optional[int]
+    last_nhl_team_id: Optional[int]
+    current_team_id: Optional[int]
+    is_rookie: Literal["Y", "N"]
+    is_retired: Literal["Y", "N"]
+    is_junior: Literal["Y", "N"]
+    is_suspended: Literal["Y", "N"]
+    deceased: bool
+    date_of_death: Optional[str]
+    nationality: Optional[str]
+    long_term_injury: Literal["Y", "N"]
+    shoots_catches: Optional[Literal["L", "R"]]
+    ep_player_id: Optional[int]
+    dda_id: Optional[int]
 
     def __str__(self) -> str:
         return "{0.full_name}, born {0.birth_date}".format(self)
@@ -359,7 +313,9 @@ class Player:
         return f"https://www.capfriendly.com/players/{self.full_name_url()}"
 
     @classmethod
-    async def from_id(cls, player_id: int, session: Optional[aiohttp.ClientSession] = None) -> Player:
+    async def from_id(
+        cls, player_id: int, session: Optional[aiohttp.ClientSession] = None
+    ) -> Player:
         url = f"https://records.nhl.com/site/api/player/{player_id}"
         if session is None:
             async with aiohttp.ClientSession() as new_session:
@@ -368,11 +324,77 @@ class Player:
         else:
             async with session.get(url) as resp:
                 data = await resp.json()
+        log.info(data)
         return cls(*data["data"][0].values())
 
 
 @dataclass
-class Skater(Player):
+class Player(SimplePlayer):
+    id: int
+    accrued_seasons: Optional[int]
+    add_names: Optional[str]
+    age_signed_waiver: Optional[int]
+    age_signel_fa: Optional[int]
+    alert: Literal["Y", "N"]
+    career_team_id: Optional[int]
+    central_registry_position: Optional[str]
+    club_elect_arb: Literal["Y", "N"]
+    current_team_id: Optional[int]
+    date_of_death: Optional[str]
+    dda_id: Optional[int]
+    deceased: bool
+    ep_player_id: Optional[int]
+    fa_group_after_season: Literal[None]
+    first_name: str
+    first_signed_by_team_id: Optional[int]
+    free_agent_group: Optional[str]
+    group_5_election: Literal["Y", "N"]
+    group_5_seasons_earned: Optional[int]
+    group_6_proration: Literal[None]
+    group_6_seasons_earned: Optional[int]
+    groups_earned_thru_season: Optional[int]
+    hof_induction_year: Optional[int]
+    iihf_hof_induction_year: Optional[int]
+    in_hockey_hof: bool
+    in_iihf_hof: int
+    in_top_100_all_time: int
+    in_us_hockey_hof: bool
+    is_defected: Literal["Y", "N"]
+    is_deleted: Literal["Y", "N"]
+    is_junior: Literal["Y", "N"]
+    is_retired: Literal[None]
+    is_rookie: Literal["Y", "N"]
+    is_suspended: Literal["Y", "N"]
+    last_ameteur_league_id: Optional[int]
+    last_ameteur_team_id: Optional[int]
+    last_nhl_team_id: Optional[int]
+    last_name: str
+    loan_cap_exception: Literal["Y", "N"]
+    long_term_injury: Literal["Y", "N"]
+    message: Optional[str]
+    middle_name: Optional[str]
+    nationality: Optional[str]
+    nhl_experience: Optional[int]
+    platform_year: Optional[int]
+    pr_name: str
+    pr_stat: int
+    pro_year_reduction: Optional[int]
+    reenty_waivers: Optional[Literal["Y", "N"]]
+    roster_special_code: Optional[str]
+    salary_arbitration_exp: Optional[int]
+    shoots_catches: Optional[Literal["L", "R"]]
+    update_timestamp: str
+    us_hof_induction_year: Optional[int]
+    vet_cap_exception: Literal["Y", "N"]
+    waiver_amount: Optional[int]
+    waiver_draft: Optional[str]
+    waiver_status: Literal["Y", "N"]
+    weight: Optional[int]
+    years_pro: Optional[int]
+
+
+@dataclass
+class Skater(SimplePlayer):
     season: str
     time_on_ice: str
     assists: int
@@ -589,7 +611,7 @@ class SkaterPlayoffs(Skater):
 
 
 @dataclass
-class Goalie(Player):
+class Goalie(SimplePlayer):
     season: str
     time_on_ice: str
     ot: int

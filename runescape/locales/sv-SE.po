@@ -1,0 +1,87 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/runescape/locales/messages.pot\n"
+"X-Crowdin-File-ID: 548\n"
+"Language: sv_SE\n"
+
+#: runescape/runescape.py:145
+#, docstring
+msgid "Search for a user account or profile"
+msgstr ""
+
+#: runescape/runescape.py:150
+#, docstring
+msgid "Search for OSRS highscores"
+msgstr ""
+
+#: runescape/runescape.py:155 runescape/runescape.py:182
+#, docstring
+msgid "Look for something on the runescape Wiki."
+msgstr ""
+
+#: runescape/runescape.py:209
+#, docstring
+msgid "Display a players stats in oldschool Runescape."
+msgstr ""
+
+#: runescape/runescape.py:228 runescape/runescape.py:323
+#, docstring
+msgid "\n"
+"        Set your runescape name for easer commands.\n\n"
+"        Use this command without a name to clear your settings.\n"
+"        "
+msgstr ""
+
+#: runescape/runescape.py:242
+#, docstring
+msgid "\n"
+"        Set various runescape cog settings\n"
+"        "
+msgstr ""
+
+#: runescape/runescape.py:252
+#, docstring
+msgid "\n"
+"        Set a channel for automatic RuneMetrics updates\n\n"
+"        `<runescape_name>` The Runescape Name of the account you want to follow\n"
+"        `<channel>` The channel where updates should be posted\n"
+"        "
+msgstr ""
+
+#: runescape/runescape.py:284
+#, docstring
+msgid "\n"
+"        Remove a channel from automatic RuneMetrics updates\n\n"
+"        `<runescape_name>` The Runescape Name of the account you are following\n"
+"        `<channel>` The channel where updates should stop being posted\n"
+"        "
+msgstr ""
+
+#: runescape/runescape.py:395
+#, docstring
+msgid "Display a players profile in Runescape"
+msgstr ""
+
+#: runescape/runescape.py:414
+#, docstring
+msgid "Display a players stats in Runescape"
+msgstr ""
+
+#: runescape/runescape.py:431
+#, docstring
+msgid "Show Runescapes Daily, Weekly, and Monthly reset times."
+msgstr ""
+

@@ -25,14 +25,13 @@ class LoadDev(commands.Cog):
             replace_mock=None,
             auto_load_dev=False,
         )
-        self.bot.loop.create_task(self.initialize())
 
-    def cog_unload(self):
+    async def cog_unload(self):
         if not self.bot._cli_flags.dev:
             # only remove the dev cog if the dev cli flag is not set
-            self.bot.remove_cog("Dev")
+            await self.bot.remove_cog("Dev")
 
-    async def initialize(self):
+    async def cog_load(self):
         replace_mock = await self.config.replace_mock()
         if await self.config.auto_load_dev():
             dev = Dev()
@@ -43,8 +42,8 @@ class LoadDev(commands.Cog):
                         command.name = replace_mock
                         dev.all_commands[replace_mock] = command
                         log.debug("Replaced Mock command")
-            self.bot.remove_cog("Dev")
-            self.bot.add_cog(dev)
+            await self.bot.remove_cog("Dev")
+            await self.bot.add_cog(dev)
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -116,9 +115,9 @@ class LoadDev(commands.Cog):
                     command.name = replace_mock
                     dev.all_commands[replace_mock] = command
                     log.debug(command.name)
-        self.bot.remove_cog("Dev")
+        await self.bot.remove_cog("Dev")
         # remove currently existing dev cog if it's loaded
-        self.bot.add_cog(dev)
+        await self.bot.add_cog(dev)
         await ctx.send(_("The following package was loaded: `{pack}`").format(pack="dev"))
 
     @commands.command(name="unloaddev")
@@ -127,5 +126,5 @@ class LoadDev(commands.Cog):
         """
         Unload Dev
         """
-        self.bot.remove_cog("Dev")
+        await self.bot.remove_cog("Dev")
         await ctx.send(_("The following package was unloaded: `{pack}`").format(pack="dev"))

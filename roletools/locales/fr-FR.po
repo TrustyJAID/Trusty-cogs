@@ -1,0 +1,1444 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-19 19:26+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/roletools/locales/messages.pot\n"
+"X-Crowdin-File-ID: 632\n"
+"Language: fr_FR\n"
+
+#: roletools/abc.py:50
+#, docstring
+msgid "\n"
+"        Commands for creating custom role settings\n"
+"        "
+msgstr ""
+
+#: roletools/buttons.py:54 roletools/buttons.py:67
+msgid "Button Role"
+msgstr ""
+
+#: roletools/buttons.py:56
+msgid "I have given you the {role} role."
+msgstr ""
+
+#: roletools/buttons.py:69
+msgid "I have removed the {role} role from you."
+msgstr ""
+
+#: roletools/buttons.py:96
+msgid "Button with name `{name}` does not seem to exist."
+msgstr ""
+
+#: roletools/buttons.py:136
+#, docstring
+msgid "\n"
+"        Setup role buttons\n"
+"        "
+msgstr ""
+
+#: roletools/buttons.py:150
+#, docstring
+msgid "\n"
+"        Create a role button\n\n"
+"        `<name>` - The name of the button for use later in setup.\n"
+"        `<role>` - The role this button will assign or remove.\n"
+"        `[label]` - The optional label for the button.\n"
+"        `[emoji]` - The optional emoji used in the button.\n"
+"        `[style]` - The background button style. Must be one of the following:\n"
+"        - `primary`\n"
+"        - `secondary`\n"
+"        - `success`\n"
+"        - `danger`\n"
+"        - `blurple`\n"
+"        - `grey`\n"
+"        - `green`\n"
+"        - `red`\n\n"
+"        Note: If no label and no emoji are provided the roles name will be used instead.\n"
+"        This name will not update if the role name is changed.\n"
+"        "
+msgstr ""
+
+#: roletools/buttons.py:171
+msgid "There cannot be a space in the name of a button."
+msgstr ""
+
+#: roletools/buttons.py:230
+#, docstring
+msgid "\n"
+"        Delete a saved button.\n\n"
+"        `<name>` - the name of the button you want to delete.\n"
+"        "
+msgstr ""
+
+#: roletools/buttons.py:242
+msgid "Button `{name}` has been deleted."
+msgstr ""
+
+#: roletools/buttons.py:245
+msgid "Button `{name}` doesn't appear to exist."
+msgstr ""
+
+#: roletools/buttons.py:252
+#, docstring
+msgid "\n"
+"        View current buttons setup for role assign in this server.\n"
+"        "
+msgstr ""
+
+#: roletools/buttons.py:256
+msgid "There are no button roles in this server."
+msgstr ""
+
+#: roletools/buttons.py:267
+msgid "Button Roles in {guild}\n"
+msgstr ""
+
+#: roletools/buttons.py:273
+msgid "**Name:** {name}\n"
+"**Role:** {role}\n"
+"**Label:** {label}\n"
+"**Style:** {style}\n"
+"**Emoji:** {emoji}\n"
+msgstr ""
+
+#: roletools/buttons.py:278 roletools/select.py:554
+msgid "Missing Role"
+msgstr ""
+
+#: roletools/buttons.py:295
+msgid "[Button Message]({message})\n"
+msgstr ""
+
+#: roletools/converter.py:27
+msgid "{} doesn't look like a valid user ID."
+msgstr ""
+
+#: roletools/converter.py:37 roletools/converter.py:88
+msgid "I require manage roles permission to use this command."
+msgstr ""
+
+#: roletools/converter.py:49 roletools/converter.py:105
+msgid "The {role} role is a bot integration role and cannot be assigned or removed."
+msgstr ""
+
+#: roletools/converter.py:56 roletools/converter.py:112
+msgid "The {role} role is an integration role and cannot be assigned or removed."
+msgstr ""
+
+#: roletools/converter.py:62 roletools/converter.py:118
+msgid "The {role} role is a premium subscriber role and can only be assigned or removed by Nitro boosting the server."
+msgstr ""
+
+#: roletools/converter.py:69 roletools/converter.py:125
+msgid "The {role} role is higher than my highest role in the discord hierarchy."
+msgstr ""
+
+#: roletools/converter.py:75
+msgid "The {role} role is higher than your highest role in the discord hierarchy."
+msgstr ""
+
+#: roletools/converter.py:139
+msgid "Role Emoji must be a role followed by an emoji separated by either `;`, `,`, `|`, or `-`."
+msgstr ""
+
+#: roletools/converter.py:154
+msgid "That does not look like a valid emoji."
+msgstr ""
+
+#: roletools/converter.py:171
+msgid "`{argument}` is not an available Style. Choose one from {styles}"
+msgstr ""
+
+#: roletools/events.py:54 roletools/events.py:84
+msgid "Reaction Role"
+msgstr ""
+
+#: roletools/events.py:290
+msgid "Inclusive Roles"
+msgstr ""
+
+#: roletools/events.py:322
+msgid "Exclusive Roles"
+msgstr ""
+
+#: roletools/events.py:407
+msgid "Automatic Roles"
+msgstr ""
+
+#: roletools/events.py:441
+msgid "Sticky Roles"
+msgstr ""
+
+#: roletools/exclusive.py:22
+#, docstring
+msgid "\n"
+"        Set role exclusions\n"
+"        "
+msgstr ""
+
+#: roletools/exclusive.py:34
+#, docstring
+msgid "\n"
+"        Add role exclusion (This will remove if the designated role is acquired\n"
+"        if the included roles are not selfremovable they will not be removed\n"
+"        and the designated role will not be given)\n\n"
+"        `<role>` This is the role a user may acquire you want to set exclusions for.\n"
+"        `<exclude>` The role(s) you wish to have removed when a user gains the `<role>`\n\n"
+"        Note: This will only work for reaction roles and automatic roles from this cog.\n"
+"        "
+msgstr ""
+
+#: roletools/exclusive.py:60 roletools/exclusive.py:96
+msgid "You cannot exclude a role that is already considered inclusive."
+msgstr ""
+
+#: roletools/exclusive.py:68 roletools/exclusive.py:139
+msgid "The {role} role will now remove the following roles if it is acquired through roletools.\n"
+"{excluded_roles}."
+msgstr ""
+
+#: roletools/exclusive.py:77
+#, docstring
+msgid "\n"
+"        Allow setting roles mutually exclusive to eachother\n\n"
+"        This is equivalent to individually setting each roles exclusive roles to another\n"
+"        set of roles.\n\n"
+"        `[role...]` The roles you want to set as mutually exclusive.\n"
+"        "
+msgstr ""
+
+#: roletools/exclusive.py:102
+msgid "The following roles are now mutually exclusive to eachother:\n"
+"{roles}"
+msgstr ""
+
+#: roletools/exclusive.py:115
+#, docstring
+msgid "\n"
+"        Remove role exclusion\n\n"
+"        `<role>` This is the role a user may acquire you want to set exclusions for.\n"
+"        `<exclude>` The role(s) currently excluded you no longer wish to have excluded\n"
+"        "
+msgstr ""
+
+#: roletools/exclusive.py:145
+msgid "Role {role} will not have any excluded roles."
+msgstr ""
+
+#: roletools/inclusive.py:22
+#, docstring
+msgid "\n"
+"        Set role inclusion\n"
+"        "
+msgstr ""
+
+#: roletools/inclusive.py:34
+#, docstring
+msgid "\n"
+"        Add role inclusion (This will add roles if the designated role is acquired\n"
+"        if the designated role is removed the included roles will also be removed\n"
+"        if the included roles are set to selfremovable)\n\n"
+"        `<role>` This is the role a user may acquire you want to set exclusions for.\n"
+"        `<include>` The role(s) you wish to have added when a user gains the `<role>`\n\n"
+"        Note: This will only work for reaction roles and automatic roles from this cog.\n"
+"        "
+msgstr ""
+
+#: roletools/inclusive.py:58
+msgid "You cannot include a role that is already considered exclusive."
+msgstr ""
+
+#: roletools/inclusive.py:66 roletools/inclusive.py:137
+msgid "The {role} role will now add the following roles if it is acquired through roletools.\n"
+"{included_roles}."
+msgstr ""
+
+#: roletools/inclusive.py:75
+#, docstring
+msgid "\n"
+"        Allow setting roles mutually inclusive to eachother\n\n"
+"        This is equivalent to individually setting each roles inclusive roles to another\n"
+"        set of roles.\n\n"
+"        `[role...]` The roles you want to set as mutually inclusive.\n"
+"        "
+msgstr ""
+
+#: roletools/inclusive.py:94
+msgid "You cannot exclude a role that is already considered exclusive."
+msgstr ""
+
+#: roletools/inclusive.py:100
+msgid "The following roles are now mutually inclusive to eachother:\n"
+"{roles}"
+msgstr ""
+
+#: roletools/inclusive.py:113
+#, docstring
+msgid "\n"
+"        Remove role inclusion\n\n"
+"        `<role>` This is the role a user may acquire you want to set exclusions for.\n"
+"        `<include>` The role(s) currently inclusive you no longer wish to have included\n"
+"        "
+msgstr ""
+
+#: roletools/inclusive.py:143
+msgid "The {role} role will no longer have included roles."
+msgstr ""
+
+#: roletools/menus.py:129
+msgid "Button Role Info Continued"
+msgstr ""
+
+#: roletools/menus.py:157
+msgid "Select Option Info Continued"
+msgstr ""
+
+#: roletools/menus.py:185
+msgid "Select Menu Info Continued"
+msgstr ""
+
+#: roletools/menus.py:198
+msgid "Select a role"
+msgstr ""
+
+#: roletools/menus.py:233
+msgid "{role}\n"
+"```md\n"
+"# ID:           {role_id}\n"
+"Colour          {colour}\n"
+"# RoleTools settings\n"
+"Sticky          {sticky}\n"
+"Auto            {auto}\n"
+"Selfassignable  {selfassign}\n"
+"Selfremovable   {selfrem}\n"
+"# Core Bot settings\n"
+"Mod             {mod}\n"
+"Admin           {admin}\n\n"
+"```"
+msgstr ""
+
+#: roletools/menus.py:259
+msgid "**Cost:** {cost} {currency_name}\n"
+msgstr ""
+
+#: roletools/menus.py:263
+msgid "**Buttons:** {button_names}"
+msgstr ""
+
+#: roletools/menus.py:265
+msgid "**Permissions:** {permissions}\n"
+msgstr ""
+
+#: roletools/menus.py:269
+msgid "Bot Role: {bot}"
+msgstr ""
+
+#: roletools/menus.py:271
+msgid "**Premium Role:** True\n"
+msgstr ""
+
+#: roletools/menus.py:273
+msgid "**Managed Role:** True\n"
+msgstr ""
+
+#: roletools/menus.py:275
+msgid "**Inclusive with:** {inclusive}\n"
+msgstr ""
+
+#: roletools/menus.py:279
+msgid "**Exclusive to:** {inclusive}\n"
+msgstr ""
+
+#: roletools/menus.py:283
+msgid "**Requires:** {inclusive}\n"
+msgstr ""
+
+#: roletools/menus.py:287
+msgid "**Reaction Roles**\n"
+msgstr ""
+
+#: roletools/menus.py:293 roletools/reactions.py:133
+msgid "Emoji from another server"
+msgstr ""
+
+#: roletools/menus.py:295
+msgid "{emoji} on [message]({link})\n"
+msgstr ""
+
+#: roletools/menus.py:299
+msgid "{settings}\n"
+"Please see {command} to see full details"
+msgstr ""
+
+#: roletools/menus.py:310
+msgid "Role settings for {role} (continued)"
+msgstr ""
+
+#: roletools/menus.py:436
+msgid "You are not authorized to interact with this."
+msgstr ""
+
+#: roletools/messages.py:23
+#, docstring
+msgid "Commands for sending/editing messages for roletools"
+msgstr ""
+
+#: roletools/messages.py:36
+#, docstring
+msgid "\n"
+"        Send a select menu to a specified channel for role assignment\n\n"
+"        `<channel>` - the channel to send the button role buttons to.\n"
+"        `[buttons]...` - The names of the buttons you want included in the\n"
+"        `[menus]...` - The names of the select menus you want included in the\n"
+"        message up to a maximum of 5.\n"
+"        `<message>` - The message to be included with the select menu.\n\n"
+"        Note: There is a maximum of 25 slots available on one message. Each menu\n"
+"        uses up 5 slots while each button uses up 1 slot.\n"
+"        "
+msgstr ""
+
+#: roletools/messages.py:66 roletools/messages.py:132
+#: roletools/messages.py:187 roletools/messages.py:234
+msgid "You need to specify at least one menu setup previously."
+msgstr ""
+
+#: roletools/messages.py:88 roletools/messages.py:201
+#: roletools/messages.py:290
+msgid "Message sent."
+msgstr ""
+
+#: roletools/messages.py:98
+#, docstring
+msgid "\n"
+"        Edit a bots message to include Role Buttons\n\n"
+"        `<message>` - The existing message to add role buttons to. Must be a bots message.\n"
+"        `[buttons]...` - The names of the buttons you want to include up to a maximum of 25.\n"
+"        `[menus]...` - The names of the select menus you want to include up to a maximum of 5.\n\n"
+"        Note: There is a maximum of 25 slots available on one message. Each menu\n"
+"        uses up 5 slots while each button uses up 1 slot.\n"
+"        "
+msgstr ""
+
+#: roletools/messages.py:113 roletools/messages.py:221
+#: roletools/messages.py:310 roletools/reactions.py:187
+#: roletools/reactions.py:250 roletools/reactions.py:335
+msgid "That message could not be found."
+msgstr ""
+
+#: roletools/messages.py:128 roletools/messages.py:230
+#: roletools/messages.py:320
+msgid "I cannot edit someone elses message to include buttons."
+msgstr ""
+
+#: roletools/messages.py:156 roletools/messages.py:250
+#: roletools/messages.py:335
+msgid "Message edited."
+msgstr ""
+
+#: roletools/messages.py:167
+#, docstring
+msgid "\n"
+"        Send a select menu to a specified channel for role assignment\n\n"
+"        `<channel>` - the channel to send the button role buttons to.\n"
+"        `[menus]...` - The names of the select menus you want included in the\n"
+"        message up to a maximum of 5.\n"
+"        `<message>` - The message to be included with the select menu.\n"
+"        "
+msgstr ""
+
+#: roletools/messages.py:210
+#, docstring
+msgid "\n"
+"        Edit a bots message to include Role Buttons\n\n"
+"        `<message>` - The existing message to add role buttons to. Must be a bots message.\n"
+"        `[menus]...` - The names of the select menus you want to include up to a maximum of 5.\n"
+"        "
+msgstr ""
+
+#: roletools/messages.py:261
+#, docstring
+msgid "\n"
+"        Send buttons to a specified channel with optional message.\n\n"
+"        `<channel>` - the channel to send the button role buttons to.\n"
+"        `[buttons]...` - The names of the buttons you want included in the\n"
+"        message up to a maximum of 25.\n"
+"        `<message>` - The message to be included with the buttons.\n"
+"        "
+msgstr ""
+
+#: roletools/messages.py:299
+#, docstring
+msgid "\n"
+"        Edit a bots message to include Role Buttons\n\n"
+"        `<message>` - The existing message to add role buttons to. Must be a bots message.\n"
+"        `[buttons]...` - The names of the buttons you want to include up to a maximum of 25.\n"
+"        "
+msgstr ""
+
+#: roletools/reactions.py:29
+#, docstring
+msgid "\n"
+"        Cleanup old/missing reaction roles and settings.\n\n"
+"        Note: This will also clear out reaction roles if the bot is just\n"
+"        missing permissions to see the reactions.\n"
+"        "
+msgstr ""
+
+#: roletools/reactions.py:65 roletools/reactions.py:114
+msgid "I am finished deleting old settings."
+msgstr ""
+
+#: roletools/reactions.py:72
+#, docstring
+msgid "\n"
+"        Cleanup old/missing reaction roles and settings on the bot.\n\n"
+"        Note: This will also clear out reaction roles if the bot is just\n"
+"        missing permissions to see the reactions.\n"
+"        "
+msgstr ""
+
+#: roletools/reactions.py:120
+#, docstring
+msgid "\n"
+"        View current bound roles in the server\n"
+"        "
+msgstr ""
+
+#: roletools/reactions.py:124
+msgid "There are no bound roles in this server."
+msgstr ""
+
+#: roletools/reactions.py:127
+msgid "Reaction Roles in {guild}\n"
+msgstr ""
+
+#: roletools/reactions.py:144
+msgid "{emoji} - {role} [Reaction Message]({message})\n"
+msgstr ""
+
+#: roletools/reactions.py:145 roletools/reactions.py:147
+msgid "None"
+msgstr ""
+
+#: roletools/reactions.py:170
+#, docstring
+msgid "\n"
+"        Clear the reactions for reaction roles. This will remove\n"
+"        all reactions and then re-apply the bots reaction for you.\n\n"
+"        `<message>` The message you want to clear reactions on.\n"
+"        `[emojis...]` Optional emojis you want to specifically remove.\n"
+"        If no emojis are provided this will clear all the reaction role\n"
+"        emojis the bot has for the message provided.\n\n"
+"        Note: This will only clear reactions which have a corresponding\n"
+"        reaction role on it.\n"
+"        "
+msgstr ""
+
+#: roletools/reactions.py:191
+msgid "I require manage messages in order to clear other people's reactions."
+msgstr ""
+
+#: roletools/reactions.py:211
+msgid "There was an error clearing reactions on that message."
+msgstr ""
+
+#: roletools/reactions.py:225
+msgid "Finished clearing reactions on that message."
+msgstr ""
+
+#: roletools/reactions.py:237
+#, docstring
+msgid "\n"
+"        Create a reaction role\n\n"
+"        `<message>` can be the channel_id-message_id pair\n"
+"        from copying message ID while holding SHIFT or a message link\n"
+"        `<emoji>` The emoji you want people to react with to get the role.\n"
+"        `<role>` The role you want people to receive for reacting.\n"
+"        "
+msgstr ""
+
+#: roletools/reactions.py:254 roletools/reactions.py:416
+msgid "You cannot add a Reaction Role to a message not in this guild."
+msgstr ""
+
+#: roletools/reactions.py:274
+msgid "Created the reaction role {role} to {emoji} on {message}"
+msgstr ""
+
+#: roletools/reactions.py:280
+msgid "I couldn't add the emoji to the message. Please make sure to add the emoji to the message for this to work."
+msgstr ""
+
+#: roletools/reactions.py:286
+msgid "{role} is not self assignable. Would you liked to make it self assignable and self removeable?"
+msgstr ""
+
+#: roletools/reactions.py:297 roletools/reactions.py:498
+msgid "Okay I won't automatically make {role} self assignable."
+msgstr ""
+
+#: roletools/reactions.py:306
+msgid "{role} has been made self assignable and self removeable."
+msgstr ""
+
+#: roletools/reactions.py:320
+#, docstring
+msgid "\n"
+"        Remove a reaction role\n\n"
+"        `<message>` can be the channel_id-message_id pair\n"
+"        from copying message ID while holding SHIFT or a message link\n"
+"        `<emoji>` The emoji you want people to react with to get the role.\n"
+"        `<role>` The role you want people to receive for reacting.\n\n"
+"        Note: This will not remove the emoji reactions on the message.\n"
+"        "
+msgstr ""
+
+#: roletools/reactions.py:339
+msgid "You cannot remove a Reaction Role from a message not in this guild."
+msgstr ""
+
+#: roletools/reactions.py:343
+msgid "There are no roletools settings on this server."
+msgstr ""
+
+#: roletools/reactions.py:347
+msgid "There are no reaction roles setup for this guild."
+msgstr ""
+
+#: roletools/reactions.py:383
+msgid "Removed role reaction on {role} to {emoji} on {message}"
+msgstr ""
+
+#: roletools/reactions.py:388
+msgid "I could not find a reaction role on that message or for that role/emoji combination."
+msgstr ""
+
+#: roletools/reactions.py:401
+#, docstring
+msgid "\n"
+"        Create multiple roles reactions for a single message\n\n"
+"        `<message>` can be the channel_id-message_id pair\n"
+"        from copying message ID while holding SHIFT or a message link\n"
+"        `[role_emoji...]` Must be a role-emoji pair separated by either `;`, `,`, `|`, or `-`.\n\n"
+"        Note: Any spaces will be considered a new set of role-emoji pairs, if you\n"
+"        want to specify a role with a space in it without pinging it enclose\n"
+"        the full role-emoji pair in quotes.\n\n"
+"        e.g. `[p]roletools bulkreact 461417772115558410-821105109097644052 @member-:smile:`\n"
+"        `[p]roletools bulkreact 461417772115558410-821105109097644052 \"Super Member-:frown:\"`\n"
+"        "
+msgstr ""
+
+#: roletools/reactions.py:450
+msgid "__The following Reaction Roles were created__\n"
+msgstr ""
+
+#: roletools/reactions.py:463 roletools/reactions.py:481
+msgid "{role} - {emoji} on {message}\n"
+msgstr ""
+
+#: roletools/reactions.py:470
+msgid "I couldn't add an emoji to the message. Please make sure to add the missing emojis to the message for this to work."
+msgstr ""
+
+#: roletools/reactions.py:476
+msgid "__The following Reaction Roles could not be created__\n"
+msgstr ""
+
+#: roletools/reactions.py:487
+msgid "Some roles are not self assignable. Would you liked to make them self assignable and self removeable?"
+msgstr ""
+
+#: roletools/reactions.py:508
+msgid "{roles} have been made self assignable and self removeable."
+msgstr ""
+
+#: roletools/requires.py:24
+#, docstring
+msgid "\n"
+"        Set role requirements\n"
+"        "
+msgstr ""
+
+#: roletools/requires.py:36
+#, docstring
+msgid "\n"
+"        Add role requirements\n\n"
+"        `<role>` This is the role a user may acquire you want to set requirements for.\n"
+"        `<requires>` The role(s) the user requires before being allowed to gain this role.\n\n"
+"        Note: This will only work for reaction roles from this cog.\n"
+"        "
+msgstr ""
+
+#: roletools/requires.py:61 roletools/requires.py:101
+msgid "The {role} role will now only be given if the following roles are already owned.\n"
+"{included_roles}."
+msgstr ""
+
+#: roletools/requires.py:75
+#, docstring
+msgid "\n"
+"        Remove role requirements\n\n"
+"        `<role>` This is the role a user may acquire you want to set requirements for.\n"
+"        `<requires>` The role(s) you wish to have added when a user gains the `<role>`\n\n"
+"        Note: This will only work for reaction roles from this cog.\n"
+"        "
+msgstr ""
+
+#: roletools/requires.py:107
+msgid "The {role} role will no longer require any other roles to be added."
+msgstr ""
+
+#: roletools/roletools.py:59
+#, docstring
+msgid "\n"
+"    Role related tools for moderation\n"
+"    "
+msgstr ""
+
+#: roletools/roletools.py:200
+#, docstring
+msgid "\n"
+"        Add or remove a defined selfrole\n"
+"        "
+msgstr ""
+
+#: roletools/roletools.py:231
+#, docstring
+msgid "\n"
+"        Give yourself a role\n\n"
+"        `<role>` The role you want to give yourself\n"
+"        "
+msgstr ""
+
+#: roletools/roletools.py:248
+msgid "The {role} role is not currently selfassignable."
+msgstr ""
+
+#: roletools/roletools.py:262
+msgid "I cannot grant you the {role} role because you are missing a required role."
+msgstr ""
+
+#: roletools/roletools.py:271
+msgid "You do not have enough {currency_name} to acquire this role. You need {cost} {currency_name}."
+msgstr ""
+
+#: roletools/roletools.py:277 roletools/roletools.py:303
+msgid "Selfrole command."
+msgstr ""
+
+#: roletools/roletools.py:278
+msgid "You have been given the {role} role."
+msgstr ""
+
+#: roletools/roletools.py:283
+#, docstring
+msgid "\n"
+"        Remove a role from yourself\n\n"
+"        `<role>` The role you want to remove.\n"
+"        "
+msgstr ""
+
+#: roletools/roletools.py:300
+msgid "The {role} role is not currently self removable."
+msgstr ""
+
+#: roletools/roletools.py:304
+msgid "The {role} role has been removed from you."
+msgstr ""
+
+#: roletools/roletools.py:318
+#, docstring
+msgid "\n"
+"        Gives a role to designated members.\n\n"
+"        `<role>` The role you want to give.\n"
+"        `[who...]` Who you want to give the role to. This can include any of the following:```diff\n"
+"        + Member\n"
+"            A specified member of the server.\n"
+"        + Role\n"
+"            People who already have a specified role.\n"
+"        + TextChannel\n"
+"            People who have access to see the channel provided.\n"
+"        Or one of the following:\n"
+"        + everyone - everyone in the server.\n"
+"        + here     - everyone who appears online in the server.\n"
+"        + bots     - all the bots in the server.\n"
+"        + humans   - all the humans in the server.\n"
+"        ```\n"
+"        **Note:** This runs through exclusive and inclusive role checks\n"
+"        which may cause unintended roles to be removed/applied.\n\n"
+"        **This command is on a cooldown of 10 seconds per member who receives\n"
+"        a role up to a maximum of 1 hour.**\n"
+"        "
+msgstr ""
+
+#: roletools/roletools.py:363
+msgid "`{who}` cannot have roles assigned to them."
+msgstr ""
+
+#: roletools/roletools.py:395
+msgid "Roletools Giverole command"
+msgstr ""
+
+#: roletools/roletools.py:401
+msgid "Added {role} to {added}."
+msgstr ""
+
+#: roletools/roletools.py:415
+#, docstring
+msgid "\n"
+"        Removes a role from the designated members.\n\n"
+"        `<role>` The role you want to give.\n"
+"        `[who...]` Who you want to give the role to. This can include any of the following:```diff\n"
+"        + Member\n"
+"            A specified member of the server.\n"
+"        + Role\n"
+"            People who already have a specified role.\n"
+"        + TextChannel\n"
+"            People who have access to see the channel provided.\n"
+"        Or one of the following:\n"
+"        + everyone - everyone in the server.\n"
+"        + here     - everyone who appears online in the server.\n"
+"        + bots     - all the bots in the server.\n"
+"        + humans   - all the humans in the server.\n"
+"        ```\n"
+"        **Note:** This runs through exclusive and inclusive role checks\n"
+"        which may cause unintended roles to be removed/applied.\n\n"
+"        **This command is on a cooldown of 10 seconds per member who receives\n"
+"        a role up to a maximum of 1 hour.**\n"
+"        "
+msgstr ""
+
+#: roletools/roletools.py:458
+msgid "`{who}` cannot have roles removed from them."
+msgstr ""
+
+#: roletools/roletools.py:486
+msgid "Roletools Removerole command"
+msgstr ""
+
+#: roletools/roletools.py:491
+msgid "Removed the {role} from {removed}."
+msgstr ""
+
+#: roletools/roletools.py:505
+#, docstring
+msgid "\n"
+"        Force a sticky role on one or more users.\n\n"
+"        `<users>` The users you want to have a forced stickyrole applied to.\n"
+"        `<roles>` The role you want to set.\n\n"
+"        Note: The only way to remove this would be to manually remove the role from\n"
+"        the user.\n"
+"        "
+msgstr ""
+
+#: roletools/roletools.py:536
+msgid "Forced Sticky Role"
+msgstr ""
+
+#: roletools/roletools.py:539
+msgid "There was an error force applying the role to {user}.\n"
+msgstr ""
+
+#: roletools/roletools.py:543
+msgid "{users} will have the role {role} force applied to them."
+msgstr ""
+
+#: roletools/roletools.py:559
+#, docstring
+msgid "\n"
+"        Force remove sticky role on one or more users.\n\n"
+"        `<users>` The users you want to have a forced stickyrole applied to.\n"
+"        `<roles>` The role you want to set.\n\n"
+"        Note: This is generally only useful for users who have left the server.\n"
+"        "
+msgstr ""
+
+#: roletools/roletools.py:590
+msgid "Force removed sticky role"
+msgstr ""
+
+#: roletools/roletools.py:593
+msgid "There was an error force removing the role from {user}.\n"
+msgstr ""
+
+#: roletools/roletools.py:597
+msgid "{users} will have the role {role} force removed from them."
+msgstr ""
+
+#: roletools/roletools.py:607
+#, docstring
+msgid "\n"
+"        View current roletools setup for each role in the server\n\n"
+"        `[role]` The role you want to see settings for.\n"
+"        "
+msgstr ""
+
+#: roletools/roletools.py:629
+#, docstring
+msgid "\n"
+"        Slash command toggling for roletools\n"
+"        "
+msgstr ""
+
+#: roletools/roletools.py:637
+#, docstring
+msgid "Toggle this cog to register slash commands"
+msgstr ""
+
+#: roletools/roletools.py:640
+msgid "enabled"
+msgstr ""
+
+#: roletools/roletools.py:640
+msgid "disabled"
+msgstr ""
+
+#: roletools/roletools.py:641
+msgid "Slash commands are {verb}."
+msgstr ""
+
+#: roletools/select.py:89 roletools/select.py:95
+msgid "Role Selection"
+msgstr ""
+
+#: roletools/select.py:99
+msgid "I have given you the following roles: {roles}\n"
+msgstr ""
+
+#: roletools/select.py:103
+msgid "I have removed the following roles from you: {roles}\n"
+msgstr ""
+
+#: roletools/select.py:110
+msgid "I have not made any role changes to you."
+msgstr ""
+
+#: roletools/select.py:146 roletools/select.py:191
+msgid "Select Option with name `{name}` does not seem to exist."
+msgstr ""
+
+#: roletools/select.py:242
+#, docstring
+msgid "\n"
+"        Setup role select menus\n"
+"        "
+msgstr ""
+
+#: roletools/select.py:257
+#, docstring
+msgid "\n"
+"        Create a select menu\n\n"
+"        `<name>` - The name for you to use when you send a message with this menu.\n"
+"        `[options]...` - The select menu options you designated previously.\n"
+"        `[min_values]` - The minimum number of items from this menu to be selected.\n"
+"        `[max_values]` - The maximum number of items from this menu that can be selected.\n"
+"        (If not provided this will default to the number of options provided.)\n"
+"        `[placeholder]` - This is the default text on the menu when no option has been\n"
+"        chosen yet.\n"
+"        "
+msgstr ""
+
+#: roletools/select.py:278
+msgid "There cannot be a space in the name of a select menu."
+msgstr ""
+
+#: roletools/select.py:282
+msgid "You must setup some options first with `{prefix}roletools select options create`."
+msgstr ""
+
+#: roletools/select.py:289
+msgid "You have not provided any valid select options to use."
+msgstr ""
+
+#: roletools/select.py:293 roletools/select.py:393
+msgid "The name should be less than 70 characters long."
+msgstr ""
+
+#: roletools/select.py:334
+msgid "Here is how your select menu will look."
+msgstr ""
+
+#: roletools/select.py:341
+#, docstring
+msgid "\n"
+"        Delete a saved select menu.\n\n"
+"        `<name>` - the name of the select menu you want to delete.\n"
+"        "
+msgstr ""
+
+#: roletools/select.py:349 roletools/select.py:466
+msgid "Select Option `{name}` has been deleted."
+msgstr ""
+
+#: roletools/select.py:356 roletools/select.py:469
+msgid "Select Option `{name}` doesn't appear to exist."
+msgstr ""
+
+#: roletools/select.py:369
+#, docstring
+msgid "\n"
+"        Create a select menu option\n\n"
+"        `<name>` - The name of the button for use later in setup.\n"
+"        `<role>` - The role this button will assign or remove.\n"
+"        `[label]` - The optional label for the option, max of 25 characters.\n"
+"        `[description]` - The description for the option, max of 50 characters.\n"
+"        `[emoji]` - The optional emoji used in the button.\n\n"
+"        Note: If no label and no emoji are provided the roles name will be used instead.\n"
+"        This name will not update if the role name is changed.\n"
+"        "
+msgstr ""
+
+#: roletools/select.py:389
+msgid "There cannot be a space in the name of a select option."
+msgstr ""
+
+#: roletools/select.py:449
+msgid "Here is how your select option will look."
+msgstr ""
+
+#: roletools/select.py:454
+#, docstring
+msgid "\n"
+"        Delete a saved option.\n\n"
+"        `<name>` - the name of the button you want to delete.\n"
+"        "
+msgstr ""
+
+#: roletools/select.py:476 roletools/select.py:532
+#, docstring
+msgid "\n"
+"        View current select menus setup for role assign in this server.\n"
+"        "
+msgstr ""
+
+#: roletools/select.py:480
+msgid "There are no select menus in this server."
+msgstr ""
+
+#: roletools/select.py:485
+msgid "Select Menus in {guild}\n"
+msgstr ""
+
+#: roletools/select.py:491
+msgid "**Name:** {name}\n"
+"**Options:** {options}\n"
+"**Placeholder:** {placeholder}\n"
+"**Min Values:** {min_values}\n"
+"**Max Values:** {max_values}\n"
+msgstr ""
+
+#: roletools/select.py:513
+msgid "[Menu Message]({message})\n"
+msgstr ""
+
+#: roletools/select.py:536
+msgid "There are no select menu options in this server."
+msgstr ""
+
+#: roletools/select.py:541
+msgid "Select Options in {guild}\n"
+msgstr ""
+
+#: roletools/select.py:549
+msgid "**Name:** {name}\n"
+"**Role:** {role}\n"
+"**Emoji:** {emoji}\n"
+"**Label:** {label}\n"
+"**description:** {description}\n"
+msgstr ""
+
+#: roletools/settings.py:29
+#, docstring
+msgid "\n"
+"        Set whether or not a user can apply the role to themselves.\n\n"
+"        `[true_or_false]` optional boolean of what to set the setting to.\n"
+"        If not provided the current setting will be shown instead.\n"
+"        `<role>` The role you want to set.\n"
+"        "
+msgstr ""
+
+#: roletools/settings.py:48
+msgid "The {role} role is self assignable."
+msgstr ""
+
+#: roletools/settings.py:52
+msgid "The {role} role is not self assignable. Run the command {command} to make it self assignable."
+msgstr ""
+
+#: roletools/settings.py:60
+msgid "The {role} role is now self assignable."
+msgstr ""
+
+#: roletools/settings.py:64
+msgid "The {role} role is no longer self assignable."
+msgstr ""
+
+#: roletools/settings.py:76
+#, docstring
+msgid "\n"
+"        Set whether or not a user can remove the role from themselves.\n\n"
+"        `[true_or_false]` optional boolean of what to set the setting to.\n"
+"        If not provided the current setting will be shown instead.\n"
+"        `<role>` The role you want to set.\n"
+"        "
+msgstr ""
+
+#: roletools/settings.py:95
+msgid "The {role} role is self removeable."
+msgstr ""
+
+#: roletools/settings.py:99
+msgid "The {role} role is not self removable. Run the command {command} to make it self removeable."
+msgstr ""
+
+#: roletools/settings.py:107
+msgid "The {role} role is now self removeable."
+msgstr ""
+
+#: roletools/settings.py:111
+msgid "The {role} role is no longer self removeable."
+msgstr ""
+
+#: roletools/settings.py:117
+#, docstring
+msgid "\n"
+"        Set the atomicity of role assignment.\n"
+"        What this means is that when this is `True` roles will be\n"
+"        applied inidvidually and not cause any errors. When this\n"
+"        is set to `False` roles will be grouped together into one call.\n\n"
+"        This can cause race conditions if you have other methods of applying\n"
+"        roles setup when set to `False`.\n\n"
+"        `[true_or_false]` optional boolean of what to set the setting to.\n"
+"        To reset back to the default global rules use `clear`.\n"
+"        If not provided the current setting will be shown instead.\n"
+"        "
+msgstr ""
+
+#: roletools/settings.py:133
+msgid "This server is currently using atomic role assignment"
+msgstr ""
+
+#: roletools/settings.py:135
+msgid "This server is not currently using atomic role assignment."
+msgstr ""
+
+#: roletools/settings.py:137
+msgid "This server currently using the global atomic role assignment setting `{current_global}`."
+msgstr ""
+
+#: roletools/settings.py:142
+msgid "Do {command} to atomically assign roles."
+msgstr ""
+
+#: roletools/settings.py:147 roletools/settings.py:186
+msgid "RoleTools will now atomically assign roles."
+msgstr ""
+
+#: roletools/settings.py:150 roletools/settings.py:189
+msgid "RoleTools will no longer atomically assign roles."
+msgstr ""
+
+#: roletools/settings.py:153
+msgid "RoleTools will now default to the global atomic setting."
+msgstr ""
+
+#: roletools/settings.py:159
+#, docstring
+msgid "\n"
+"        Set the atomicity of role assignment.\n"
+"        What this means is that when this is `True` roles will be\n"
+"        applied inidvidually and not cause any errors. When this\n"
+"        is set to `False` roles will be grouped together into one call.\n\n"
+"        This can cause race conditions if you have other methods of applying\n"
+"        roles setup when set to `False`.\n\n"
+"        `[true_or_false]` optional boolean of what to set the setting to.\n"
+"        If not provided the current setting will be shown instead.\n"
+"        "
+msgstr ""
+
+#: roletools/settings.py:174
+msgid "I am currently using atomic role assignment"
+msgstr ""
+
+#: roletools/settings.py:178
+msgid "I am not currently using atomic role assignment. Do {command} to atomically assign roles."
+msgstr ""
+
+#: roletools/settings.py:200
+#, docstring
+msgid "\n"
+"        Set the cost to acquire a role.\n\n"
+"        `[cost]` The price you want to set the role at in bot credits.\n"
+"        Setting this to 0 or lower will remove the cost.\n"
+"        If not provided the current setting will be shown instead.\n"
+"        `<role>` The role you want to set.\n"
+"        "
+msgstr ""
+
+#: roletools/settings.py:218
+msgid "This command is locked to bot owner only while the bank is set to global."
+msgstr ""
+
+#: roletools/settings.py:222
+msgid "You cannot set a cost higher than the maximum credits balance."
+msgstr ""
+
+#: roletools/settings.py:230
+msgid "The role {role} currently costs {cost} {currency_name}."
+msgstr ""
+
+#: roletools/settings.py:236
+msgid "The role {role} does not currently cost any {currency_name}. Run the command {command} to allow this role to require credits."
+msgstr ""
+
+#: roletools/settings.py:245
+msgid "The {role} will not require any {currency_name} to acquire."
+msgstr ""
+
+#: roletools/settings.py:252
+msgid "The {role} will now cost {cost} {currency_name} to acquire."
+msgstr ""
+
+#: roletools/settings.py:266
+#, docstring
+msgid "\n"
+"        Set whether or not a role will be re-applied when a user leaves and rejoins the server.\n\n"
+"        `[true_or_false]` optional boolean of what to set the setting to.\n"
+"        If not provided the current setting will be shown instead.\n"
+"        `<role>` The role you want to set.\n"
+"        "
+msgstr ""
+
+#: roletools/settings.py:285
+msgid "The {role} role is sticky."
+msgstr ""
+
+#: roletools/settings.py:289
+msgid "The {role} role is not sticky. Run the command {command} to make it sticky."
+msgstr ""
+
+#: roletools/settings.py:297
+msgid "The {role} role is now sticky."
+msgstr ""
+
+#: roletools/settings.py:300
+msgid "The {role} role is no longer sticky."
+msgstr ""
+
+#: roletools/settings.py:312
+#, docstring
+msgid "\n"
+"        Set a role to be automatically applied when a user joins the server.\n\n"
+"        `[true_or_false]` optional boolean of what to set the setting to.\n"
+"        If not provided the current setting will be shown instead.\n"
+"        `<role>` The role you want to set.\n"
+"        "
+msgstr ""
+
+#: roletools/settings.py:331
+msgid "The role {role} is automatically applied on joining."
+msgstr ""
+
+#: roletools/settings.py:335
+msgid "The {role} role is not automatically applied when a member joins  this server. Run the command {command} to make it automatically apply when a user joins."
+msgstr ""
+
+#: roletools/settings.py:351
+msgid "The {role} role will now automatically be applied when a user joins."
+msgstr ""
+
+#: roletools/settings.py:365
+msgid "The {role} role will not automatically be applied when a user joins."
+msgstr ""
+
+#: roletools/slash.py:51
+#, docstring
+msgid "Give yourself a role"
+msgstr ""
+
+#: roletools/slash.py:60
+#, docstring
+msgid "Remove a role from yourself"
+msgstr ""
+
+#: roletools/slash.py:71
+#, docstring
+msgid "Force a sticky role on a user"
+msgstr ""
+
+#: roletools/slash.py:82
+#, docstring
+msgid "Force remove a sticky role on a user"
+msgstr ""
+
+#: roletools/slash.py:93
+#, docstring
+msgid "View current roletools setup for each role in the server"
+msgstr ""
+
+#: roletools/slash.py:104
+#, docstring
+msgid "Add role exclusion"
+msgstr ""
+
+#: roletools/slash.py:115
+#, docstring
+msgid "Remove role exclusion"
+msgstr ""
+
+#: roletools/slash.py:126
+#, docstring
+msgid "Add role inclusion"
+msgstr ""
+
+#: roletools/slash.py:137
+#, docstring
+msgid "Remove role inclusion"
+msgstr ""
+
+#: roletools/slash.py:148
+#, docstring
+msgid "Add role requirements"
+msgstr ""
+
+#: roletools/slash.py:159
+#, docstring
+msgid "Remove role requirements"
+msgstr ""
+
+#: roletools/slash.py:168
+#, docstring
+msgid "Cleanup old/missing reaction roles and settings."
+msgstr ""
+
+#: roletools/slash.py:177
+#, docstring
+msgid "View current reaction roles in the server."
+msgstr ""
+
+#: roletools/slash.py:191
+#, docstring
+msgid "Clear the reactions for reaction roles."
+msgstr ""
+
+#: roletools/slash.py:206
+#, docstring
+msgid "Create a reaction role."
+msgstr ""
+
+#: roletools/slash.py:226
+#, docstring
+msgid "Remove a reaction role."
+msgstr ""
+
+#: roletools/slash.py:246
+#, docstring
+msgid "Set whether or not a user can apply the role to themselves."
+msgstr ""
+
+#: roletools/slash.py:257
+#, docstring
+msgid "Set whether or not a user can remove a role form themselves."
+msgstr ""
+
+#: roletools/slash.py:268
+#, docstring
+msgid "Set whether or not a role will be re-applied when a user leaves and rejoins the server."
+msgstr ""
+
+#: roletools/slash.py:279
+#, docstring
+msgid "Set a role to be automatically applied when a user joins the server."
+msgstr ""
+
+#: roletools/slash.py:290
+#, docstring
+msgid "Set the cost to acquire a role."
+msgstr ""
+
+#: roletools/slash.py:302
+#, docstring
+msgid "View current buttons setup for role assign in this server."
+msgstr ""
+
+#: roletools/slash.py:331
+#, docstring
+msgid "Create a role button"
+msgstr ""
+
+#: roletools/slash.py:345
+#, docstring
+msgid "Delete a saved button."
+msgstr ""
+
+#: roletools/slash.py:362
+#, docstring
+msgid "Create a select menu"
+msgstr ""
+
+#: roletools/slash.py:374 roletools/slash.py:396
+#, docstring
+msgid "View current select menus setup for role assign in this server."
+msgstr ""
+
+#: roletools/slash.py:383
+#, docstring
+msgid "Delete a saved select menu."
+msgstr ""
+
+#: roletools/slash.py:413
+#, docstring
+msgid "Create a select menu option"
+msgstr ""
+
+#: roletools/slash.py:422
+#, docstring
+msgid "Delete a saved option."
+msgstr ""
+
+#: roletools/slash.py:438
+#, docstring
+msgid "Send buttons to a specified channel with optional message."
+msgstr ""
+
+#: roletools/slash.py:452 roletools/slash.py:466 roletools/slash.py:496
+#, docstring
+msgid "Edit a bots message to include Role Buttons"
+msgstr ""
+
+#: roletools/slash.py:481 roletools/slash.py:512
+#, docstring
+msgid "Send a select menu to a specified channel for role assignment"
+msgstr ""
+
+#: roletools/slash.py:597
+msgid "You are not authorized to use this command."
+msgstr ""
+
+#: roletools/slash.py:605
+msgid "This command is still on cooldown. Try again in {time}."
+msgstr ""
+
+#: roletools/slash.py:615
+msgid "You are not allowed to run this command here."
+msgstr ""
+
+#: roletools/slash.py:620
+msgid "This command is not available outside of a guild."
+msgstr ""
+
+#: roletools/slash.py:626
+msgid "Commands are not allowed in this channel or guild."
+msgstr ""
+

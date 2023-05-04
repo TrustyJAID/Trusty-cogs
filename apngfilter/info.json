@@ -1,30 +1,30 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID",
         "Sinbad",
         "Soulrift"
     ],
-    "description" : "Automatically filter animated PNG's.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Do `[p]apngfilter` to toggle servers automatically deleting APNG files.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Automatically filter animated PNG's.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Do `[p]apngfilter` to toggle servers automatically deleting APNG files.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "APNGFilter",
-    "permissions" : [
+    "name": "APNGFilter",
+    "permissions": [
         "manage_messages"
     ],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Automatically filter animated PNG's.",
-    "tags" : [
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Automatically filter animated PNG's.",
+    "tags": [
         "utility"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

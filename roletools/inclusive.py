@@ -1,13 +1,14 @@
 import logging
 
-
 from redbot.core import commands
-from redbot.core.i18n import Translator
 from redbot.core.commands import Context
+from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
+from .abc import RoleToolsMixin
 from .converter import RoleHierarchyConverter
-from .abc import RoleToolsMixin, roletools
+
+roletools = RoleToolsMixin.roletools
 
 log = logging.getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
@@ -21,12 +22,14 @@ class RoleToolsInclusive(RoleToolsMixin):
         """
         Set role inclusion
         """
-        pass
 
     @inclusive.command(name="add")
     @commands.admin_or_permissions(manage_roles=True)
     async def inclusive_add(
-        self, ctx: Context, role: RoleHierarchyConverter, *include: RoleHierarchyConverter
+        self,
+        ctx: Context,
+        role: RoleHierarchyConverter,
+        include: commands.Greedy[RoleHierarchyConverter],
     ) -> None:
         """
         Add role inclusion (This will add roles if the designated role is acquired
@@ -36,29 +39,28 @@ class RoleToolsInclusive(RoleToolsMixin):
         `<role>` This is the role a user may acquire you want to set exclusions for.
         `<include>` The role(s) you wish to have added when a user gains the `<role>`
 
-        Note: This will only work for reaction roles and automatic roles from this cog.
+        Note: This will only work for roles assigned by this cog.
         """
+        await ctx.typing()
         cur_setting = await self.config.role(role).inclusive_with()
         exclusive = await self.config.role(role).exclusive_to()
         for included_role in include:
             if included_role.id in exclusive:
-                await ctx.send(
-                    _("You cannot include a role that is already considered exclusive.")
-                )
+                msg = _("You cannot include a role that is already considered exclusive.")
+                await ctx.send(msg)
                 return
             if included_role.id not in cur_setting:
                 cur_setting.append(included_role.id)
         await self.config.role(role).inclusive_with.set(cur_setting)
         roles = [ctx.guild.get_role(i) for i in cur_setting]
         role_names = humanize_list([i.mention for i in roles if i])
-        await ctx.send(
-            _(
-                "The {role} role will now add the following roles if it "
-                "is acquired through roletools.\n{included_roles}."
-            ).format(role=role.mention, included_roles=role_names),
-        )
+        msg = _(
+            "The {role} role will now add the following roles if it "
+            "is acquired through roletools.\n{included_roles}."
+        ).format(role=role.mention, included_roles=role_names)
+        await ctx.send(msg)
 
-    @inclusive.command(name="mutual")
+    @inclusive.command(name="mutual", with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def mutual_inclusive_add(self, ctx: Context, *roles: RoleHierarchyConverter) -> None:
         """
@@ -94,7 +96,10 @@ class RoleToolsInclusive(RoleToolsMixin):
     @inclusive.command(name="remove")
     @commands.admin_or_permissions(manage_roles=True)
     async def inclusive_remove(
-        self, ctx: Context, role: RoleHierarchyConverter, *include: RoleHierarchyConverter
+        self,
+        ctx: Context,
+        role: RoleHierarchyConverter,
+        include: commands.Greedy[RoleHierarchyConverter],
     ) -> None:
         """
         Remove role inclusion
@@ -102,6 +107,7 @@ class RoleToolsInclusive(RoleToolsMixin):
         `<role>` This is the role a user may acquire you want to set exclusions for.
         `<include>` The role(s) currently inclusive you no longer wish to have included
         """
+        await ctx.typing()
         cur_setting = await self.config.role(role).inclusive_with()
         for included_role in include:
             if included_role.id in cur_setting:
@@ -110,13 +116,13 @@ class RoleToolsInclusive(RoleToolsMixin):
         roles = [ctx.guild.get_role(i) for i in cur_setting]
         if roles:
             role_names = humanize_list([i.mention for i in roles if i])
-            await ctx.send(
-                _(
-                    "The {role} role will now add the following roles if it "
-                    "is acquired through roletools.\n{included_roles}."
-                ).format(role=role.mention, included_roles=role_names),
-            )
+            msg = _(
+                "The {role} role will now add the following roles if it "
+                "is acquired through roletools.\n{included_roles}."
+            ).format(role=role.mention, included_roles=role_names)
+            await ctx.send(msg)
         else:
-            await ctx.send(
-                _("The {role} role will no longer have included roles.").format(role=role.mention)
+            msg = _("The {role} role will no longer have included roles.").format(
+                role=role.mention
             )
+            await ctx.send(msg)

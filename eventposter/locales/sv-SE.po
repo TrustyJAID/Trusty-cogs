@@ -1,0 +1,841 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/eventposter/locales/messages.pot\n"
+"X-Crowdin-File-ID: 428\n"
+"Language: sv_SE\n"
+
+#: eventposter/event_obj.py:65 eventposter/event_obj.py:171
+msgid "Yes"
+msgstr ""
+
+#: eventposter/event_obj.py:66 eventposter/event_obj.py:173
+msgid "No"
+msgstr ""
+
+#: eventposter/event_obj.py:119
+msgid "Join Event"
+msgstr ""
+
+#: eventposter/event_obj.py:126
+msgid "You have already registered for this event."
+msgstr ""
+
+#: eventposter/event_obj.py:131 eventposter/event_obj.py:229
+msgid "This event is at the maximum number of members."
+msgstr ""
+
+#: eventposter/event_obj.py:153
+msgid "Leave Event"
+msgstr ""
+
+#: eventposter/event_obj.py:162
+msgid "Your event has now ended."
+msgstr ""
+
+#: eventposter/event_obj.py:165
+msgid "I will not end this event."
+msgstr ""
+
+#: eventposter/event_obj.py:178
+msgid "Are you sure you want to end your event?"
+msgstr ""
+
+#: eventposter/event_obj.py:185
+msgid "You are not registered for this event."
+msgstr ""
+
+#: eventposter/event_obj.py:223
+msgid "Changing your class to {player_class}."
+msgstr ""
+
+#: eventposter/event_obj.py:251
+msgid "Maybe Join Event"
+msgstr ""
+
+#: eventposter/event_obj.py:258
+msgid "You are hosting this event, you cannot join the maybe queue!"
+msgstr ""
+
+#: eventposter/event_obj.py:328
+msgid "Pick a class to join this event"
+msgstr ""
+
+#: eventposter/event_obj.py:414
+msgid "0 seconds"
+msgstr ""
+
+#: eventposter/event_obj.py:449 eventposter/eventposter.py:114
+#: eventposter/eventposter.py:328 eventposter/eventposter.py:493
+#: eventposter/eventposter.py:1284 eventposter/eventposter.py:1303
+msgid "This event has ended."
+msgstr ""
+
+#: eventposter/event_obj.py:491
+msgid "{hoster} is hosting"
+msgstr ""
+
+#: eventposter/event_obj.py:504
+msgid "**{slots} slots available.**"
+msgstr ""
+
+#: eventposter/event_obj.py:506
+msgid "**{description}**\n\n"
+"To join this event type `{prefix}join {hoster}` or react to this message with ✅\n\n"
+"{max_slots_msg} "
+msgstr ""
+
+#: eventposter/event_obj.py:524
+msgid "**Slot {slot_num}**\n"
+"{member}{player_class}\n"
+msgstr ""
+
+#: eventposter/event_obj.py:528
+msgid "Attendees"
+msgstr ""
+
+#: eventposter/event_obj.py:531
+msgid "Maybe"
+msgstr ""
+
+#: eventposter/event_obj.py:535
+msgid "Approved by {approver}"
+msgstr ""
+
+#: eventposter/event_obj.py:606
+msgid "That's not a valid image link."
+msgstr ""
+
+#: eventposter/eventposter.py:31
+#, docstring
+msgid "Create admin approved events/announcements"
+msgstr ""
+
+#: eventposter/eventposter.py:202
+msgid "The maximum number of events are already posted. Please wait until one finishes."
+msgstr ""
+
+#: eventposter/eventposter.py:224
+msgid "You do not have one of the required roles to create events."
+msgstr ""
+
+#: eventposter/eventposter.py:234
+#, docstring
+msgid "All event related commands."
+msgstr ""
+
+#: eventposter/eventposter.py:246
+#, docstring
+msgid "\n"
+"        Ping all the registered users for your event including optional message\n\n"
+"        `[include_maybe=True]` either `true` or `false` to include people who registered as maybe.\n"
+"        `[message]` Optional message to include with the ping.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:260
+msgid "You don't have an event running with people to ping."
+msgstr ""
+
+#: eventposter/eventposter.py:270
+msgid "Pinging users of your event."
+msgstr ""
+
+#: eventposter/eventposter.py:286
+#, docstring
+msgid "\n"
+"        Create an event\n\n"
+"        `[members...]` Add members already in the event you want to host.\n"
+"        `[max_slots=None]` Specify maximum number of Slots the event can have, default is no limit.\n"
+"        `<description>` provide a description for the event you're hosting.\n"
+"        With custom keyword links setup this will add an image to the events thumbnail\n"
+"        after being approved by an admin.\n\n"
+"        If a date or time is provided the timestamp in the event will try to display\n"
+"        the correct time for everyone. For example `[p]event Deep Stone Crypt Sunday at 9PM MDT`\n"
+"        will convert the \"sunday at 9PM MDT\" into a converted timestamp for everyone removing\n"
+"        the need to know what MDT is in their own time.\n"
+"        This also works for times relative to now, e.g. `[p]event Last Wish in 3 hours`\n"
+"        will add the timestamp display in 3 hours from the time this message is posted.\n\n"
+"        Note: If a timezone is provided it must be the correct timezone according to\n"
+"        daylight savings time. For example PST time may sometimes be UTC+8 in which case\n"
+"        PDT must be used instead.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:362
+msgid "Creating your event."
+msgstr ""
+
+#: eventposter/eventposter.py:370
+msgid "Approve"
+msgstr ""
+
+#: eventposter/eventposter.py:372
+msgid "Deny"
+msgstr ""
+
+#: eventposter/eventposter.py:378
+msgid "Please wait for someone to approve your event request."
+msgstr ""
+
+#: eventposter/eventposter.py:398
+msgid "{author}, your event request was denied by an admin."
+msgstr ""
+
+#: eventposter/eventposter.py:440
+#, docstring
+msgid "\n"
+"        Delete a stored event so you can create more\n\n"
+"        `[clear]` yes/no to clear your current running event.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:457 eventposter/eventposter.py:471
+msgid "You don't have any events running."
+msgstr ""
+
+#: eventposter/eventposter.py:478
+msgid "{author}, you're currently hosting. Type `{prefix}event clear yes` to clear it."
+msgstr ""
+
+#: eventposter/eventposter.py:496
+msgid "Your event has been cleared."
+msgstr ""
+
+#: eventposter/eventposter.py:506
+#, docstring
+msgid "Show current event being run by a member"
+msgstr ""
+
+#: eventposter/eventposter.py:521
+msgid "{member} does not have any events running."
+msgstr ""
+
+#: eventposter/eventposter.py:536
+msgid "{member} is not currently hosting an event."
+msgstr ""
+
+#: eventposter/eventposter.py:545
+msgid "{member} is currently hosting. Type `{prefix}clearevent yes` to clear it."
+msgstr ""
+
+#: eventposter/eventposter.py:563 eventposter/slash.py:65
+#, docstring
+msgid "Join an event being hosted"
+msgstr ""
+
+#: eventposter/eventposter.py:574 eventposter/eventposter.py:589
+#: eventposter/eventposter.py:625 eventposter/eventposter.py:640
+msgid "{hoster} is not currently hosting any events."
+msgstr ""
+
+#: eventposter/eventposter.py:598
+msgid "You're already participating in this event!"
+msgstr ""
+
+#: eventposter/eventposter.py:605
+msgid "Adding you to {hoster}'s event."
+msgstr ""
+
+#: eventposter/eventposter.py:614 eventposter/slash.py:71
+#, docstring
+msgid "Leave an event being hosted"
+msgstr ""
+
+#: eventposter/eventposter.py:649
+msgid "You're not participating in this event!"
+msgstr ""
+
+#: eventposter/eventposter.py:656
+msgid "Removing you from {hoster}'s event."
+msgstr ""
+
+#: eventposter/eventposter.py:665
+#, docstring
+msgid "\n"
+"        Edit various things in events\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:672
+#, docstring
+msgid "\n"
+"        Edit the title of your event\n\n"
+"        `<new_description>` The new description for your event\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:690 eventposter/eventposter.py:766
+#: eventposter/eventposter.py:801 eventposter/eventposter.py:851
+#: eventposter/eventposter.py:896 eventposter/eventposter.py:940
+#: eventposter/eventposter.py:986
+msgid "You don't have an event to edit right now."
+msgstr ""
+
+#: eventposter/eventposter.py:700
+msgid "Editing your event title to: {new_title}"
+msgstr ""
+
+#: eventposter/eventposter.py:724
+msgid "No admin channel has been setup on this server. Use `{prefix}event set approvalchannel` to add one."
+msgstr ""
+
+#: eventposter/eventposter.py:734
+msgid "No announcement channel has been setup on this server. Use `{prefix}event set channel` to add one."
+msgstr ""
+
+#: eventposter/eventposter.py:748
+#, docstring
+msgid "\n"
+"        Edit the number of slots available for your event\n\n"
+"        `<new_slots>` The number of available slots for your events activity\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:776
+msgid "Editing your events max slots to: {new_slots}"
+msgstr ""
+
+#: eventposter/eventposter.py:785
+#, docstring
+msgid "\n"
+"        Show how long until your event will be automatically ended if available.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:811
+msgid "There is no automatic timeout of events in this server."
+msgstr ""
+
+#: eventposter/eventposter.py:817
+msgid "Your event has {time} remaining until it is ended automatically."
+msgstr ""
+
+#: eventposter/eventposter.py:831
+#, docstring
+msgid "\n"
+"        Add members to your event (hopefully not against their will)\n\n"
+"        `[new_members...]` The members you want to add to your event\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:865
+msgid "Added {members} to your event."
+msgstr ""
+
+#: eventposter/eventposter.py:876
+#, docstring
+msgid "\n"
+"        Remove members from your event (hopefully not against their will)\n\n"
+"        `[members...]` The members you want to add to your event\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:911
+msgid "Removed {members} from your event."
+msgstr ""
+
+#: eventposter/eventposter.py:920
+#, docstring
+msgid "\n"
+"        Add members to your events maybe list\n\n"
+"        `[new_members...]` The members you want to add to your event\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:955
+msgid "Added {members} to maybe on your event."
+msgstr ""
+
+#: eventposter/eventposter.py:966
+#, docstring
+msgid "\n"
+"        Remove members from your events maybe list\n\n"
+"        `[members...]` The members you want to remove from your event\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1001
+msgid "Removed {members} from maybe on your event."
+msgstr ""
+
+#: eventposter/eventposter.py:1027
+msgid "You already have an event running, would you like to cancel it?"
+msgstr ""
+
+#: eventposter/eventposter.py:1038
+#, docstring
+msgid "Manage server specific settings for events"
+msgstr ""
+
+#: eventposter/eventposter.py:1043
+#, docstring
+msgid "\n"
+"        Slash command toggling for event\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1051
+#, docstring
+msgid "Toggle this cog to register slash commands"
+msgstr ""
+
+#: eventposter/eventposter.py:1054
+msgid "enabled"
+msgstr ""
+
+#: eventposter/eventposter.py:1054
+msgid "disabled"
+msgstr ""
+
+#: eventposter/eventposter.py:1055
+msgid "Slash commands are {verb}."
+msgstr ""
+
+#: eventposter/eventposter.py:1065
+#, docstring
+msgid "\n"
+"        Show the current event settings.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1080
+msgid "Event Settings for {guild}"
+msgstr ""
+
+#: eventposter/eventposter.py:1081
+msgid "__Approval Channel:__ {approval_channel}\n"
+"__Announcement Channel:__ {announcement_channel}\n"
+"__Mentioned Roles:__ {ping}\n"
+msgstr ""
+
+#: eventposter/eventposter.py:1093
+msgid "__Default Max Slots:__ {default_slots}\n"
+msgstr ""
+
+#: eventposter/eventposter.py:1098
+msgid "__Events End After:__ **{time}**\n"
+msgstr ""
+
+#: eventposter/eventposter.py:1102
+msgid "__Skip Admin Approval:__ **{bypass_admin}**\n"
+msgstr ""
+
+#: eventposter/eventposter.py:1106
+msgid "__Maximum Events:__ **{max_events}**\n"
+msgstr ""
+
+#: eventposter/eventposter.py:1111
+msgid "__Event Creator Roles:__ {roles}\n"
+msgstr ""
+
+#: eventposter/eventposter.py:1128
+#, docstring
+msgid "\n"
+"        Add a playerclass choice for users to pick from on this server.\n\n"
+"        `[emoji]` Can be any emoji and is used on the drop down selector to\n"
+"        help distinguish the classes.\n"
+"        `<player_class>` The name of the player class you want to have\n"
+"        as a server option.\n\n"
+"        Note: There is a maximum of 25 classes you can add. The class name\n"
+"        can also only be a maximum of 100 characters.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1149
+msgid "Player classes can be a maximum of 100 characters."
+msgstr ""
+
+#: eventposter/eventposter.py:1157
+msgid "You can have a maximum of 25 player classes to select from.Delete some first before trying to add more."
+msgstr ""
+
+#: eventposter/eventposter.py:1175
+msgid "{player_class} has been added as an available option."
+msgstr ""
+
+#: eventposter/eventposter.py:1185
+#, docstring
+msgid "\n"
+"        Remove a playerclass choice for users to pick from on this server.\n\n"
+"        `<player_class>` The name of the playerclass you want to remove.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1199
+msgid "{player_class} has been removed as an available option."
+msgstr ""
+
+#: eventposter/eventposter.py:1202
+msgid "{player_class} is not currently available as an option."
+msgstr ""
+
+#: eventposter/eventposter.py:1220
+#, docstring
+msgid "\n"
+"        List the playerclass choices in this server.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1233
+msgid "{guild} Available Playerclasses: **{player_classes}**"
+msgstr ""
+
+#: eventposter/eventposter.py:1247
+#, docstring
+msgid "\n"
+"        Remove and end a current event.\n\n"
+"        `<hoster_or_message>` The member who is hosting the event or the message the event is\n"
+"        located at.\n\n"
+"        If a message is used instead it must be either a `channelID-messageID` pair,\n"
+"        a message jump link, or the message ID if the command is in the same channel\n"
+"        as the event message itself.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1268
+msgid "You cannot remove someone elses event"
+msgstr ""
+
+#: eventposter/eventposter.py:1275
+msgid "That user is not currently hosting any events."
+msgstr ""
+
+#: eventposter/eventposter.py:1297
+msgid "I could not find an event under that message."
+msgstr ""
+
+#: eventposter/eventposter.py:1310
+msgid "The event you have provided has been ended."
+msgstr ""
+
+#: eventposter/eventposter.py:1321
+#, docstring
+msgid "\n"
+"        Set's the users default player class. If nothing is provided this will be rest.\n\n"
+"        `[player_class]` Your desired playerclass for events. This is listed\n"
+"        next to your name when you register for an event. If this is changed\n"
+"        during an event you have signed up for if the event updates with new\n"
+"        members or changes in any way the event will reflect this change.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1339
+msgid "Your player class has been set to {player_class}"
+msgstr ""
+
+#: eventposter/eventposter.py:1348
+msgid "Your player class has been reset."
+msgstr ""
+
+#: eventposter/eventposter.py:1365
+#, docstring
+msgid "\n"
+"        Set's the servers default maximum slots\n\n"
+"        `[max_slots]` The maximum number of slots allowed by default for events.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1382
+msgid "Default maximum slots for events set to {max_slots} slots."
+msgstr ""
+
+#: eventposter/eventposter.py:1396
+#, docstring
+msgid "\n"
+"        Set the Announcement channel for events\n\n"
+"        `[channel]` The channel events will be sent to. Providing no input will\n"
+"        clear the channel.\n\n"
+"        If no channel is set events cannot be created.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1414 eventposter/eventposter.py:1596
+msgid "I require `Embed Links` permission to use that channel."
+msgstr ""
+
+#: eventposter/eventposter.py:1421
+msgid "Announcement channel "
+msgstr ""
+
+#: eventposter/eventposter.py:1424
+msgid "set to {chan}"
+msgstr ""
+
+#: eventposter/eventposter.py:1427 eventposter/eventposter.py:1610
+msgid "cleared."
+msgstr ""
+
+#: eventposter/eventposter.py:1440
+#, docstring
+msgid "\n"
+"        Set the events cleanup interval.\n\n"
+"        `[time]` How long events should be allowed to live before being\n"
+"        automatically ended.\n\n"
+"        Note: If there is a timestamp for the event, the cleanup interval\n"
+"        will check since the timestamp. If not it will check time after the event\n"
+"        has been posted. Timestamp can be seen from the events embed.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1461
+msgid "I will cleanup events older than {time}."
+msgstr ""
+
+#: eventposter/eventposter.py:1465
+msgid "I will not cleanup messages regardless of age."
+msgstr ""
+
+#: eventposter/eventposter.py:1478
+#, docstring
+msgid "\n"
+"        Set the maximum number of events the server can host.\n\n"
+"        `[number_of_events]` The maximum number of events this server can have running\n"
+"        at one time.\n\n"
+"        Note: If this is set then the event author must cancel the event manually\n"
+"        by either reacting to the x on the event itself or `[p]clearevent`. This\n"
+"        can also be handled automatically with `[p]eventset cleanup` where events\n"
+"        will last until the designated time after an event has started. Alternatively\n"
+"        a mod or admin can cancel an event through `[p]eventset remove`\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1503
+msgid "I will allow a maximum of {number} events."
+msgstr ""
+
+#: eventposter/eventposter.py:1505
+msgid "I will not restrict the maximum number of events."
+msgstr ""
+
+#: eventposter/eventposter.py:1516
+#, docstring
+msgid "\n"
+"        Set whether or not admin approval is required for events to be posted.\n\n"
+"        `<true_or_false>` `True` or `False` whether or not to allow events\n"
+"        to bypass admin approval.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1533
+msgid "I will post events without admin apprval first."
+msgstr ""
+
+#: eventposter/eventposter.py:1535
+msgid "I will not post events without admin apprval first."
+msgstr ""
+
+#: eventposter/eventposter.py:1546
+#, docstring
+msgid "\n"
+"        Set whether or not to turn the announcement message into a thread\n"
+"        for people to join and discuss in.\n\n"
+"        `<true_or_false>` `True` or `False` whether or not to allow events\n"
+"        to bypass admin approval.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1563
+msgid "I will create events with a thread for discussion."
+msgstr ""
+
+#: eventposter/eventposter.py:1565
+msgid "I will not create events with a thread for discussion."
+msgstr ""
+
+#: eventposter/eventposter.py:1578
+#, docstring
+msgid "\n"
+"        Set the admin approval channel\n\n"
+"        `[channel]` The channel you have restricted to people you trust to approve events.\n"
+"        If no channel is provided this will be reset.\n\n"
+"        Note: This is required unless bypass has been enabled.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1603
+msgid "Admin approval channel "
+msgstr ""
+
+#: eventposter/eventposter.py:1606
+msgid "set to {chan}."
+msgstr ""
+
+#: eventposter/eventposter.py:1620
+#, docstring
+msgid "\n"
+"        Set the roles that are allowed to create events\n\n"
+"        `[roles...]` the role(s) that are allowed to create events. If not provided,\n"
+"        there will be no restriction on who can create an event.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1639
+msgid "Roles allowed to create events: {roles}."
+msgstr ""
+
+#: eventposter/eventposter.py:1642
+msgid "Anyone will now be able to create an event."
+msgstr ""
+
+#: eventposter/eventposter.py:1652
+#, docstring
+msgid "\n"
+"        Set the custom thumbnail for events\n\n"
+"        `<keyword>` is the word that will be searched for in event titles.\n"
+"        `<link>` needs to be an image link to be used for the thumbnail when the keyword\n"
+"        is found in the event title.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1669
+msgid "An image with the keyword {keyword} has been added."
+msgstr ""
+
+#: eventposter/eventposter.py:1681
+#, docstring
+msgid "\n"
+"        Set the custom embed image for events\n\n"
+"        `<keyword>` is the word that will be searched for in event titles.\n"
+"        `<link>` needs to be an image link to be used for the thumbnail when the keyword\n"
+"        is found in the event title.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1697
+#, docstring
+msgid "\n"
+"        Show custom thumbnails available for events in this server\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1712
+msgid "{guild} Thumbnail Links"
+msgstr ""
+
+#: eventposter/eventposter.py:1723
+#, docstring
+msgid "\n"
+"        Set the ping to use when an event is announced\n\n"
+"        `[roles...]` is a space separated list of roles to be pinged when an announcement\n"
+"        is made. Use `here` or `everyone` if you want to ping that specific group of people.\n"
+"        "
+msgstr ""
+
+#: eventposter/eventposter.py:1742
+msgid "Pings have been registered."
+msgstr ""
+
+#: eventposter/slash.py:33
+#, docstring
+msgid "Ping all the registered members for your event with optional message"
+msgstr ""
+
+#: eventposter/slash.py:45
+#, docstring
+msgid "Create an event"
+msgstr ""
+
+#: eventposter/slash.py:51
+#, docstring
+msgid "Delete/End your active event so you can make more"
+msgstr ""
+
+#: eventposter/slash.py:59
+#, docstring
+msgid "Show your current event or another members event."
+msgstr ""
+
+#: eventposter/slash.py:77
+#, docstring
+msgid "Edit the title of your event"
+msgstr ""
+
+#: eventposter/slash.py:83
+#, docstring
+msgid "Edit the number of slots available for your event"
+msgstr ""
+
+#: eventposter/slash.py:89
+#, docstring
+msgid "Show how long until your event will automatically ended if available."
+msgstr ""
+
+#: eventposter/slash.py:97 eventposter/slash.py:111
+#, docstring
+msgid "Add a new member to your event"
+msgstr ""
+
+#: eventposter/slash.py:105 eventposter/slash.py:117
+#, docstring
+msgid "Remove members from your event"
+msgstr ""
+
+#: eventposter/slash.py:123
+#, docstring
+msgid "Show the current event settings."
+msgstr ""
+
+#: eventposter/slash.py:137
+#, docstring
+msgid "Add a playerclass choice for users to pick from on this server."
+msgstr ""
+
+#: eventposter/slash.py:148
+#, docstring
+msgid "Remove a playerclass choice for users to pick from on this server."
+msgstr ""
+
+#: eventposter/slash.py:157
+#, docstring
+msgid "List the playerclass choices in this server."
+msgstr ""
+
+#: eventposter/slash.py:168
+#, docstring
+msgid "Set the servers default maximum slots."
+msgstr ""
+
+#: eventposter/slash.py:179
+#, docstring
+msgid "Set the Announcement channel for events."
+msgstr ""
+
+#: eventposter/slash.py:190
+#, docstring
+msgid "Set the admin approval channel"
+msgstr ""
+
+#: eventposter/slash.py:199
+#, docstring
+msgid "Set whether to make a thread on event announcements"
+msgstr ""
+
+#: eventposter/slash.py:224
+msgid "You are not authorized to use this command."
+msgstr ""
+
+#: eventposter/slash.py:231
+msgid "You are not allowed to run this command here."
+msgstr ""
+
+#: eventposter/slash.py:236
+msgid "This command is not available outside of a guild."
+msgstr ""
+
+#: eventposter/slash.py:250
+msgid "Commands are not allowed in this channel or guild."
+msgstr ""
+

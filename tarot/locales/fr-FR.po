@@ -1,0 +1,63 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/tarot/locales/messages.pot\n"
+"X-Crowdin-File-ID: 416\n"
+"Language: fr_FR\n"
+
+#: tarot/tarotreading.py:71
+#, docstring
+msgid "Receive a tarot reading"
+msgstr "Recevoir une lecture du tarot"
+
+#: tarot/tarotreading.py:76
+#, docstring
+msgid "\n"
+"        Unique reading based on your discord user ID. Doesn't change.\n\n"
+"        `[user]` Optional user who you want to see a life tarot reading for.\n"
+"        If no user is provided this will run for the user who is running the command.\n"
+"        "
+msgstr "\n"
+"        Lecture unique basée sur votre identifiant utilisateur Discord. Ne change pas.\n\n"
+"        `[user]` Utilisateur facultatif pour qui vous voulez voir une lecture du tarot de vie.\n"
+"        Si aucun utilisateur n'est fourni, cela sera exécuté pour l'utilisateur qui exécute la commande.\n"
+"        "
+
+#: tarot/tarotreading.py:109
+#, docstring
+msgid "\n"
+"        Unique reading as of this very moment.\n\n"
+"        `[user]` Optional user you want to view a tarot reading for.\n"
+"        If no user is provided this will run for the user who is running the command.\n"
+"        "
+msgstr "\n"
+"        Lecture unique dès ce moment précis.\n\n"
+"        `[user]` Utilisateur facultatif pour lequel vous voulez voir une lecture de tarot.\n"
+"        Si aucun utilisateur n'est fourni, cela sera exécuté pour l'utilisateur qui exécute la commande.\n"
+"        "
+
+#: tarot/tarotreading.py:142
+#, docstring
+msgid "\n"
+"        Random card or choose a card based on number or name.\n\n"
+"        `[tarot_card]` Is the full name of any tarot card or a number corresponding to specific cards.\n"
+"        If this doesn't match any cards number or name then a random one will be displayed instead.\n"
+"        "
+msgstr "\n"
+"        Carte aléatoire ou choisissez une carte en fonction du nombre ou du nom.\n\n"
+"        `[tarot_card]` Est le nom complet de toute carte tarot ou un nombre correspondant à des cartes spécifiques.\n"
+"        Si cela ne correspond à aucun numéro de carte ou nom alors un nom aléatoire sera affiché à la place.\n"
+"        "
+

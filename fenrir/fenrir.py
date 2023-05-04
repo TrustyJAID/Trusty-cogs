@@ -1,7 +1,7 @@
-import discord
 import logging
+from typing import Dict, Optional, Set
 
-from typing import Set, Dict, Optional
+import discord
 from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
@@ -105,8 +105,7 @@ class Fenrir(commands.Cog):
     @checks.admin_or_permissions(administrator=True)
     @commands.guild_only()
     async def fenrirblock(self, ctx: commands.Context, *members: discord.Member) -> None:
-        """Replaces all commands for specific members with insults
-        """
+        """Replaces all commands for specific members with insults"""
         if not members:
             await ctx.send_help()
         added = []
@@ -250,7 +249,7 @@ class Fenrir(commands.Cog):
                 return
             if member.bot:
                 return
-            channel = guild.get_channel(payload.channel_id)
+            channel = guild.get_channel_or_thread(payload.channel_id)
             try:
                 msg = await channel.fetch_message(payload.message_id)
             except Exception:

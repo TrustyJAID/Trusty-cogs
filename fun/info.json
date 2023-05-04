@@ -1,27 +1,27 @@
 {
-    "author" : [
+    "author": [
         "Appu",
         "TrustyJAID"
     ],
-    "description" : "All sorts of commands that users may find fun or useful",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Type `[p]help Fun` to see all the commands.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "All sorts of commands that users may find fun or useful",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Type `[p]help Fun` to see all the commands.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Fun",
-    "permissions" : [
+    "name": "Fun",
+    "permissions": [
         "add_reactions"
     ],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Various fun commands like react, textflip, and regional",
-    "tags" : [],
-    "type" : "COG"
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Various fun commands like react, textflip, and regional",
+    "tags": [],
+    "type": "COG"
 }

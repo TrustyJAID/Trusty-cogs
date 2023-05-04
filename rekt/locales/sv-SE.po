@@ -1,0 +1,375 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/rekt/locales/messages.pot\n"
+"X-Crowdin-File-ID: 536\n"
+"Language: sv_SE\n"
+
+#: rekt/rekt.py:11
+msgid "☑ Rekt"
+msgstr ""
+
+#: rekt/rekt.py:12
+msgid "☑ Tyrannosaurus Rekt"
+msgstr ""
+
+#: rekt/rekt.py:13
+msgid "☑ sudo apt-get Rekt"
+msgstr ""
+
+#: rekt/rekt.py:14
+msgid "☑ e=mRekt²"
+msgstr ""
+
+#: rekt/rekt.py:15
+msgid "☑ Rekt and Morty"
+msgstr ""
+
+#: rekt/rekt.py:16
+msgid "☑ Really Rekt"
+msgstr ""
+
+#: rekt/rekt.py:17
+msgid "☑ Cash4Rekt.com"
+msgstr ""
+
+#: rekt/rekt.py:18
+msgid "☑ Grapes of Rekt"
+msgstr ""
+
+#: rekt/rekt.py:19
+msgid "☑ Ship Rekt"
+msgstr ""
+
+#: rekt/rekt.py:20
+msgid "☑ Rektavoir Dogs"
+msgstr ""
+
+#: rekt/rekt.py:21
+msgid "☑ Raiders of the Rekt Ark _("
+msgstr ""
+
+#: rekt/rekt.py:22
+msgid "☑ Indiana Jones and the Temple of Rekt"
+msgstr ""
+
+#: rekt/rekt.py:23
+msgid "☑ Rekt markes the spot"
+msgstr ""
+
+#: rekt/rekt.py:24
+msgid "☑ Caught rekt handed"
+msgstr ""
+
+#: rekt/rekt.py:25
+msgid "☑ The Rekt Side Story"
+msgstr ""
+
+#: rekt/rekt.py:26
+msgid "☑ Singin' In The Rekt"
+msgstr ""
+
+#: rekt/rekt.py:27
+msgid "☑ Painting The Roses Rekt"
+msgstr ""
+
+#: rekt/rekt.py:28
+msgid "☑ Rekt Van Winkle"
+msgstr ""
+
+#: rekt/rekt.py:29
+msgid "☑ Parks and Rekt"
+msgstr ""
+
+#: rekt/rekt.py:30
+msgid "☑ Lord of the Rekts: The Reking of the King"
+msgstr ""
+
+#: rekt/rekt.py:31
+msgid "☑ Star Trekt"
+msgstr ""
+
+#: rekt/rekt.py:32
+msgid "☑ The Rekt Prince of Bel-Air"
+msgstr ""
+
+#: rekt/rekt.py:33
+msgid "☑ A Game of Rekt"
+msgstr ""
+
+#: rekt/rekt.py:34
+msgid "☑ Rektflix"
+msgstr ""
+
+#: rekt/rekt.py:35
+msgid "☑ Rekt it like it's hot"
+msgstr ""
+
+#: rekt/rekt.py:36
+msgid "☑ RektBox 360"
+msgstr ""
+
+#: rekt/rekt.py:37
+msgid "☑ The Rekt-men"
+msgstr ""
+
+#: rekt/rekt.py:38
+msgid "☑ School Of Rekt"
+msgstr ""
+
+#: rekt/rekt.py:39
+msgid "☑ I am Fire, I am Rekt"
+msgstr ""
+
+#: rekt/rekt.py:40
+msgid "☑ Rekt and Roll"
+msgstr ""
+
+#: rekt/rekt.py:41
+msgid "☑ Professor Rekt"
+msgstr ""
+
+#: rekt/rekt.py:42
+msgid "☑ Catcher in the Rekt"
+msgstr ""
+
+#: rekt/rekt.py:43
+msgid "☑ Rekt-22"
+msgstr ""
+
+#: rekt/rekt.py:44
+msgid "☑ Harry Potter: The Half-Rekt Prince"
+msgstr ""
+
+#: rekt/rekt.py:45
+msgid "☑ Great Rektspectations"
+msgstr ""
+
+#: rekt/rekt.py:46
+msgid "☑ Paper Scissors Rekt"
+msgstr ""
+
+#: rekt/rekt.py:47
+msgid "☑ RektCraft"
+msgstr ""
+
+#: rekt/rekt.py:48
+msgid "☑ Grand Rekt Auto V"
+msgstr ""
+
+#: rekt/rekt.py:49
+msgid "☑ Call of Rekt: Modern Reking 2"
+msgstr ""
+
+#: rekt/rekt.py:50
+msgid "☑ Legend Of Zelda: Ocarina of Rekt"
+msgstr ""
+
+#: rekt/rekt.py:51
+msgid "☑ Rekt It Ralph"
+msgstr ""
+
+#: rekt/rekt.py:52
+msgid "☑ Left 4 Rekt"
+msgstr ""
+
+#: rekt/rekt.py:53
+msgid "☑ www.rekkit.com"
+msgstr ""
+
+#: rekt/rekt.py:54
+msgid "☑ Pokemon: Fire Rekt"
+msgstr ""
+
+#: rekt/rekt.py:55
+msgid "☑ The Shawshank Rektemption"
+msgstr ""
+
+#: rekt/rekt.py:56
+msgid "☑ The Rektfather"
+msgstr ""
+
+#: rekt/rekt.py:57
+msgid "☑ The Rekt Knight"
+msgstr ""
+
+#: rekt/rekt.py:58
+msgid "☑ Fiddler on the Rekt"
+msgstr ""
+
+#: rekt/rekt.py:59
+msgid "☑ The Rekt Files"
+msgstr ""
+
+#: rekt/rekt.py:60
+msgid "☑ The Good, the Bad, and The Rekt"
+msgstr ""
+
+#: rekt/rekt.py:61
+msgid "☑ Forrekt Gump"
+msgstr ""
+
+#: rekt/rekt.py:62
+msgid "☑ The Silence of the Rekts"
+msgstr ""
+
+#: rekt/rekt.py:63
+msgid "☑ The Green Rekt"
+msgstr ""
+
+#: rekt/rekt.py:64
+msgid "☑ Gladirekt"
+msgstr ""
+
+#: rekt/rekt.py:65
+msgid "☑ Spirekted Away"
+msgstr ""
+
+#: rekt/rekt.py:66
+msgid "☑ Terminator 2: Rektment Day"
+msgstr ""
+
+#: rekt/rekt.py:67
+msgid "☑ The Rekt Knight Rises"
+msgstr ""
+
+#: rekt/rekt.py:68
+msgid "☑ The Rekt King"
+msgstr ""
+
+#: rekt/rekt.py:69
+msgid "☑ REKT-E"
+msgstr ""
+
+#: rekt/rekt.py:70
+msgid "☑ Citizen Rekt"
+msgstr ""
+
+#: rekt/rekt.py:71
+msgid "☑ Requiem for a Rekt"
+msgstr ""
+
+#: rekt/rekt.py:72
+msgid "☑ REKT TO REKT ass to ass"
+msgstr ""
+
+#: rekt/rekt.py:73
+msgid "☑ Star Wars: Episode VI - Return of the Rekt"
+msgstr ""
+
+#: rekt/rekt.py:74
+msgid "☑ Braverekt"
+msgstr ""
+
+#: rekt/rekt.py:75
+msgid "☑ Batrekt Begins"
+msgstr ""
+
+#: rekt/rekt.py:76
+msgid "☑ 2001: A Rekt Odyssey"
+msgstr ""
+
+#: rekt/rekt.py:77
+msgid "☑ The Wolf of Rekt Street"
+msgstr ""
+
+#: rekt/rekt.py:78
+msgid "☑ Rekt's Labyrinth"
+msgstr ""
+
+#: rekt/rekt.py:79
+msgid "☑ 12 Years a Rekt"
+msgstr ""
+
+#: rekt/rekt.py:80
+msgid "☑ Gravirekt"
+msgstr ""
+
+#: rekt/rekt.py:81
+msgid "☑ Finding Rekt"
+msgstr ""
+
+#: rekt/rekt.py:82
+msgid "☑ The Arekters"
+msgstr ""
+
+#: rekt/rekt.py:83
+msgid "☑ There Will Be Rekt"
+msgstr ""
+
+#: rekt/rekt.py:84
+msgid "☑ Christopher Rektellston"
+msgstr ""
+
+#: rekt/rekt.py:85
+msgid "☑ Hachi: A Rekt Tale"
+msgstr ""
+
+#: rekt/rekt.py:86
+msgid "☑ The Rekt Ultimatum"
+msgstr ""
+
+#: rekt/rekt.py:87
+msgid "☑ Shrekt"
+msgstr ""
+
+#: rekt/rekt.py:88
+msgid "☑ Rektal Exam"
+msgstr ""
+
+#: rekt/rekt.py:89
+msgid "☑ Rektium for a Dream"
+msgstr ""
+
+#: rekt/rekt.py:90
+msgid "☑ www.Trekt.tv"
+msgstr ""
+
+#: rekt/rekt.py:91
+msgid "☑ Erektile Dysfunction"
+msgstr ""
+
+#: rekt/rekt.py:92
+msgid "☑ Jesus, stepping out the grave: 'Get ressurekt'"
+msgstr ""
+
+#: rekt/rekt.py:98
+#, docstring
+msgid "\n"
+"    Post embed with random rekt messages\n"
+"    "
+msgstr ""
+
+#: rekt/rekt.py:125
+#, docstring
+msgid "Post embed with random rekt messages"
+msgstr ""
+
+#: rekt/rekt.py:128
+msgid "NOT REKT"
+msgstr ""
+
+#: rekt/rekt.py:128
+msgid "⬜ Not Rekt"
+msgstr ""
+
+#: rekt/rekt.py:131
+msgid "REKT"
+msgstr ""
+
+#: rekt/rekt.py:132
+msgid "Are you REKT?"
+msgstr ""
+

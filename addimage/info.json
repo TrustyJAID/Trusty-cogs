@@ -1,26 +1,26 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Add image for the bot to directly upload similar to alias.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog stores attachements uploaded by users for the purposes of creating custom commands to send uploaded attachments.\nUsers may delete their own data with or without making a data request.",
-    "hidden" : false,
-    "install_msg" : "This cog will create folders to save and delete images added locally. `[p]addimage` to add an image to the guild. Owner can add global bot images.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Add image for the bot to directly upload similar to alias.",
+    "disabled": false,
+    "end_user_data_statement": "This cog stores attachements uploaded by users for the purposes of creating custom commands to send uploaded attachments.\nUsers may delete their own data with or without making a data request.",
+    "hidden": false,
+    "install_msg": "This cog will create folders to save and delete images added locally. `[p]addimage` to add an image to the guild. Owner can add global bot images.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "AddImage",
-    "permissions" : [
+    "name": "AddImage",
+    "permissions": [
         "attach_files"
     ],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Add images for direct upload per guild and globally.",
-    "tags" : [],
-    "type" : "COG"
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Add images for direct upload per guild and globally.",
+    "tags": [],
+    "type": "COG"
 }

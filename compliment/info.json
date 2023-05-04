@@ -1,26 +1,26 @@
 {
-    "author" : [
+    "author": [
         "Airen",
         "JennJenn",
         "TrustyJAID"
     ],
-    "description" : "Compliment people in a creative way",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Usage: `[p]compliment <user>`",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Compliment people in a creative way",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Usage: `[p]compliment <user>`",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Compliment",
-    "permissions" : [],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Compliment people in a creative way",
-    "tags" : [],
-    "type" : "COG"
+    "name": "Compliment",
+    "permissions": [],
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Compliment people in a creative way",
+    "tags": [],
+    "type": "COG"
 }

@@ -7,7 +7,7 @@ import sys
 import textwrap
 from copy import copy
 from io import BytesIO
-from typing import Optional, Union, cast, Tuple
+from typing import Optional, Tuple, Union, cast
 
 import aiohttp
 import discord
@@ -151,7 +151,8 @@ class ImageMaker(commands.Cog):
             colour = colour.to_rgb() + (0,)
         async with ctx.channel.typing():
             task = functools.partial(self.make_banner, text=text, colour=colour)
-            task = ctx.bot.loop.run_in_executor(None, task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, task)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
@@ -275,7 +276,8 @@ class ImageMaker(commands.Cog):
             return
         async with ctx.channel.typing():
             task = functools.partial(self.make_trump_gif, text=message)
-            task = self.bot.loop.run_in_executor(None, task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, task)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
@@ -322,7 +324,8 @@ class ImageMaker(commands.Cog):
         template_str = "https://i.imgur.com/n6r04O8.png"
         template = Image.open(await self.dl_image(template_str))
         task = functools.partial(self.colour_convert, template=template, colour=colour)
-        task = self.bot.loop.run_in_executor(None, task)
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, task)
         try:
             image = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
@@ -355,18 +358,17 @@ class ImageMaker(commands.Cog):
     ) -> Tuple[Optional[discord.File], int]:
         template_str = "https://i.imgur.com/kzE9XBE.png"
         template = Image.open(await self.dl_image(template_str))
-        if user.is_avatar_animated() and is_gif:
-            avatar = Image.open(
-                await self.dl_image(str(user.avatar_url_as(format="gif", size=128)))
-            )
+        if user.display_avatar.is_animated() and is_gif:
+            asset = BytesIO(await user.display_avatar.replace(format="gif", size=128).read())
+            avatar = Image.open(asset)
             task = functools.partial(self.make_beautiful_gif, template=template, avatar=avatar)
 
         else:
-            avatar = Image.open(
-                await self.dl_image(str(user.avatar_url_as(format="png", size=128)))
-            )
+            asset = BytesIO(await user.display_avatar.replace(format="png", size=128).read())
+            avatar = Image.open(asset)
             task = functools.partial(self.make_beautiful_img, template=template, avatar=avatar)
-        task = self.bot.loop.run_in_executor(None, task)
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, task)
         try:
             temp: BytesIO = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
@@ -388,21 +390,20 @@ class ImageMaker(commands.Cog):
         template_str = "https://i.imgur.com/4xr6cdw.png"
         template = Image.open(await self.dl_image(template_str))
         colour = user.colour.to_rgb()
-        if user.is_avatar_animated() and is_gif:
-            avatar = Image.open(
-                await self.dl_image(str(user.avatar_url_as(format="gif", size=64)))
-            )
+        if user.display_avatar.is_animated() and is_gif:
+            asset = BytesIO(await user.display_avatar.replace(format="gif", size=64).read())
+            avatar = Image.open(asset)
             task = functools.partial(
                 self.make_feels_gif, template=template, colour=colour, avatar=avatar
             )
         else:
-            avatar = Image.open(
-                await self.dl_image(str(user.avatar_url_as(format="png", size=64)))
-            )
+            asset = BytesIO(await user.display_avatar.replace(format="png", size=64).read())
+            avatar = Image.open(asset)
             task = functools.partial(
                 self.make_feels_img, template=template, colour=colour, avatar=avatar
             )
-        task = self.bot.loop.run_in_executor(None, task)
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, task)
         try:
             temp: BytesIO = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
@@ -426,19 +427,18 @@ class ImageMaker(commands.Cog):
         avatar = None
         if type(text) == discord.Member:
             user = cast(discord.User, text)
-            if user.is_avatar_animated() and is_gif:
-                avatar = Image.open(
-                    await self.dl_image(str(user.avatar_url_as(format="gif", size=64)))
-                )
+            if user.display_avatar.is_animated() and is_gif:
+                asset = BytesIO(await user.display_avatar.replace(format="gif", size=64).read())
+                avatar = Image.open(asset)
 
                 task = functools.partial(self.make_wheeze_gif, template=template, avatar=avatar)
 
             else:
-                avatar = Image.open(
-                    await self.dl_image(str(user.avatar_url_as(format="png", size=64)))
-                )
+                asset = BytesIO(await user.display_avatar.replace(format="png", size=64).read())
+                avatar = Image.open(asset)
                 task = functools.partial(self.make_wheeze_img, template=template, avatar=avatar)
-            task = self.bot.loop.run_in_executor(None, task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, task)
             try:
                 temp: BytesIO = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
@@ -447,7 +447,8 @@ class ImageMaker(commands.Cog):
                 return None, 0
         else:
             task = functools.partial(self.make_wheeze_img, template=template, avatar=text)
-            task = self.bot.loop.run_in_executor(None, task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, task)
             try:
                 temp = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
@@ -466,7 +467,8 @@ class ImageMaker(commands.Cog):
     async def face_merge(self, urls: list) -> Tuple[Optional[discord.File], int]:
         images = [await self.dl_image(u) for u in urls]
         task = functools.partial(self.face_transition, images=images)
-        task = self.bot.loop.run_in_executor(None, task)
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, task)
         try:
             temp: BytesIO = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:

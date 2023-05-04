@@ -1,29 +1,29 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Check the current weather in many cities around the world including in Kelvin.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog may store User ID's for the purposes of setting default preferred temperature units.",
-    "hidden" : false,
-    "install_msg" : "Thanks for installing. Do `[p]weather location` to see the weather in your location.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Check the current weather in many cities around the world including in Kelvin.",
+    "disabled": false,
+    "end_user_data_statement": "This cog may store User ID's for the purposes of setting default preferred temperature units.",
+    "hidden": false,
+    "install_msg": "Thanks for installing. Please set your api_key before using this cog, see `[p]weather set creds` for information on how. Do `[p]weather location` to see the weather in your location.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Weather",
-    "permissions" : [
+    "name": "Weather",
+    "permissions": [
         "embed_links"
     ],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Show the current weather in specified locations!",
-    "tags" : [
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Show the current weather in specified locations!",
+    "tags": [
         "weather",
         "utility"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

@@ -1,29 +1,29 @@
 {
-    "author" : [
+    "author": [
         "Twentysix",
         "TrustyJAID"
     ],
-    "description" : "Recreation of Red v1 meme generator",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Recreation of Red v1 meme generator cog!",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Recreation of Red v1 meme generator",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Recreation of Red v1 meme generator cog!",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Imgflip",
-    "permissions" : [],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Recreation of Red v1 meme generator",
-    "tags" : [
+    "name": "Imgflip",
+    "permissions": [],
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Recreation of Red v1 meme generator",
+    "tags": [
         "meme",
         "memes",
         "fun"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

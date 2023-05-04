@@ -1,44 +1,37 @@
-import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import List, Literal, Optional
 from urllib.parse import quote
 
 import discord
 from redbot.core import commands
-from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
-from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .abc import MixinMeta
 from .constants import BASE_URL, TEAMS
 from .helper import (
-    YEAR_RE,
-    HockeyStandings,
-    HockeyTeams,
-    TeamDateFinder,
+    DateFinder,
+    LeaderboardFinder,
+    LeaderboardType,
+    PlayerFinder,
+    StandingsFinder,
+    TeamFinder,
     YearFinder,
-    utc_to_local,
 )
-from .menu import (
-    BaseMenu,
-    ConferenceStandingsPages,
-    DivisionStandingsPages,
-    GamesMenu,
-    LeaderboardPages,
-    PlayerPages,
-    SimplePages,
-    StandingsPages,
-    TeamStandingsPages,
-)
+from .menu import BaseMenu, GamesMenu, LeaderboardPages, PlayerPages, SimplePages
+from .player import SimplePlayer
 from .schedule import Schedule, ScheduleList
-from .standings import Standings
+from .standings import PlayoffsView, Standings, StandingsMenu
+from .stats import LeaderCategories, LeaderView
 
 _ = Translator("Hockey", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
+
+
+hockey_commands = MixinMeta.hockey_commands
 
 
 class HockeyCommands(MixinMeta):
@@ -49,13 +42,6 @@ class HockeyCommands(MixinMeta):
     #######################################################################
     # All the basic commands                                              #
     #######################################################################
-
-    @commands.group(name="hockey", aliases=["nhl"])
-    async def hockey_commands(self, ctx: commands.Context) -> None:
-        """
-        Get information from NHL.com
-        """
-        pass
 
     @hockey_commands.command()
     async def version(self, ctx: commands.Context) -> None:
@@ -85,67 +71,52 @@ class HockeyCommands(MixinMeta):
         search = quote(search)
         await ctx.send("https://hh.sbstp.ca/?search=" + search)
 
-    @hockey_commands.command(name="role")
+    @hockey_commands.command(name="role", hidden=True, with_app_command=False)
     @commands.bot_has_permissions(manage_roles=True)
-    async def team_role(self, ctx: commands.Context, *, team: HockeyTeams) -> None:
+    async def team_role(
+        self, ctx: commands.Context, *, team: discord.app_commands.Transform[str, TeamFinder]
+    ) -> None:
         """Set your role to a team role"""
         guild = ctx.message.guild
-        if team is None:
-            return await ctx.send(_("You must provide a valid current team."))
+        if not team:
+            await ctx.send(_("You must provide a valid current team."))
+            return
+        msg = ""
+        role_name = f"{team}"
         try:
-            role = [
-                role
-                for role in guild.roles
-                if (team.lower() in role.name.lower() and "GOAL" not in role.name)
-            ]
-            if role[0] >= guild.me.top_role:
-                return
+            role = discord.utils.find(lambda r: r.name == role_name, guild.roles)
+            if not role or role >= guild.me.top_role:
+                msg += _("{role_name} is not an available role!").format(role_name=role_name)
             await ctx.author.add_roles(role[0])
-            await ctx.send(role[0].name + _(" role applied."))
+            msg += role[0].name + _(" role applied.")
         except Exception:
             log.error("error adding team role", exc_info=True)
-            await ctx.send(team + _(" is not an available role!"))
+            msg += _("{role_name} is not an available role!").format(role_name=role_name)
+        await ctx.send(msg)
 
-    @hockey_commands.command(name="goalsrole")
-    async def team_goals(self, ctx: commands.Context, *, team: HockeyTeams = None) -> None:
+    @hockey_commands.command(name="goalsrole", hidden=True, with_app_command=False)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def team_goals(
+        self, ctx: commands.Context, *, team: discord.app_commands.Transform[str, TeamFinder]
+    ) -> None:
         """Subscribe to goal notifications"""
         guild = ctx.message.guild
-        member = ctx.message.author
-        if not guild.me.guild_permissions.manage_roles:
-            return
-        if team is None:
-            team_roles = []
-            for role in guild.roles:
-                if role.name in [r.name + " GOAL" for r in member.roles]:
-                    team_roles.append(role)
-            if team_roles != []:
-                for role in team_roles:
-                    if role[0] >= guild.me.top_role:
-                        continue
-                    await ctx.message.author.add_roles(role)
-                role_list = ", ".join(r.name for r in team_roles)
-                await ctx.message.channel.send(f"{role_list} role applied.")
-                return
-            else:
-                await ctx.send(
-                    _("Please provide the team you want the goal notification role for.")
-                )
-                return
-        else:
-            try:
-                role = [
-                    role
-                    for role in guild.roles
-                    if (team.lower() in role.name.lower() and role.name.endswith("GOAL"))
-                ]
-                await ctx.message.author.add_roles(role[0])
-                await ctx.message.channel.send(role[0].name + _(" role applied."))
-            except Exception:
-                await ctx.message.channel.send(team + _(" is not an available role!"))
+        msg = ""
+        role_name = f"{team} GOAL"
+        try:
+            role = discord.utils.find(lambda r: r.name == role_name, guild.roles)
+            if not role or role >= guild.me.top_role:
+                msg += _("{role_name} is not an available role!").format(role_name=role_name)
+            await ctx.author.add_roles(role[0])
+            msg += role[0].name + _(" role applied.")
+        except Exception:
+            log.error("error adding team role", exc_info=True)
+            msg += _("{role_name} is not an available role!").format(role_name=role_name)
+        await ctx.send(msg)
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
-    async def standings(self, ctx: commands.Context, *, search: HockeyStandings = None) -> None:
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    async def standings(self, ctx: commands.Context, *, search: StandingsFinder = None) -> None:
         """
         Displays current standings
 
@@ -153,42 +124,19 @@ class HockeyCommands(MixinMeta):
         by searching for team or get all standings at once
         separated by division
         """
-        source = {
-            "all": StandingsPages,
-            "conference": ConferenceStandingsPages,
-            "western": ConferenceStandingsPages,
-            "eastern": ConferenceStandingsPages,
-            "division": DivisionStandingsPages,
-            "massmutual": DivisionStandingsPages,
-            "central": DivisionStandingsPages,
-            "discover": DivisionStandingsPages,
-            "scotia": DivisionStandingsPages,
-            "north": DivisionStandingsPages,
-            "massmutual": DivisionStandingsPages,
-            "east": DivisionStandingsPages,
-            "honda": DivisionStandingsPages,
-            "west": DivisionStandingsPages,
-        }
-        if search is None:
-            search = "division"
-        standings, page = await Standings.get_team_standings(search.lower(), session=self.session)
-        for team in TEAMS:
-            if "Team" in team:
-                source[team.replace("Team ", "").lower()] = DivisionStandingsPages
-            else:
-                source[team] = TeamStandingsPages
-        await BaseMenu(
-            source=source[search](pages=standings),
-            page_start=page,
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
-        ).start(ctx=ctx)
+        await ctx.defer()
+        standings = await Standings.get_team_standings(session=self.session)
+        await StandingsMenu(standings=standings, start=search).start(ctx=ctx)
 
     @hockey_commands.command(aliases=["score"])
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @discord.app_commands.describe(date="YYYY-MM-DD")
     async def games(
-        self, ctx: commands.Context, *, teams_and_date: Optional[TeamDateFinder] = {}
+        self,
+        ctx: commands.Context,
+        date: Optional[discord.app_commands.Transform[datetime, DateFinder]] = None,
+        *,
+        team: Optional[discord.app_commands.Transform[str, TeamFinder]],
     ) -> None:
         """
         Gets all NHL games for the current season
@@ -200,21 +148,167 @@ class HockeyCommands(MixinMeta):
         Team and Date can be provided at the same time and then
         only that teams games may appear in that date range if they exist.
         """
-        log.debug(teams_and_date)
+        log.debug(team)
+        log.debug(date)
+        await ctx.defer()
+        teams = []
+        if team is not None:
+            teams = [team]
         await GamesMenu(
-            source=Schedule(**teams_and_date, session=self.session),
+            source=Schedule(team=teams, date=date, session=self.session),
+            cog=self,
             delete_message_after=False,
             clear_reactions_after=True,
-            timeout=60,
+            timeout=180,
         ).start(ctx=ctx)
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
-    async def schedule(
-        self, ctx: commands.Context, *, teams_and_date: Optional[TeamDateFinder] = {}
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    async def playoffs(
+        self,
+        ctx: commands.Context,
+        season: Optional[YearFinder] = None,
     ) -> None:
         """
-        Gets all upcoming NHL games for the current season as a list
+        Gets all NHL games for the current season
+
+        If team is provided it will grab that teams schedule.
+        A date may also be provided and the bot will search for games within
+        that date range.
+        Dates must be in the format of `YYYY-MM-DD` if provided.
+        Team and Date can be provided at the same time and then
+        only that teams games may appear in that date range if they exist.
+        """
+        await ctx.defer()
+        season_str = None
+        if season:
+            if season.group(3):
+                if (int(season.group(3)) - int(season.group(1))) > 1:
+                    await ctx.send(_("Dates must be only 1 year apart."))
+                    return
+                if (int(season.group(3)) - int(season.group(1))) <= 0:
+                    await ctx.send(_("Dates must be only 1 year apart."))
+                    return
+                if int(season.group(1)) > datetime.now().year:
+                    await ctx.send(_("Please select a year prior to now."))
+                    return
+                season_str = int(season.group(1))
+            else:
+                if int(season.group(1)) > datetime.now().year:
+                    await ctx.send(_("Please select a year prior to now."))
+                    return
+                season_str = int(season.group(1)) - 1
+
+        await PlayoffsView(start_date=season_str).start(ctx=ctx)
+
+    @hockey_commands.command()
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    async def heatmap(
+        self,
+        ctx: commands.Context,
+        style: Literal["all", "ev", "5v5", "sva", "home5v4", "away5v4"] = "all",
+        date: Optional[discord.app_commands.Transform[datetime, DateFinder]] = None,
+        *,
+        team: Optional[discord.app_commands.Transform[str, TeamFinder]],
+    ) -> None:
+        """
+        Display game heatmaps.
+
+        `[style]` must be one of "all", "ev", "5v5", "sva", "home5v4", or "away5v4"
+
+        If team is provided it will grab that teams schedule.
+        A date may also be provided and the bot will search for games within
+        that date range.
+        Dates must be in the format of `YYYY-MM-DD` if provided.
+        Team and Date can be provided at the same time and then
+        only that teams games may appear in that date range if they exist.
+        """
+        await ctx.defer()
+        styles = ["all", "ev", "5v5", "sva", "home5v4", "away5v4"]
+        if style not in styles:
+            await ctx.send(
+                _("Style must be one of {styles}.").format(styles=humanize_list(styles))
+            )
+            return
+        teams = []
+        if team is not None:
+            teams = [team]
+        await GamesMenu(
+            source=Schedule(
+                team=teams,
+                date=date,
+                session=self.session,
+                include_goals=False,
+                include_heatmap=True,
+                style=style,
+            ),
+            cog=self,
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=180,
+        ).start(ctx=ctx)
+
+    @hockey_commands.command()
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    async def gameflow(
+        self,
+        ctx: commands.Context,
+        strength: Literal["all", "ev", "5v5", "sva"] = "all",
+        corsi: bool = True,
+        date: Optional[discord.app_commands.Transform[datetime, DateFinder]] = None,
+        *,
+        team: Optional[discord.app_commands.Transform[str, TeamFinder]],
+    ) -> None:
+        """
+        Display games gameflow.
+
+        `[strength]` must be one of "all", "ev", "5v5", or "sva".
+        `[corsi]` either true or false.
+
+        If team is provided it will grab that teams schedule.
+        A date may also be provided and the bot will search for games within
+        that date range.
+        Dates must be in the format of `YYYY-MM-DD` if provided.
+        Team and Date can be provided at the same time and then
+        only that teams games may appear in that date range if they exist.
+        """
+        await ctx.defer()
+        styles = ["all", "ev", "5v5", "sva"]
+        if strength not in styles:
+            await ctx.send(
+                _("Style must be one of {styles}.").format(styles=humanize_list(styles))
+            )
+            return
+        teams = []
+        if team is not None:
+            teams = [team]
+        await GamesMenu(
+            source=Schedule(
+                team=teams,
+                date=date,
+                session=self.session,
+                include_goals=False,
+                include_gameflow=True,
+                corsi=corsi,
+                strength=strength,
+            ),
+            cog=self,
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=180,
+        ).start(ctx=ctx)
+
+    @hockey_commands.command()
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    async def schedule(
+        self,
+        ctx: commands.Context,
+        date: Optional[discord.app_commands.Transform[datetime, DateFinder]],
+        *,
+        team: Optional[discord.app_commands.Transform[str, TeamFinder]],
+    ) -> None:
+        """
+        Gets upcoming NHL games for the current season as a list
 
         If team is provided it will grab that teams schedule
         A date may also be provided and the bot will search for games within
@@ -223,128 +317,203 @@ class HockeyCommands(MixinMeta):
         Team and Date can be provided at the same time and then
         only that teams games may appear in that date range if they exist.
         """
+        await ctx.defer()
+        teams = []
+        if team is not None:
+            teams = [team]
         await GamesMenu(
-            source=ScheduleList(**teams_and_date, session=self.session),
+            source=ScheduleList(team=teams, date=date, session=self.session),
+            cog=self,
             delete_message_after=False,
             clear_reactions_after=True,
-            timeout=60,
+            timeout=180,
         ).start(ctx=ctx)
 
-    async def player_id_lookup(self, name: str) -> List[int]:
-        now = datetime.utcnow()
-        saved = datetime.fromtimestamp(await self.config.player_db())
-        path = cog_data_path(self) / "players.json"
-        if (now - saved) > timedelta(days=1) or not path.exists():
-            async with self.session.get(
-                "https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster"
-            ) as resp:
-                with path.open(encoding="utf-8", mode="w") as f:
-                    json.dump(await resp.json(), f)
-            await self.config.player_db.set(int(now.timestamp()))
-        with path.open(encoding="utf-8", mode="r") as f:
+    @hockey_commands.command()
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    async def recap(
+        self,
+        ctx: commands.Context,
+        date: Optional[discord.app_commands.Transform[datetime, DateFinder]],
+        *,
+        team: Optional[discord.app_commands.Transform[str, TeamFinder]],
+    ) -> None:
+        """
+        Gets NHL games and their game recap links
 
-            players = []
-            async for player in AsyncIter(json.loads(f.read())["data"], steps=100):
-                if name.lower() in player["fullName"].lower():
-                    if player["onRoster"] == "N":
-                        players.append(player["id"])
-                    else:
-                        players.insert(0, player["id"])
-        log.debug(players)
-        return players
+        If team is provided it will grab that teams schedule
+        A date may also be provided and the bot will search for games within
+        that date range.
+        Dates must be in the format of `YYYY-MM-DD` if provided.
+        Team and Date can be provided at the same time and then
+        only that teams games may appear in that date range if they exist.
+        """
+        await ctx.defer()
+        teams = []
+        if team is not None:
+            teams = [team]
+        await GamesMenu(
+            source=ScheduleList(team=teams, date=date, session=self.session, get_recap=True),
+            cog=self,
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=180,
+        ).start(ctx=ctx)
+
+    @hockey_commands.command(hidden=True, with_app_command=False)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    async def season(
+        self,
+        ctx: commands.Context,
+        team: discord.app_commands.Transform[str, TeamFinder],
+        season: str = None,
+    ) -> None:
+        """
+        Gets all upcoming NHL games for the current season for one team.
+
+        `<team>` The name of the teams season schedule you want to post.
+        `[season]` must be YYYYYYYY format. e.g. 20212022.
+        """
+        await ctx.defer()
+        if season is None:
+            season = f"{datetime.now().year}{datetime.now().year+1}"
+        if "-" in season:
+            start, end = season.split("-")
+            season = f"{start}{end}"
+        if isinstance(ctx, discord.Interaction):
+            await ctx.response.send_message(
+                _("Posting {team}'s season schedule for {season}.").format(
+                    team=team, season=season
+                ),
+                ephemeral=True,
+            )
+        url = f"{BASE_URL}/api/v1/schedule?season={season}"
+        url += "&teamId=" + ",".join([str(TEAMS[team]["id"])])
+        log.debug(team)
+        log.debug(TEAMS[team]["id"])
+        log.debug(url)
+        async with self.session.get(url) as resp:
+            data = await resp.json()
+        games = [game for date in data["dates"] for game in date["games"]]
+        msg = ""
+        for game in games:
+            game_start = datetime.strptime(game["gameDate"], "%Y-%m-%dT%H:%M:%SZ")
+            game_start = game_start.replace(tzinfo=timezone.utc)
+            home_team = game["teams"]["home"]["team"]["name"]
+            away_team = game["teams"]["away"]["team"]["name"]
+            home_emoji = "<:" + TEAMS[home_team]["emoji"] + ">"
+            away_emoji = "<:" + TEAMS[away_team]["emoji"] + ">"
+            date_str = f"<t:{int(game_start.timestamp())}:d>"
+            time_str = f"<t:{int(game_start.timestamp())}:t>"
+            msg += f"{date_str} - {away_emoji} @ " f"{home_emoji} - {time_str}\n"
+        for page in pagify(msg):
+            await ctx.channel.send(page)
+            break
+        # x = list(pagify(msg))
+        # await ctx.send(str(len(x)))
+        # await ctx.send(x[0])
 
     @hockey_commands.command(aliases=["players"])
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
     async def player(
         self,
         ctx: commands.Context,
+        season: Optional[YearFinder],
         *,
-        search: str,
+        player: discord.app_commands.Transform[List[SimplePlayer], PlayerFinder],
     ) -> None:
         """
         Lookup information about a specific player
 
-        `<search>` The name of the player to search for
-        you can include the season to get stats data on format can be `YYYY` or `YYYYYYYY`
+        `[season]` The season to get stats data on format can be `YYYY` or `YYYYYYYY`
+        `<player>` The name of the player to search for
         """
-        async with ctx.typing():
-            season = YEAR_RE.search(search)
-            season_str = None
-            if season:
-                search = YEAR_RE.sub("", search)
-                if season.group(3):
-                    if (int(season.group(3)) - int(season.group(1))) > 1:
-                        return await ctx.send(_("Dates must be only 1 year apart."))
-                    if (int(season.group(3)) - int(season.group(1))) <= 0:
-                        return await ctx.send(_("Dates must be only 1 year apart."))
-                    if int(season.group(1)) > datetime.now().year:
-                        return await ctx.send(_("Please select a year prior to now."))
-                    season_str = f"{season.group(1)}{season.group(3)}"
-                else:
-                    if int(season.group(1)) > datetime.now().year:
-                        return await ctx.send(_("Please select a year prior to now."))
-                    year = int(season.group(1)) + 1
-                    season_str = f"{season.group(1)}{year}"
-            log.debug(season)
-            log.debug(search)
-            players = await self.player_id_lookup(search.strip())
-        if players != []:
-            await BaseMenu(
-                source=PlayerPages(pages=players, season=season_str),
-                cog=self,
-                delete_message_after=False,
-                clear_reactions_after=True,
-                timeout=60,
-            ).start(ctx=ctx)
-        else:
-            await ctx.send(
-                _('I could not find any player data for "{player}".').format(player=search)
-            )
+        log.info(player)
+        await ctx.defer()
+        season_str = None
+        if season:
+            if season.group(3):
+                if (int(season.group(3)) - int(season.group(1))) > 1:
+                    await ctx.send(_("Dates must be only 1 year apart."))
+                    return
+                if (int(season.group(3)) - int(season.group(1))) <= 0:
+                    await ctx.send(_("Dates must be only 1 year apart."))
+                    return
+                if int(season.group(1)) > datetime.now().year:
+                    await ctx.send(_("Please select a year prior to now."))
+                    return
+                season_str = f"{season.group(1)}{season.group(3)}"
+            else:
+                if int(season.group(1)) > datetime.now().year:
+                    await ctx.send(_("Please select a year prior to now."))
+                    return
+                year = int(season.group(1)) + 1
+                season_str = f"{season.group(1)}{year}"
+        if not player:
+            await ctx.send(_("No player could be found by that name."))
+            return
+        await BaseMenu(
+            source=PlayerPages(pages=player, season=season_str),
+            cog=self,
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=180,
+        ).start(ctx=ctx)
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
     async def roster(
-        self, ctx: commands.Context, season: Optional[YearFinder] = None, *, search: HockeyTeams
+        self,
+        ctx: commands.Context,
+        season: Optional[YearFinder],
+        *,
+        team: discord.app_commands.Transform[str, TeamFinder],
     ) -> None:
         """
-        Search for a player or get a team roster
+        Get a teams roster
 
         `[season]` The season to get stats data on format can be `YYYY` or `YYYYYYYY`
-        `<search>` The name of the team to search for
+        `<team>` The name of the team to search for
         """
+        await ctx.defer()
         season_str = None
         season_url = ""
         if season:
             if season.group(3):
                 if (int(season.group(3)) - int(season.group(1))) > 1:
-                    return await ctx.send(_("Dates must be only 1 year apart."))
+                    await ctx.send(_("Dates must be only 1 year apart."))
+                    return
                 if (int(season.group(3)) - int(season.group(1))) <= 0:
-                    return await ctx.send(_("Dates must be only 1 year apart."))
+                    await ctx.send(_("Dates must be only 1 year apart."))
+                    return
                 if int(season.group(1)) > datetime.now().year:
-                    return await ctx.send(_("Please select a year prior to now."))
+                    await ctx.send(_("Please select a year prior to now."))
+                    return
                 season_str = f"{season.group(1)}{season.group(3)}"
             else:
                 if int(season.group(1)) > datetime.now().year:
-                    return await ctx.send(_("Please select a year prior to now."))
+                    await ctx.send(_("Please select a year prior to now."))
+                    return
                 year = int(season.group(1)) + 1
                 season_str = f"{season.group(1)}{year}"
         if season:
             season_url = f"?season={season_str}"
-        if search is None:
-            return await ctx.send(_("You must provide a valid current team."))
-        rosters = {}
+        if team is None:
+            await ctx.send(_("You must provide a valid current team."))
+            return
         players = []
-        teams = [team for team in TEAMS if search.lower() in team.lower()]
-        if teams != []:
-            for team in teams:
-                url = f"{BASE_URL}/api/v1/teams/{TEAMS[team]['id']}/roster{season_url}"
-                async with self.session.get(url) as resp:
-                    data = await resp.json()
-                if "roster" in data:
-                    for player in data["roster"]:
-                        players.append(player["person"]["id"])
-        else:
-            return await ctx.send(_("No team name was provided."))
+        url = f"{BASE_URL}/api/v1/teams/{TEAMS[team]['id']}/roster{season_url}"
+        async with self.session.get(url) as resp:
+            data = await resp.json()
+        if "roster" in data:
+            for player in data["roster"]:
+                players.append(
+                    BasePlayer(
+                        id=player["person"]["id"],
+                        name=player["person"]["fullName"],
+                        on_roster="Y",
+                    )
+                )
 
         if players:
             await BaseMenu(
@@ -352,7 +521,7 @@ class HockeyCommands(MixinMeta):
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,
-                timeout=60,
+                timeout=180,
             ).start(ctx=ctx)
         else:
             if season:
@@ -365,12 +534,62 @@ class HockeyCommands(MixinMeta):
                 _("I could not find a roster for the {team}{year}.").format(team=team, year=year)
             )
 
-    @hockey_commands.command(hidden=True)
+    @hockey_commands.command(name="stats")
+    async def hockey_stats(
+        self,
+        ctx: commands.Context,
+        category: Optional[LeaderCategories],
+        season: Optional[str],
+        limit: Optional[int] = 10,
+    ):
+        """
+        Display Leader categories
+
+        `[season]` must be `YYYY-YYYY` formatted.
+        `[limit=10]` is the limit of the number of players to show.
+        `[category]` Must be one of the following (default is goals):
+            goals
+            assists
+            savePct
+            shutouts
+            wins
+            gaa
+            plusMinus
+            points
+            powerPlayGoals
+            shortHandedGoals
+            timeOnIcePerGame
+            faceOffPct
+            otLosses
+            losses
+            shortHandedAssists
+            pointsPerGame
+            powerPlayPoints
+            shootingPctg
+            hits
+            shortHandedPoints
+            penaltyMinutes
+            shots
+            powerPlayAssists
+            gameWinningGoals
+        """
+        if category is None:
+            category = LeaderCategories("goals")
+        if season is not None:
+            new_season = season.replace("-", "")
+            if not new_season.isdigit() and len(new_season) != 8:
+                await ctx.send(f"`{season}` is not a valid season.", ephemeral=True)
+                return
+        view = LeaderView(category, season, limit, self.session)
+        await view.start(ctx)
+
+    @hockey_commands.command(hidden=True, with_app_command=False)
     @commands.mod_or_permissions(manage_messages=True)
     async def rules(self, ctx: commands.Context) -> None:
         """
         Display a nice embed of server specific rules
         """
+        await ctx.defer()
         if not ctx.channel.permissions_for(ctx.guild.me).embed_links:
             return
         rules = await self.config.guild(ctx.guild).rules()
@@ -396,34 +615,32 @@ class HockeyCommands(MixinMeta):
         em.description = rules
         em.title = _("__RULES__")
         em.add_field(name=_("__**WARNING**__"), value=warning)
-        em.set_thumbnail(url=str(guild.icon_url))
-        em.set_author(name=guild.name, icon_url=str(guild.icon_url))
+        em.set_thumbnail(url=str(guild.icon))
+        em.set_author(name=guild.name, icon_url=str(guild.icon))
         return em
 
     async def post_leaderboard(
         self,
         ctx: commands.Context,
-        leaderboard_type: Literal[
-            "season",
-            "weekly",
-            "worst",
-            "playoffs",
-            "playoffs_weekly",
-            "pre-season",
-            "pre-season_weekly",
-        ],
+        leaderboard_type: LeaderboardType,
+        ephemeral: bool = False,
     ) -> None:
         """
         Posts the leaderboard based on specific style
         """
-        leaderboard_type_str = leaderboard_type.replace("_", " ").title()
-        leaderboard = await self.pickems_config.guild(ctx.guild).leaderboard()
+
+        leaderboard_type_str = leaderboard_type.as_str()
+        leaderboard_key = leaderboard_type.key()
+        if leaderboard_type.value > 6:
+            leaderboard = await self.pickems_config.guild(ctx.guild).last_week_leaderboard()
+        else:
+            leaderboard = await self.pickems_config.guild(ctx.guild).leaderboard()
         if leaderboard == {} or leaderboard is None:
             await ctx.send(_("There is no current leaderboard for this server!"))
             return
         if leaderboard_type != "worst":
             leaderboard = sorted(
-                leaderboard.items(), key=lambda i: i[1][leaderboard_type], reverse=True
+                leaderboard.items(), key=lambda i: i[1][leaderboard_key], reverse=True
             )
         else:
             leaderboard = sorted(
@@ -447,12 +664,12 @@ class HockeyCommands(MixinMeta):
                 member_mention = _("User has left the server ") + member_id[0]
             else:
                 member_mention = member.mention
-            if leaderboard_type in ["weekly", "playoffs_weekly", "pre-season_weekly"]:
-                points = member_id[1].get(leaderboard_type, 0)
+            if leaderboard_type.value in [2, 4, 6, 7, 8, 9]:
+                points = member_id[1].get(leaderboard_key, 0)
                 msg_list.append("#{}. {}: {}\n".format(count, member_mention, points))
-            elif leaderboard_type in ["season", "playoffs", "pre-season"]:
+            elif leaderboard_type.value in [1, 3, 5]:
                 total = member_id[1].get(total_str, 0)
-                wins = member_id[1].get(leaderboard_type, 0)
+                wins = member_id[1].get(leaderboard_key, 0)
                 try:
                     percent = (wins / total) * 100
                 except ZeroDivisionError:
@@ -462,7 +679,7 @@ class HockeyCommands(MixinMeta):
                 )
             else:
                 total = member_id[1].get(total_str, 0)
-                losses = member_id[1].get(total_str, 0) - member_id[1].get(leaderboard_type)
+                losses = member_id[1].get(total_str, 0) - member_id[1].get(leaderboard_key)
                 try:
                     percent = (losses / total) * 100
                 except ZeroDivisionError:
@@ -484,12 +701,12 @@ class HockeyCommands(MixinMeta):
                 number=user_position + 1,
                 leaderboard_type=leaderboard_type_str,
             )
-            if leaderboard_type == "season":
+            if leaderboard_type == LeaderboardType.season:
                 percent = (wins / total) * 100
                 position += _("You have {wins}/{total} correct ({percent:.4}%).").format(
                     wins=wins, total=total, percent=percent
                 )
-            elif leaderboard_type == "worst":
+            elif leaderboard_type == LeaderboardType.worst:
                 percent = (losses / total) * 100
                 position += _("You have {wins}/{total} incorrect ({percent:.4}%).").format(
                     wins=wins, total=total, percent=percent
@@ -504,61 +721,62 @@ class HockeyCommands(MixinMeta):
             em.set_author(
                 name=ctx.guild.name
                 + _(" Pickems {style} Leaderboard").format(style=leaderboard_type_str),
-                icon_url=ctx.guild.icon_url,
+                icon_url=ctx.guild.icon.url,
             )
-            em.set_thumbnail(url=ctx.guild.icon_url)
+            em.set_thumbnail(url=ctx.guild.icon.url)
             await ctx.send(embed=em)
             return
-        if position:
-            await ctx.send(position)
         await BaseMenu(
             source=LeaderboardPages(pages=leaderboard_list, style=leaderboard_type_str),
             delete_message_after=False,
             clear_reactions_after=True,
-            timeout=60,
-        ).start(ctx=ctx)
+            timeout=180,
+        ).start(ctx=ctx, content=position, ephemeral=ephemeral)
 
     @hockey_commands.command()
     @commands.guild_only()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def leaderboard(
-        self, ctx: commands.Context, *, leaderboard_type: str = "seasonal"
+        self,
+        ctx: commands.Context,
+        public: Optional[bool] = True,
+        *,
+        leaderboard_type: Optional[
+            discord.app_commands.Transform[LeaderboardType, LeaderboardFinder]
+        ],
     ) -> None:
         """
         Shows the current server leaderboard
 
-        `[leaderboard_type]` can be either `seasonal` the default, `weekly`, or `worst`
+        `[leaderboard_type]` can be any of the following:
+        `season` (the default)
+        `weekly`
+        `playoffs`
+        `playoffs weekly`
+        `pre-season`
+        `pre-season weekly`
+        `worst`
 
         Leaderboards % is calculated based on cumulative votes compared to number of votes.
         This is so that one lucky user who only votes once isn't considered *better*
         than people who consistently vote. The only way to win is to keep playing
         and picking correctly.
         """
-        leaderboard_type = leaderboard_type.replace(" ", "_").lower()
-        if leaderboard_type in ["seasonal", "season"]:
-            await self.post_leaderboard(ctx, "season")
-        if leaderboard_type in ["weekly", "week"]:
-            await self.post_leaderboard(ctx, "weekly")
-        if leaderboard_type in ["playoffs", "playoff"]:
-            await self.post_leaderboard(ctx, "playoffs")
-        if leaderboard_type in ["playoffs_weekly", "playoff_weekly"]:
-            await self.post_leaderboard(ctx, "playoffs_weekly")
-        if leaderboard_type in ["pre-season", "preseason"]:
-            await self.post_leaderboard(ctx, "pre-season")
-        if leaderboard_type in ["pre-season_weekly", "preseason_weekly"]:
-            await self.post_leaderboard(ctx, "pre-season_weekly")
-        if leaderboard_type in ["worst"]:
-            await self.post_leaderboard(ctx, "worst")
+        if leaderboard_type is None:
+            leaderboard_type = LeaderboardType(3)
+        await self.post_leaderboard(ctx, leaderboard_type, not public)
 
     @hockey_commands.command(aliases=["pickemvotes", "pickemvote"])
     @commands.guild_only()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def pickemsvotes(self, ctx: commands.Context):
+    async def pickemsvotes(self, ctx: commands.Context, public: Optional[bool] = False):
         """
         View your current pickems votes for the server.
         """
+        await ctx.defer(ephemeral=not public)
         if str(ctx.guild.id) not in self.all_pickems:
-            await ctx.send(_("This server does not have any pickems setup."))
+            msg = _("This server does not have any pickems setup.")
+            await ctx.send(msg)
             return
         msg = _("You have voted on the following games:\n")
         for game_id, pickem in self.all_pickems[str(ctx.guild.id)].items():
@@ -577,14 +795,22 @@ class HockeyCommands(MixinMeta):
                 msgs.append(em)
             else:
                 msgs.append(page)
-        await BaseMenu(source=SimplePages(msgs)).start(ctx=ctx)
+        await BaseMenu(source=SimplePages(msgs)).start(ctx=ctx, ephemeral=not public)
 
-    @hockey_commands.command(hidden=True)
+    @hockey_commands.command(hidden=True, with_app_command=False)
     @commands.mod_or_permissions(manage_messages=True)
-    async def setrules(self, ctx: commands.Context, team: HockeyTeams, *, rules) -> None:
+    async def setrules(
+        self,
+        ctx: commands.Context,
+        team: discord.app_commands.Transform[str, TeamFinder],
+        *,
+        rules,
+    ) -> None:
         """Set the main rules page for the nhl rules command"""
-        if team is None:
-            return await ctx.send(_("You must provide a valid current team."))
+        if not team:
+            await ctx.send(_("You must provide a valid current team."))
+            return
+        team = team[0]
         if not ctx.channel.permissions_for(ctx.guild.me).embed_links:
             await ctx.send(_("I don't have embed links permission!"))
             return
@@ -594,7 +820,9 @@ class HockeyCommands(MixinMeta):
         await ctx.send(_("Done, here's how it will look."), embed=em)
 
     @hockey_commands.command(aliases=["link", "invite"])
-    async def otherdiscords(self, ctx: commands.Context, team: HockeyTeams) -> None:
+    async def otherdiscords(
+        self, ctx: commands.Context, team: discord.app_commands.Transform[str, TeamFinder]
+    ) -> None:
         """
         Get team specific discord links
 
@@ -602,13 +830,23 @@ class HockeyCommands(MixinMeta):
         all current NHL team discord server links
         """
         if team is None:
-            return await ctx.send(_("You must provide a valid current team."))
-        if team not in ["all"]:
-            await ctx.send(TEAMS[team]["invite"])
-        else:
-            if not ctx.channel.permissions_for(ctx.message.author).manage_messages:
-                # Don't need everyone spamming this command
+            msg = _("You must provide a valid current team.")
+            await ctx.send(msg)
+        if "all" not in team.lower():
+            invites = ""
+            if team in TEAMS:
+                invites += TEAMS[team]["invite"] + "\n"
+            else:
+                await ctx.send(_("You must provide a valid current team."))
                 return
+            await ctx.send(_("Here is the {team} server invite link:").format(team=team))
+            await ctx.channel.send(invites)
+        else:
+            if not ctx.channel.permissions_for(ctx.author).manage_messages:
+                # Don't need everyone spamming this command
+                await ctx.send(_("You are not authorized to use this command."), ephemeral=True)
+                return
+            await ctx.defer()
             atlantic = [
                 team
                 for team in TEAMS
@@ -651,6 +889,7 @@ class HockeyCommands(MixinMeta):
                 "Not following the above rules will result in "
                 "appropriate punishments ranging from a warning "
                 "to a ban. ```\n\nhttps://discord.gg/reddithockey\n"
+                "https://discord.gg/rishockey\n"
                 "https://discord.gg/sdpn\nhttps://discord.gg/thehockeyguy"
             )
             eastern_conference = "https://i.imgur.com/CtXvcCs.png"
@@ -678,4 +917,4 @@ class HockeyCommands(MixinMeta):
                     team_emoji = "<:" + TEAMS[team]["emoji"] + ">"
                     team_link = TEAMS[team]["invite"]
                     msg = "{0} {1} {0}".format(team_emoji, team_link)
-                    await ctx.send(msg)
+                    await ctx.channel.send(msg)

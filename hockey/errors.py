@@ -20,3 +20,7 @@ class InvalidFileError(HockeyError):
 
 class NoSchedule(HockeyError):
     pass
+
+
+class NoStats(HockeyError):
+    pass

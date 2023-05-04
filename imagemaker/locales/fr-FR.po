@@ -1,0 +1,121 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/imagemaker/locales/messages.pot\n"
+"X-Crowdin-File-ID: 506\n"
+"Language: fr_FR\n"
+
+#: imagemaker/imagemaker.py:109
+#, docstring
+msgid "\n"
+"        Generate a wheeze image with text or a user avatar\n\n"
+"        `text` the text or user avatar who will be placed in the bottom pane\n"
+"        "
+msgstr ""
+
+#: imagemaker/imagemaker.py:127
+#, docstring
+msgid "\n"
+"        Generate a gif of two images fading into eachother\n"
+"        "
+msgstr ""
+
+#: imagemaker/imagemaker.py:147
+#, docstring
+msgid "\n"
+"        Generate a scrolling text gif banner\n"
+"        "
+msgstr ""
+
+#: imagemaker/imagemaker.py:166
+#, docstring
+msgid "\n"
+"        Synthesize video clips of Obama\n"
+"        "
+msgstr ""
+
+#: imagemaker/imagemaker.py:207
+#, docstring
+msgid "\n"
+"        Generate a gif wheeze image if user has a gif avatar\n\n"
+"        `member` the member whos avatar will be pasted on the image\n"
+"        defaults to author\n"
+"        "
+msgstr ""
+
+#: imagemaker/imagemaker.py:227
+#, docstring
+msgid "\n"
+"        Generate a beautiful image using users avatar\n\n"
+"        `user` the user whos avatar will be places on the image\n"
+"        `is_gif` True/False to create a gif if the user has a gif avatar\n"
+"        "
+msgstr ""
+
+#: imagemaker/imagemaker.py:247
+#, docstring
+msgid "\n"
+"        Generate a feels image using users avatar and role colour\n\n"
+"        `user` the user whos avatar will be places on the image\n"
+"        `is_gif` True/False to create a gif if the user has a gif avatar\n"
+"        "
+msgstr ""
+
+#: imagemaker/imagemaker.py:266
+#, docstring
+msgid "\n"
+"        Generate isnowillegal gif image\n\n"
+"        `message` will be what is pasted on the gif\n"
+"        "
+msgstr ""
+
+#: imagemaker/imagemaker.py:290
+#, docstring
+msgid "Generate a Red Pill"
+msgstr ""
+
+#: imagemaker/imagemaker.py:296
+#, docstring
+msgid "Generate a Blue Pill"
+msgstr ""
+
+#: imagemaker/imagemaker.py:302
+#, docstring
+msgid "Generate a Black Pill"
+msgstr ""
+
+#: imagemaker/imagemaker.py:308
+#, docstring
+msgid "Generate a Purple Pill"
+msgstr ""
+
+#: imagemaker/imagemaker.py:314
+#, docstring
+msgid "Generate a Yellow Pill"
+msgstr ""
+
+#: imagemaker/imagemaker.py:320
+#, docstring
+msgid "Generate a Green Pill"
+msgstr ""
+
+#: imagemaker/imagemaker.py:342
+#, docstring
+msgid "\n"
+"        Generate a pill image to any colour with hex codes\n\n"
+"        `colour` is a hexcode colour\n"
+"        "
+msgstr ""
+

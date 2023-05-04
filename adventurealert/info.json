@@ -1,29 +1,29 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Receive notifications from adventure activities!",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog stores discord User ID's for the purposes of mentioning the user on certain events.\nUsers may delete their own data with or without making a data request.",
-    "hidden" : false,
-    "install_msg" : "Make sure you're running the latest version of adventure from https://github.com/aikaterna/gobcog",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Receive notifications from adventure activities!",
+    "disabled": false,
+    "end_user_data_statement": "This cog stores discord User ID's for the purposes of mentioning the user on certain events.\nUsers may delete their own data with or without making a data request.",
+    "hidden": false,
+    "install_msg": "Make sure you're running the latest version of adventure from https://github.com/aikaterna/gobcog",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "AdventureAlert",
-    "permissions" : [],
-    "required_cogs" : {
-        "adventure" : "https://github.com/aikaterna/gobcog/"
+    "name": "AdventureAlert",
+    "permissions": [],
+    "required_cogs": {
+        "adventure": "https://github.com/aikaterna/gobcog/"
     },
-    "requirements" : [],
-    "short" : "Receive notifications from adventure activities!",
-    "tags" : [
+    "requirements": [],
+    "short": "Receive notifications from adventure activities!",
+    "tags": [
         "fun",
         "adventure"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

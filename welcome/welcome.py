@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import discord
@@ -72,9 +72,9 @@ class Welcome(Events, commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 144465786453, force_registration=True)
         self.config.register_guild(**default_settings)
-        # self.group_check = bot.loop.create_task(self.group_welcome())
+        # self.group_check = asyncio.create_task(self.group_welcome())
         self.joined = {}
-        self.today_count = {"now": datetime.utcnow()}
+        self.today_count = {"now": datetime.now(timezone.utc)}
         self.group_welcome.start()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
@@ -90,7 +90,7 @@ class Welcome(Events, commands.Cog):
         """
         return
 
-    @tasks.loop(seconds=300)
+    @discord.ext.tasks.loop(seconds=300)
     async def group_welcome(self) -> None:
         # log.debug("Checking for new welcomes")
         for guild_id, members in self.joined.items():
@@ -1014,6 +1014,6 @@ class Welcome(Events, commands.Cog):
             verb = _("on")
         await ctx.send(_("Mentioning the user turned {verb}").format(verb=verb))
 
-    def cog_unload(self):
+    async def cog_unload(self):
         # self.group_check.cancel()
         self.group_welcome.cancel()

@@ -201,7 +201,8 @@ class Badges(commands.Cog):
         """Async create badges handler"""
         template_img = await self.dl_image(badge.file_name)
         task = functools.partial(self.make_template, user=user, badge=badge, template=template_img)
-        task = self.bot.loop.run_in_executor(None, task)
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, task)
         try:
             template = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
@@ -210,7 +211,7 @@ class Badges(commands.Cog):
             url = user.avatar_url_as(format="gif")
             avatar = Image.open(await self.dl_image(url))
             task = functools.partial(self.make_animated_gif, template=template, avatar=avatar)
-            task = self.bot.loop.run_in_executor(None, task)
+            task = loop.run_in_executor(None, task)
             try:
                 temp = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
@@ -220,7 +221,7 @@ class Badges(commands.Cog):
             url = user.avatar_url_as(format="png")
             avatar = Image.open(await self.dl_image(url))
             task = functools.partial(self.make_badge, template=template, avatar=avatar)
-            task = self.bot.loop.run_in_executor(None, task)
+            task = loop.run_in_executor(None, task)
             try:
                 temp = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:

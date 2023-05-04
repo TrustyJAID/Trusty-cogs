@@ -1,0 +1,33 @@
+{
+    "author": [
+        "TrustyJAID"
+    ],
+    "description": "Generate a bingo card to play on your server!",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users. This cog can store images uploaded by the user or provided for the purpose of generating bingo cards.",
+    "hidden": false,
+    "install_msg": "This cog contains a data folder with a single font and can download and store images for watermarks and icons on bingo cards.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
+        3,
+        7,
+        2
+    ],
+    "name": "Bingo",
+    "permissions": [
+        "attach_files"
+    ],
+    "required_cogs": {},
+    "requirements": [
+        "pillow"
+    ],
+    "short": "Play Bingo!",
+    "tags": [
+        "fun",
+        "memes",
+        "meme",
+        "bingo"
+    ],
+    "type": "COG"
+}

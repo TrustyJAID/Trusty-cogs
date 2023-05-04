@@ -1,11 +1,11 @@
-import discord
 import re
+from typing import List, Pattern, Union
 
+import discord
 import unidecode
-from typing import Pattern, List, Union
-from redbot.core import commands
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+from redbot.core import commands
 
 IMAGE_LINKS: Pattern = re.compile(
     r"(https?:\/\/[^\"\'\s]*\.(?:png|jpg|jpeg|gif|png|svg)(\?size=[0-9]*)?)", flags=re.I
@@ -42,19 +42,27 @@ class ImageFinder(Converter):
                 urls.append(url)
         if mentions:
             for mention in mentions:
-                user = ctx.guild.get_member(int(mention.group(1)))
-                if user.is_avatar_animated():
-                    urls.append(user.avatar_url_as(format="gif"))
+                if ctx.guild:
+                    user = ctx.guild.get_member(int(mention.group(1)))
                 else:
-                    urls.append(user.avatar_url_as(format="png"))
+                    user = ctx.bot.get_user(int(mention.group(1)))
+                if user is None:
+                    continue
+                if user.display_avatar.is_animated():
+                    urls.append(user.display_avatar.replace(format="gif").url)
+                else:
+                    urls.append(user.display_avatar.replace(format="png").url)
         if not urls and ids:
             for possible_id in ids:
-                user = ctx.guild.get_member(int(possible_id.group(0)))
+                if ctx.guild:
+                    user = ctx.guild.get_member(int(possible_id.group(1)))
+                else:
+                    user = ctx.bot.get_user(int(possible_id.group(1)))
                 if user:
-                    if user.is_avatar_animated():
-                        urls.append(user.avatar_url_as(format="gif"))
+                    if user.display_avatar.is_animated():
+                        urls.append(user.display_avatar.replace(format="gif").url)
                     else:
-                        urls.append(user.avatar_url_as(format="png"))
+                        urls.append(user.display_avatar.replace(format="png").url)
         if attachments:
             for attachment in attachments:
                 urls.append(attachment.url)
@@ -64,10 +72,10 @@ class ImageFinder(Converter):
                     # display_name so we can get the nick of the user first
                     # without being NoneType and then check username if that matches
                     # what we're expecting
-                    urls.append(m.avatar_url_as(format="png"))
+                    urls.append(m.display_avatar.replace(format="png").url)
                     continue
                 if argument.lower() in unidecode.unidecode(m.name.lower()):
-                    urls.append(m.avatar_url_as(format="png"))
+                    urls.append(m.display_avatar.replace(format="png").url)
                     continue
 
         if not urls:

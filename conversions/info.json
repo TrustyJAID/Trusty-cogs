@@ -1,26 +1,26 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Conversions for currencies, crypto-currencies, and stocks.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Please see `[p]cryptoapi` for instructions on setting up the cryptocurrency commands.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Conversions for currencies, crypto-currencies, and stocks.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Please see `[p]cryptoapi` for instructions on setting up the cryptocurrency commands.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Conversions",
-    "permissions" : [
+    "name": "Conversions",
+    "permissions": [
         "embed_links"
     ],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Conversions for currencies, crypto-currencies, and stocks.",
-    "tags" : [],
-    "type" : "COG"
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Conversions for currencies, crypto-currencies, and stocks.",
+    "tags": [],
+    "type": "COG"
 }

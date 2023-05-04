@@ -1,29 +1,32 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Allow users to setup and host events to be approved by admins.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog stores User ID's for the purposes of tracking user created events.",
-    "hidden" : false,
-    "install_msg" : "Setup a channel with `[p]eventset channel` for announcements and an admin channel with `[p]eventset approvalchannel`. Then anyone can ask to make an event with `[p]event`",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Allow users to setup and host events to be approved by admins.",
+    "disabled": false,
+    "end_user_data_statement": "This cog stores User ID's for the purposes of tracking user created events.",
+    "hidden": false,
+    "install_msg": "Setup a channel with `[p]eventset channel` for announcements and an admin channel with `[p]eventset approvalchannel`. Then anyone can ask to make an event with `[p]event`",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "EventPoster",
-    "permissions" : [
+    "name": "EventPoster",
+    "permissions": [
         "embed_links",
         "add_reactions"
     ],
-    "required_cogs" : {},
-    "requirements" : ["python-dateutil", "pytz"],
-    "short" : "Admin approved announcments/events",
-    "tags" : [
+    "required_cogs": {},
+    "requirements": [
+        "python-dateutil",
+        "pytz"
+    ],
+    "short": "Admin approved announcments/events",
+    "tags": [
         "events"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

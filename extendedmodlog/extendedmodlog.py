@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Union
 
@@ -30,7 +31,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         self.config.register_global(version="0.0.0")
         self.settings = {}
         self._ban_cache = {}
-        self.loop = bot.loop.create_task(self.invite_links_loop())
+        self.invite_links_loop.start()
 
     def format_help_for_context(self, ctx: commands.Context):
         """
@@ -39,8 +40,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
-    def cog_unload(self):
-        self.loop.cancel()
+    async def cog_unload(self):
+        self.invite_links_loop.stop()
 
     async def red_delete_data_for_user(self, **kwargs):
         """
@@ -96,9 +97,13 @@ class ExtendedModLog(EventMixin, commands.Cog):
             "channel_delete": _("Channel deleted"),
             "guild_change": _("Guild changes"),
             "emoji_change": _("Emoji changes"),
+            "stickers_change": _("Stickers changes"),
             "commands_used": _("Commands"),
             "invite_created": _("Invite created"),
             "invite_deleted": _("Invite deleted"),
+            "thread_create": _("Thread created"),
+            "thread_delete": _("Thread deleted"),
+            "thread_change": _("Thread changed"),
         }
         msg = _("Setting for {guild}\n Modlog Channel {channel}\n\n").format(
             guild=guild.name, channel=modlog_channel
@@ -191,10 +196,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `voice_change`   - Voice channel join/leave
             `member_join`
             `member_left`
-
-            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
+
+            **Requires Red 3.5+ and discord.py 2.0+**
+            `thread_created`
+            `thread_deleted`
+            `thread_changed`
+            `stickers_change`
         """
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
@@ -241,10 +250,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `voice_change`   - Voice channel join/leave
             `member_join`
             `member_left`
-
-            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
+
+            **Requires Red 3.5+ and discord.py 2.0+**
+            `thread_created`
+            `thread_deleted`
+            `thread_changed`
+            `stickers_change`
         """
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
@@ -291,10 +304,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `voice_change`   - Voice channel join/leave
             `member_join`
             `member_left`
-
-            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
+
+            **Requires Red 3.5+ and discord.py 2.0+**
+            `thread_created`
+            `thread_deleted`
+            `thread_changed`
+            `stickers_change`
         """
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
@@ -346,10 +363,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `voice_change`   - Voice channel join/leave
             `member_join`
             `member_left`
-
-            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
+
+            **Requires Red 3.5+ and discord.py 2.0+**
+            `thread_created`
+            `thread_deleted`
+            `thread_changed`
+            `stickers_change`
         """
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
@@ -395,10 +416,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `voice_change`   - Voice channel join/leave
             `member_join`
             `member_left`
-
-            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
+
+            **Requires Red 3.5+ and discord.py 2.0+**
+            `thread_created`
+            `thread_deleted`
+            `thread_changed`
+            `stickers_change`
         """
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
@@ -441,10 +466,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `voice_change`   - Voice channel join/leave
             `member_join`
             `member_left`
-
-            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
+
+            **Requires Red 3.5+ and discord.py 2.0+**
+            `thread_created`
+            `thread_deleted`
+            `thread_changed`
+            `stickers_change`
         """
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
@@ -578,6 +607,25 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).message_delete.cached_only.set(False)
             self.settings[ctx.guild.id]["message_delete"]["cached_only"] = False
+            verb = _("enabled")
+        await ctx.send(msg + verb)
+
+    @_delete.command(name="ignorecommands")
+    async def _delete_ignore_commands(self, ctx: commands.Context) -> None:
+        """
+        Toggle message delete notifications for valid bot command messages
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        guild = ctx.message.guild
+        msg = _("Ignore deleted command messages: ")
+        if not await self.config.guild(guild).message_delete.cached_only():
+            await self.config.guild(guild).message_delete.cached_only.set(False)
+            self.settings[ctx.guild.id]["message_delete"]["ignore_commands"] = False
+            verb = _("disabled")
+        else:
+            await self.config.guild(guild).message_delete.cached_only.set(True)
+            self.settings[ctx.guild.id]["message_delete"]["ignore_commands"] = True
             verb = _("enabled")
         await ctx.send(msg + verb)
 

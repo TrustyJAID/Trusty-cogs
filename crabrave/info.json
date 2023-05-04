@@ -1,33 +1,33 @@
 {
-    "author" : [
+    "author": [
         "DankMemer Team",
         "TrustyJAID",
         "thisisjvgrace"
     ],
-    "description" : "Create your very own Crab Rave videos with custom text! This cog requires FFMPEG, moviepy (https://github.com/Zulko/moviepy), and imagemagick to work. This cog downloads a template video and font file which is then saved locally and generates crab rave videos from the template. Old videos are deleted after uploading. This cog may consume heavy resources rendering videos.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "This cog requires FFMPEG, moviepy (https://github.com/Zulko/moviepy), and imagemagick (Please read this for how to install imagemagick from source <https://github.com/TrustyJAID/Trusty-cogs/tree/master/notsobot>) to work. This cog downloads a template video and font file which is then saved locally and generates crab rave videos from the template. Old videos are deleted after uploading. This cog may consume heavy resources rendering videos.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.3.0",
-    "min_python_version" : [
+    "description": "Create your very own Crab Rave videos with custom text! This cog requires FFMPEG, moviepy (https://github.com/Zulko/moviepy), and imagemagick to work. This cog downloads a template video and font file which is then saved locally and generates crab rave videos from the template. Old videos are deleted after uploading. This cog may consume heavy resources rendering videos.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "This cog requires FFMPEG, moviepy (https://github.com/Zulko/moviepy), and imagemagick (Please read this for how to install imagemagick from source <https://github.com/TrustyJAID/Trusty-cogs/tree/master/notsobot>) to work. This cog downloads a template video and font file which is then saved locally and generates crab rave videos from the template. Old videos are deleted after uploading. This cog may consume heavy resources rendering videos.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         8,
         0
     ],
-    "name" : "CrabRave",
-    "permissions" : [
+    "name": "CrabRave",
+    "permissions": [
         "attach_files"
     ],
-    "required_cogs" : {},
-    "requirements" : [
+    "required_cogs": {},
+    "requirements": [
         "moviepy",
         "youtube-dl"
     ],
-    "short" : "Make Crab rave videos, in discord!",
-    "tags" : [
+    "short": "Make Crab rave videos, in discord!",
+    "tags": [
         "fun"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

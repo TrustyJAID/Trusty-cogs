@@ -1,31 +1,31 @@
 {
-    "author" : [
+    "author": [
         "RePulsR",
         "TrustyJAID"
     ],
-    "description" : "Log changes within the server using extended modlogs, an extension of RedBot cores modlog.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Thanks for installing. Use `[p]modlog` to see the available commands.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Log changes within the server using extended modlogs, an extension of RedBot cores modlog.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Thanks for installing. Use `[p]modlog` to see the available commands.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "ExtendedModLog",
-    "permissions" : [
+    "name": "ExtendedModLog",
+    "permissions": [
         "embed_links"
     ],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "ExtendedModLog, track changes made in the server.",
-    "tags" : [
+    "required_cogs": {},
+    "requirements": [],
+    "short": "ExtendedModLog, track changes made in the server.",
+    "tags": [
         "mod",
         "logs",
         "modlogs"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

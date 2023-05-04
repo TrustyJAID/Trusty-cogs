@@ -1,13 +1,21 @@
-import re
+from __future__ import annotations
+
+import logging
 import random
+import re
+from dataclasses import dataclass
 from random import choice, sample
 from typing import Optional
-from dataclasses import dataclass
 
 import discord
 from redbot.core import commands
 
-from . import tarot_cards
+from .tarot_cards import card_list as tarot_cards
+
+log = logging.getLogger("red.trusty-cogs.tarot")
+
+
+TAROT_RE = re.compile(r"|".join(t["card_name"] for _id, t in tarot_cards.items()), flags=re.I)
 
 
 @dataclass
@@ -18,24 +26,23 @@ class TarotCard:
     card_url: str
     card_img: str
 
-
-TAROT_CARDS = {num: TarotCard(id=num, **data) for num, data in tarot_cards.card_list.items()}
-TAROT_RE = re.compile(r"|".join(t.card_name for _id, t in TAROT_CARDS.items()), flags=re.I)
-
-
-class TarotConverter(commands.Converter):
+    @classmethod
     async def convert(self, ctx: commands.Context, argument: str) -> Optional[TarotCard]:
         if find := TAROT_RE.match(argument):
             card_name = find.group(0)
-            for card in TAROT_CARDS.values():
-                if card_name.lower() == card.card_name.lower():
-                    return card
+            for _id, card in tarot_cards.items():
+                if card_name.lower() == card["card_name"].lower():
+                    return TarotCard(id=_id, **card)
         else:
             try:
-                return TAROT_CARDS[str(argument)]
+                card = tarot_cards[str(argument)]
+                return TarotCard(id=int(argument), **card)
             except KeyError:
-                raise commands.BadArgument("`{argument}` is not an available Tarot card.")
+                raise commands.BadArgument(f"`{argument}` is not an available Tarot card.")
         return None
+
+
+TAROT_CARDS = {num: TarotCard(id=num, **data) for num, data in tarot_cards.items()}
 
 
 class TarotReading(commands.Cog):
@@ -48,6 +55,7 @@ class TarotReading(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        super().__init__()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -66,7 +74,7 @@ class TarotReading(commands.Cog):
         colour = "".join([choice("0123456789ABCDEF") for x in range(6)])
         return int(colour, 16)
 
-    @commands.group()
+    @commands.hybrid_group()
     async def tarot(self, ctx: commands.Context) -> None:
         """Receive a tarot reading"""
         pass
@@ -94,7 +102,7 @@ class TarotReading(commands.Cog):
         )
         embed.set_thumbnail(url=TAROT_CARDS[str(cards[-1])].card_img)
         embed.timestamp = ctx.message.created_at
-        embed.set_author(name=user.name, icon_url=user.avatar_url)
+        embed.set_author(name=user.name, icon_url=user.display_avatar)
         number = 0
         for card in cards:
             embed.add_field(
@@ -125,7 +133,7 @@ class TarotReading(commands.Cog):
         )
         embed.set_thumbnail(url=TAROT_CARDS[str(cards[-1])].card_img)
         embed.timestamp = ctx.message.created_at
-        embed.set_author(name=user.name, icon_url=user.avatar_url)
+        embed.set_author(name=user.name, icon_url=user.display_avatar)
         number = 0
         for card in cards:
             embed.add_field(
@@ -136,9 +144,7 @@ class TarotReading(commands.Cog):
         await ctx.send(embed=embed)
 
     @tarot.command(name="card")
-    async def _card(
-        self, ctx: commands.Context, *, tarot_card: Optional[TarotConverter] = None
-    ) -> None:
+    async def _card(self, ctx: commands.Context, *, tarot_card: Optional[TarotCard]) -> None:
         """
         Random card or choose a card based on number or name.
 
@@ -162,6 +168,13 @@ class TarotReading(commands.Cog):
             url=card.card_url,
         )
         embed.timestamp = ctx.message.created_at
-        embed.set_author(name=user.name, icon_url=user.avatar_url)
+        embed.set_author(name=user.name, icon_url=user.display_avatar)
         embed.set_image(url=card.card_img)
         await ctx.send(embed=embed)
+
+    @_card.autocomplete("tarot_card")
+    async def tarot_autocomplete(self, interaction: discord.Interaction, current: str):
+        choices = []
+        for _id, card in tarot_cards.items():
+            choices.append(discord.app_commands.Choice(name=card["card_name"], value=_id))
+        return [c for c in choices if current.lower() in c.name.lower()][:25]

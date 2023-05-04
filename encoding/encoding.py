@@ -10,6 +10,7 @@ from redbot.core.utils.chat_formatting import pagify
 
 from .braille import (
     contractions,
+    dna,
     letters,
     numbers,
     punctuation,
@@ -17,7 +18,6 @@ from .braille import (
     r_letters,
     r_numbers,
     r_punctuation,
-    dna,
 )
 
 
@@ -128,7 +128,9 @@ class Encoding(commands.Cog):
         """
         try:
             message = re.sub(r"[\s]+", "", message)
-            bin_ascii = "".join([chr(int(message[i : i + 8], 2)) for i in range(0, len(message), 8)])
+            bin_ascii = "".join(
+                [chr(int(message[i : i + 8], 2)) for i in range(0, len(message), 8)]
+            )
             await ctx.send(bin_ascii)
         except Exception:
             await ctx.send("That does not look like valid binary.")

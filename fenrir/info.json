@@ -1,27 +1,27 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Create reaction messages to kick or ban users! https://tenor.com/view/order66-gif-9116581",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Give users the option to ban or kick themselves via reactions. Works with Insult and Compliment cogs if installed.\n\n WARNING: This will trigger on any emojis reacted to the message to add more chaos so be cautious.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Create reaction messages to kick or ban users! https://tenor.com/view/order66-gif-9116581",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Give users the option to ban or kick themselves via reactions. Works with Insult and Compliment cogs if installed.\n\n WARNING: This will trigger on any emojis reacted to the message to add more chaos so be cautious.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Fenrir",
-    "permissions" : [
+    "name": "Fenrir",
+    "permissions": [
         "ban_members",
         "kick_members"
     ],
-    "required_cogs" : {},
-    "requirements" : [],
-    "short" : "Give users the option to kick, ban, or insult themselves via reactions.",
-    "tags" : [],
-    "type" : "COG"
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Give users the option to kick, ban, or insult themselves via reactions.",
+    "tags": [],
+    "type": "COG"
 }

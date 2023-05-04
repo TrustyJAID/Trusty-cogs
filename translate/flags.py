@@ -178,7 +178,7 @@ FLAGS = {
     "🇲🇻": {"code": "dv", "country": "Maldives", "name": "Divehi"},
     "🇲🇼": {"code": "en", "country": "Malawi", "name": "English"},
     "🇲🇽": {"code": "es", "country": "Mexico", "name": "Spanish"},
-    "🇲🇾": {"code": None, "country": "Malaysia", "name": "Malaysian"},
+    "🇲🇾": {"code": "", "country": "Malaysia", "name": "Malaysian"},
     "🇲🇿": {"code": "pt", "country": "Mozambique", "name": "Portuguese"},
     "🇳🇦": {"code": "en", "country": "Namibia", "name": "English"},
     "🇳🇨": {"code": "fr", "country": "New Caledonia", "name": "French"},

@@ -1,35 +1,35 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID",
         "Preda"
     ],
-    "description" : "A plethora of potentially useful commands for any bot owner. Includes a way to track the bot joining new servers, find cheaters on global economies, get user avatars and even larger emojis.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "Use `[p]setguildjoin` to set a channel to see all new servers the bot is added to and some information about them.",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "A plethora of potentially useful commands for any bot owner. Includes a way to track the bot joining new servers, find cheaters on global economies, get user avatars and even larger emojis.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "Use `[p]setguildjoin` to set a channel to see all new servers the bot is added to and some information about them.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "ServerStats",
-    "permissions" : [
+    "name": "ServerStats",
+    "permissions": [
         "read_message_history",
         "embed_links"
     ],
-    "required_cogs" : {},
-    "requirements" : [
+    "required_cogs": {},
+    "requirements": [
         "unidecode",
         "pytz",
         "python-dateutil",
         "rapidfuzz"
     ],
-    "short" : "A plethora of potentially useful commands for any bot owner.",
-    "tags" : [
+    "short": "A plethora of potentially useful commands for any bot owner.",
+    "tags": [
         "stats"
     ],
-    "type" : "COG"
+    "type": "COG"
 }

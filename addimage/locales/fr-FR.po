@@ -1,0 +1,171 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/addimage/locales/messages.pot\n"
+"X-Crowdin-File-ID: 494\n"
+"Language: fr_FR\n"
+
+#: addimage/addimage.py:22
+#, docstring
+msgid "\n"
+"    Add images the bot can upload\n"
+"    "
+msgstr ""
+
+#: addimage/addimage.py:63 addimage/addimage.py:409 addimage/addimage.py:437
+msgid "Error deleting image {image}"
+msgstr ""
+
+#: addimage/addimage.py:110
+msgid "No prefix found."
+msgstr ""
+
+#: addimage/addimage.py:273
+#, docstring
+msgid "\n"
+"        Add an image for the bot to directly upload\n"
+"        "
+msgstr ""
+
+#: addimage/addimage.py:281
+#, docstring
+msgid "\n"
+"        Delete all triggers created by a specified user ID.\n"
+"        "
+msgstr ""
+
+#: addimage/addimage.py:290
+#, docstring
+msgid "\n"
+"        Toggle usage of bot owner set global images on this server\n"
+"        "
+msgstr ""
+
+#: addimage/addimage.py:296
+msgid "Bot owner global images enabled."
+msgstr ""
+
+#: addimage/addimage.py:298
+msgid "Ignoring bot owner global images."
+msgstr ""
+
+#: addimage/addimage.py:305
+#, docstring
+msgid "\n"
+"        List images added to bot\n"
+"        "
+msgstr ""
+
+#: addimage/addimage.py:318
+msgid "I do not have any images saved!"
+msgstr ""
+
+#: addimage/addimage.py:326
+msgid "__Author__: "
+msgstr ""
+
+#: addimage/addimage.py:328
+msgid "__Count__: "
+msgstr ""
+
+#: addimage/addimage.py:334
+msgid "Page "
+msgstr ""
+
+#: addimage/addimage.py:342
+#, docstring
+msgid "\n"
+"        Clears the full set of images stored globally\n"
+"        "
+msgstr ""
+
+#: addimage/addimage.py:356
+#, docstring
+msgid "\n"
+"        Clear all the images stored for the current server\n"
+"        "
+msgstr ""
+
+#: addimage/addimage.py:371
+#, docstring
+msgid "\n"
+"        Cleanup deleted images that are not supposed to be saved anymore\n"
+"        "
+msgstr ""
+
+#: addimage/addimage.py:389 addimage/addimage.py:418
+#, docstring
+msgid "\n"
+"        Remove a selected images\n\n"
+"        `name` the command name used to post the image\n"
+"        "
+msgstr ""
+
+#: addimage/addimage.py:398
+msgid " is not an image for this guild!"
+msgstr ""
+
+#: addimage/addimage.py:413
+msgid " has been deleted from this guild!"
+msgstr ""
+
+#: addimage/addimage.py:426
+msgid " is not a global image!"
+msgstr ""
+
+#: addimage/addimage.py:441
+msgid " has been deleted globally!"
+msgstr ""
+
+#: addimage/addimage.py:483
+msgid "Image adding timed out."
+msgstr ""
+
+#: addimage/addimage.py:486
+msgid "Image adding cancelled."
+msgstr ""
+
+#: addimage/addimage.py:494
+#, docstring
+msgid "\n"
+"        Add an image to direct upload on this server\n\n"
+"        `name` the command name used to post the image\n"
+"        "
+msgstr ""
+
+#: addimage/addimage.py:501 addimage/addimage.py:528
+msgid " is already in the list, try another!"
+msgstr ""
+
+#: addimage/addimage.py:504 addimage/addimage.py:531
+msgid " added as the command!"
+msgstr ""
+
+#: addimage/addimage.py:507 addimage/addimage.py:534
+msgid "Upload an image for me to use! Type `exit` to cancel."
+msgstr ""
+
+#: addimage/addimage.py:513 addimage/addimage.py:540
+msgid " has been added to my files!"
+msgstr ""
+
+#: addimage/addimage.py:520
+#, docstring
+msgid "\n"
+"        Add an image to direct upload globally\n\n"
+"        `name` the command name used to post the image\n"
+"        "
+msgstr ""
+

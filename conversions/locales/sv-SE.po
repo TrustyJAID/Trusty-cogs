@@ -1,0 +1,132 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/conversions/locales/messages.pot\n"
+"X-Crowdin-File-ID: 650\n"
+"Language: sv_SE\n"
+
+#: conversions/conversions.py:54
+#, docstring
+msgid "\n"
+"        converts from BTC to a given currency.\n\n"
+"        `[ammount=1.0]` The number of coins you want to know the price for.\n"
+"        `[currency=USD]` The optional desired currency price. Defaults to USD.\n"
+"        `[full=True]` is a True/False value whether to display just the converted amount\n"
+"        or the full display for the currency\n"
+"        "
+msgstr ""
+
+#: conversions/conversions.py:72
+#, docstring
+msgid "\n"
+"        converts from ETH to a given currency.\n\n"
+"        `[ammount=1.0]` The number of coins you want to know the price for.\n"
+"        `[currency=USD]` The optional desired currency price. Defaults to USD.\n"
+"        `[full=True]` is a True/False value whether to display just the converted amount\n"
+"        or the full display for the currency\n"
+"        "
+msgstr ""
+
+#: conversions/conversions.py:90
+#, docstring
+msgid "\n"
+"        converts from LTC to a given currency.\n\n"
+"        `[ammount=1.0]` The number of coins you want to know the price for.\n"
+"        `[currency=USD]` The optional desired currency price. Defaults to USD.\n"
+"        `[full=True]` is a True/False value whether to display just the converted amount\n"
+"        or the full display for the currency\n"
+"        "
+msgstr ""
+
+#: conversions/conversions.py:108
+#, docstring
+msgid "\n"
+"        converts from XMR to a given currency.\n\n"
+"        `[ammount=1.0]` The number of coins you want to know the price for.\n"
+"        `[currency=USD]` The optional desired currency price. Defaults to USD.\n"
+"        `[full=True]` is a True/False value whether to display just the converted amount\n"
+"        or the full display for the currency\n"
+"        "
+msgstr ""
+
+#: conversions/conversions.py:126
+#, docstring
+msgid "\n"
+"        converts from BCH to a given currency.\n\n"
+"        `[ammount=1.0]` The number of coins you want to know the price for.\n"
+"        `[currency=USD]` The optional desired currency price. Defaults to USD.\n"
+"        `[full=True]` is a True/False value whether to display just the converted amount\n"
+"        or the full display for the currency\n"
+"        "
+msgstr ""
+
+#: conversions/conversions.py:144
+#, docstring
+msgid "\n"
+"        converts from XDG to a given currency.\n\n"
+"        `[ammount=1.0]` The number of coins you want to know the price for.\n"
+"        `[currency=USD]` The optional desired currency price. Defaults to USD.\n"
+"        `[full=True]` is a True/False value whether to display just the converted amount\n"
+"        or the full display for the currency\n"
+"        "
+msgstr ""
+
+#: conversions/conversions.py:226
+#, docstring
+msgid "\n"
+"        Gets the current USD value for a list of coins\n\n"
+"        `coins` must be a list of white space separated crypto coins\n"
+"        e.g. `[p]multicoin BTC BCH LTC ETH DASH XRP`\n"
+"        "
+msgstr ""
+
+#: conversions/conversions.py:267
+#, docstring
+msgid "\n"
+"        Displays the latest information about a specified crypto currency\n\n"
+"        `<coin>` must be the name or symbol of a crypto coin\n"
+"        `[ammount=1.0]` The number of coins you want to know the price for.\n"
+"        `[currency=USD]` The optional desired currency price. Defaults to USD.\n"
+"        `[full=True]` is a True/False value whether to display just the converted amount\n"
+"        or the full display for the currency\n"
+"        "
+msgstr ""
+
+#: conversions/conversions.py:397
+#, docstring
+msgid "\n"
+"        Gets current ticker symbol price.\n\n"
+"        `<ticker>` is the ticker symbol you want to look up\n"
+"        `[currency]` is the currency you want to convert to defaults to USD\n"
+"        "
+msgstr ""
+
+#: conversions/conversions.py:439
+#, docstring
+msgid "\n"
+"        Instructions for how to setup the stock API\n"
+"        "
+msgstr ""
+
+#: conversions/conversions.py:457
+#, docstring
+msgid "\n"
+"        Converts a value between 2 different currencies\n\n"
+"        `<currency1>` The first currency in [ISO 4217 format.](https://en.wikipedia.org/wiki/ISO_4217)\n"
+"        `<currency2>` The second currency in [ISO 4217 format.](https://en.wikipedia.org/wiki/ISO_4217)\n"
+"        `[amount=1.0]` is the ammount you want to convert default is 1.0\n"
+"        "
+msgstr ""
+

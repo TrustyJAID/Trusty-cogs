@@ -1,28 +1,28 @@
 {
-    "author" : [
+    "author": [
         "TrustyJAID"
     ],
-    "description" : "Create your own badge with your discord info.",
-    "disabled" : false,
-    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
-    "hidden" : false,
-    "install_msg" : "This cog comes with a bundled data folder containing fonts. Type `[p]badges` to see what badges are available!",
-    "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
-    "min_python_version" : [
+    "description": "Create your own badge with your discord info.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "This cog comes with a bundled data folder containing fonts. Type `[p]badges` to see what badges are available!",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
         3,
         7,
         2
     ],
-    "name" : "Badges",
-    "permissions" : [
+    "name": "Badges",
+    "permissions": [
         "attach_files"
     ],
-    "required_cogs" : {},
-    "requirements" : [
+    "required_cogs": {},
+    "requirements": [
         "pillow"
     ],
-    "short" : "Create your own badge!",
-    "tags" : [],
-    "type" : "COG"
+    "short": "Create your own badge!",
+    "tags": [],
+    "type": "COG"
 }

@@ -103,23 +103,25 @@ class AdventureAlert(
         all_guilds = await self.config.all_guilds()
         for g_id, settings in all_guilds.items():
             if user_id in settings["users"]:
-                async with self.config.guild_from_id(g_id).users() as users:
+                async with self.config.guild_from_id(int(g_id)).users() as users:
                     users.remove(user_id)
 
             if user_id in settings["adventure_users"]:
-                async with self.config.guild_from_id(g_id).adventure_users() as adventure_users:
+                async with self.config.guild_from_id(
+                    int(g_id)
+                ).adventure_users() as adventure_users:
                     adventure_users.remove(user_id)
 
             if user_id in settings["miniboss_users"]:
-                async with self.config.guild_from_id(g_id).miniboss_users() as miniboss_users:
+                async with self.config.guild_from_id(int(g_id)).miniboss_users() as miniboss_users:
                     miniboss_users.remove(user_id)
 
             if user_id in settings["cart_users"]:
-                async with self.config.guild_from_id(g_id).cart_users() as cart_users:
+                async with self.config.guild_from_id(int(g_id)).cart_users() as cart_users:
                     cart_users.remove(user_id)
 
             if user_id in settings["ascended_users"]:
-                async with self.config.guild_from_id(g_id).ascended_users() as ascended_users:
+                async with self.config.guild_from_id(int(g_id)).ascended_users() as ascended_users:
                     ascended_users.remove(user_id)
 
             if user_id in settings["transcended_users"]:
@@ -129,11 +131,13 @@ class AdventureAlert(
                     transcended_users.remove(user_id)
 
             if user_id in settings["immortal_users"]:
-                async with self.config.guild_from_id(g_id).immortal_users() as immortal_users:
+                async with self.config.guild_from_id(int(g_id)).immortal_users() as immortal_users:
                     immortal_users.remove(user_id)
 
             if user_id in settings["possessed_users"]:
-                async with self.config.guild_from_id(g_id).possessed_users() as possessed_users:
+                async with self.config.guild_from_id(
+                    int(g_id)
+                ).possessed_users() as possessed_users:
                     possessed_users.remove(user_id)
 
     @commands.group()

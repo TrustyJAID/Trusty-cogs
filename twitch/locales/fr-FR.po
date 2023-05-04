@@ -1,0 +1,119 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/twitch/locales/messages.pot\n"
+"X-Crowdin-File-ID: 452\n"
+"Language: fr_FR\n"
+
+#: twitch/menus.py:229 twitch/menus.py:234
+msgid "You are not authorized to interact with this."
+msgstr ""
+
+#: twitch/twitch.py:110
+#, docstring
+msgid "Twitch related commands"
+msgstr ""
+
+#: twitch/twitch.py:118
+#, docstring
+msgid "\n"
+"        Twitch Stream commands\n"
+"        "
+msgstr ""
+
+#: twitch/twitch.py:125
+#, docstring
+msgid "\n"
+"        Twitch Clips commands\n"
+"        "
+msgstr ""
+
+#: twitch/twitch.py:139
+#, docstring
+msgid "\n"
+"        Setup a channel for automatic follow notifications\n"
+"        "
+msgstr ""
+
+#: twitch/twitch.py:191
+#, docstring
+msgid "\n"
+"        Setup a channel for automatic clip notifications\n\n"
+"        `<twitch_name>` The name of the streamers whose clips you want posted\n"
+"        `[channel]` The channel to post clips into, if not provided will use the current channel.\n"
+"        `[view_count]` The minimum view count required before posting a clip.\n"
+"        `[check_back]` How far back to look back for new clips. Note: You must provide a number\n"
+"        for `view_count` when providing the check_back. Default is 8 days.\n"
+"        "
+msgstr ""
+
+#: twitch/twitch.py:244
+#, docstring
+msgid "\n"
+"        Remove an account from new clip notifications in the specified channel\n"
+"        defaults to the current channel\n"
+"        "
+msgstr ""
+
+#: twitch/twitch.py:291
+#, docstring
+msgid "\n"
+"        Test channel for automatic follow notifications\n"
+"        "
+msgstr ""
+
+#: twitch/twitch.py:323
+#, docstring
+msgid "\n"
+"        Remove an account from follow notifications in the specified channel\n"
+"        defaults to the current channel\n"
+"        "
+msgstr ""
+
+#: twitch/twitch.py:364
+#, docstring
+msgid "\n"
+"        Sets the twitch user info for individual users to make commands easier\n"
+"        "
+msgstr ""
+
+#: twitch/twitch.py:381
+#, docstring
+msgid "\n"
+"        Get latest Twitch followers\n"
+"        "
+msgstr ""
+
+#: twitch/twitch.py:406
+#, docstring
+msgid "\n"
+"        Get latest twitch clips from a user\n"
+"        "
+msgstr ""
+
+#: twitch/twitch.py:431
+#, docstring
+msgid "\n"
+"        Shows basic Twitch profile information\n"
+"        "
+msgstr ""
+
+#: twitch/twitch.py:449
+#, docstring
+msgid "\n"
+"        Set twitch client_id and client_secret if required for larger followings\n"
+"        "
+msgstr ""
+

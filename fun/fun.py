@@ -7,11 +7,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import pagify
 
-from .constants import ball, emoji_dict, regionals
-
-"""Module for fun/meme commands commands
-   Fun commands from Appu's selfbot
-"""
+from .constants import emoji_dict, regionals
 
 
 class Fun(commands.Cog):
@@ -121,9 +117,7 @@ class Fun(commands.Cog):
             await ctx.send("That message is too long.", delete_after=10)
 
     @commands.command()
-    async def oof(
-        self, ctx: commands.Context, message: Optional[discord.Message]
-    ) -> None:
+    async def oof(self, ctx: commands.Context, message: Optional[discord.Message]) -> None:
         """
         React 🅾🇴🇫 to a message.
 

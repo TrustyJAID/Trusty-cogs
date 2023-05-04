@@ -1,0 +1,66 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/fenrir/locales/messages.pot\n"
+"X-Crowdin-File-ID: 560\n"
+"Language: sv_SE\n"
+
+#: fenrir/fenrir.py:72
+#, docstring
+msgid "\n"
+"        We're Moving on.\n"
+"        "
+msgstr ""
+
+#: fenrir/fenrir.py:83
+#, docstring
+msgid "Create a reaction emoji to kick users"
+msgstr ""
+
+#: fenrir/fenrir.py:93
+#, docstring
+msgid "Replace all commands in the server with insults\n\n"
+"        Run this command again to disable it.\n"
+"        "
+msgstr ""
+
+#: fenrir/fenrir.py:108
+#, docstring
+msgid "Replaces all commands for specific members with insults"
+msgstr ""
+
+#: fenrir/fenrir.py:140
+#, docstring
+msgid "\n"
+"        Sets the mute role for fenrirmute to work\n\n"
+"        if no role is provided it will disable the command\n"
+"        "
+msgstr ""
+
+#: fenrir/fenrir.py:155
+#, docstring
+msgid "Create a reaction emoji to ban users"
+msgstr ""
+
+#: fenrir/fenrir.py:165
+#, docstring
+msgid "Create a reaction emoji to mute users"
+msgstr ""
+
+#: fenrir/fenrir.py:178
+#, docstring
+msgid "Create a reaction emoji to insult users"
+msgstr ""
+
