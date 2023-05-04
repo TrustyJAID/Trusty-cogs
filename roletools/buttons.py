@@ -37,6 +37,11 @@ class ButtonRole(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         log.debug("Receiving button press")
         guild = interaction.message.guild
+        if self.disabled:
+            await interaction.response.send_message(
+                _("This button has been disabled from giving roles."), ephemeral=True
+            )
+            return
         role = guild.get_role(self.role_id)
         if not role:
             await interaction.response.send_message(
@@ -282,15 +287,21 @@ class RoleToolsButtons(RoleToolsMixin):
         async with self.config.guild(ctx.guild).buttons() as buttons:
             if name in buttons:
                 role_id = buttons[name]["role_id"]
+                custom_id = f"{name.lower()}-{role_id}"
+                for view in self.views:
+                    for child in view.children:
+                        if child.custom_id == custom_id:
+                            child.disabled = True
+                if name in self.settings.get(ctx.guild.id, {}).get("buttons", {}):
+                    del self.settings[ctx.guild.id]["buttons"][name]
                 del buttons[name]
                 async with self.config.role_from_id(role_id).buttons() as role_buttons:
                     if name in role_buttons:
                         role_buttons.remove(name)
                 msg = _("Button `{name}` has been deleted.").format(name=name)
-                await ctx.send(msg)
             else:
                 msg = _("Button `{name}` doesn't appear to exist.").format(name=name)
-                await ctx.send(msg)
+        await ctx.send(msg)
 
     @buttons.command(name="view")
     @commands.admin_or_permissions(manage_roles=True)

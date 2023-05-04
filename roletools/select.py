@@ -32,6 +32,7 @@ class SelectRoleOption(discord.SelectOption):
         super().__init__(label=label, emoji=emoji, description=description, value=value)
         self.role_id = role_id
         self.name = name
+        self.disabled: bool = False
 
 
 class SelectRole(discord.ui.Select):
@@ -55,13 +56,22 @@ class SelectRole(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         log.debug("Receiving selection press")
+
         role_ids = []
         for option in self.values:
             if option.startswith("RTSelect"):
+                for op in self.options:
+                    if op.disabled:
+                        continue
                 role_ids.append(int(option.split("-")[-1]))
 
         if role_ids:
             await interaction.response.defer(ephemeral=True, thinking=True)
+        elif not role_ids or self.disabled:
+            await interaction.response.send_message(
+                _("This selection has been disabled from giving roles."), ephemeral=True
+            )
+            return
         guild = interaction.guild
         added_roles = []
         removed_roles = []
@@ -395,6 +405,15 @@ class RoleToolsSelect(RoleToolsMixin):
         """
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
             if name.lower() in select_menus:
+                for view in self.views:
+                    children_names = [i.name for i in view.children]
+                    if all(
+                        i in children_names for i in select_menus[name.lower()].get("options", [])
+                    ):
+                        view.disabled = True
+
+                if name in self.settings.get(ctx.guild.id, {}).get("select_menus", {}):
+                    del self.settings[ctx.guild.id]["select_menus"][name]
                 del select_menus[name.lower()]
                 msg = _("Select Option `{name}` has been deleted.").format(name=name)
                 await ctx.send(msg)
@@ -502,6 +521,13 @@ class RoleToolsSelect(RoleToolsMixin):
         async with self.config.guild(ctx.guild).select_options() as select_options:
             if name in select_options:
                 role_id = select_options[name]["role_id"]
+                custom_id = f"{name.lower()}-{role_id}"
+                for view in self.views:
+                    for child in view.children:
+                        if child.custom_id == custom_id:
+                            child.disabled = True
+                if name in self.settings.get(ctx.guild.id, {}).get("select_options", {}):
+                    del self.settings[ctx.guild.id]["select_options"][name]
                 del select_options[name]
                 async with self.config.role_from_id(role_id).select_options() as role_select:
                     if name in role_select:
