@@ -27,7 +27,7 @@ class Starboard(StarboardEvents, commands.Cog):
     Create a starboard to *pin* those special comments indefinitely
     """
 
-    __version__ = "2.5.5"
+    __version__ = "2.5.6"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -113,9 +113,9 @@ class Starboard(StarboardEvents, commands.Cog):
         guild = ctx.guild
         await ctx.typing()
         if guild.id in self.starboards:
-            await BaseMenu(source=StarboardPages(list(self.starboards[guild.id].values()))).start(
-                ctx=ctx
-            )
+            await BaseMenu(
+                source=StarboardPages(list(self.starboards[guild.id].values()))
+            ).start(ctx=ctx)
 
     @starboard.command(name="create", aliases=["add"])
     async def setup_starboard(
@@ -154,9 +154,13 @@ class Starboard(StarboardEvents, commands.Cog):
             self.starboards[guild.id] = {}
         starboards = self.starboards[guild.id]
         if name in starboards:
-            await ctx.send(_("{name} starboard name is already being used").format(name=name))
+            await ctx.send(
+                _("{name} starboard name is already being used").format(name=name)
+            )
             return
-        starboard = StarboardEntry(name=name, channel=channel.id, emoji=str(emoji), guild=guild.id)
+        starboard = StarboardEntry(
+            name=name, channel=channel.id, emoji=str(emoji), guild=guild.id
+        )
         self.starboards[guild.id][name] = starboard
         await self._save_starboards(guild)
         msg = _("Starboard set to {channel} with emoji {emoji}").format(
@@ -197,7 +201,8 @@ class Starboard(StarboardEvents, commands.Cog):
                         channels += 1
         await self._save_starboards(guild)
         msg = _(
-            "Removed {channels} channels and roles, and {boards} boards " "that no longer exist"
+            "Removed {channels} channels and roles, and {boards} boards "
+            "that no longer exist"
         ).format(channels=channels, boards=boards)
         await ctx.send(msg)
 
@@ -224,6 +229,7 @@ class Starboard(StarboardEvents, commands.Cog):
                 )
                 return
             starboard = list(self.starboards[guild.id].values())[0]
+
         async with self.config.guild(guild).starboards() as starboards:
             try:
                 del self.starboards[ctx.guild.id][starboard.name]
@@ -371,7 +377,9 @@ class Starboard(StarboardEvents, commands.Cog):
         self,
         ctx: commands.Context,
         starboard: Optional[StarboardExists],
-        channel_or_role: Union[discord.TextChannel, discord.CategoryChannel, discord.Role],
+        channel_or_role: Union[
+            discord.TextChannel, discord.CategoryChannel, discord.Role
+        ],
     ) -> None:
         """
         Add a channel to the starboard blocklist
@@ -400,7 +408,9 @@ class Starboard(StarboardEvents, commands.Cog):
             await ctx.send(msg)
             return
         else:
-            self.starboards[ctx.guild.id][starboard.name].blacklist.append(channel_or_role.id)
+            self.starboards[ctx.guild.id][starboard.name].blacklist.append(
+                channel_or_role.id
+            )
             await self._save_starboards(guild)
             msg = _("{channel_or_role} blocked on starboard {name}").format(
                 channel_or_role=channel_or_role.name, name=starboard.name
@@ -412,7 +422,9 @@ class Starboard(StarboardEvents, commands.Cog):
         self,
         ctx: commands.Context,
         starboard: Optional[StarboardExists],
-        channel_or_role: Union[discord.TextChannel, discord.CategoryChannel, discord.Role],
+        channel_or_role: Union[
+            discord.TextChannel, discord.CategoryChannel, discord.Role
+        ],
     ) -> None:
         """
         Remove a channel to the starboard blocklist
@@ -435,17 +447,19 @@ class Starboard(StarboardEvents, commands.Cog):
                 return
             starboard = list(self.starboards[guild.id].values())[0]
         if channel_or_role.id not in starboard.blacklist:
-            msg = _("{channel_or_role} is not on the blocklist for starboard {name}").format(
-                channel_or_role=channel_or_role.name, name=starboard.name
-            )
+            msg = _(
+                "{channel_or_role} is not on the blocklist for starboard {name}"
+            ).format(channel_or_role=channel_or_role.name, name=starboard.name)
             await ctx.send(msg)
             return
         else:
-            self.starboards[ctx.guild.id][starboard.name].blacklist.remove(channel_or_role.id)
-            await self._save_starboards(guild)
-            msg = _("{channel_or_role} removed from the blocklist on starboard {name}").format(
-                channel_or_role=channel_or_role.name, name=starboard.name
+            self.starboards[ctx.guild.id][starboard.name].blacklist.remove(
+                channel_or_role.id
             )
+            await self._save_starboards(guild)
+            msg = _(
+                "{channel_or_role} removed from the blocklist on starboard {name}"
+            ).format(channel_or_role=channel_or_role.name, name=starboard.name)
             await ctx.send(msg)
 
     @whitelist.command(name="add")
@@ -453,7 +467,9 @@ class Starboard(StarboardEvents, commands.Cog):
         self,
         ctx: commands.Context,
         starboard: Optional[StarboardExists],
-        channel_or_role: Union[discord.TextChannel, discord.CategoryChannel, discord.Role],
+        channel_or_role: Union[
+            discord.TextChannel, discord.CategoryChannel, discord.Role
+        ],
     ) -> None:
         """
         Add a channel to the starboard allowlist
@@ -483,7 +499,9 @@ class Starboard(StarboardEvents, commands.Cog):
             await ctx.send(msg)
             return
         else:
-            self.starboards[ctx.guild.id][starboard.name].whitelist.append(channel_or_role.id)
+            self.starboards[ctx.guild.id][starboard.name].whitelist.append(
+                channel_or_role.id
+            )
             await self._save_starboards(guild)
             msg = _("{channel_or_role} allowed on starboard {name}").format(
                 channel_or_role=channel_or_role.name, name=starboard.name
@@ -506,7 +524,9 @@ class Starboard(StarboardEvents, commands.Cog):
         self,
         ctx: commands.Context,
         starboard: Optional[StarboardExists],
-        channel_or_role: Union[discord.TextChannel, discord.CategoryChannel, discord.Role],
+        channel_or_role: Union[
+            discord.TextChannel, discord.CategoryChannel, discord.Role
+        ],
     ) -> None:
         """
         Remove a channel to the starboard allowlist
@@ -529,17 +549,19 @@ class Starboard(StarboardEvents, commands.Cog):
                 return
             starboard = list(self.starboards[guild.id].values())[0]
         if channel_or_role.id not in starboard.whitelist:
-            msg = _("{channel_or_role} is not on the allowlist for starboard {name}").format(
-                channel_or_role=channel_or_role.name, name=starboard.name
-            )
+            msg = _(
+                "{channel_or_role} is not on the allowlist for starboard {name}"
+            ).format(channel_or_role=channel_or_role.name, name=starboard.name)
             await ctx.send(msg)
             return
         else:
-            self.starboards[ctx.guild.id][starboard.name].whitelist.remove(channel_or_role.id)
-            await self._save_starboards(guild)
-            msg = _("{channel_or_role} removed from the allowlist on starboard {name}").format(
-                channel_or_role=channel_or_role.name, name=starboard.name
+            self.starboards[ctx.guild.id][starboard.name].whitelist.remove(
+                channel_or_role.id
             )
+            await self._save_starboards(guild)
+            msg = _(
+                "{channel_or_role} removed from the allowlist on starboard {name}"
+            ).format(channel_or_role=channel_or_role.name, name=starboard.name)
             await ctx.send(msg)
 
     @starboard.command(name="channel", aliases=["channels"])
@@ -646,9 +668,13 @@ class Starboard(StarboardEvents, commands.Cog):
                 return
             starboard = list(self.starboards[guild.id].values())[0]
         if starboard.selfstar:
-            msg = _("Selfstarring on starboard {name} disabled.").format(name=starboard.name)
+            msg = _("Selfstarring on starboard {name} disabled.").format(
+                name=starboard.name
+            )
         else:
-            msg = _("Selfstarring on starboard {name} enabled.").format(name=starboard.name)
+            msg = _("Selfstarring on starboard {name} enabled.").format(
+                name=starboard.name
+            )
         self.starboards[ctx.guild.id][starboard.name].selfstar = not starboard.selfstar
         await self._save_starboards(guild)
         await ctx.send(msg)
@@ -677,9 +703,13 @@ class Starboard(StarboardEvents, commands.Cog):
                 return
             starboard = list(self.starboards[guild.id].values())[0]
         if starboard.autostar:
-            msg = _("Autostarring on starboard {name} disabled.").format(name=starboard.name)
+            msg = _("Autostarring on starboard {name} disabled.").format(
+                name=starboard.name
+            )
         else:
-            msg = _("Autostarring on starboard {name} enabled.").format(name=starboard.name)
+            msg = _("Autostarring on starboard {name} enabled.").format(
+                name=starboard.name
+            )
         self.starboards[ctx.guild.id][starboard.name].autostar = not starboard.autostar
         await self._save_starboards(guild)
         await ctx.send(msg)
@@ -763,12 +793,17 @@ class Starboard(StarboardEvents, commands.Cog):
                 return
         self.starboards[ctx.guild.id][starboard.name].emoji = str(emoji)
         await self._save_starboards(guild)
-        msg = _("{emoji} set for starboard {name}").format(emoji=emoji, name=starboard.name)
+        msg = _("{emoji} set for starboard {name}").format(
+            emoji=emoji, name=starboard.name
+        )
         await ctx.send(msg)
 
     @starboard.command(name="threshold")
     async def set_threshold(
-        self, ctx: commands.Context, starboard: Optional[StarboardExists], threshold: int
+        self,
+        ctx: commands.Context,
+        starboard: Optional[StarboardExists],
+        threshold: int,
     ) -> None:
         """
         Set the threshold before posting to the starboard

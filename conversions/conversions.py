@@ -20,7 +20,7 @@ class Conversions(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.1"
+    __version__ = "1.3.2"
 
     def __init__(self, bot: Red) -> None:
         self.bot = bot
@@ -352,7 +352,8 @@ class Conversions(commands.Cog):
 
         msg = f"{amount} {coin.symbol} is **{price:,.2f} {currency}**\n"
         embed = discord.Embed(
-            description=msg, colour=coin_colour.get(coin.name, discord.Colour.dark_grey())
+            description=msg,
+            colour=coin_colour.get(coin.name, discord.Colour.dark_grey()),
         )
         embed.set_footer(text="As of")
         embed.set_author(name=coin.name, url=coin_url, icon_url=coin_image)
@@ -424,7 +425,9 @@ class Conversions(commands.Cog):
         last_updated = datetime.datetime.utcfromtimestamp(ticker_data["regularMarketTime"])
         msg = "{0} is {1:,.2f} {2}".format(ticker.upper(), price, currency.upper())
         embed = discord.Embed(
-            description="Stock Price", colour=discord.Colour.lighter_grey(), timestamp=last_updated
+            description="Stock Price",
+            colour=discord.Colour.lighter_grey(),
+            timestamp=last_updated,
         )
         embed.set_footer(text="Last Updated")
         embed.add_field(name=ticker.upper(), value=msg)

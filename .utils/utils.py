@@ -216,7 +216,9 @@ def edit(key, value):
 
 @cli.command()
 @click.option("--author", default=DEFAULT_AUTHOR, help="Author of the cog", prompt=True)
-@click.option("--name", prompt="Enter the name of the cog", help="Name of the cog being added")
+@click.option(
+    "--name", prompt="Enter the name of the cog", help="Name of the cog being added"
+)
 @click.option(
     "--description",
     prompt="Enter a longer description for the cog.",
@@ -259,15 +261,21 @@ def edit(key, value):
     prompt=True,
     type=bool,
 )
-@click.option("--required-cogs", default={}, help="Required cogs for this cog to function.")
-@click.option("--requirements", prompt=True, default=[], help="Requirements for the cog.")
+@click.option(
+    "--required-cogs", default={}, help="Required cogs for this cog to function."
+)
+@click.option(
+    "--requirements", prompt=True, default=[], help="Requirements for the cog."
+)
 @click.option(
     "--tags",
     default=[],
     prompt=True,
     help="Any tags to help people find the cog better.",
 )
-@click.option("--permissions", prompt=True, default=[], help="Any permissions the cog requires.")
+@click.option(
+    "--permissions", prompt=True, default=[], help="Any permissions the cog requires."
+)
 @click.option(
     "--min-python-version",
     default=[3, 8, 0],
@@ -448,7 +456,9 @@ def makereadme():
                         _version = maybe_version.group(1)
         if info and not (info.disabled or info.hidden):
             to_append = [info.name, _version]
-            description = f"<details><summary>{info.short}</summary>{info.description}</details>"
+            description = (
+                f"<details><summary>{info.short}</summary>{info.description}</details>"
+            )
             to_append.append(description)
             to_append.append(babel_list(info.author, style="standard", locale="en"))
             table_data.append(to_append)

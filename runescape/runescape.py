@@ -185,6 +185,7 @@ class Runescape(commands.Cog):
                 msg += f"[{title}]({base_url}{page_id})\n"
         await ctx.maybe_send_embed(msg)
 
+
     @runescape.command(name="vis", aliases=["viswax"])
     async def runescape_viswax(self, ctx: commands.Context):
         """
@@ -232,7 +233,7 @@ class Runescape(commands.Cog):
                 msg += f"__Combination {i+1}__: {slot_1[i]} and either {humanize_list(slot_2[i], style='or')}\n"
             msg += _from + "\nhttps://runescape.wiki/w/Rune_Goldberg_Machine"
         await ctx.maybe_send_embed(msg)
-
+        
     @runescape.command(name="nemiforest", aliases=["nemi", "forest"])
     async def runescape_nemiforest(self, ctx: commands.Context):
         """Display an image of a Nemi Forest instance with all nine nodes."""
@@ -241,6 +242,7 @@ class Runescape(commands.Cog):
             params = {
                 "limit": 1,
             }
+
             async with self.session.get(subreddit_url, params=params) as r:
                 if r.status == 200:
                     data = await r.json()
