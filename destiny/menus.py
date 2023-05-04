@@ -59,30 +59,40 @@ class ClanPendingButton(discord.ui.Button):
         self.membership_type = bnet_member["destinyUserInfo"]["membershipType"]
         self.clan_id = clan_id
         self.bnet_member = bnet_member
-        bungie_name = bnet_member["bungieNetUserInfo"].get("bungieGlobalDisplayName", "")
-        bungie_name_code = bnet_member["bungieNetUserInfo"].get("bungieGlobalDisplayNameCode", "")
+        bungie_name = bnet_member["destinyUserInfo"].get("bungieGlobalDisplayName", "")
+        bungie_name_code = bnet_member["destinyUserInfo"].get("bungieGlobalDisplayNameCode", "")
         self.bnet_name = f"{bungie_name}#{bungie_name_code}"
         super().__init__(style=discord.ButtonStyle.primary, label=self.bnet_name)
 
     async def callback(self, interaction: discord.Interaction):
-        try:
-            await self.view.cog.approve_clan_pending(
-                interaction.user,
-                self.clan_id,
-                self.membership_type,
-                self.member_id,
-                self.bnet_member,
-            )
-        except Destiny2APIError as e:
-            log.exception("error approving clan member.")
-            await interaction.response.send_message(str(e), ephemeral=True)
-        else:
-            user = f"[{self.bnet_name}](<https://www.bungie.net/7/en/User/Profile/{self.membership_type}/{self.member_id}>)"
-            await interaction.response.send_message(
-                _("{user} has been approved into the clan.").format(user=user)
-            )
-            self.disabled = True
-            await self.view.message.edit(view=self.view)
+        pred = YesNoView()
+        await interaction.response.send_message(
+            _("Are you sure you want to approve {bnet_name} into the clan?").format(
+                bnet_name=self.bnet_name
+            ),
+            view=pred,
+            ephemeral=True,
+        )
+        await pred.wait()
+        if pred.result:
+            try:
+                await self.view.cog.approve_clan_pending(
+                    interaction.user,
+                    self.clan_id,
+                    self.membership_type,
+                    self.member_id,
+                    self.bnet_member,
+                )
+            except Destiny2APIError as e:
+                log.exception("error approving clan member.")
+                await interaction.followup.send(str(e))
+            else:
+                user = f"[{self.bnet_name}](<https://www.bungie.net/7/en/User/Profile/{self.membership_type}/{self.member_id}>)"
+                await interaction.followup.send(
+                    _("{user} has been approved into the clan.").format(user=user)
+                )
+                self.disabled = True
+                await self.view.message.edit(view=self.view)
 
 
 class ClanPendingView(discord.ui.View):
@@ -104,7 +114,7 @@ class ClanPendingView(discord.ui.View):
         )
         description = ""
         for index, user in enumerate(self.pending_users[:25]):
-            bungie_info = user.get("bungieNetUserInfo", "")
+            bungie_info = user.get("destinyUserInfo")
             bungie_name = bungie_info.get("bungieGlobalDisplayName", "")
             bungie_name_code = bungie_info.get("bungieGlobalDisplayNameCode", "")
             bungie_name_and_code = f"{bungie_name}#{bungie_name_code}"
@@ -112,6 +122,7 @@ class ClanPendingView(discord.ui.View):
             platform = bungie_info.get("membershipType")
             msg = f"[{bungie_name_and_code}](https://www.bungie.net/7/en/User/Profile/{platform}/{bungie_id})"
             description += msg + "\n"
+        embed.description = description
         self.message = await self.ctx.send(embed=embed, view=self)
 
 

@@ -67,6 +67,7 @@ COMPONENTS = DestinyComponents(
     DestinyComponentType.platform_silver,
     DestinyComponentType.characters,
     DestinyComponentType.character_inventories,
+    DestinyComponentType.character_progression,
     DestinyComponentType.character_activities,
     DestinyComponentType.character_equipment,
     DestinyComponentType.character_loadouts,
@@ -78,6 +79,7 @@ COMPONENTS = DestinyComponents(
     DestinyComponentType.item_plug_states,
     DestinyComponentType.item_plug_objectives,
     DestinyComponentType.item_reusable_plugs,
+    DestinyComponentType.kiosks,
     DestinyComponentType.currency_lookups,
     DestinyComponentType.collectibles,
     DestinyComponentType.records,
@@ -406,25 +408,34 @@ class DestinyAPI:
         return await self.request_url(url, params=params, headers=headers)
 
     async def replace_string(
-        self, user: discord.abc.User, text: str, character: Optional[int] = None
+        self,
+        user: discord.abc.User,
+        text: str,
+        character: Optional[int] = None,
+        variables: Optional[dict] = None,
     ) -> str:
         """
         This replaces string variables in a givent text if it exists
         """
         if not STRING_VAR_RE.search(text):
             return text
-        all_variables = await self.get_variables(user)
+        if variables is None:
+            variables = await self.get_variables(user)
+
         if character is not None:
-            variables = all_variables["characterStringVariables"]["data"][str(character)][
+            all_variables = variables["characterStringVariables"]["data"][str(character)][
                 "integerValuesByHash"
             ]
         else:
-            variables = all_variables["profileStringVariables"]["data"]["integerValuesByHash"]
+            all_variables = variables["profileStringVariables"]["data"]["integerValuesByHash"]
         for var in STRING_VAR_RE.finditer(text):
+
             try:
-                text = STRING_VAR_RE.sub(str(variables[str(var.group("hash"))]), text)
+                repl = str(all_variables[str(var.group("hash"))])
             except KeyError:
                 log.error("Could not find variable %s", var.group("hash"))
+                continue
+            text = text.replace(var.group(0), repl)
 
         return text
 
@@ -442,11 +453,22 @@ class DestinyAPI:
         if components is None:
             components = COMPONENTS
 
+        components.add(DestinyComponentType.characters)
+        components.add(DestinyComponentType.profiles)
         params = components.to_dict()
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/"
-        return await self.request_url(url, params=params, headers=headers)
+        try:
+            chars = await self.request_url(url, params=params, headers=headers)
+        except Exception:
+            raise
+        if "characters" in chars:
+            # Save this data every time we call this endpoint to ensure accuracy with autocomplete
+            # This is mainly a nice thing to have to sort player characters based on
+            # the last played character
+            await self.config.user(user).characters.set(chars["characters"]["data"])
+        return chars
 
     async def get_character(
         self,
@@ -608,7 +630,13 @@ class DestinyAPI:
                     items[str(data["hash"])] = data
         return items
 
-    async def get_vendor(self, user: discord.abc.User, character: str, vendor: str) -> dict:
+    async def get_vendor(
+        self,
+        user: discord.abc.User,
+        character: str,
+        vendor: str,
+        components: Optional[DestinyComponents] = None,
+    ) -> dict:
         """
         This gets the inventory of a specified Vendor
         """
@@ -616,19 +644,46 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except Exception:
             raise Destiny2RefreshTokenError
-        components = DestinyComponents(
-            DestinyComponentType.item_stats,
-            DestinyComponentType.item_sockets,
-            DestinyComponentType.item_plug_states,
-            DestinyComponentType.item_reusable_plugs,
-            DestinyComponentType.vendors,
-            DestinyComponentType.vendor_categories,
-            DestinyComponentType.vendor_sales,
-        )
+        if components is None:
+            components = DestinyComponents(
+                DestinyComponentType.item_stats,
+                DestinyComponentType.item_sockets,
+                DestinyComponentType.item_plug_states,
+                DestinyComponentType.item_reusable_plugs,
+                DestinyComponentType.vendors,
+                DestinyComponentType.vendor_categories,
+                DestinyComponentType.vendor_sales,
+            )
         params = components.to_dict()
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = f"{BASE_URL}/Destiny2/{platform}/Profile/{user_id}/Character/{character}/Vendors/{vendor}/"
+        return await self.request_url(url, params=params, headers=headers)
+
+    async def get_vendors(
+        self,
+        user: discord.abc.User,
+        character: str,
+        components: Optional[DestinyComponents] = None,
+    ) -> dict:
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        if components is None:
+            components = DestinyComponents(
+                DestinyComponentType.item_stats,
+                DestinyComponentType.item_sockets,
+                DestinyComponentType.item_plug_states,
+                DestinyComponentType.item_reusable_plugs,
+                DestinyComponentType.vendors,
+                DestinyComponentType.vendor_categories,
+                DestinyComponentType.vendor_sales,
+            )
+        params = components.to_dict()
+        platform = await self.config.user(user).account.membershipType()
+        user_id = await self.config.user(user).account.membershipId()
+        url = f"{BASE_URL}/Destiny2/{platform}/Profile/{user_id}/Character/{character}/Vendors/"
         return await self.request_url(url, params=params, headers=headers)
 
     async def get_clan_members(self, user: discord.abc.User, clan_id: str) -> dict:
@@ -788,7 +843,7 @@ class DestinyAPI:
         self,
         user: discord.abc.User,
         character: str,
-        mode: Union[DestinyActivityModeType, int],
+        mode: Optional[Union[DestinyActivityModeType, int]] = None,
         groups: Optional[DestinyStatsGroup] = None,
     ) -> dict:
         """
@@ -803,7 +858,11 @@ class DestinyAPI:
             groups = DestinyStatsGroup.all()
         if isinstance(mode, int):
             mode = DestinyActivityModeType(mode)
-        params = {"count": 5, "mode": mode.value, "groups": groups.to_str()}
+        mode_value = None
+        if mode:
+            mode_value = mode.value
+
+        params = {"count": 5, "mode": mode_value, "groups": groups.to_str()}
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/Activities/"

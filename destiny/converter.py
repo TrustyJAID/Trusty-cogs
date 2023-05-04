@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
+from datetime import datetime
 from enum import Enum, EnumMeta
 from typing import List, Optional, Union
 
@@ -162,6 +163,14 @@ class DestinyEnumGroup:
 
     def __iter__(self):
         return self._list
+
+    def add(self, item: Union[Enum, int]):
+        if isinstance(item, int):
+            if self._enum(item) not in self._list:
+                self._list.append(self._enum(item))
+        elif isinstance(item, Enum):
+            if item not in self._list:
+                self._list.append(item)
 
     def to_str(self):
         return ",".join(str(i.value) for i in self._list)
@@ -495,6 +504,69 @@ class StatsPage(discord.app_commands.Transformer):
     async def transform(self, interaction: discord.Interaction, argument: str) -> str:
         ctx = await interaction.client.get_context(interaction)
         return await self.convert(ctx, argument)
+
+
+class DestinyCharacter(discord.app_commands.Transformer):
+    """Returns the selected Character ID for a user"""
+
+    async def convert(self, ctx: commands.Context, argument: str) -> str:
+        cog = ctx.bot.get_cog("Destiny")
+        chars = await cog.config.user(ctx.author).characters()
+        if argument.isdigit():
+            return argument
+        if not chars:
+            try:
+                characters = await cog.get_characters(
+                    ctx.author, components=DestinyComponents(DestinyComponentType.characters)
+                )
+                chars = characters["characters"]["data"]
+                await cog.config.user(ctx.author).characters.set(chars)
+            except Exception as e:
+                await cog.send_error_msg(ctx, e)
+                return
+        for char_id, data in chars.items():
+            if argument.lower() == "titan" and data["classType"] == 0:
+                return char_id
+            if argument.lower() == "hunter" and data["classType"] == 1:
+                return char_id
+            if argument.lower() == "warlock" and data["classType"] == 2:
+                return char_id
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        cog = interaction.client.get_cog("Destiny")
+        chars = await cog.config.user(interaction.user).characters()
+        class_info = await cog.get_entities("DestinyClassDefinition")
+        if not chars:
+            try:
+                characters = await cog.get_characters(
+                    interaction.user, components=DestinyComponents(DestinyComponentType.characters)
+                )
+                chars = characters["characters"]["data"]
+                await cog.config.user(interaction.user).characters.set(chars)
+            except Exception:
+                return [
+                    discord.app_commands.Choice(
+                        name=_("No characters could be found at this time."), value=""
+                    )
+                ]
+        ret = []
+        for char_id, data in sorted(
+            chars.items(),
+            key=lambda x: datetime.strptime(x[1]["dateLastPlayed"], "%Y-%m-%dT%H:%M:%SZ"),
+            reverse=True,
+        ):
+            name = (
+                class_info.get(str(data["classHash"])).get("displayProperties", {}).get("name", "")
+            )
+            if current.lower() in name.lower():
+                ret.append(discord.app_commands.Choice(name=name, value=char_id))
+        return ret
+
+    async def transform(self, interaction: discord.Interaction, current: str) -> str:
+        ctx = await interaction.client.get_context(interaction)
+        return await self.convert(ctx, current)
 
 
 class SearchInfo(Converter):
