@@ -231,7 +231,7 @@ class TweetsAPI:
     bot: Red
     accounts: Dict[str, TweetEntry]
     run_stream: bool
-    twitter_loop: Optional[tweepy.Stream]
+    twitter_loop: Optional[asyncio.Task]
     tweet_stream_view: discord.ui.View
     dashboard_authed: Dict[int, dict]
 
