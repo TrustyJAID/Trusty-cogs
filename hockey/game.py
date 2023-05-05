@@ -401,28 +401,31 @@ class Game:
         """
         start_date_str = start_date.strftime("%Y-%m-%d") if start_date is not None else None
         end_date_str = end_date.strftime("%Y-%m-%d") if end_date is not None else None
-        if start_date is None and end_date is None:
-            # if no dates are provided get todays current schedule
-            url = BASE_URL + "/api/v1/schedule"
-        elif start_date is None and end_date is not None:
+        params = {}
+        url = BASE_URL + "/api/v1/schedule"
+        if start_date is None and end_date is not None:
             # if no start date is provided start with today
-            start_date_str = datetime.now().strftime("%Y-%m-%d")
-            url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
+            params["startDate"] = datetime.now().strftime("%Y-%m-%d")
+            params["endDate"] = end_date_str
+            # url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
         elif start_date is not None and end_date is None:
             # if no end date is provided carry through to the following year
-            end_date_str = str(start_date.year + 1) + start_date.strftime("-%m-%d")
-            url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
+            params["endDate"] = str(start_date.year + 1) + start_date.strftime("-%m-%d")
+            params["startDate"] = start_date_str
+            # url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
         else:
-            url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
+            params["startDate"] = start_date_str
+            params["endDate"] = end_date_str
         if team not in ["all", None]:
             # if a team is provided get just that TEAMS data
-            url += "&teamId={}".format(TEAMS[team]["id"])
+            # url += "&teamId={}".format(TEAMS[team]["id"])
+            params["teamId"] = TEAMS[team]["id"]
         if session is None:
             async with aiohttp.ClientSession() as new_session:
-                async with new_session.get(url) as resp:
+                async with new_session.get(url, params=params) as resp:
                     data = await resp.json()
         else:
-            async with session.get(url) as resp:
+            async with session.get(url, params=params) as resp:
                 data = await resp.json()
         game_list = [game for date in data["dates"] for game in date["games"]]
         return game_list

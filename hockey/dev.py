@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import date, datetime, timedelta, timezone
+from typing import Optional
 
 import discord
 from redbot.core import commands
@@ -138,6 +139,18 @@ class HockeyDev(MixinMeta):
 
         await ctx.send(msg)
 
+    @pickems_dev_commands.command(name="msg")
+    async def pickems_dev_msg(self, ctx: commands.Context, *, msg: Optional[str] = None):
+        """
+        Set the message sent to users attempting to add pickems when it
+        is disabled.
+        """
+        if msg and len(msg) > 2000:
+            await ctx.send(_("Your message needs to be fewer than 2000 characters."))
+            return
+        await self.pickems_config.unavailable_msg.set(msg)
+        await ctx.send(_("Pickems Unavailable message set to:\n{msg}").format(msg=msg))
+
     @pickems_dev_commands.command(name="addguild")
     async def pickems_add_guild(self, ctx: commands.Context, guild_id: int):
         """
@@ -160,6 +173,8 @@ class HockeyDev(MixinMeta):
         async with self.pickems_config.allowed_guilds() as allowed:
             if guild_id in allowed:
                 allowed.remove(guild_id)
+        await self.pickems_config.guild_from_id(guild_id).pickems_channel.clear()
+        await self.pickems_config.guild_from_id(guild_id).pickems_category.clear()
         await ctx.send(
             _("Guild {guild_id} removed from the pickems allowed guilds.").format(
                 guild_id=guild_id

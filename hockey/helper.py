@@ -60,6 +60,14 @@ ACTIVE_TEAM_RE = re.compile(ACTIVE_TEAM_RE_STR, flags=re.I)
 VERSUS_RE = re.compile(r"vs\.?|versus", flags=re.I)
 
 
+class Broadcast(NamedTuple):
+    id: int
+    name: str
+    type: str
+    site: str
+    language: str
+
+
 def utc_to_local(utc_dt: datetime, new_timezone: str = "US/Pacific") -> datetime:
     eastern = pytz.timezone(new_timezone)
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=eastern)

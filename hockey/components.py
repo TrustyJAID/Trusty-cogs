@@ -186,11 +186,11 @@ class FilterModal(discord.ui.Modal):
                     continue
                 nick = data["nickname"]
                 short = data["tri_code"]
-                pattern = fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split())
+                pattern = rf"{short}\b|" + r"|".join(rf"\b{i}\b" for i in team.split())
                 if nick:
-                    pattern += r"|" + r"|".join(fr"\b{i}\b" for i in nick)
+                    pattern += r"|" + r"|".join(rf"\b{i}\b" for i in nick)
                 # log.debug(pattern)
-                reg: Pattern = re.compile(fr"\b{pattern}", flags=re.I)
+                reg: Pattern = re.compile(rf"\b{pattern}", flags=re.I)
                 for pot in potential_teams:
                     find = reg.findall(pot)
                     if find:
@@ -292,6 +292,21 @@ class HeatmapButton(discord.ui.Button):
             self.label = _("Heatmap {style}").format(style=self.view.source.style)
             await self.view.show_page(self.view.current_page, interaction=interaction)
             return
+
+
+class BroadcastsButton(discord.ui.Button):
+    def __init__(self, row: Optional[int]):
+        super().__init__(style=discord.ButtonStyle.primary, row=row, label=_("Broadcasts"))
+        self.style = discord.ButtonStyle.primary
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.source.show_broadcasts = not self.view.source.show_broadcasts
+        self.style = (
+            discord.ButtonStyle.primary
+            if not self.view.source.show_broadcasts
+            else discord.ButtonStyle.green
+        )
+        await self.view.show_page(self.view.current_page, interaction=interaction)
 
 
 class GameflowButton(discord.ui.Button):

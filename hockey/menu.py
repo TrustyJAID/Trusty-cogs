@@ -10,6 +10,7 @@ from redbot.vendored.discord.ext import menus
 
 from .components import (
     BackButton,
+    BroadcastsButton,
     FilterButton,
     FirstItemButton,
     ForwardButton,
@@ -24,7 +25,7 @@ from .components import (
 )
 from .errors import NoSchedule
 from .player import Player, SimplePlayer
-from .schedule import Schedule
+from .schedule import Schedule, ScheduleList
 
 _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.hockey")
@@ -55,6 +56,7 @@ class GamesMenu(discord.ui.View):
         self.filter_button = FilterButton(discord.ButtonStyle.primary, 1)
         self.heatmap_button = HeatmapButton(discord.ButtonStyle.primary, 1)
         self.gameflow_button = GameflowButton(discord.ButtonStyle.primary, 1)
+        self.broadcast_button = BroadcastsButton(1)
         self.add_item(self.stop_button)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
@@ -69,6 +71,9 @@ class GamesMenu(discord.ui.View):
             )
             self.add_item(self.heatmap_button)
             self.add_item(self.gameflow_button)
+            self.add_item(self.broadcast_button)
+        if isinstance(self.source, ScheduleList):
+            self.add_item(self.broadcast_button)
         self.select_view: Optional[HockeySelectGame] = None
         self.author = None
 

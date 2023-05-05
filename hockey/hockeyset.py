@@ -458,10 +458,12 @@ class HockeySetCommands(MixinMeta):
 
         standings = await Standings.get_team_standings(session=self.session)
         if standings_type in [i.name.lower() for i in Divisions]:
-            em = await standings.make_division_standings_embed(standings_type)
+            standing = Divisions(standings_type.title())
+            em = await standings.make_division_standings_embed(standing)
 
         elif standings_type in [i.name.lower() for i in Conferences]:
-            em = await standings.make_conference_standings_embed(standings_type)
+            standing = Conferences(standings_type.title())
+            em = await standings.make_conference_standings_embed(standing)
         else:
             em = await standings.all_standing_embed()
         await self.config.guild(guild).standings_type.set(standings_type)

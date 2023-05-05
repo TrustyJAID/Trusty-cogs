@@ -37,6 +37,7 @@ class Schedule(menus.PageSource):
         self.include_gameflow = kwargs.get("include_gameflow", False)
         self.include_plays = kwargs.get("include_plays", False)
         self.include_goals = kwargs.get("include_goals", True)
+        self.show_broadcasts = kwargs.get("show_broadcasts", False)
         self.style = kwargs.get("style", "all")
         self.corsi = kwargs.get("corsi", True)
         self.strength = kwargs.get("strength", "all")
@@ -87,9 +88,13 @@ class Schedule(menus.PageSource):
         return page
 
     async def format_page(self, menu: menus.MenuPages, game: dict) -> discord.Embed:
-        async with aiohttp.ClientSession() as session:
-            log.debug(BASE_URL + game["link"])
-            async with session.get(BASE_URL + game["link"]) as resp:
+        log.debug(BASE_URL + game["link"])
+        if self._session is not None:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(BASE_URL + game["link"]) as resp:
+                    data = await resp.json()
+        else:
+            async with self._session.get(BASE_URL + game["link"]) as resp:
                 data = await resp.json()
         game_obj = await Game.from_json(data)
         # return {"content": f"{self.index+1}/{len(self._cache)}", "embed": await game_obj.make_game_embed()}
@@ -103,6 +108,10 @@ class Schedule(menus.PageSource):
         if self.include_gameflow:
             em.set_image(url=game_obj.gameflow_url(corsi=self.corsi, strength=self.strength))
             em.description = f"[Natural Stat Trick]({game_obj.nst_url()})"
+        if self.show_broadcasts:
+            broadcasts = game.get("broadcasts", [])
+            broadcast_str = humanize_list([b["name"] for b in broadcasts])
+            em.add_field(name=_("Broadcasts"), value=broadcast_str)
         return em
 
     async def next(self, choice: Optional[int] = None, skip: bool = False) -> dict:
@@ -185,9 +194,7 @@ class Schedule(menus.PageSource):
             date_timestamp = int(utc_to_local(date, "UTC").timestamp())
             end_date_str = (date + timedelta(days=self.search_range)).strftime("%Y-%m-%d")
             end_date_timestamp = int(
-                utc_to_local(
-                    (date + timedelta(days=self.search_range)), "UTC"
-                ).timestamp()
+                utc_to_local((date + timedelta(days=self.search_range)), "UTC").timestamp()
             )
         else:
             date_str = self.date.strftime("%Y-%m-%d")
@@ -197,19 +204,23 @@ class Schedule(menus.PageSource):
                 utc_to_local((self.date + timedelta(days=self.search_range)), "UTC").timestamp()
             )
 
-        url = f"{BASE_URL}/api/v1/schedule?startDate={date_str}&endDate={end_date_str}"
+        url = f"{BASE_URL}/api/v1/schedule"
+        params = {
+            "startDate": date_str,
+            "endDate": end_date_str,
+            "expand": "schedule.teams,schedule.linescore,schedule.broadcasts",
+        }
         if self.team not in ["all", None]:
             # if a team is provided get just that TEAMS data
-            url += "&teamId=" + ",".join(str(TEAMS[t]["id"]) for t in self.team)
+            params["teamId"] = ",".join(str(TEAMS[t]["id"]) for t in self.team)
         # log.debug(url)
         self._last_searched = f"<t:{date_timestamp}> to <t:{end_date_timestamp}>"
-        async with self._session.get(url) as resp:
+        async with self._session.get(url, params=params) as resp:
             data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
         self.select_options = []
         # log.debug(games)
         for count, game in enumerate(games):
-
             home_team = game["teams"]["home"]["team"]["name"]
             home_abr = home_team
             if home_team in TEAMS:
@@ -262,8 +273,9 @@ class ScheduleList(menus.PageSource):
             self.team = []
         self._last_searched: str = ""
         self._session: aiohttp.ClientSession = kwargs.get("session")
-        self.timezone: str = kwargs.get("timezone")
+        self.timezone: Optional[str] = kwargs.get("timezone")
         self.get_recap: bool = kwargs.get("get_recap", False)
+        self.show_broadcasts = kwargs.get("show_broadcasts", False)
 
     @property
     def index(self) -> int:
@@ -299,9 +311,7 @@ class ScheduleList(menus.PageSource):
         self._last_page = page_number
         return page
 
-    async def format_page(
-        self, menu: menus.MenuPages, games: List[dict]
-    ) -> discord.Embed:
+    async def format_page(self, menu: menus.MenuPages, games: List[dict]) -> discord.Embed:
         states = {
             "Preview": "\N{LARGE RED CIRCLE}",
             "Live": "\N{LARGE GREEN CIRCLE}",
@@ -321,6 +331,17 @@ class ScheduleList(menus.PageSource):
             away_emoji = discord.PartialEmoji.from_str("\N{AIRPLANE}")
             home_abr = home_team
             away_abr = away_team
+            broadcast_str = ""
+            log.debug(game)
+            if "broadcasts" in game and self.show_broadcasts:
+                broadcasts = game["broadcasts"]
+                if broadcasts:
+                    broadcast_str = (
+                        "- "
+                        + _("Broadcasts")
+                        + "\n"
+                        + humanize_list([f" - {b['name']}" for b in broadcasts])
+                    )
             if home_team in TEAMS:
                 home_emoji = discord.PartialEmoji.from_str(TEAMS[home_team]["emoji"])
                 home_abr = TEAMS[home_team]["tri_code"]
@@ -339,18 +360,18 @@ class ScheduleList(menus.PageSource):
                 day = utc_to_local(game_start).day
                 time = f"<t:{int(game_start.timestamp())}:D>"
                 game_str = _("Games") if self.team == [] else _("Game")
-                msg += f"**{game_str} <t:{int(game_start.timestamp())}:D>\n**"
+                msg += f"**{game_str} <t:{int(game_start.timestamp())}:D>**\n"
             elif day and day != utc_to_local(game_start).day:
                 day = utc_to_local(game_start).day
                 time = f"<t:{int(game_start.timestamp())}:D>"
                 game_str = _("Games") if self.team == [] else _("Game")
-                msg += f"**{game_str} {time}\n**"
+                msg += f"**{game_str} {time}**\n"
 
             if postponed:
                 time_str = _("Postponed")
                 msg += (
                     f"{game_state} - {away_emoji} {away_abr} @ "
-                    f"{home_emoji} {home_abr} - {time_str}\n"
+                    f"{home_emoji} {home_abr} - {time_str}\n{broadcast_str}\n"
                 )
             elif game_start < datetime.now(timezone.utc):
                 home_score = game["teams"]["home"]["score"]
@@ -359,18 +380,18 @@ class ScheduleList(menus.PageSource):
                     game_recap = await Game.get_game_recap(game["gamePk"], session=self._session)
                     msg += (
                         f"[{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
-                        f"**{home_score}** {home_emoji} {home_abr}]({game_recap}) \n"
+                        f"**{home_score}** {home_emoji} {home_abr}]({game_recap}) \n{broadcast_str}\n"
                     )
                 else:
                     msg += (
                         f"{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
-                        f"**{home_score}** {home_emoji} {home_abr} \n"
+                        f"**{home_score}** {home_emoji} {home_abr} \n{broadcast_str}\n"
                     )
             else:
                 time_str = f"<t:{int(game_start.timestamp())}:t>"
                 msg += (
                     f"{game_state} - {away_emoji} {away_abr} @ "
-                    f"{home_emoji} {home_abr} - {time_str}\n"
+                    f"{home_emoji} {home_abr} - {time_str}\n{broadcast_str}\n"
                 )
 
             count = 0
@@ -487,22 +508,23 @@ class ScheduleList(menus.PageSource):
         else:
             date_str = self.date.strftime("%Y-%m-%d")
             date_timestamp = int(utc_to_local(date, "UTC").timestamp())
-            end_date_str = (self.date + timedelta(days=days_to_check)).strftime(
-                "%Y-%m-%d"
-            )
+            end_date_str = (self.date + timedelta(days=days_to_check)).strftime("%Y-%m-%d")
             end_date_timestamp = int(
-                utc_to_local(
-                    (self.date + timedelta(days=days_to_check)), "UTC"
-                ).timestamp()
+                utc_to_local((self.date + timedelta(days=days_to_check)), "UTC").timestamp()
             )
 
-        url = f"{BASE_URL}/api/v1/schedule?startDate={date_str}&endDate={end_date_str}"
+        url = f"{BASE_URL}/api/v1/schedule"
+        params = {
+            "startDate": date_str,
+            "endDate": end_date_str,
+            "expand": "schedule.teams,schedule.linescore,schedule.broadcasts",
+        }
         if self.team not in ["all", None]:
             # if a team is provided get just that TEAMS data
-            url += "&teamId=" + ",".join(str(TEAMS[t]["id"]) for t in self.team)
-        log.debug(url)
+            params["teamId"] = ",".join(str(TEAMS[t]["id"]) for t in self.team)
         self._last_searched = f"<t:{date_timestamp}> to <t:{end_date_timestamp}>"
-        async with self._session.get(url) as resp:
+        async with self._session.get(url, params=params) as resp:
+            log.debug(resp.url)
             data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
         if not games:

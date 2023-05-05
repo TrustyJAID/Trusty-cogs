@@ -56,7 +56,7 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "3.3.0"
+    __version__ = "3.3.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -137,6 +137,7 @@ class Hockey(
             top_amount=0,
             allowed_guilds=[],
             only_allowed=False,
+            unavailable_msg=None,
         )
         self.loop: Optional[asyncio.Task] = None
         self.TEST_LOOP = False
@@ -295,6 +296,7 @@ class Hockey(
         await self._ready.wait()
         while True:
             try:
+                params = {"expand": "schedule.teams,schedule.linescore,schedule.broadcasts"}
                 async with self.session.get(f"{BASE_URL}/api/v1/schedule") as resp:
                     if resp.status == 200:
                         data = await resp.json()

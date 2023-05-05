@@ -1023,7 +1023,12 @@ class HockeyPickems(MixinMeta):
             await ctx.channel.send(page)
 
     async def check_pickems_req(self, ctx: commands.Context) -> bool:
-        msg = _("Pickems is not available at this time. Speak to the bot owner about enabling it.")
+        msg = await self.pickems_config.unavailable_msg()
+        if msg is None:
+            msg = _(
+                "Pickems is not available at this time. Speak to the bot owner about enabling it."
+            )
+
         if await self.pickems_config.only_allowed():
             if ctx.guild.id not in await self.pickems_config.allowed_guilds():
                 await ctx.send(msg)

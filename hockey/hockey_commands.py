@@ -653,7 +653,7 @@ class HockeyCommands(MixinMeta):
             "season": "total",
             "playoffs": "playoffs_total",
             "pre-season": "pre-season_total",
-        }.get(leaderboard_type, "total")
+        }.get(leaderboard_type_str, "total")
         position = None
 
         for member_id in leaderboard:
