@@ -41,6 +41,29 @@ class TriggerResponse(Enum):
     image = "image"
     randimage = "randimage"
 
+    def __str__(self):
+        return str(self.value)
+
+    @property
+    def multi_allowed(self):
+        return self in [
+            TriggerResponse.dm,
+            TriggerResponse.dmme,
+            TriggerResponse.remove_role,
+            TriggerResponse.add_role,
+            TriggerResponse.ban,
+            TriggerResponse.kick,
+            TriggerResponse.text,
+            TriggerResponse.filter,
+            TriggerResponse.delete,
+            TriggerResponse.publish,
+            TriggerResponse.react,
+            TriggerResponse.rename,
+            TriggerResponse.command,
+            TriggerResponse.mock,
+            TriggerResponse.delete,
+        ]
+
 
 MULTI_RESPONSES = [
     "dm",

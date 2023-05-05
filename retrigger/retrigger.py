@@ -76,7 +76,7 @@ class ReTrigger(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.21.1"
+    __version__ = "2.22.0"
 
     def __init__(self, bot):
         super().__init__()
@@ -2329,7 +2329,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            [i[0] for i in multi_response],
+            [TriggerResponse(i[0]) for i in multi_response],
             author,
             multi_payload=multi_response,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
