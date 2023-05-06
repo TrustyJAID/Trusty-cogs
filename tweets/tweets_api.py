@@ -592,13 +592,21 @@ class TweetsAPI:
                         webhook = hook
                 if webhook is None:
                     webhook = await channel.create_webhook(name=channel.guild.me.name)
-                await webhook.send(
-                    content,
-                    username=user.username,
-                    avatar_url=user.profile_image_url,
-                    embeds=embeds,
-                    view=view,
-                )
+                if view is not None:
+                    await webhook.send(
+                        content,
+                        username=user.username,
+                        avatar_url=user.profile_image_url,
+                        embeds=embeds,
+                        view=view,
+                    )
+                else:
+                    await webhook.send(
+                        content,
+                        username=user.username,
+                        avatar_url=user.profile_image_url,
+                        embeds=embeds,
+                    )
             elif channel.permissions_for(channel.guild.me).embed_links:
                 await channel.send(content, embeds=embeds, view=view)
             else:
