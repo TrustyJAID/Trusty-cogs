@@ -413,8 +413,9 @@ class Game:
             params["endDate"] = str(start_date.year + 1) + start_date.strftime("-%m-%d")
             params["startDate"] = start_date_str
             # url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
-        else:
+        if start_date_str is not None:
             params["startDate"] = start_date_str
+        if end_date_str is not None:
             params["endDate"] = end_date_str
         if team not in ["all", None]:
             # if a team is provided get just that TEAMS data
