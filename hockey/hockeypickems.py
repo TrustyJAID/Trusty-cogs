@@ -640,7 +640,6 @@ class HockeyPickems(MixinMeta):
         tasks = []
         guild_data = []
         for days in range(7):
-
             guild_data.append(
                 await self.create_pickems_channels_and_message(
                     guilds, today + timedelta(days=days)
@@ -1049,21 +1048,34 @@ class HockeyPickems(MixinMeta):
         If not provided this will use the current channel.
         """
         await ctx.defer()
-        if channel is None:
-            channel = ctx.channel
         if not await self.check_pickems_req(ctx):
             return
         if isinstance(channel, discord.Thread):
             msg = _("You cannot create threads within threads.")
             await ctx.send(msg)
             return
+        pickems_channel = ctx.channel
+        if channel is not None:
+            pickems_channel = channel
 
-        if not channel.permissions_for(ctx.guild.me).create_public_threads:
+        if not pickems_channel.permissions_for(ctx.guild.me).create_public_threads:
             msg = _("I don't have permission to create public threads!")
             await ctx.send(msg)
             return
+        if not pickems_channel.permissions_for(ctx.guild.me).manage_threads:
+            msg = _("I do not have permission to manage threads in {channel}.").format(
+                channel=pickems_channel.mention
+            )
+            await ctx.send(msg)
+            return
+        if not pickems_channel.permissions_for(ctx.guild.me).send_messages_in_threads:
+            msg = _("I do not have permission to send messages in threads in {channel}.").format(
+                channel=pickems_channel.mention
+            )
+            await ctx.send(msg)
+            return
 
-        await self.pickems_config.guild(ctx.guild).pickems_channel.set(channel.id)
+        await self.pickems_config.guild(ctx.guild).pickems_channel.set(pickems_channel.id)
         existing_channels = await self.pickems_config.guild(ctx.guild).pickems_channels()
         if existing_channels:
             await self.pickems_config.guild(ctx.guild).pickems_channels.clear()
