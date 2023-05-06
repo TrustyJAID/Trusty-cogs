@@ -504,7 +504,7 @@ class Goal:
 
             em = discord.Embed(description=f"{self.description}\n<t:{self.timestamp}:T>")
             if self.link:
-                em.description = f"[{self.description}\n<t:{self.timestamp}:T>]({self.link})"
+                em.description = f"[{self.description}]({self.link})\n<t:{self.timestamp}:T>"
             if colour is not None:
                 em.colour = colour
             em.set_author(name=title, url=url, icon_url=logo)
