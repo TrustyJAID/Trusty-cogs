@@ -200,9 +200,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `invite_deleted`
 
             **Requires Red 3.5+ and discord.py 2.0+**
-            `thread_created`
-            `thread_deleted`
-            `thread_changed`
+            `thread_create`
+            `thread_delete`
+            `thread_change`
             `stickers_change`
         """
         if len(events) == 0:
@@ -254,9 +254,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `invite_deleted`
 
             **Requires Red 3.5+ and discord.py 2.0+**
-            `thread_created`
-            `thread_deleted`
-            `thread_changed`
+            `thread_create`
+            `thread_delete`
+            `thread_change`
             `stickers_change`
         """
         if len(events) == 0:
@@ -308,9 +308,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `invite_deleted`
 
             **Requires Red 3.5+ and discord.py 2.0+**
-            `thread_created`
-            `thread_deleted`
-            `thread_changed`
+            `thread_create`
+            `thread_delete`
+            `thread_change`
             `stickers_change`
         """
         if len(events) == 0:
@@ -367,9 +367,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `invite_deleted`
 
             **Requires Red 3.5+ and discord.py 2.0+**
-            `thread_created`
-            `thread_deleted`
-            `thread_changed`
+            `thread_create`
+            `thread_delete`
+            `thread_change`
             `stickers_change`
         """
         if len(events) == 0:
@@ -420,9 +420,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `invite_deleted`
 
             **Requires Red 3.5+ and discord.py 2.0+**
-            `thread_created`
-            `thread_deleted`
-            `thread_changed`
+            `thread_create`
+            `thread_delete`
+            `thread_change`
             `stickers_change`
         """
         if len(events) == 0:
@@ -470,9 +470,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `invite_deleted`
 
             **Requires Red 3.5+ and discord.py 2.0+**
-            `thread_created`
-            `thread_deleted`
-            `thread_changed`
+            `thread_create`
+            `thread_delete`
+            `thread_change`
             `stickers_change`
         """
         if len(events) == 0:

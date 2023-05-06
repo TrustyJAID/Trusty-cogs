@@ -75,7 +75,11 @@ class EventChooser(Converter):
         if argument.lower() in options:
             result = argument.lower()
         if not result:
-            raise BadArgument(_("`{arg}` is not an available event option.").format(arg=argument))
+            raise BadArgument(
+                _(
+                    "`{arg}` is not an available event option. Please choose from {options}."
+                ).format(arg=argument, options=humanize_list([f"`{i}`" for i in options]))
+            )
         return result
 
 
@@ -503,7 +507,6 @@ class EventMixin:
             return False
         for invite in await guild.invites():
             try:
-
                 created_at = getattr(
                     invite, "created_at", datetime.datetime.now(datetime.timezone.utc)
                 )
@@ -1076,7 +1079,6 @@ class EventMixin:
             await channel.send(escape(msg, mass_mentions=True))
 
     async def get_role_permission_change(self, before: discord.Role, after: discord.Role) -> str:
-
         p_msg = ""
         changed_perms = dict(after.permissions).items() - dict(before.permissions).items()
 
