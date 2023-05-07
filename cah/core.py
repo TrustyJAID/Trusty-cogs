@@ -186,6 +186,7 @@ class CardsAgainstHumanity(commands.Cog):
         by `|` separating card sets.
         e.g. `[p]cah start 10 CAH Base Set|2012 Holiday Pack`
         """
+        cards = card_set
         if card_set is None:
             white_cards = []
             black_cards = []
@@ -195,7 +196,7 @@ class CardsAgainstHumanity(commands.Cog):
                 white_cards.extend(cardset.white)
                 black_cards.extend(cardset.black)
             cards = CardSet(name="Official", white=white_cards, black=black_cards, official=True)
-        cards = card_set
+
         game = CAHGame(ctx, cards, rounds or 10)
         self.running_games[ctx.channel.id] = game
         await game.start()
