@@ -1,0 +1,33 @@
+{
+    "author": [
+        "TrustyJAID",
+        "crhallberg",
+        "Cards Against Humanity\u00ae"
+    ],
+    "description": "Play Cards Against Humanity\u00ae!",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users.",
+    "hidden": false,
+    "install_msg": "This cog downloads and stores a font file and two template images when loaded. Cards Against Humanity\u00ae\ufe0f is licenced under https://creativecommons.org/licenses/by-nc-sa/4.0/ and has not endorsed this works.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
+        3,
+        9,
+        0
+    ],
+    "name": "CAH",
+    "permissions": [],
+    "required_cogs": {},
+    "requirements": [
+        "pillow"
+    ],
+    "short": "Cards Against Humanity\u00ae",
+    "tags": [
+        "cah",
+        "cards against humanity",
+        "fun",
+        "game"
+    ],
+    "type": "COG"
+}
