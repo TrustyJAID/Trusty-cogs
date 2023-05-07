@@ -216,7 +216,7 @@ class PlayerSelect(discord.ui.View):
         self._current_hand = PlayerHand(self.player)
         self.add_item(self._current_hand)
         self._never_have_i_ever = NeverHaveIEverButton()
-        self.add_item(self._never_have_i_ever)
+        # self.add_item(self._never_have_i_ever)
 
     async def edit_hand(self, interaction: discord.Interaction):
         self.remove_item(self._current_hand)
