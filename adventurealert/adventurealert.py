@@ -1,19 +1,12 @@
 from abc import ABC
-from typing import Literal
+from typing import Literal, Optional
 
 import discord
-from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 
-from .ascendedalert import AscendedAlert
-from .bossalert import BossAlert
-from .cartalert import CartAlert
-from .immortalalert import ImmortalAlert
-from .minibossalert import MinibossAlert
-from .possessedalert import PossessedAlert
-from .transcendedalert import TranscendedAlert
+from .listeners import AdventureAlertListeners, AlertTypeConverter, AlertTypes
 
 _ = Translator("AdventureAlert", __file__)
 
@@ -32,19 +25,13 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
 
 @cog_i18n(_)
 class AdventureAlert(
-    BossAlert,
-    MinibossAlert,
-    CartAlert,
-    AscendedAlert,
-    TranscendedAlert,
-    ImmortalAlert,
-    PossessedAlert,
+    AdventureAlertListeners,
     commands.Cog,
     metaclass=CompositeMetaClass,
 ):
     """Alert when a dragon appears in adventure"""
 
-    __version__ = "1.4.4"
+    __version__ = "1.5.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -78,10 +65,6 @@ class AdventureAlert(
             immortal=False,
             possessed=False,
         )
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            self.sanitize = {"allowed_mentions": discord.AllowedMentions(users=True, roles=True)}
-        else:
-            self.sanitize = {}
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -140,7 +123,7 @@ class AdventureAlert(
                 ).possessed_users() as possessed_users:
                     possessed_users.remove(user_id)
 
-    @commands.group()
+    @commands.hybrid_group()
     async def adventurealert(self, ctx: commands.Context) -> None:
         """Set notifications for all adventures"""
         pass
@@ -211,83 +194,164 @@ class AdventureAlert(
 
     @adventurealert.command(name="role", aliases=["roles"])
     @checks.mod_or_permissions(manage_roles=True)
-    async def adventure_role(self, ctx: commands.Context, *, role: discord.Role) -> None:
-        """Add or remove a role to be pinged when a dragon appears"""
-        if role.id in await self.config.guild(ctx.guild).adventure_roles():
-            async with self.config.guild(ctx.guild).adventure_roles() as data:
+    async def adventure_role(
+        self,
+        ctx: commands.Context,
+        alert_style: Optional[AlertTypeConverter] = None,
+        *,
+        role: discord.Role,
+    ) -> None:
+        """
+        Add or remove a role to be pinged when a dragon appears
+
+        `alert_style` - Must be one of:
+            - `adventure` (default)
+            - `boss` or `dragon`
+            - `cart`
+            - `immortal`
+            - `miniboss`
+            - `possessed`
+            - `ascended`
+            - `transcended`
+        """
+        if alert_style is None:
+            style = AlertTypes.adventure
+        else:
+            style = alert_style
+        conf = style.get_role_config(self.config.guild(ctx.guild))
+        if role.id in await conf():
+            async with conf as data:
                 data.remove(role.id)
             await ctx.send(
-                _("{role} will no longer receive notifications on adventures.").format(
-                    role=role.name
-                )
+                _("{role} will no longer receive notifications on {style} alerts.").format(
+                    role=role.mention, style=style.get_name()
+                ),
+                allowed_mentions=discord.AllowedMentions(roles=False),
             )
         else:
-            async with self.config.guild(ctx.guild).adventure_roles() as data:
+            async with conf() as data:
                 data.append(role.id)
             await ctx.send(
-                _("{role} will now receive notifications on adventures.").format(role=role.name)
+                _("{role} will now receive notifications on {style} alerts.").format(
+                    role=role.mention, style=style.get_name()
+                ),
+                allowed_mentions=discord.AllowedMentions(roles=False),
             )
 
     @commands.guild_only()
-    @adventurealert.command(name="add", aliases=["user", "users", "remove", "rem", "toggle"])
-    async def adventure_users(self, ctx: commands.Context) -> None:
-        """Toggle adventure notifications in this server"""
-        if ctx.author.id in await self.config.guild(ctx.guild).adventure_users():
-            async with self.config.guild(ctx.guild).adventure_users() as data:
-                data.remove(ctx.author.id)
-            await ctx.send(_("You will no longer receive notifications on adventures."))
+    @adventurealert.command(name="toggle", aliases=["user", "users", "remove", "rem", "add"])
+    async def adventure_users(
+        self, ctx: commands.Context, alert_style: Optional[AlertTypeConverter] = None
+    ) -> None:
+        """
+        Toggle adventure notifications in this server
+
+        `alert_style` - Must be one of:
+            - `adventure` (default)
+            - `boss` or `dragon`
+            - `cart`
+            - `immortal`
+            - `miniboss`
+            - `possessed`
+            - `ascended`
+            - `transcended`
+        """
+        if alert_style is None:
+            style = AlertTypes.adventure
         else:
-            async with self.config.guild(ctx.guild).adventure_users() as data:
+            style = alert_style
+        conf = style.get_user_config(self.config.guild(ctx.guild))
+        if ctx.author.id in await conf():
+            async with conf() as data:
+                data.remove(ctx.author.id)
+            await ctx.send(
+                _("You will no longer receive notifications on {style} alerts.").format(
+                    style=style.get_name()
+                )
+            )
+        else:
+            async with conf() as data:
                 data.append(ctx.author.id)
-            await ctx.send(_("You will now receive notifications on adventures."))
+            await ctx.send(
+                _("You will now receive notifications on {style} alerts.").format(
+                    style=style.get_name()
+                )
+            )
 
     @adventurealert.command(name="global")
-    async def adventure_global(self, ctx: commands.Context) -> None:
-        """Toggle adventure notifications in all shared servers"""
-        cur_setting = await self.config.user(ctx.author).adventure()
-        await self.config.user(ctx.author).adventure.set(not cur_setting)
-        if cur_setting:
-            await ctx.send(_("Removed from adventure alerts across all shared servers."))
+    async def adventure_global(
+        self, ctx: commands.Context, alert_style: Optional[AlertTypeConverter] = None
+    ) -> None:
+        """
+        Toggle adventure notifications in all shared servers
+
+        `alert_style` - Must be one of:
+            - `adventure` (default)
+            - `boss` or `dragon`
+            - `cart`
+            - `immortal`
+            - `miniboss`
+            - `possessed`
+            - `ascended`
+            - `transcended`
+        """
+        if alert_style is None:
+            style = AlertTypes.adventure
         else:
-            await ctx.send(_("Added to adventure alerts across all shared servers."))
+            style = alert_style
+        conf = style.get_user_global_config(self.config.user(ctx.author))
+        cur_setting = await conf()
+        await conf.set(not cur_setting)
+        if cur_setting:
+            await ctx.send(
+                _("Removed from {style} alerts across all shared servers.").format(
+                    style=style.get_name()
+                )
+            )
+        else:
+            await ctx.send(
+                _("Added to {style} alerts across all shared servers.").format(
+                    style=style.get_name()
+                )
+            )
 
     @adventurealert.command(name="removeuser")
     @checks.mod_or_permissions(manage_messages=True)
-    async def adventure_removeusers(self, ctx: commands.Context, user_id: int) -> None:
-        """Remove a specific user ID from adventure alerts"""
-        if user_id in await self.config.guild(ctx.guild).adventure_users():
-            async with self.config.guild(ctx.guild).adventure_users() as data:
+    async def adventure_removeusers(
+        self,
+        ctx: commands.Context,
+        user_id: int,
+        alert_style: Optional[AlertTypeConverter] = None,
+    ) -> None:
+        """
+        Remove a specific user ID from adventure alerts
+
+        `alert_style` - Must be one of:
+            - `adventure` (default)
+            - `boss` or `dragon`
+            - `cart`
+            - `immortal`
+            - `miniboss`
+            - `possessed`
+            - `ascended`
+            - `transcended`
+        """
+        if alert_style is None:
+            style = AlertTypes.adventure
+        else:
+            style = alert_style
+        conf = style.get_user_config(self.config.guild(ctx.guild))
+        if user_id in await conf():
+            async with conf() as data:
                 data.remove(user_id)
             await ctx.send(
-                _("{user_id} will no longer receive notifications on adventures.").format(
-                    user_id=user_id
+                _("{user_id} will no longer receive notifications on {style}.").format(
+                    user_id=user_id, style=style.get_name()
                 )
             )
         else:
             await ctx.send(
-                _("{user_id} is not receiving notifications on adventures.").format(
-                    user_id=user_id
+                _("{user_id} is not receiving notifications on {style}.").format(
+                    user_id=user_id, style=style.get_name()
                 )
             )
-
-    @commands.Cog.listener()
-    async def on_adventure(self, ctx: commands.Context) -> None:
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, ctx.guild):
-                return
-        roles = [f"<@&{rid}>" for rid in await self.config.guild(ctx.guild).adventure_roles()]
-        users = [f"<@!{uid}>" for uid in await self.config.guild(ctx.guild).adventure_users()]
-        guild_members = [m.id for m in ctx.guild.members]
-        all_users = await self.config.all_users()
-        for u_id, data in all_users.items():
-            user_mention = f"<@!{u_id}>"
-            if u_id in guild_members and data["adventure"] and user_mention not in users:
-                users.append(user_mention)
-        if roles or users:
-            msg = (
-                f"{humanize_list(roles) if roles else ''} "
-                + f"{humanize_list(users) if users else ''} "
-                + _("An adventure has started, come join!")
-            )
-            for page in pagify(msg):
-                await ctx.send(page, **self.sanitize)
