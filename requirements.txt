@@ -17,4 +17,4 @@ tweepy[async]>=4.10.0
 Unidecode
 unidecode
 wand
-youtube-dl
+yt-dlp

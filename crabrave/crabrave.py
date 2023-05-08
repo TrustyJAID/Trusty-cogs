@@ -5,7 +5,8 @@ import os
 
 import aiohttp
 import discord
-import youtube_dl
+import moviepy
+import yt_dlp as youtube_dl
 from moviepy.editor import CompositeVideoClip, TextClip, VideoFileClip
 from redbot.core import checks, commands
 from redbot.core.data_manager import cog_data_path
@@ -27,7 +28,7 @@ class CrabRave(commands.Cog):
     """
 
     __author__ = ["DankMemer Team", "TrustyJAID", "thisisjvgrace"]
-    __version__ = "1.1.2"
+    __version__ = "1.1.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -37,7 +38,12 @@ class CrabRave(commands.Cog):
         Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
-        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+        return (
+            f"{pre_processed}\n\n"
+            f"Cog Version: {self.__version__}\n"
+            f"yt-dlp Version: {youtube_dl.version.__version__}\n"
+            f"MoveiPy Version: {moviepy.version.__version__}"
+        )
 
     async def red_delete_data_for_user(self, **kwargs):
         """
@@ -53,9 +59,10 @@ class CrabRave(commands.Cog):
                     self.dl_from_youtube, link=link, name_template=name_template
                 )
                 task = loop.run_in_executor(None, task)
-                await asyncio.wait_for(task, timeout=60)
+                return await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 log.exception("Error downloading the crabrave video")
+                return False
             except Exception:
                 log.error("Error downloading crabrave video template", exc_info=True)
                 return False
@@ -91,7 +98,7 @@ class CrabRave(commands.Cog):
     @commands.cooldown(1, 20, commands.BucketType.guild)
     @commands.max_concurrency(2, commands.BucketType.default)
     @checks.bot_has_permissions(attach_files=True)
-    async def crab(self, ctx: commands.Context, *, text: str) -> None:
+    async def crab(self, ctx: commands.Context, *, text: str):
         """Make crab rave videos
 
         There must be exactly 1 `,` to split the message
