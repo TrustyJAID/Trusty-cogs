@@ -44,6 +44,7 @@ class SelectRole(discord.ui.Select):
         max_values: int,
         placeholder: Optional[str],
         options: List[SelectRoleOption],
+        disabled: List[str] = [],
     ):
         super().__init__(
             options=options,
@@ -53,24 +54,30 @@ class SelectRole(discord.ui.Select):
             custom_id=custom_id,
         )
         self.name = name
+        self.disabled_options: List[str] = disabled
 
     async def callback(self, interaction: discord.Interaction):
         log.debug("Receiving selection press")
 
         role_ids = []
         for option in self.values:
-            if option.startswith("RTSelect"):
-                for op in self.options:
-                    if op.disabled:
-                        continue
-                role_ids.append(int(option.split("-")[-1]))
+            if option.split("-")[1] in self.disabled_options:
+                continue
+            role_ids.append(int(option.split("-")[-1]))
 
         if role_ids:
             await interaction.response.defer(ephemeral=True, thinking=True)
-        elif not role_ids or self.disabled:
+        elif not role_ids and not self.disabled:
+            await interaction.response.send_message(
+                _("One or more of the selected roles are no longer available."), ephemeral=True
+            )
+            await interaction.message.edit()
+            return
+        elif self.disabled:
             await interaction.response.send_message(
                 _("This selection has been disabled from giving roles."), ephemeral=True
             )
+            await interaction.message.edit()
             return
         guild = interaction.guild
         added_roles = []
@@ -130,6 +137,11 @@ class SelectRoleView(discord.ui.View):
         self.cog = cog
         super().__init__(timeout=None)
         pass
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception, item: SelectRole):
+        await interaction.response.send_message(
+            _("An error occured trying to apply a role to you."), ephemeral=True
+        )
 
 
 class SelectOptionRoleConverter(discord.app_commands.Transformer):
@@ -271,6 +283,7 @@ class RoleToolsSelect(RoleToolsMixin):
                 log.debug(f"Adding Option {select_name}")
                 view = SelectRoleView(self)
                 options = []
+                disabled = []
                 for option_name in select_data["options"]:
                     try:
                         option_data = settings["select_options"][option_name]
@@ -283,14 +296,14 @@ class RoleToolsSelect(RoleToolsMixin):
                         option = SelectRoleOption(
                             name=option_name,
                             label=label,
-                            value=f"RT-{option_name}-{role_id}",
+                            value=f"RTSelect-{option_name}-{role_id}",
                             role_id=role_id,
                             description=description,
                             emoji=emoji,
                         )
                         options.append(option)
                     except KeyError:
-                        continue
+                        disabled.append(option_name)
 
                 select = SelectRole(
                     name=select_name,
@@ -299,6 +312,7 @@ class RoleToolsSelect(RoleToolsMixin):
                     max_values=select_data["max_values"],
                     placeholder=select_data["placeholder"],
                     options=options,
+                    disabled=disabled,
                 )
                 view.add_item(select)
                 self.bot.add_view(view)
@@ -521,11 +535,15 @@ class RoleToolsSelect(RoleToolsMixin):
         async with self.config.guild(ctx.guild).select_options() as select_options:
             if name in select_options:
                 role_id = select_options[name]["role_id"]
-                custom_id = f"{name.lower()}-{role_id}"
+                custom_id = f"RTSelect-{name.lower()}-{role_id}"
                 for view in self.views:
                     for child in view.children:
-                        if child.custom_id == custom_id:
-                            child.disabled = True
+                        if not isinstance(child, SelectRole):
+                            continue
+                        options = [i.value for i in child.options]
+                        if custom_id in options:
+                            child.disabled_options.append(name.lower())
+                            log.debug(f"Adding {custom_id} to view")
                 if name in self.settings.get(ctx.guild.id, {}).get("select_options", {}):
                     del self.settings[ctx.guild.id]["select_options"][name]
                 del select_options[name]
