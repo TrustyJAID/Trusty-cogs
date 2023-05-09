@@ -72,7 +72,7 @@ class Runescape(commands.Cog):
         """
         await self.config.user_from_id(user_id).clear()
 
-    @tasks.loop(seconds=60)
+    @tasks.loop(seconds=180)
     async def check_new_metrics(self):
         for username, activities in self.metrics.items():
             try:
@@ -92,9 +92,8 @@ class Runescape(commands.Cog):
     async def post_activity(
         self, profile: Profile, channels: Dict[str, int], activity: Activity
     ) -> None:
-        timestamp = int(activity.date.timestamp())
         url = f"https://apps.runescape.com/runemetrics/app/overview/player/{profile.name}"
-        msg = f"{profile.name}: {activity.text}\n{activity.details}\n\n<t:{timestamp}>"
+        msg = f"{profile.name}: {activity.text}\n{activity.details}\n\n"
         image_url = None
         page = None
         if match := KILLED_RE.search(activity.text):
@@ -127,12 +126,14 @@ class Runescape(commands.Cog):
             if not channel.permissions_for(guild.me).send_messages:
                 continue
             if channel.permissions_for(guild.me).embed_links:
-                em = discord.Embed(description=f"[{msg}]({url})")
+                em = discord.Embed(
+                    description=f"[{msg}]({url})\n\n" + discord.utils.format_dt(activity.date)
+                )
                 if image_url:
                     em.set_thumbnail(url=image_url)
                 await channel.send(embed=em)
             else:
-                await channel.send(msg)
+                await channel.send(msg + "\n\n" + discord.utils.format_dt(activity.date))
 
     @check_new_metrics.before_loop
     async def before_checking_metrics(self):
@@ -185,7 +186,6 @@ class Runescape(commands.Cog):
                 msg += f"[{title}]({base_url}{page_id})\n"
         await ctx.maybe_send_embed(msg)
 
-
     @runescape.command(name="vis", aliases=["viswax"])
     async def runescape_viswax(self, ctx: commands.Context):
         """
@@ -233,7 +233,7 @@ class Runescape(commands.Cog):
                 msg += f"__Combination {i+1}__: {slot_1[i]} and either {humanize_list(slot_2[i], style='or')}\n"
             msg += _from + "\nhttps://runescape.wiki/w/Rune_Goldberg_Machine"
         await ctx.maybe_send_embed(msg)
-        
+
     @runescape.command(name="nemiforest", aliases=["nemi", "forest"])
     async def runescape_nemiforest(self, ctx: commands.Context):
         """Display an image of a Nemi Forest instance with all nine nodes."""

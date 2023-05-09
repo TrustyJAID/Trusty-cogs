@@ -155,7 +155,11 @@ class Activity:
     @classmethod
     def from_json(cls, data: dict):
         tz = pytz.timezone("Europe/London")
-        date = datetime.strptime(data.get("date"), "%d-%b-%Y %H:%M")
+        date_info = data.get("date")
+        if date_info is not None:
+            date = datetime.strptime(date_info, "%d-%b-%Y %H:%M")
+        else:
+            date = datetime.now()
         date = tz.localize(date, is_dst=None).astimezone(timezone.utc)
         text = data.get("text")
         activity_id = f"{int(date.timestamp())}-{text}"
