@@ -1176,8 +1176,9 @@ class ServerStats(commands.GroupCog):
             "medium": discord.VerificationLevel.medium,
             "high": discord.VerificationLevel.high,
             "table flip": discord.VerificationLevel.high,
-            "extreme": discord.VerificationLevel.extreme,
-            "double table flip": discord.VerificationLevel.extreme,
+            "highest": discord.VerificationLevel.highest,
+            "extreme": discord.VerificationLevel.highest,
+            "double table flip": discord.VerificationLevel.highest,
         }
         reason = _("Requested by {author}").format(author=ctx.author)
         if level.lower() not in levels:
@@ -1187,7 +1188,8 @@ class ServerStats(commands.GroupCog):
             await ctx.guild.edit(verification_level=levels[level], reason=reason)
         except Exception:
             log.exception("Could not edit guild verification level")
-            return await ctx.send(_("I could not edit the servers verification level."))
+            await ctx.send(_("I could not edit the servers verification level."))
+            return
         await ctx.send(_("Server verification level set to {level}").format(level=level))
 
     @guildedit.command(name="systemchannel", aliases=["welcomechannel"])
