@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Literal, Optional, Tuple, Union, cast
+from typing import Dict, List, Literal, Union, cast
 
 import discord
 from discord.utils import snowflake_time
@@ -27,26 +27,67 @@ class StarboardEvents:
 
     async def _build_embed(
         self, guild: discord.Guild, message: discord.Message, starboard: StarboardEntry
-    ) -> discord.Embed:
+    ) -> List[discord.Embed]:
         channel = cast(discord.TextChannel, message.channel)
         author = message.author
+        embeds = []
         if message.embeds:
-            em = message.embeds[0]
-            if message.system_content:
+            embeds = message.embeds
+            for em in embeds:
+                if em.type in ["image", "gifv"]:
+                    if em.thumbnail:
+                        em.set_image(url=em.thumbnail.url)
+                        em.set_thumbnail(url=None)
+
                 if em.description is not None:
                     em.description = "{}\n\n{}".format(message.system_content, em.description)[
-                        :2048
+                        :4096
                     ]
                 else:
                     em.description = message.system_content
-                if not author.bot:
-                    em.set_author(
-                        name=author.display_name,
-                        url=message.jump_url,
-                        icon_url=author.display_avatar,
-                    )
+                # if not author.bot:
+                em.set_author(
+                    name=author.display_name,
+                    url=message.jump_url,
+                    icon_url=author.display_avatar,
+                )
+                if starboard.colour in ["user", "member", "author"]:
+                    em.color = author.colour
+                elif starboard.colour == "bot":
+                    em.color = await self.bot.get_embed_colour(channel)
+                else:
+                    em.color = discord.Colour(starboard.colour)
+                if msg_ref := getattr(message, "reference", None):
+                    ref_msg = getattr(msg_ref, "resolved", None)
+                    try:
+                        ref_text = ref_msg.system_content
+                        ref_link = _("\n[Click Here to view reply context]({link})").format(
+                            link=ref_msg.jump_url
+                        )
+                        if len(ref_text + ref_link) > 1024:
+                            ref_text = ref_text[: len(ref_link) - 1] + "\N{HORIZONTAL ELLIPSIS}"
+                        ref_text += ref_link
+                        em.add_field(
+                            name=_("Replying to {author}").format(
+                                author=ref_msg.author.display_name
+                            ),
+                            value=ref_text,
+                        )
+                    except Exception:
+                        pass
+                em.timestamp = message.created_at
+                jump_link = _("\n\nOriginal message {link}").format(link=message.jump_url)
+                if em.description:
+                    with_context = f"{em.description}{jump_link}"
+                    if len(with_context) > 4096:
+                        em.add_field(name=_("Context"), value=jump_link)
+                    else:
+                        em.description = with_context
+                else:
+                    em.description = jump_link
+                em.set_footer(text=f"{channel.guild.name} | {channel.name}")
         else:
-            em = discord.Embed(timestamp=message.created_at)
+            em = discord.Embed(timestamp=message.created_at, url=message.jump_url)
             if starboard.colour in ["user", "member", "author"]:
                 em.color = author.colour
             elif starboard.colour == "bot":
@@ -57,26 +98,11 @@ class StarboardEvents:
             em.set_author(
                 name=author.display_name, url=message.jump_url, icon_url=author.display_avatar
             )
-            if message.attachments:
-                attachment = message.attachments[0]
-                spoiler = attachment.is_spoiler()
-                if spoiler:
-                    em.add_field(
-                        name="Attachment", value=f"||[{attachment.filename}]({attachment.url})||"
-                    )
-                elif not attachment.url.lower().endswith(("png", "jpeg", "jpg", "gif", "webp")):
-                    em.add_field(
-                        name="Attachment", value=f"[{attachment.filename}]({attachment.url})"
-                    )
-                else:
-                    em.set_image(url=attachment.url)
             if msg_ref := getattr(message, "reference", None):
                 ref_msg = getattr(msg_ref, "resolved", None)
                 try:
                     ref_text = ref_msg.system_content
-                    ref_link = _("\n[Click Here to view reply context]({link})").format(
-                        link=ref_msg.jump_url
-                    )
+                    ref_link = ref_msg.jump_url
                     if len(ref_text + ref_link) > 1024:
                         ref_text = ref_text[: len(ref_link) - 1] + "\N{HORIZONTAL ELLIPSIS}"
                     ref_text += ref_link
@@ -86,18 +112,38 @@ class StarboardEvents:
                     )
                 except Exception:
                     pass
-        em.timestamp = message.created_at
-        jump_link = _("\n\n[Click Here to view context]({link})").format(link=message.jump_url)
-        if em.description:
-            with_context = f"{em.description}{jump_link}"
-            if len(with_context) > 2048:
-                em.add_field(name=_("Context"), value=jump_link)
+                em.timestamp = message.created_at
+                jump_link = _("\n\n{link}").format(link=message.jump_url)
+                if em.description:
+                    with_context = f"{em.description}{jump_link}"
+                    if len(with_context) > 2048:
+                        em.add_field(name=_("Context"), value=jump_link)
+                    else:
+                        em.description = with_context
+                else:
+                    em.description = jump_link
+            em.set_footer(text=f"{channel.guild.name} | {channel.name}")
+            if message.attachments:
+                for attachment in message.attachments:
+                    new_em = em.copy()
+                    spoiler = attachment.is_spoiler()
+                    if spoiler:
+                        new_em.add_field(
+                            name="Attachment",
+                            value=f"||[{attachment.filename}]({attachment.url})||",
+                        )
+                    elif not attachment.url.lower().endswith(
+                        ("png", "jpeg", "jpg", "gif", "webp")
+                    ):
+                        new_em.add_field(
+                            name="Attachment", value=f"[{attachment.filename}]({attachment.url})"
+                        )
+                    else:
+                        new_em.set_image(url=attachment.url)
+                    embeds.append(new_em)
             else:
-                em.description = with_context
-        else:
-            em.description = jump_link
-        em.set_footer(text=f"{channel.guild.name} | {channel.name}")
-        return em
+                embeds.append(em)
+        return embeds
 
     async def _save_starboards(self, guild: discord.Guild) -> None:
         async with self.config.guild(guild).starboards() as starboards:
@@ -235,9 +281,9 @@ class StarboardEvents:
                 log.debug("Is a selfstar so let's return")
                 # this is here to prevent 1 threshold selfstars
                 return
-            em = await self._build_embed(guild, msg, starboard)
+            embeds = await self._build_embed(guild, msg, starboard)
             count_msg = "{} **#{}**".format(payload.emoji, count)
-            post_msg = await star_channel.send(count_msg, embed=em)
+            post_msg = await star_channel.send(count_msg, embeds=embeds)
             if starboard.autostar:
                 try:
                     await post_msg.add_reaction(starboard.emoji)
