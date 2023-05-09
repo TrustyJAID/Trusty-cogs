@@ -112,16 +112,16 @@ class StarboardEvents:
                     )
                 except Exception:
                     pass
-                em.timestamp = message.created_at
-                jump_link = _("\n\n{link}").format(link=message.jump_url)
-                if em.description:
-                    with_context = f"{em.description}{jump_link}"
-                    if len(with_context) > 2048:
-                        em.add_field(name=_("Context"), value=jump_link)
-                    else:
-                        em.description = with_context
+            em.timestamp = message.created_at
+            jump_link = _("\n\n{link}").format(link=message.jump_url)
+            if em.description:
+                with_context = f"{em.description}{jump_link}"
+                if len(with_context) > 2048:
+                    em.add_field(name=_("Context"), value=jump_link)
                 else:
-                    em.description = jump_link
+                    em.description = with_context
+            else:
+                em.description = jump_link
             em.set_footer(text=f"{channel.guild.name} | {channel.name}")
             if message.attachments:
                 for attachment in message.attachments:
