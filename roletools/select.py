@@ -60,19 +60,17 @@ class SelectRole(discord.ui.Select):
         log.debug("Receiving selection press")
 
         role_ids = []
+        disabled_role = False
         for option in self.values:
             if option.split("-")[1] in self.disabled_options:
+                disabled_role = True
                 continue
             role_ids.append(int(option.split("-")[-1]))
 
-        if role_ids:
-            await interaction.response.defer(ephemeral=True, thinking=True)
-        elif not role_ids and not self.disabled:
-            await interaction.response.send_message(
-                _("One or more of the selected roles are no longer available."), ephemeral=True
-            )
-            await interaction.message.edit()
-            return
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        msg = ""
+        if disabled_role:
+            msg += _("One or more of the selected roles are no longer available.\n")
         elif self.disabled:
             await interaction.response.send_message(
                 _("This selection has been disabled from giving roles."), ephemeral=True
@@ -82,9 +80,11 @@ class SelectRole(discord.ui.Select):
         guild = interaction.guild
         added_roles = []
         removed_roles = []
+        missing_role = False
         for role_id in role_ids:
             role = guild.get_role(role_id)
             if role is None:
+                missing_role = True
                 continue
             if interaction.user.bot:
                 # how? This is what happens when you copy/paste code lol
@@ -114,7 +114,8 @@ class SelectRole(discord.ui.Select):
                 log.debug(f"Removing role from {interaction.user.name} in {guild}")
                 await self.view.cog.remove_roles(interaction.user, [role], _("Role Selection"))
                 removed_roles.append(role)
-        msg = ""
+        if missing_role:
+            msg += _("One or more of the selected roles no longer exists.\n")
         if added_roles:
             msg += _("I have given you the following roles: {roles}\n").format(
                 roles=humanize_list([i.mention for i in added_roles])
@@ -303,6 +304,10 @@ class RoleToolsSelect(RoleToolsMixin):
                         )
                         options.append(option)
                     except KeyError:
+                        log.info(
+                            "Select Option named %s no longer exists, adding to select menus disalbe list.",
+                            option_name,
+                        )
                         disabled.append(option_name)
 
                 select = SelectRole(
@@ -426,8 +431,6 @@ class RoleToolsSelect(RoleToolsMixin):
                     ):
                         view.disabled = True
 
-                if name in self.settings.get(ctx.guild.id, {}).get("select_menus", {}):
-                    del self.settings[ctx.guild.id]["select_menus"][name]
                 del select_menus[name.lower()]
                 msg = _("Select Option `{name}` has been deleted.").format(name=name)
                 await ctx.send(msg)
