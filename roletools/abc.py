@@ -44,7 +44,7 @@ class RoleToolsMixin(ABC):
 
     @commands.group()
     @commands.guild_only()
-    async def roletools(self: commands.Cog, ctx: Context) -> None:
+    async def roletools(self, ctx: Context) -> None:
         """
         Commands for creating custom role settings
         """
@@ -52,12 +52,6 @@ class RoleToolsMixin(ABC):
     #######################################################################
     # roletools.py                                                        #
     #######################################################################
-
-    @abstractmethod
-    def update_cooldown(
-        self, ctx: Context, rate: int, per: float, _type: commands.BucketType
-    ) -> None:
-        raise NotImplementedError()
 
     @abstractmethod
     async def selfrole(self, ctx: commands.Context, *, role: SelfRoleConverter) -> None:

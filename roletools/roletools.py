@@ -39,6 +39,33 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     pass
 
 
+def custom_cooldown(ctx: commands.Context) -> Optional[discord.app_commands.Cooldown]:
+    who = ctx.args[3:]
+    members = []
+
+    for entity in who:
+        log.debug(entity)
+        if isinstance(entity, discord.TextChannel) or isinstance(entity, discord.Role):
+            members += entity.members
+        elif isinstance(entity, discord.Member):
+            members.append(entity)
+        else:
+            if entity not in ["everyone", "here", "bots", "humans"]:
+                continue
+            elif entity == "everyone":
+                members = ctx.guild.members
+                break
+            elif entity == "here":
+                members += [m for m in ctx.guild.members if str(m.status) == "online"]
+            elif entity == "bots":
+                members += [m for m in ctx.guild.members if m.bot]
+            elif entity == "humans":
+                members += [m for m in ctx.guild.members if not m.bot]
+    members = list(set(members))
+    log.debug("Returning cooldown of 1 per %s", min(len(members) * 10, 3600))
+    return discord.app_commands.Cooldown(1, min(len(members) * 10, 3600))
+
+
 @cog_i18n(_)
 class RoleTools(
     RoleToolsEvents,
@@ -58,7 +85,7 @@ class RoleTools(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.5.2"
+    __version__ = "1.5.3"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -160,37 +187,6 @@ class RoleTools(
             log.debug(f"Stopping view {view}")
             view.stop()
 
-    def update_cooldown(
-        self, ctx: commands.Context, rate: int, per: float, _type: commands.BucketType
-    ) -> None:
-        """
-        This should be replaced if d.py ever adds the ability to do this
-        without hacking the cooldown system as I have here.
-
-        This calls the same method as `commands.reset_cooldown(ctx)`
-        but rather than resetting the cooldown value we want to dynamically change
-        what the cooldown actually is.
-
-        In this cog I only care to change the per value but theoretically
-        this will for other modifications to the cooldown after we have parsed
-        the command.
-
-        This, in my case, is being used to dynamically adjust the cooldown rate
-        so that bots aren't spamming the API with add/remove role requests for large
-        guilds. It doesn't make sense to constantly have a 1 hour cooldown until you've
-        run this on a rather large server for everyone in the server.
-
-        Technically speaking cooldown is added as 10 seconds per member who has had their role
-        modified with these commands up to a maximum of 1 hour. This means small guilds trying
-        to give everyone a role can do it semi-frequently but large guilds can only run
-        it once for everyone in the server every hour.
-        """
-        if ctx.command._buckets.valid:
-            bucket = ctx.command._buckets.get_bucket(ctx.message)
-            bucket.rate = int(rate)
-            bucket.per = float(per)
-            bucket.type = _type
-
     @roletools.group(invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def selfrole(self, ctx: Context) -> None:
@@ -265,7 +261,7 @@ class RoleTools(
     @commands.bot_has_permissions(manage_roles=True)
     @commands.admin_or_permissions(manage_roles=True)
     @commands.max_concurrency(1, commands.BucketType.guild)
-    @commands.cooldown(1, 10, commands.BucketType.guild)
+    @commands.dynamic_cooldown(custom_cooldown, commands.BucketType.guild)
     async def giverole(
         self,
         ctx: Context,
@@ -346,7 +342,6 @@ class RoleTools(
                     )
                 )
             await bounded_gather(*tasks)
-        self.update_cooldown(ctx, 1, min(len(tasks) * 10, 3600), commands.BucketType.guild)
         added_to = humanize_list([getattr(en, "name", en) for en in who])
         msg = _("Added {role} to {added}.").format(role=role.mention, added=added_to)
         await ctx.send(msg)
@@ -355,7 +350,7 @@ class RoleTools(
     @commands.bot_has_permissions(manage_roles=True)
     @commands.admin_or_permissions(manage_roles=True)
     @commands.max_concurrency(1, commands.BucketType.guild)
-    @commands.cooldown(1, 10, commands.BucketType.guild)
+    @commands.dynamic_cooldown(custom_cooldown, commands.BucketType.guild)
     async def removerole(
         self,
         ctx: Context,
@@ -429,7 +424,6 @@ class RoleTools(
                     self.remove_roles(m, [role], _("Roletools Removerole command"), atomic=False)
                 )
             await bounded_gather(*tasks)
-        self.update_cooldown(ctx, 1, min(len(tasks) * 10, 3600), commands.BucketType.guild)
         removed_from = humanize_list([getattr(en, "name", en) for en in who])
         msg = _("Removed the {role} from {removed}.").format(
             role=role.mention, removed=removed_from

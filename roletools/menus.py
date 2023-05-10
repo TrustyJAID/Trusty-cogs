@@ -229,6 +229,11 @@ class RolePages(menus.ListPageSource):
             "{role}\n```md\n"
             "# ID:           {role_id}\n"
             "Colour          {colour}\n"
+            "Members         {members}\n"
+            "Assignable      {assignable}\n"
+            "Mentionable     {mentionable}\n"
+            "Position        {position}\n"
+            "Hoisted         {hoisted}\n"
             "# RoleTools settings\n"
             "Sticky          {sticky}\n"
             "Auto            {auto}\n"
@@ -241,6 +246,11 @@ class RolePages(menus.ListPageSource):
         ).format(
             role=role.mention,
             role_id=role.id,
+            members=len(role.members),
+            assignable=role.is_assignable(),
+            mentionable=role.mentionable,
+            position=role.position,
+            hoisted=role.hoist,
             sticky=role_settings["sticky"],
             auto=role_settings["auto"],
             selfassign=role_settings["selfassignable"],
@@ -248,6 +258,9 @@ class RolePages(menus.ListPageSource):
             colour=str(role.colour),
             mod=role in mod_roles,
             admin=role in admin_roles,
+        )
+        settings += _("**Created:** {created_at}\n").format(
+            created_at=discord.utils.format_dt(role.created_at)
         )
         if cost := role_settings.get("cost"):
             currency_name = await bank.get_currency_name(menu.ctx.guild)
@@ -306,6 +319,14 @@ class RolePages(menus.ListPageSource):
                     name=_("Role settings for {role} (continued)").format(role=role.name),
                     value=page,
                 )
+        if role.display_icon:
+            if isinstance(role.display_icon, discord.Asset):
+                em.set_thumbnail(url=role.display_icon)
+            else:
+                cdn_fmt = " https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/{codepoint:x}.png"
+                url = cdn_fmt.format(codepoint=ord(str(role.display_icon)))
+                log.debug(role.display_icon)
+                em.set_thumbnail(url=url)
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
@@ -336,11 +357,11 @@ class BaseMenu(discord.ui.View):
         self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
         self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
         self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.add_item(self.stop_button)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
-        self.add_item(self.stop_button)
         if isinstance(source, RolePages):
             self.select_view = RoleToolsSelectOption()
             self.add_item(self.select_view)
