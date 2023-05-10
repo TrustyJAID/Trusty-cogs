@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
-"POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"POT-Creation-Date: 2022-11-08 17:13+0000\n"
+"PO-Revision-Date: 2023-05-10 16:10\n"
 "Last-Translator: \n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -17,358 +17,268 @@ msgstr ""
 "X-Crowdin-File-ID: 638\n"
 "Language: sv_SE\n"
 
-#: tweets/menus.py:227 tweets/tweets_api.py:253
-msgid "In reply to {name} (@{screen_name})"
+#: tweets/menus.py:236
+msgid "You liked the tweet!"
 msgstr ""
 
-#: tweets/menus.py:427
+#: tweets/menus.py:253
+msgid "You retweeted the tweet!"
+msgstr ""
+
+#: tweets/menus.py:272
+msgid "Reply to tweet"
+msgstr ""
+
+#: tweets/menus.py:277
+msgid "Reply"
+msgstr ""
+
+#: tweets/menus.py:278
+msgid "Add another Tweet"
+msgstr ""
+
+#: tweets/menus.py:284
+msgid "Following"
+msgstr ""
+
+#: tweets/menus.py:285
+msgid "Everyone"
+msgstr ""
+
+#: tweets/menus.py:288
+msgid "Reply settings"
+msgstr ""
+
+#: tweets/menus.py:305 tweets/tweets.py:134
+msgid "Tweet sent!"
+msgstr ""
+
+#: tweets/menus.py:492
 msgid "No twitter account with that username could be found."
 msgstr ""
 
-#: tweets/menus.py:440
+#: tweets/menus.py:499 tweets/menus.py:529
+msgid "This tweet is labeled as NSFW and this is not a NSFW channel."
+msgstr ""
+
+#: tweets/menus.py:518
 msgid "No twitter information could be found for {username}."
 msgstr ""
 
-#: tweets/menus.py:484 tweets/menus.py:489 tweets/menus.py:605
-#: tweets/menus.py:610
+#: tweets/menus.py:552 tweets/menus.py:642
 msgid "You are not authorized to interact with this."
 msgstr ""
 
-#: tweets/tweets.py:26
+#: tweets/tweets.py:22
 #, docstring
 msgid "\n"
 "    Cog for displaying info from Twitter's API\n"
 "    "
 msgstr ""
 
-#: tweets/tweets.py:117
+#: tweets/tweets.py:111
 #, docstring
-msgid "Gets various information from Twitter's API"
+msgid "Controls for the twitter stream"
 msgstr ""
 
-#: tweets/tweets.py:123
+#: tweets/tweets.py:116
+#, docstring
+msgid "Delete your saved authentication data from the bot"
+msgstr ""
+
+#: tweets/tweets.py:118
+msgid "Your saved twitter authenication has been deleted."
+msgstr ""
+
+#: tweets/tweets.py:122
 #, docstring
 msgid "\n"
-"        Allows the owner to send tweets through discord\n\n"
-"        Upload an image to send an image with it as well.\n"
+"        Allows the owner to send tweets through discord\n"
 "        "
 msgstr ""
 
-#: tweets/tweets.py:144
-msgid "An error has occured, check the console for more details."
+#: tweets/tweets.py:132
+msgid "An error has occured trying to send that tweet."
 msgstr ""
 
-#: tweets/tweets.py:146
-msgid "Tweet sent!"
-msgstr ""
-
-#: tweets/tweets.py:150
-#, docstring
-msgid "\n"
-"        Gets twitter trends for a given location\n\n"
-"        You can provide a location and it will try to get\n"
-"        different trend information from that location\n"
-"        default is `United States`\n"
-"        "
-msgstr ""
-
-#: tweets/tweets.py:168 tweets/tweets.py:185
-msgid "Timed out getting twitter trends."
-msgstr ""
-
-#: tweets/tweets.py:207
-msgid "Trends (continued)"
-msgstr ""
-
-#: tweets/tweets.py:230
+#: tweets/tweets.py:151
 #, docstring
 msgid "Get info about the specified user"
 msgstr ""
 
-#: tweets/tweets.py:234
-msgid "Looking up the user timed out."
-msgstr ""
-
-#: tweets/tweets.py:237
+#: tweets/tweets.py:165
 msgid "{username} could not be found."
 msgstr ""
 
-#: tweets/tweets.py:266
+#: tweets/tweets.py:196
 #, docstring
 msgid "\n"
 "        Display a users tweets as a scrollable message\n"
 "        "
 msgstr ""
 
-#: tweets/tweets.py:281
-#, docstring
-msgid "Command for setting accounts and channels for posting"
-msgstr ""
-
-#: tweets/tweets.py:289
-#, docstring
-msgid "Set an error channel for tweet stream error updates"
-msgstr ""
-
-#: tweets/tweets.py:294
-msgid "Twitter error channel set to {channel}"
-msgstr ""
-
-#: tweets/tweets.py:299
-#, docstring
-msgid "Searches for unavailable channels and removes posting in those channels"
-msgstr ""
-
-#: tweets/tweets.py:325
+#: tweets/tweets.py:213 tweets/tweets.py:301
 #, docstring
 msgid "\n"
-"        Set whether to use custom embeds or just post the tweet url\n\n"
-"        `<channel>` The channel the usernames are posting in\n"
-"        `<true_or_false>` `true` if you want custom embeds to be used or `false` if not.\n"
-"        `[usernames...]` The usernames you want to edit the replies setting for.\n"
-"        This must be the users @handle with spaces signifying a different account.\n"
+"        Add a twitter username to follow in a channel.\n\n"
+"        Note: This may not work if the username is not present in one of the stream rules.\n"
+"        You can view existing rules with `[p]tweets stream rules`\n"
 "        "
 msgstr ""
 
-#: tweets/tweets.py:349 tweets/tweets.py:409 tweets/tweets.py:463
-msgid "{username} is not posting in {channel}"
+#: tweets/tweets.py:222 tweets/tweets.py:310
+msgid "I could not find a user named `{username}`."
 msgstr ""
 
-#: tweets/tweets.py:360
-msgid "Tweets in {channel} {verb} use custom embeds for the following accounts:\n"
-" {replies}"
+#: tweets/tweets.py:231
+msgid "Following tweets from {user} in {channel}."
 msgstr ""
 
-#: tweets/tweets.py:364 tweets/tweets.py:424 tweets/tweets.py:478
-msgid "will"
-msgstr ""
-
-#: tweets/tweets.py:364 tweets/tweets.py:424 tweets/tweets.py:478
-msgid "will not"
-msgstr ""
-
-#: tweets/tweets.py:368
-msgid "No accouts were found in {channel}."
-msgstr ""
-
-#: tweets/tweets.py:373
+#: tweets/tweets.py:241
 #, docstring
-msgid "Restarts the twitter stream if any issues occur."
+msgid "\n"
+"        Add all tweets from a specific stream rule to a channel.\n"
+"        "
+msgstr ""
+
+#: tweets/tweets.py:249
+msgid "Following tweets from {rule} in {channel}."
+msgstr ""
+
+#: tweets/tweets.py:259
+#, docstring
+msgid "\n"
+"        Remove all tweets from a specific stream rule to a channel.\n"
+"        "
+msgstr ""
+
+#: tweets/tweets.py:267
+msgid "Unfollowing tweets from {rule} in {channel}."
+msgstr ""
+
+#: tweets/tweets.py:275
+#, docstring
+msgid "\n"
+"        Toggle whether or not to apply like, retweet, and reply buttons to the channels\n"
+"        twitter stream\n\n"
+"        `<channel>` The channel you want to toggle buttons for.\n"
+"        "
+msgstr ""
+
+#: tweets/tweets.py:285
+msgid "Like, retweet, and reply buttons disabled in {channel}."
+msgstr ""
+
+#: tweets/tweets.py:291
+msgid "Like, retweet, and reply buttons enabled in {channel}."
+msgstr ""
+
+#: tweets/tweets.py:320
+msgid "Tweets from {user} are not being followed in {channel}"
+msgstr ""
+
+#: tweets/tweets.py:326
+msgid "Unfollowing tweets from {user} in {channel}."
+msgstr ""
+
+#: tweets/tweets.py:333
+#, docstring
+msgid "List the current stream rules"
+msgstr ""
+
+#: tweets/tweets.py:338
+msgid "The stream has not been setup yet, make sure the bot owner has setup their API tokens properly."
+msgstr ""
+
+#: tweets/tweets.py:344
+msgid "No rules have been created yet."
+msgstr ""
+
+#: tweets/tweets.py:355
+#, docstring
+msgid "\n"
+"        Create a stream rule\n\n"
+"        `<tag>` The name of the rule for finding the rule later.\n"
+"        `<rule>` The Filtered stream rule. Information about rules can be found here\n"
+"        https://developer.twitter.com/en/docs/twitter-api/tweets/filtered-stream/integrate/build-a-rule\n"
+"        "
+msgstr ""
+
+#: tweets/tweets.py:365
+msgid "Rule created successfully."
+msgstr ""
+
+#: tweets/tweets.py:367 tweets/tweets.py:390 tweets/tweets.py:401
+msgid "There was an issue with that rule.\n"
 msgstr ""
 
 #: tweets/tweets.py:376
-msgid "Restarting the twitter stream."
-msgstr ""
-
-#: tweets/tweets.py:386
 #, docstring
 msgid "\n"
-"        Set an accounts replies being posted\n\n"
-"        `<channel>` The channel the usernames are posting in\n"
-"        `<true_or_false>` `true` if you want replies to be displayed or `false` if not.\n"
-"        `[usernames...]` The usernames you want to edit the replies setting for.\n"
-"        This must be the users @handle with spaces signifying a different account.\n"
+"        Delete a stream rule\n\n"
+"        `<tag_or_id>` The rule tag or rule ID you want to delete.\n"
 "        "
 msgstr ""
 
-#: tweets/tweets.py:420
-msgid "Tweets in {channel} {verb} show replies for the following accounts:\n"
-" {replies}"
+#: tweets/tweets.py:388 tweets/tweets.py:399
+msgid "Rule {tag} deleted.\n"
 msgstr ""
 
-#: tweets/tweets.py:428 tweets/tweets.py:482
-msgid "No accounts were found in {channel}."
-msgstr ""
-
-#: tweets/tweets.py:439
-#, docstring
-msgid "\n"
-"        Set an accounts retweets being posted\n\n"
-"        `<channel>` The channel the usernames are posting in\n"
-"        `<true_or_false>` `true` if you want retweets to be displayed or `false` if not.\n"
-"        `[usernames...]` The usernames you want to edit the replies setting for.\n"
-"        This must be the users @handle with spaces signifying a different account.\n"
-"        "
-msgstr ""
-
-#: tweets/tweets.py:474
-msgid "Tweets in {channel} {verb} show retweets for the following accounts:\n"
-" {replies}"
-msgstr ""
-
-#: tweets/tweets.py:489
-#, docstring
-msgid "\n"
-"        Adds a twitter username to the specified channel\n\n"
-"        `username` needs to be the @handle for the twitter username\n"
-"        `channel` has to be a valid server channel, defaults to the current channel\n"
-"        "
-msgstr ""
-
-#: tweets/tweets.py:502
-msgid "Looking up user timed out"
-msgstr ""
-
-#: tweets/tweets.py:506 tweets/tweets.py:832
-msgid "Whoops! Something went wrong here. The error code is "
-msgstr ""
-
-#: tweets/tweets.py:508 tweets/tweets.py:511
-msgid "That username does not exist."
-msgstr ""
-
-#: tweets/tweets.py:518 tweets/tweets.py:665
-msgid "I don't have permission to post in {channel}."
-msgstr ""
-
-#: tweets/tweets.py:522 tweets/tweets.py:669
-msgid "I do not have embed links permission in {channel}, I recommend enabling that for pretty twitter posts!"
-msgstr ""
-
-#: tweets/tweets.py:532
-msgid "{username} added to {channel}."
-msgstr ""
-
-#: tweets/tweets.py:538 tweets/tweets.py:691
-msgid "Now do {command} when you've finished adding all accounts!"
-msgstr ""
-
-#: tweets/tweets.py:544
-msgid "I am already posting {username} in {channel}."
-msgstr ""
-
-#: tweets/tweets.py:552
-#, docstring
-msgid "Lists the autotweet accounts on the guild"
-msgstr ""
-
-#: tweets/tweets.py:577
-msgid "There are no Twitter accounts posting in this server."
-msgstr ""
-
-#: tweets/tweets.py:630
-#, docstring
-msgid "\n"
-"        Add an entire twitter list to a specified channel.\n\n"
-"        The list must be public or the bot owner must own it.\n"
-"        `owner` is the owner of the list's @handle\n"
-"        `list_name` is the name of the list\n"
-"        `channel` is the channel where the tweets will be posted\n"
-"        "
-msgstr ""
-
-#: tweets/tweets.py:651 tweets/tweets.py:732
-msgid "Adding that tweet list took too long."
-msgstr ""
-
-#: tweets/tweets.py:657 tweets/tweets.py:738
-msgid "That `owner` and `list_name` don't appear to be available"
-msgstr ""
-
-#: tweets/tweets.py:685
-msgid "Added the following accounts to "
-msgstr ""
-
-#: tweets/tweets.py:697
-msgid "The following accounts could not be added to {channel}:\n"
-"{accounts}"
-msgstr ""
-
-#: tweets/tweets.py:711
-#, docstring
-msgid "\n"
-"        Remove an entire twitter list from a specified channel.\n\n"
-"        The list must be public or the bot owner must own it.\n"
-"        `owner` is the owner of the list's @handle\n"
-"        `list_name` is the name of the list\n"
-"        `channel` is the channel where the tweets will be posted\n"
-"        "
-msgstr ""
-
-#: tweets/tweets.py:753
-msgid "Removed the following accounts from {channel}:\n"
-"{accounts}"
-msgstr ""
-
-#: tweets/tweets.py:760
-msgid "The following accounts weren't added to {channel} or there was another error: {accounts}"
-msgstr ""
-
-#: tweets/tweets.py:810
-#, docstring
-msgid "\n"
-"        Removes a twitter username to the specified channel\n\n"
-"        `<channel>` The channel in which you want to remove twitter posts for.\n"
-"        `[username]` Optional @handle name for the user you want to remove.\n"
-"        If `username` is not provided all users posting in the provided channel\n"
-"        will be removed.\n"
-"        "
-msgstr ""
-
-#: tweets/tweets.py:835
-msgid "Something went wrong here! Try again"
-msgstr ""
-
-#: tweets/tweets.py:840
-msgid "The following users have been removed from {channel}:\n"
-"{accounts}"
-msgstr ""
-
-#: tweets/tweets.py:846
-msgid "{username} doesn't seem to be posting in {channel}"
-msgstr ""
-
-#: tweets/tweets.py:854
-#, docstring
-msgid "Command for setting required access information for the API.\n\n"
-"        1. Visit https://apps.twitter.com and apply for a developer account.\n"
-"        2. Once your account is approved Create a standalone app and copy the\n"
-"        **API Key and API Secret**.\n"
-"        3. On the standalone apps page select regenerate **Access Token and Secret**\n"
-"        and copy those somewhere safe.\n"
-"        4. Do `[p]set api twitter\n"
-"        consumer_key YOUR_CONSUMER_KEY\n"
-"        consumer_secret YOUR_CONSUMER_SECRET\n"
-"        access_token YOUR_ACCESS_TOKEN\n"
-"        access_secret YOUR_ACCESS_SECRET`\n"
-"        "
-msgstr ""
-
-#: tweets/tweets.py:875
+#: tweets/tweets.py:414
 #, docstring
 msgid "How to get and set your twitter API tokens."
 msgstr ""
 
-#: tweets/tweets.py:877
+#: tweets/tweets.py:415
 msgid "1. Visit https://apps.twitter.com and apply for a developer account.\n"
-"2. Once your account is approved Create a standalone app and copy the **API Key and API Secret**\n"
-"3. On the standalone apps page select regenerate **Access Token and Secret** and copy those somewhere safe.\n\n"
-"4. Do `[p]set api twitter bearer_token YOUR_BEARER_TOKEN consumer_key YOUR_CONSUMER_KEY consumer_secret YOUR_CONSUMER_SECRET access_token YOUR_ACCESS_TOKEN access_secret YOUR_ACCESS_SECRET`\n\n"
-"**Note:** You will require {elevated} to use everything in this cog."
+"2. Once your account is approved Create a Project\n"
+"3. Add an app to the project and copy the **Bearer Token** (Optionally) Copy the **Client ID** and **Client Secret**4. Under User authentication settings enable OAuth 2.0, customize the settings however you want the bot to work, and remember or set the redirect uri.\n\n"
+"5. Do `[p]set api twitter bearer_token YOUR_BEARER_TOKEN client_id YOUR_CLIENT_ID client_secret YOUR_CLIENT_SECRET redirect_uri YOUR_REDIRECT_URI_TOKEN`\n\n"
 msgstr ""
 
-#: tweets/tweets_api.py:27
+#: tweets/tweets_api.py:79
 msgid "You need to set your API tokens. See `{prefix}tweetset creds` for information on how."
 msgstr ""
 
-#: tweets/tweets_api.py:54
+#: tweets/tweets_api.py:173
+msgid "A tweet stream error has occured! - {error_title} - {error_details} - {link_info}"
+msgstr ""
+
+#: tweets/tweets_api.py:210
 msgid "A tweet stream error has occured! "
 msgstr ""
 
-#: tweets/tweets_api.py:59
-msgid "Twitter has sent a disconnect message {message}"
+#: tweets/tweets_api.py:222
+msgid "The Tweet stream has disconnected."
 msgstr ""
 
-#: tweets/tweets_api.py:64
-msgid "Twitter has sent a disconnection warning"
+#: tweets/tweets_api.py:325
+msgid "Please accept the authorization [here]({auth}) and **DM me** with the final full url."
 msgstr ""
 
-#: tweets/tweets_api.py:148
+#: tweets/tweets_api.py:331
+msgid "Please accept the authorization in the following link and reply to me with the full url\n\n"
+" {auth}"
+msgstr ""
+
+#: tweets/tweets_api.py:360 tweets/tweets_api.py:369
+msgid "Alright I won't interact with twitter for you."
+msgstr ""
+
+#: tweets/tweets_api.py:414
 msgid "\n"
 " See here for more information <https://developer.twitter.com/en/support/twitter-api/error-troubleshooting>"
 msgstr ""
 
-#: tweets/tweets_api.py:153
+#: tweets/tweets_api.py:419
 msgid "You're being rate limited. Maybe you should unload the cog for a while..."
+msgstr ""
+
+#: tweets/tweets_api.py:502
+msgid "Replying to {user}"
+msgstr ""
+
+#: tweets/tweets_api.py:504
+msgid "Retweeted {user}"
 msgstr ""
 

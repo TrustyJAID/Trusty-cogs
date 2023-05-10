@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
-"POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"POT-Creation-Date: 2022-10-15 01:52+0000\n"
+"PO-Revision-Date: 2023-05-10 16:10\n"
 "Last-Translator: \n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -17,20 +17,40 @@ msgstr ""
 "X-Crowdin-File-ID: 542\n"
 "Language: sv_SE\n"
 
-#: translate/api.py:195
-msgid " said:"
-msgstr ""
-
-#: translate/api.py:196
+#: translate/api.py:131
 msgid "{_from} to {_to} | Requested by "
 msgstr ""
 
-#: translate/api.py:335
-msgid "You're translating too many messages!"
+#: translate/api.py:242
+msgid "API Requests:"
 msgstr ""
 
-#: translate/api.py:395
-msgid "{author} said:\n"
+#: translate/api.py:243
+msgid "API Detect Language:"
+msgstr ""
+
+#: translate/api.py:244
+msgid "Characters requested:"
+msgstr ""
+
+#: translate/api.py:247
+msgid "__Global Usage__:\n"
+msgstr ""
+
+#: translate/api.py:256
+msgid "__{guild} Usage__:\n"
+msgstr ""
+
+#: translate/api.py:312 translate/translate.py:110
+msgid "The bot owner needs to set an api key first!"
+msgstr ""
+
+#: translate/api.py:343
+msgid "The detected language is the same as the language being translated to."
+msgstr ""
+
+#: translate/api.py:451 translate/api.py:523
+msgid "{author}:\n"
 "{translated_text}"
 msgstr ""
 
@@ -45,68 +65,41 @@ msgid "\n"
 "    "
 msgstr ""
 
-#: translate/translate.py:115
-#, docstring
-msgid "\n"
-"        Translate messages with Google Translate\n\n"
-"        `<to_language>` is the language you would like to translate\n"
-"        `<message>` is the message to translate, this can be words you want\n"
-"        to translate, a channelID-messageID from SHIFT + clicking a message and copying ID,\n"
-"        a message ID from the current channel, or message link\n"
-"        "
-msgstr ""
-
-#: translate/translate.py:124
-msgid "The bot owner needs to set an api key first!"
-msgstr ""
-
-#: translate/translate.py:144
+#: translate/translate.py:125
 msgid "I cannot translate `{from_lang}` to `{to}`"
 msgstr ""
 
-#: translate/translate.py:170
+#: translate/translate.py:137
+msgid "Nothing to be translated."
+msgstr ""
+
+#: translate/translate.py:153
 #, docstring
 msgid "\n"
 "        Toggle the bot auto translating\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:177
+#: translate/translate.py:160
 #, docstring
 msgid "\n"
 "        Shows translation usage\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:181
+#: translate/translate.py:164
 msgid "That is only available for the bot owner."
 msgstr ""
 
-#: translate/translate.py:184
+#: translate/translate.py:168
 msgid "Guild `{guild_id}` not found."
 msgstr ""
 
-#: translate/translate.py:188
-msgid "API Requests:"
+#: translate/translate.py:173
+msgid "This command is only available inside guilds."
 msgstr ""
 
-#: translate/translate.py:189
-msgid "API Detect Language:"
-msgstr ""
-
-#: translate/translate.py:190
-msgid "Characters requested:"
-msgstr ""
-
-#: translate/translate.py:198
-msgid "__Global Usage__:\n"
-msgstr ""
-
-#: translate/translate.py:201
-msgid "__{guild} Usage__:\n"
-msgstr ""
-
-#: translate/translate.py:210
+#: translate/translate.py:182
 #, docstring
 msgid "\n"
 "        Set blacklist options for translations\n\n"
@@ -114,7 +107,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:221
+#: translate/translate.py:193
 #, docstring
 msgid "\n"
 "        Set whitelist options for translations\n\n"
@@ -122,110 +115,118 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:234
+#: translate/translate.py:206
 #, docstring
 msgid "\n"
 "        Add a channel, user, or role to translation whitelist\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:239
+#: translate/translate.py:211
 msgid "You must supply 1 or more channels users or roles to be whitelisted."
 msgstr ""
 
-#: translate/translate.py:246
+#: translate/translate.py:219
 msgid "`{list_type}` added to translation whitelist."
 msgstr ""
 
-#: translate/translate.py:256
+#: translate/translate.py:229
 #, docstring
 msgid "\n"
 "        Remove a channel, user, or role from translation whitelist\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:261
+#: translate/translate.py:234
 msgid "You must supply 1 or more channels, users, or roles to be removed from the whitelist"
 msgstr ""
 
-#: translate/translate.py:271
+#: translate/translate.py:245
 msgid "`{list_type}` removed from translation whitelist."
 msgstr ""
 
-#: translate/translate.py:279
+#: translate/translate.py:253
 #, docstring
 msgid "\n"
 "        List Channels, Users, and Roles in the servers translation whitelist.\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:290
+#: translate/translate.py:265
 msgid "`{whitelisted}` are currently whitelisted."
 msgstr ""
 
-#: translate/translate.py:299
+#: translate/translate.py:269
+msgid "There are currently no channels, users, or roles in this servers translate allowlist."
+msgstr ""
+
+#: translate/translate.py:280
 #, docstring
 msgid "\n"
 "        Add a channel, user, or role to translation blacklist\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:304
+#: translate/translate.py:285
 msgid "You must supply 1 or more channels users or roles to be blacklisted."
 msgstr ""
 
-#: translate/translate.py:311
+#: translate/translate.py:293
 msgid "`{list_type}` added to translation blacklist."
 msgstr ""
 
-#: translate/translate.py:321
+#: translate/translate.py:303
 #, docstring
 msgid "\n"
 "        Remove a channel, user, or role from translation blacklist\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:326
+#: translate/translate.py:308
 msgid "You must supply 1 or more channels, users, or roles to be removed from the blacklist"
 msgstr ""
 
-#: translate/translate.py:336
+#: translate/translate.py:319
 msgid "`{list_type}` removed from translation blacklist."
 msgstr ""
 
-#: translate/translate.py:344
+#: translate/translate.py:327
 #, docstring
 msgid "\n"
 "        List Channels, Users, and Roles in the servers translation blacklist.\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:355
+#: translate/translate.py:339
 msgid "`{blacklisted}` are currently blacklisted."
 msgstr ""
 
-#: translate/translate.py:362
+#: translate/translate.py:343
+msgid "There are currently no channels, users, or roles in this servers translate blocklist."
+msgstr ""
+
+#: translate/translate.py:352
 #, docstring
 msgid "\n"
 "        Toggle translations to flag emoji reactions\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:368 translate/translate.py:389
-#: translate/translate.py:424
+#: translate/translate.py:358 translate/translate.py:379
+#: translate/translate.py:414
 msgid "on"
 msgstr ""
 
-#: translate/translate.py:370 translate/translate.py:391
-#: translate/translate.py:426
+#: translate/translate.py:360 translate/translate.py:381
+#: translate/translate.py:416
 msgid "off"
 msgstr ""
 
-#: translate/translate.py:374
+#: translate/translate.py:364
 msgid "Reaction translations have been turned "
 msgstr ""
 
-#: translate/translate.py:381
+#: translate/translate.py:371
 #, docstring
 msgid "\n"
 "        Toggle multiple translations for the same message\n\n"
@@ -234,11 +235,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:394
+#: translate/translate.py:384
 msgid "Multiple translations have been turned "
 msgstr ""
 
-#: translate/translate.py:401
+#: translate/translate.py:391
 #, docstring
 msgid "\n"
 "        Set the cooldown before a message can be reacted to again\n"
@@ -249,22 +250,22 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:411
+#: translate/translate.py:401
 msgid "Translation timeout set to {time}s."
 msgstr ""
 
-#: translate/translate.py:418
+#: translate/translate.py:408
 #, docstring
 msgid "\n"
 "        Toggle translations with flag emojis in text\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:430
+#: translate/translate.py:420
 msgid "Flag emoji translations have been turned "
 msgstr ""
 
-#: translate/translate.py:436
+#: translate/translate.py:426
 #, docstring
 msgid "\n"
 "        You must get an API key from Google to set this up\n\n"
@@ -272,7 +273,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: translate/translate.py:441
+#: translate/translate.py:431
 msgid "1. Go to Google Developers Console and log in with your Google account.(https://console.developers.google.com/)\n"
 "2. You should be prompted to create a new project (name does not matter).\n"
 "3. Click on Enable APIs and Services at the top.\n"

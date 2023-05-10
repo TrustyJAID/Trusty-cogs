@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
-"POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"POT-Creation-Date: 2023-05-04 02:38+0000\n"
+"PO-Revision-Date: 2023-05-10 16:10\n"
 "Last-Translator: \n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -104,7 +104,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: conversions/conversions.py:397
+#: conversions/conversions.py:398
 #, docstring
 msgid "\n"
 "        Gets current ticker symbol price.\n\n"
@@ -113,14 +113,14 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: conversions/conversions.py:439
+#: conversions/conversions.py:442
 #, docstring
 msgid "\n"
 "        Instructions for how to setup the stock API\n"
 "        "
 msgstr ""
 
-#: conversions/conversions.py:457
+#: conversions/conversions.py:460
 #, docstring
 msgid "\n"
 "        Converts a value between 2 different currencies\n\n"

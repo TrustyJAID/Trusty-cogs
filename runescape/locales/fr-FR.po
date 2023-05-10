@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
-"POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"POT-Creation-Date: 2023-05-04 02:38+0000\n"
+"PO-Revision-Date: 2023-05-10 16:09\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -17,27 +17,57 @@ msgstr ""
 "X-Crowdin-File-ID: 548\n"
 "Language: fr_FR\n"
 
-#: runescape/runescape.py:145
-#, docstring
-msgid "Search for a user account or profile"
-msgstr ""
-
-#: runescape/runescape.py:150
+#: runescape/runescape.py:158
 #, docstring
 msgid "Search for OSRS highscores"
 msgstr ""
 
-#: runescape/runescape.py:155 runescape/runescape.py:182
+#: runescape/runescape.py:163 runescape/runescape.py:317
 #, docstring
 msgid "Look for something on the runescape Wiki."
 msgstr ""
 
-#: runescape/runescape.py:209
+#: runescape/runescape.py:191
+#, docstring
+msgid "\n"
+"        Get the current combinations for vis wax\n\n"
+"        https://runescape.wiki/w/Rune_Goldberg_Machine\n"
+"        "
+msgstr ""
+
+#: runescape/runescape.py:239
+#, docstring
+msgid "Display an image of a Nemi Forest instance with all nine nodes."
+msgstr ""
+
+#: runescape/runescape.py:279
+#, docstring
+msgid "Look for something on the runescape Grand Exchange.\n\n"
+"        You can lookup multiple items at once by separating them with `|`\n"
+"        e.g. `[p]rs ge bond|fractured staff of armadyl`\n"
+"        "
+msgstr ""
+
+#: runescape/runescape.py:345
+#, docstring
+msgid "\n"
+"        Look for something on the runescape Grand Exchange.\n\n"
+"        You can lookup multiple items at once by separating them with `|`\n"
+"        e.g. `[p]rs osrs ge bond|abyssal whip`\n"
+"        "
+msgstr ""
+
+#: runescape/runescape.py:386
 #, docstring
 msgid "Display a players stats in oldschool Runescape."
 msgstr ""
 
-#: runescape/runescape.py:228 runescape/runescape.py:323
+#: runescape/runescape.py:405
+#, docstring
+msgid "Display a players Activities in oldschool Runescape Hiscores."
+msgstr ""
+
+#: runescape/runescape.py:426 runescape/runescape.py:524
 #, docstring
 msgid "\n"
 "        Set your runescape name for easer commands.\n\n"
@@ -45,14 +75,14 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: runescape/runescape.py:242
+#: runescape/runescape.py:441
 #, docstring
 msgid "\n"
 "        Set various runescape cog settings\n"
 "        "
 msgstr ""
 
-#: runescape/runescape.py:252
+#: runescape/runescape.py:451
 #, docstring
 msgid "\n"
 "        Set a channel for automatic RuneMetrics updates\n\n"
@@ -61,7 +91,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: runescape/runescape.py:284
+#: runescape/runescape.py:484
 #, docstring
 msgid "\n"
 "        Remove a channel from automatic RuneMetrics updates\n\n"
@@ -70,17 +100,17 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: runescape/runescape.py:395
+#: runescape/runescape.py:541
 #, docstring
 msgid "Display a players profile in Runescape"
 msgstr ""
 
-#: runescape/runescape.py:414
+#: runescape/runescape.py:566
 #, docstring
 msgid "Display a players stats in Runescape"
 msgstr ""
 
-#: runescape/runescape.py:431
+#: runescape/runescape.py:586
 #, docstring
 msgid "Show Runescapes Daily, Weekly, and Monthly reset times."
 msgstr ""

@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
 "POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"PO-Revision-Date: 2023-05-10 16:09\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -19,11 +19,11 @@ msgstr ""
 
 #: compliment/compliment.py:11
 msgid "Your smile is contagious."
-msgstr ""
+msgstr "Votre sourire est contagieux."
 
 #: compliment/compliment.py:12
 msgid "You look great today."
-msgstr ""
+msgstr "Vous avez l'air magnifique aujourd'hui."
 
 #: compliment/compliment.py:13
 msgid "You're a smart cookie."
@@ -31,7 +31,7 @@ msgstr ""
 
 #: compliment/compliment.py:14
 msgid "I bet you make babies smile."
-msgstr ""
+msgstr "Je parie que vous faites sourire les bébés."
 
 #: compliment/compliment.py:15
 msgid "You have impeccable manners."
@@ -39,15 +39,15 @@ msgstr ""
 
 #: compliment/compliment.py:16
 msgid "I like your style."
-msgstr ""
+msgstr "J'aime votre style."
 
 #: compliment/compliment.py:17
 msgid "You have the best laugh."
-msgstr ""
+msgstr "Vous avez le meilleur rire."
 
 #: compliment/compliment.py:18
 msgid "I appreciate you."
-msgstr ""
+msgstr "Je vous apprécie."
 
 #: compliment/compliment.py:19
 msgid "You are the most perfect you there is."
@@ -59,35 +59,35 @@ msgstr ""
 
 #: compliment/compliment.py:21
 msgid "You're strong."
-msgstr ""
+msgstr "Vous êtes fort·e."
 
 #: compliment/compliment.py:22
 msgid "Your perspective is refreshing."
-msgstr ""
+msgstr "Votre point de vue est rafraîchissant."
 
 #: compliment/compliment.py:23
 msgid "You're an awesome friend."
-msgstr ""
+msgstr "Vous êtes un·e ami·e formidable."
 
 #: compliment/compliment.py:24
 msgid "You light up the room."
-msgstr ""
+msgstr "Vous illuminez la pièce."
 
 #: compliment/compliment.py:25
 msgid "You deserve a hug right now."
-msgstr ""
+msgstr "Vous méritez un câlin tout de suite."
 
 #: compliment/compliment.py:26
 msgid "You should be proud of yourself."
-msgstr ""
+msgstr "Vous devriez être fier·e de vous."
 
 #: compliment/compliment.py:27
 msgid "You're more helpful than you realize."
-msgstr ""
+msgstr "Vous êtes plus utile que vous ne le réalisez."
 
 #: compliment/compliment.py:28
 msgid "You have a great sense of humor."
-msgstr ""
+msgstr "Vous avez un grand sens de l'humour."
 
 #: compliment/compliment.py:29
 msgid "You've got all the right moves!"
@@ -95,11 +95,11 @@ msgstr ""
 
 #: compliment/compliment.py:30
 msgid "Is that your picture next to \"charming\" in the dictionary?"
-msgstr ""
+msgstr "Est-ce votre image à côté de \"charmant\" dans le dictionnaire?"
 
 #: compliment/compliment.py:31
 msgid "Your kindness is a balm to all who encounter it."
-msgstr ""
+msgstr "Votre gentillesse est un baume pour tous ceux qui la rencontrent."
 
 #: compliment/compliment.py:32
 msgid "You're all that and a super-size bag of chips."
@@ -107,23 +107,23 @@ msgstr ""
 
 #: compliment/compliment.py:33
 msgid "On a scale from 1 to 10, you're an 11."
-msgstr ""
+msgstr "Sur une échelle de 1 à 10, vous êtes un·e 11."
 
 #: compliment/compliment.py:34
 msgid "You are brave."
-msgstr ""
+msgstr "Vous avez du courage."
 
 #: compliment/compliment.py:35
 msgid "You're even more beautiful on the inside than you are on the outside."
-msgstr ""
+msgstr "Vous êtes encore plus belle·au à l'intérieur que vous êtes à l'extérieur."
 
 #: compliment/compliment.py:36
 msgid "You have the courage of your convictions."
-msgstr ""
+msgstr "Vous avez le courage de vos convictions."
 
 #: compliment/compliment.py:37
 msgid "Your eyes are breathtaking."
-msgstr ""
+msgstr "Vos yeux sont à couper le souffle."
 
 #: compliment/compliment.py:38
 msgid "If cartoon bluebirds were real, a bunch of them would be sitting on your shoulders singing right now."

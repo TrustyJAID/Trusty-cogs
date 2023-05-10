@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
-"POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"POT-Creation-Date: 2023-05-04 02:38+0000\n"
+"PO-Revision-Date: 2023-05-10 16:09\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -26,7 +26,13 @@ msgid "\n"
 "        `[full=True]` is a True/False value whether to display just the converted amount\n"
 "        or the full display for the currency\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        convertit de BTC en une devise donnée. \n\n\n"
+"        `[ammount=1. ]` Le nombre de pièces pour lesquelles vous voulez connaître le prix.\n"
+"        `[currency=USD]` La devise désirée (optionnelle). Par défaut la devise est USD.\n"
+"        `[full=True]` est une valeur True/False si vous voulez juste afficher le montant converti\n"
+"        ou l'affichage complet de la devise\n"
+"        "
 
 #: conversions/conversions.py:72
 #, docstring
@@ -37,7 +43,13 @@ msgid "\n"
 "        `[full=True]` is a True/False value whether to display just the converted amount\n"
 "        or the full display for the currency\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        convertit de ETH en une devise donnée. \n\n\n"
+"        `[ammount=1. ]` Le nombre de pièces pour lesquelles vous voulez connaître le prix.\n"
+"        `[currency=USD]` La devise désirée (optionnelle). Par défaut la devise est USD.\n"
+"        `[full=True]` est une valeur True/False si vous voulez juste afficher le montant converti\n"
+"        ou l'affichage complet de la devise\n"
+"        "
 
 #: conversions/conversions.py:90
 #, docstring
@@ -48,7 +60,13 @@ msgid "\n"
 "        `[full=True]` is a True/False value whether to display just the converted amount\n"
 "        or the full display for the currency\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        convertit de LTC en une devise donnée. \n\n\n"
+"        `[ammount=1. ]` Le nombre de pièces pour lesquelles vous voulez connaître le prix.\n"
+"        `[currency=USD]` La devise désirée (optionnelle). Par défaut la devise est USD.\n"
+"        `[full=True]` est une valeur True/False si vous voulez juste afficher le montant converti\n"
+"        ou l'affichage complet de la devise\n"
+"        "
 
 #: conversions/conversions.py:108
 #, docstring
@@ -59,7 +77,13 @@ msgid "\n"
 "        `[full=True]` is a True/False value whether to display just the converted amount\n"
 "        or the full display for the currency\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        convertit de XMR en une devise donnée. \n\n\n"
+"        `[ammount=1. ]` Le nombre de pièces pour lesquelles vous voulez connaître le prix.\n"
+"        `[currency=USD]` La devise désirée (optionnelle). Par défaut la devise est USD.\n"
+"        `[full=True]` est une valeur True/False si vous voulez juste afficher le montant converti\n"
+"        ou l'affichage complet de la devise\n"
+"        "
 
 #: conversions/conversions.py:126
 #, docstring
@@ -70,7 +94,13 @@ msgid "\n"
 "        `[full=True]` is a True/False value whether to display just the converted amount\n"
 "        or the full display for the currency\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        convertit de BCH en une devise donnée. \n\n\n"
+"        `[ammount=1. ]` Le nombre de pièces pour lesquelles vous voulez connaître le prix.\n"
+"        `[currency=USD]` La devise désirée (optionnelle). Par défaut la devise est USD.\n"
+"        `[full=True]` est une valeur True/False si vous voulez juste afficher le montant converti\n"
+"        ou l'affichage complet de la devise\n"
+"        "
 
 #: conversions/conversions.py:144
 #, docstring
@@ -81,7 +111,13 @@ msgid "\n"
 "        `[full=True]` is a True/False value whether to display just the converted amount\n"
 "        or the full display for the currency\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        convertit de XDG en une devise donnée. \n\n\n"
+"        `[ammount=1. ]` Le nombre de pièces pour lesquelles vous voulez connaître le prix.\n"
+"        `[currency=USD]` La devise désirée (optionnelle). Par défaut la devise est USD.\n"
+"        `[full=True]` est une valeur True/False si vous voulez juste afficher le montant converti\n"
+"        ou l'affichage complet de la devise\n"
+"        "
 
 #: conversions/conversions.py:226
 #, docstring
@@ -90,7 +126,11 @@ msgid "\n"
 "        `coins` must be a list of white space separated crypto coins\n"
 "        e.g. `[p]multicoin BTC BCH LTC ETH DASH XRP`\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Obtient la valeur actuelle en USD pour une liste de cryptomonnaies\n\n"
+"        `pièces` doit être une liste de cryptomonnaies séparées par des espaces\n"
+"        ex. `[p]multicoin BTC BCH LTC ETH DASH XRP`\n"
+"        "
 
 #: conversions/conversions.py:267
 #, docstring
@@ -102,25 +142,36 @@ msgid "\n"
 "        `[full=True]` is a True/False value whether to display just the converted amount\n"
 "        or the full display for the currency\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Affiche les dernières informations concernant une cryptomonnaie. \n\n"
+"        `<coin>` doit être le nom ou le code mnémonique d'une cryptomonnaie\n"
+"        `[ammount=1. ]` Le nombre de pièces pour lesquelles vous voulez connaître le prix.\n"
+"        `[currency=USD]` La devise désirée (optionnelle). Par défaut la devise est USD.\n"
+"        `[full=True]` est une valeur True/False si vous voulez juste afficher le montant converti\n"
+"        ou l'affichage complet de la devise\n"
+"        "
 
-#: conversions/conversions.py:397
+#: conversions/conversions.py:398
 #, docstring
 msgid "\n"
 "        Gets current ticker symbol price.\n\n"
 "        `<ticker>` is the ticker symbol you want to look up\n"
 "        `[currency]` is the currency you want to convert to defaults to USD\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Obtient le prix du code mnémonique actuel.\n\n"
+"        `<ticker>` est le code mnémonique que vous voulez rechercher\n"
+"        `[currency]` est la devise que vous voulez convertir en USD\n"
+"        "
 
-#: conversions/conversions.py:439
+#: conversions/conversions.py:442
 #, docstring
 msgid "\n"
 "        Instructions for how to setup the stock API\n"
 "        "
 msgstr ""
 
-#: conversions/conversions.py:457
+#: conversions/conversions.py:460
 #, docstring
 msgid "\n"
 "        Converts a value between 2 different currencies\n\n"

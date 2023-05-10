@@ -1,1143 +1,2073 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR ORGANIZATION
-# Author: Randompunkt#7753.
-#
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-11-17 09:51-0700\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2023-05-04 02:38+0000\n"
+"PO-Revision-Date: 2023-05-10 16:10\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: redgettext 2.1\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/hockey/locales/messages.pot\n"
+"X-Crowdin-File-ID: 626\n"
+"Language: sv_SE\n"
 
-
-#: hockey.py:36
+#: hockey/abc.py:318
 #, docstring
-msgid ""
-"\n"
-"        Gather information and post goal updates for NHL hockey teams\n"
-"    "
-msgstr ""
-"\n"
-"        Gather information and post goal updates for NHL hockey teams\n"
-"    "
-
-#: hockey.py:105
-msgid "Error grabbing game data: "
-msgstr "Fel uppstod vid inhämtande av matchstatistik: "
-
-#: hockey.py:126
-msgid "Pickems Set Winner error: "
-msgstr "Fel uppstod med att sätta Pickemsvinnare"
-
-#: hockey.py:133
-msgid "Games Done Playing"
-msgstr "Matcherna är färdigspelade"
-
-#: hockey.py:137
-msgid "Error tallying leaderboard:"
-msgstr "Problem med sammanställning av tabell:"
-
-#: hockey.py:164
-msgid "Checking GDC"
-msgstr "Kollar GDC (Game Day Channel)"
-
-#: hockey.py:202
-msgid "You have already voted! Changing vote to) "
-msgstr "Du har redan röstat! Ändrar röst till) "
-
-#: hockey.py:206
-msgid "Voting has ended!"
-msgstr "Röstningen har avslutats!"
-
-#: hockey.py:210
-msgid "Don't clutter the voting message with emojis!"
-msgstr "Rör inte till röstningsmeddelandet med emojis!"
-
-#: hockey.py:251 hockey.py:254
-msgid "Emoji changing cancelled"
-msgstr "Emojibyte avbrutet"
-
-#: hockey.py:266
-#, docstring
-msgid ""
-"\n"
-"        Get information from NHL.com\n"
+msgid "\n"
+"        Setup Hockey commands for the server\n"
 "        "
 msgstr ""
-"\n"
-"        Get information from NHL.com\n"
-"        "
 
-#: hockey.py:273
-#, docstring
-msgid ""
-"\n"
-"            Setup commands for the server\n"
-"        "
+#: hockey/components.py:147 hockey/components.py:219
+msgid "Filter games"
 msgstr ""
-"\n"
-"            Setup commands for the server\n"
-"        "
 
-#: hockey.py:279
-msgid "On"
-msgstr "På"
-
-#: hockey.py:279
-msgid "Off"
-msgstr "Av"
-
-#: hockey.py:293
-msgid "[Standings"
-msgstr "[Ställning"
-
-#: hockey.py:295
-msgid "Standings"
-msgstr "Ställning"
-
-#: hockey.py:310
-msgid " Hockey Settings"
-msgstr "Hockeyinställingar"
-
-#: hockey.py:313 hockey.py:317
-msgid "Standings Settings"
-msgstr "Ställningsinställningar"
-
-#: hockey.py:316
-msgid ""
-"Hockey Settings\n"
+#: hockey/components.py:208
+msgid "Filter"
 msgstr ""
-"Hockey Settings\n"
 
-#: hockey.py:326
-#, docstring
-msgid ""
-"\n"
-"            Game Day Channel setup for the server\n"
-"\n"
-"            You can setup only a single team or all teams for the server\n"
-"            Game day channels are deleted and created on the day after the game is played\n"
-"            usually around 9AM PST\n"
-"        "
+#: hockey/components.py:243
+msgid "`{content}` is not a valid team."
 msgstr ""
-"\n"
-"            Game Day Channel setup for the server\n"
-"\n"
-"            You can setup only a single team or all teams for the server\n"
-"            Game day channels are deleted and created on the day after the game is played\n"
-"            usually around 9AM PST\n"
-"        "
 
-#: hockey.py:362
-msgid "```GDC settings for"
-msgstr "```GDC (Game Day Channel) inställningar för"
-
-#: hockey.py:363
-msgid "Create Game Day Channels:"
-msgstr "Skapa Game Day Channels:"
-
-#: hockey.py:364
-msgid "Delete Game Day Channels: "
-msgstr "Ta bort Game Day Channels: "
-
-#: hockey.py:365
-msgid "Team:"
-msgstr "Lag:"
-
-#: hockey.py:365
-msgid "Current Channels:"
-msgstr "Nuvarande Kanaler:"
-
-#: hockey.py:368
-msgid "GDC settings for "
-msgstr "GDC (Game Day Channels) inställningar för"
-
-#: hockey.py:370
-msgid "Create Game Day Channels"
-msgstr "Skapa Game Day Channels"
-
-#: hockey.py:371
-msgid "Delete Game Day Channels"
-msgstr "Ta bort Game Day Channels"
-
-#: hockey.py:372
+#: hockey/components.py:259 hockey/gamedaychannels.py:93
+#: hockey/gamedaythreads.py:94
 msgid "Team"
-msgstr "Lag"
+msgstr ""
 
-#: hockey.py:373
+#: hockey/components.py:270
+msgid "Heatmap"
+msgstr ""
+
+#: hockey/components.py:287 hockey/components.py:292 hockey/menu.py:65
+msgid "Heatmap {style}"
+msgstr ""
+
+#: hockey/components.py:299
+msgid "Gameflow"
+msgstr ""
+
+#: hockey/components.py:320 hockey/components.py:329 hockey/menu.py:67
+msgid "Gameflow {corsi} {strength}"
+msgstr ""
+
+#: hockey/components.py:336
+msgid "Pick a game"
+msgstr ""
+
+#: hockey/components.py:346
+msgid "Pick a Player"
+msgstr ""
+
+#: hockey/dev.py:45
+#, docstring
+msgid "\n"
+"        Secret dev only commands for Hockey\n\n"
+"        Most of these probably shouldn't be run unless you\n"
+"        know exactly what they do.\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:55
+#, docstring
+msgid "\n"
+"        Force reset all pickems data for the week\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:71
+#, docstring
+msgid "\n"
+"        Announce a message in all setup pickems channels\n\n"
+"        This is only useful if there was an error and you want to\n"
+"        announce to people that their vote might not have counted.\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:90
+msgid "Message announced in pickems channels."
+msgstr ""
+
+#: hockey/dev.py:94 hockey/dev.py:200
+#, docstring
+msgid "\n"
+"        Testing function with testgame.json\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:122
+#, docstring
+msgid "\n"
+"        Dev commands for testing and building pickems\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:129
+#, docstring
+msgid "\n"
+"        Toggle the ability for users to setup pickems on their servers\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:135
+msgid "Pickems will only be enabled for allowed guilds."
+msgstr ""
+
+#: hockey/dev.py:137
+msgid "Pickems will be enabled for everyone."
+msgstr ""
+
+#: hockey/dev.py:143
+#, docstring
+msgid "\n"
+"        Add a guild to the pickems allowed guilds\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:148
+msgid "I am not currently in {guild_id}."
+msgstr ""
+
+#: hockey/dev.py:153
+msgid "{guild} added to pickems allowed guilds."
+msgstr ""
+
+#: hockey/dev.py:157
+#, docstring
+msgid "\n"
+"        Remove a guild from the pickems allowed guilds\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:164
+msgid "Guild {guild_id} removed from the pickems allowed guilds."
+msgstr ""
+
+#: hockey/dev.py:171
+#, docstring
+msgid "\n"
+"        For some reason reloading doesn't re-add the views to the bots persistent\n"
+"        views list. This command does that if for whatever reason after reloading\n"
+"        the cog the views are not registering votes.\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:179
+msgid "Added all pickems views to the bot."
+msgstr ""
+
+#: hockey/dev.py:183
+#, docstring
+msgid "\n"
+"        List all guilds allowed to have pickems\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:218
+#, docstring
+msgid "\n"
+"        Test final functions for pickems\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:229
+#, docstring
+msgid "\n"
+"        Test a game final for pickems\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:240
+#, docstring
+msgid "\n"
+"        Manually tally the leaderboard for all servers\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:249
+msgid "There was an error tallying pickems leaerboard. Check the console fore errors."
+msgstr ""
+
+#: hockey/dev.py:254
+msgid "Leaderboard tallying complete."
+msgstr ""
+
+#: hockey/dev.py:260
+#, docstring
+msgid "\n"
+"        Remove pickems objects created before a specified date.\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:275
+msgid "All old pickems objects deleted."
+msgstr ""
+
+#: hockey/dev.py:279
+#, docstring
+msgid "\n"
+"        Manually check all pickems objects for winners\n\n"
+"        `days` number of days to look back\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:293
+msgid "Pickems winners set."
+msgstr ""
+
+#: hockey/dev.py:297
+#, docstring
+msgid "\n"
+"        Fixes winner on all current pickems objects if possible\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:308
+msgid "All pickems winners set."
+msgstr ""
+
+#: hockey/dev.py:312
+#, docstring
+msgid "\n"
+"        Test the automatic standings function/manually update standings\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:320
+msgid "Finished fixing all standings messages."
+msgstr ""
+
+#: hockey/dev.py:325
+#, docstring
+msgid "\n"
+"        Display current number of servers and channels\n"
+"        the cog is storing in console\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:414
+msgid "Hockey Statistics"
+msgstr ""
+
+#: hockey/dev.py:424
+msgid "Stats Continued"
+msgstr ""
+
+#: hockey/dev.py:435
+#, docstring
+msgid "\n"
+"        Set custom emojis for the bot to use\n\n"
+"        Requires you to upload a .yaml file with\n"
+"        emojis that the bot can see\n"
+"        an example may be found\n"
+"        [here](https://github.com/TrustyJAID/Trusty-cogs/blob/master/hockey/emoji.yaml)\n"
+"        if no emoji is provided for a team the Other\n"
+"        slot will be filled instead\n"
+"        It's recommended to have an emoji for every team\n"
+"        to utilize all features of the cog such as pickems\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:449
+msgid "Upload the .yaml file to use. Type `exit` to cancel."
+msgstr ""
+
+#: hockey/dev.py:456 hockey/dev.py:462
+msgid "That file doesn't seem to be formatted correctly."
+msgstr ""
+
+#: hockey/dev.py:465
+msgid "New emojis set to: "
+msgstr ""
+
+#: hockey/dev.py:472
+#, docstring
+msgid "\n"
+"        Resets the bots game data incase something goes wrong\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:485
+msgid "Saved game data reset."
+msgstr ""
+
+#: hockey/dev.py:489
+#, docstring
+msgid "\n"
+"        Sets whether or not the game day channels have been created\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:493
+msgid "created_gdc set to "
+msgstr ""
+
+#: hockey/dev.py:497
+#, docstring
+msgid "\n"
+"        Checks for manually deleted channels from the GDC channel list\n"
+"        and removes them\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:516
+#, docstring
+msgid "\n"
+"        Removes missing channels from the config\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:540
+msgid "Broken channels removed"
+msgstr ""
+
+#: hockey/dev.py:544
+#, docstring
+msgid "\n"
+"        Removes a server that no longer exists on the bot\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:556
+msgid "Saved servers the bot is no longer on have been removed."
+msgstr ""
+
+#: hockey/dev.py:560
+#, docstring
+msgid "\n"
+"        Tests the philips Hue light integration\n"
+"        This is hard coded at the moment with no plans to make work generally\n"
+"        this will be safely ignored.\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:573
+#, docstring
+msgid "\n"
+"        Toggle the test game loop\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:577
+msgid "Test loop set to "
+msgstr ""
+
+#: hockey/dev.py:581
+#, docstring
+msgid "\n"
+"        Clears the bots seasonal pickems leaderboard\n"
+"        "
+msgstr ""
+
+#: hockey/dev.py:586
+msgid "Seasonal pickems leaderboards cleared."
+msgstr ""
+
+#: hockey/game.py:278
+msgid "Pre Season"
+msgstr ""
+
+#: hockey/game.py:278
+msgid "Regular Season"
+msgstr ""
+
+#: hockey/game.py:278
+msgid "Post Season"
+msgstr ""
+
+#: hockey/game.py:279
+msgid "Unknown"
+msgstr ""
+
+#: hockey/game.py:482
+msgid "{game_type} Game start "
+msgstr ""
+
+#: hockey/game.py:503 hockey/game.py:621 hockey/goal.py:511
+msgid "Goals: **{home_score}**\n"
+"Shots: **{home_shots}**"
+msgstr ""
+
+#: hockey/game.py:506 hockey/game.py:624 hockey/goal.py:514
+msgid "Goals: **{away_score}**\n"
+"Shots: **{away_shots}**"
+msgstr ""
+
+#: hockey/game.py:548
+msgid "\n"
+"{time} left in the {ord} period"
+msgstr ""
+
+#: hockey/game.py:551
+msgid "{emoji} [{team} {empty_net}{strength} Goal By {description} {left}]({link})\n\n"
+msgstr ""
+
+#: hockey/game.py:564
+msgid "(Continued)"
+msgstr ""
+
+#: hockey/game.py:569
+msgid "{ordinal} Period {time} Goals {continued}"
+msgstr ""
+
+#: hockey/game.py:583 hockey/game.py:586
+msgid "{team} Shootout"
+msgstr ""
+
+#: hockey/game.py:592 hockey/game.py:645
+msgid "Stars of the game"
+msgstr ""
+
+#: hockey/game.py:596
+msgid "{time} Left in the {ordinal} period"
+msgstr ""
+
+#: hockey/game.py:600
+msgid "{time} Left of the {ordinal} period"
+msgstr ""
+
+#: hockey/game.py:604
+msgid "Last Play: {play}"
+msgstr ""
+
+#: hockey/game.py:648
+msgid "Game start "
+msgstr ""
+
+#: hockey/game.py:663
+msgid "**__Current Score__**\n"
+msgstr ""
+
+#: hockey/game.py:673 hockey/game.py:674
+msgid "GP:**0** W:**0** L:**0\n"
+"**OT:**0** PTS:**0** S:**0**\n"
+msgstr ""
+
+#: hockey/game.py:677
+msgid "GP:**{gp}** W:**{wins}** L:**{losses}\n"
+"**OT:**{ot}** PTS:**{pts}** S:**{streak}**\n"
+msgstr ""
+
+#: hockey/game.py:706
+msgid "{round_name}:\n"
+"{series_status}"
+msgstr ""
+
+#: hockey/game.py:707
+msgid "GP:**{gp}** W:**{wins}** L:**{losses}**"
+msgstr ""
+
+#: hockey/game.py:955
+msgid "**{period} Period starting {away_role} at {home_role}**"
+msgstr ""
+
+#: hockey/game.py:1113
+msgid "{away_emoji} {away} @ {home_emoji} {home} game starts {time}!"
+msgstr ""
+
+#: hockey/gamedaychannels.py:34
+#, docstring
+msgid "\n"
+"        Game Day Channel setup for the server\n\n"
+"        You can setup only a single team or all teams for the server\n"
+"        Game day channels are deleted and created on the day after the game is played\n"
+"        usually around 9AM PST\n"
+"        "
+msgstr ""
+
+#: hockey/gamedaychannels.py:44
+#, docstring
+msgid "\n"
+"        Show the current Game Day Channel Settings\n"
+"        "
+msgstr ""
+
+#: hockey/gamedaychannels.py:74
+msgid "```GDC settings for {guild}\n"
+"Create Game Day Channels: {create_channels}\n"
+"Delete Game Day Channels: {delete_gdc}\n"
+"Team: {team}\n"
+"Current Channels: {created_channels}\n"
+"Default Game State: {game_states}\n"
+"```"
+msgstr ""
+
+#: hockey/gamedaychannels.py:89
+msgid "GDC settings for "
+msgstr ""
+
+#: hockey/gamedaychannels.py:91
+msgid "Create Game Day Channels"
+msgstr ""
+
+#: hockey/gamedaychannels.py:92
+msgid "Delete Game Day Channels"
+msgstr ""
+
+#: hockey/gamedaychannels.py:94
 msgid "Current Channels"
-msgstr "Nuvarande Kanaler"
+msgstr ""
 
-#: hockey.py:381
+#: hockey/gamedaychannels.py:97 hockey/gamedaythreads.py:98
+msgid "Default Game States"
+msgstr ""
+
+#: hockey/gamedaychannels.py:102
 #, docstring
-msgid ""
-"\n"
-"            Delete all current game day channels for the server\n"
+msgid "\n"
+"        Delete all current game day channels for the server\n"
 "        "
 msgstr ""
-"\n"
-"            Delete all current game day channels for the server\n"
-"        "
 
-#: hockey.py:386
+#: hockey/gamedaychannels.py:106
 msgid "Game day channels deleted."
-msgstr "Game day channels borttagna"
+msgstr ""
 
-#: hockey.py:390
+#: hockey/gamedaychannels.py:110 hockey/gamedaythreads.py:115
 #, docstring
-msgid ""
-"\n"
-"            Creates the next gdc for the server\n"
+msgid "\n"
+"        Set the default game state updates for Game Day Channels.\n\n"
+"        `<state>` must be any combination of `preview`, `live`, `final`, and `goal`.\n\n"
+"        `preview` updates are the pre-game notifications 60, 30, and 10 minutes before the game starts.\n"
+"        `live` are the period start notifications.\n"
+"        `final` is the final game update including 3 stars.\n"
+"        `goal` is all the goal updates.\n"
 "        "
 msgstr ""
-"\n"
-"            Creates the next gdc for the server\n"
-"        "
 
-#: hockey.py:396
+#: hockey/gamedaychannels.py:127 hockey/gamedaythreads.py:132
+msgid "GDT game updates set to {states}"
+msgstr ""
+
+#: hockey/gamedaychannels.py:132
+msgid "GDC game updates not set"
+msgstr ""
+
+#: hockey/gamedaychannels.py:137
+#, docstring
+msgid "\n"
+"        Creates the next gdc for the server\n"
+"        "
+msgstr ""
+
+#: hockey/gamedaychannels.py:141
+msgid "No team was setup for game day channels in this server."
+msgstr ""
+
+#: hockey/gamedaychannels.py:147
+msgid "You need to first toggle channel creation with `{prefix}gdc toggle`."
+msgstr ""
+
+#: hockey/gamedaychannels.py:152
 msgid "Game day channels created."
-msgstr "Game day channels skapade"
+msgstr ""
 
-#: hockey.py:400
+#: hockey/gamedaychannels.py:156 hockey/gamedaythreads.py:179
 #, docstring
-msgid ""
-"\n"
-"            Toggles the game day channel creation on this server\n"
+msgid "\n"
+"        Toggles the game day channel creation on this server\n"
 "        "
 msgstr ""
-"\n"
-"            Toggles the game day channel creation on this server\n"
-"        "
 
-#: hockey.py:405 hockey.py:431 hockey.py:557
+#: hockey/gamedaychannels.py:162 hockey/gamedaychannels.py:237
+msgid "You cannot have both game day channels and game day threads in the same server. Use `{prefix}gdt toggle` first to disable game day channels then try again."
+msgstr ""
+
+#: hockey/gamedaychannels.py:169 hockey/gamedaychannels.py:195
+#: hockey/gamedaythreads.py:191 hockey/hockeyset.py:489
 msgid "will"
-msgstr "kommer"
+msgstr ""
 
-#: hockey.py:405 hockey.py:431 hockey.py:557
+#: hockey/gamedaychannels.py:169 hockey/gamedaychannels.py:195
+#: hockey/gamedaythreads.py:191 hockey/hockeyset.py:489
 msgid "won't"
-msgstr "kommer inte"
+msgstr ""
 
-#: hockey.py:406 hockey.py:432
+#: hockey/gamedaychannels.py:170
 msgid "Game day channels "
-msgstr "Game day channels"
+msgstr ""
 
-#: hockey.py:406
+#: hockey/gamedaychannels.py:170 hockey/gamedaythreads.py:192
 msgid " be created on this server."
-msgstr " skapas på den här servern"
+msgstr ""
 
-#: hockey.py:412
+#: hockey/gamedaychannels.py:176
 #, docstring
-msgid ""
-"\n"
-"            Change the category for channel creation. Channel is case sensitive.\n"
+msgid "\n"
+"        Change the category for channel creation. Channel is case sensitive.\n"
 "        "
 msgstr ""
-"\n"
-"            Change the category for channel creation. Channel is case sensitive.\n"
-"        "
 
-#: hockey.py:419
+#: hockey/gamedaychannels.py:183
 msgid "Game day channels will be created in "
-msgstr "Game day channels kommer skapas i "
+msgstr ""
 
-#: hockey.py:425
+#: hockey/gamedaychannels.py:189
 #, docstring
-msgid ""
-"\n"
-"            Toggle's auto deletion of game day channels.\n"
+msgid "\n"
+"        Toggle's auto deletion of game day channels.\n"
 "        "
 msgstr ""
-"\n"
-"            Toggle's auto deletion of game day channels.\n"
-"        "
 
-#: hockey.py:432
-msgid ""
-" be deleted on this server.\n"
+#: hockey/gamedaychannels.py:196
+msgid "Game day channels {verb} be deleted on this server.\n"
+"Note, this may not happen until the next set of games."
 msgstr ""
-" be deleted on this server.\n"
 
-#: hockey.py:433
-msgid "Note, this may not happen until the next set of games."
-msgstr "Notis, detta kan inte hända förrän efter nästa matchrunda"
-
-#: hockey.py:439
+#: hockey/gamedaychannels.py:206 hockey/gamedaythreads.py:209
 #, docstring
-msgid ""
-"\n"
-"            Setup game day channels for a single team or all teams\n"
-"            \n"
-"            Required parameters:\n"
-"            `team` must use quotes if a space is in the name will search for partial team name\n"
-"            Optional Parameters:\n"
-"            `category` must use quotes if a space is in the name will default to current category\n"
-"            `delete_gdc` will tell the bot whether or not to delete game day channels automatically\n"
-"            must be either `True` or `False` and a category must be provided\n"
+msgid "\n"
+"        Test checking for new game day channels\n"
 "        "
 msgstr ""
-"\n"
-"            Setup game day channels for a single team or all teams\n"
-"            \n"
-"            Required parameters:\n"
-"            `team` must use quotes if a space is in the name will search for partial team name\n"
-"            Optional Parameters:\n"
-"            `category` must use quotes if a space is in the name will default to current category\n"
-"            `delete_gdc` will tell the bot whether or not to delete game day channels automatically\n"
-"            must be either `True` or `False` and a category must be provided\n"
+
+#: hockey/gamedaychannels.py:221
+#, docstring
+msgid "\n"
+"        Setup game day channels for a single team or all teams\n\n"
+"        Required parameters:\n"
+"        `<team>` must use quotes if a space is in the name will search for partial team name\n\n"
+"        Optional Parameters:\n"
+"        `[category]` You must use the category ID or use this command in a channel already in the\n"
+"        desired category\n\n"
+"        `[delete_gdc=True]` will tell the bot whether or not to delete game day channels automatically\n"
+"        must be either `True` or `False`. Defaults to `True` if not provided.\n"
 "        "
+msgstr ""
 
+#: hockey/gamedaychannels.py:244 hockey/gamedaythreads.py:244
+#: hockey/helper.py:157 hockey/hockey_commands.py:82
+#: hockey/hockey_commands.py:502 hockey/hockey_commands.py:811
+#: hockey/hockey_commands.py:833 hockey/hockey_commands.py:840
+#: hockey/hockeyset.py:593
+msgid "You must provide a valid current team."
+msgstr ""
 
-#: hockey.py:453
+#: hockey/gamedaychannels.py:250
+msgid "You must specify a channel category for game day channels to be created under."
+msgstr ""
+
+#: hockey/gamedaychannels.py:254
 msgid "I don't have manage channels permission!"
-msgstr "Jag har inte rätten att hantera kanaler"
+msgstr ""
 
-#: hockey.py:457
-msgid " is not a valid team!"
-msgstr " är inte ett giltigt lag"
-
-#: hockey.py:473
+#: hockey/gamedaychannels.py:266
 msgid "Game Day Channels for "
-msgstr "Game Day channels för "
+msgstr ""
 
-#: hockey.py:473
-msgid "setup in "
-msgstr "Sätt up i "
+#: hockey/gamedaychannels.py:266
+msgid " setup in "
+msgstr ""
 
-#: hockey.py:481
+#: hockey/gamedaythreads.py:34
 #, docstring
-msgid ""
-"\n"
-"            Restarts the hockey loop incase there are issues with the posts\n"
+msgid "\n"
+"        Game Day Thread setup for the server\n\n"
+"        You can setup only a single team or all teams for the server\n"
+"        Game day channels are deleted and created on the day after the game is played\n"
+"        usually around 9AM PST\n"
 "        "
 msgstr ""
-"\n"
-"            Restarts the hockey loop incase there are issues with the posts\n"
-"        "
 
-#: hockey.py:484
-msgid "Restarting..."
-msgstr "Startar om..."
-
-#: hockey.py:486
-msgid "loop closed..."
-msgstr "slinga stängd..."
-
-#: hockey.py:488
-msgid "restarted"
-msgstr "Omstartad"
-
-#: hockey.py:494
+#: hockey/gamedaythreads.py:45
 #, docstring
-msgid ""
-"\n"
-"            Allows moderators to set a users points on the leaderboard\n"
+msgid "\n"
+"        Show the current Game Day Thread Settings\n"
 "        "
 msgstr ""
-"\n"
-"            Allows moderators to set a users points on the leaderboard\n"
-"        "
 
-#: hockey.py:503 hockey.py:852
-msgid "There is no current leaderboard for this server!"
-msgstr "Det finns ingen nuvarande tabellställning för den här servern!"
+#: hockey/gamedaythreads.py:51
+msgid "Game Day Threads are not setup on this server."
+msgstr ""
 
-#: hockey.py:511
-msgid " now has "
-msgstr " har nu "
+#: hockey/gamedaythreads.py:76
+msgid "```GDT settings for {guild}\n"
+"Create Game Day Threads: {create_threads}\n"
+"Edit Start Message: {gdt_update}\n"
+"Team: {team}\n"
+"Current Threads: {created_threads}\n"
+"Default Game State: {game_states}\n"
+"```"
+msgstr ""
 
-#: hockey.py:512
-msgid " points on the season, "
-msgstr " poäng på den här servern, "
+#: hockey/gamedaythreads.py:90
+msgid "GDT settings for "
+msgstr ""
 
-#: hockey.py:512
-msgid " points for the week,"
-msgstr " poäng den här veckan, "
+#: hockey/gamedaythreads.py:92
+msgid "Create Game Day Threads"
+msgstr ""
 
-#: hockey.py:513
-msgid " and "
-msgstr " och "
+#: hockey/gamedaythreads.py:93
+msgid "Update GDT"
+msgstr ""
 
-#: hockey.py:513
-msgid " votes overall."
-msgstr " totala röster, "
+#: hockey/gamedaythreads.py:95
+msgid "Current Threads"
+msgstr ""
 
-#: hockey.py:518
+#: hockey/gamedaythreads.py:104
 #, docstring
-msgid ""
-"\n"
-"            Posts automatic standings when all games for the day are done\n"
-"\n"
-"            `standings_type` can be a division, conference, team, or all\n"
-"            `channel` will default to the current channel or be specified\n"
+msgid "\n"
+"        Delete all current game day threads for the server\n"
 "        "
 msgstr ""
-"\n"
-"            Posts automatic standings when all games for the day are done\n"
-"\n"
-"            `standings_type` can be a division, conference, team, or all\n"
-"            `channel` will default to the current channel or be specified\n"
-"        "
 
-#: hockey.py:531
-msgid "You must choose from "
-msgstr "Du måste välja från "
+#: hockey/gamedaythreads.py:109
+msgid "Game day Threads cleared."
+msgstr ""
 
-#: hockey.py:541
-msgid "Sending standings to"
-msgstr "Skickar ställning till"
+#: hockey/gamedaythreads.py:137
+msgid "GDT game updates not set"
+msgstr ""
 
-#: hockey.py:544
-msgid " standings will now be automatically updated in "
-msgstr " ställningen kommer nu uppdateras automatiskt i "
-
-#: hockey.py:550
+#: hockey/gamedaythreads.py:143
 #, docstring
-msgid ""
-"\n"
-"            Toggles automatic standings updates\n"
-"\n"
-"            This updates at the same time as the game day channels (usually 9AM PST)\n"
+msgid "\n"
+"        Set whether or not the starting thread message will update as the game progresses.\n\n"
+"        `<update_start>` either true or false.\n"
 "        "
 msgstr ""
-"\n"
-"            Toggles automatic standings updates\n"
-"\n"
-"            This updates at the same time as the game day channels (usually 9AM PST)\n"
-"        "
 
+#: hockey/gamedaythreads.py:150
+msgid "Game day threads will update as the game progresses."
+msgstr ""
 
-#: hockey.py:558
-msgid "Okay, standings "
-msgstr "Okej, ställningen "
+#: hockey/gamedaythreads.py:152
+msgid "Game day threads will not update as the game progresses."
+msgstr ""
 
-#: hockey.py:558
-msgid "be updated automatically."
-msgstr "uppdateras automatiskt"
-
-#: hockey.py:565
+#: hockey/gamedaythreads.py:158
 #, docstring
-msgid ""
-"\n"
-"            Adds a hockey team goal updates to a channel do 'all' for all teams\n"
-"\n"
-"            `team` needs to be all or part of an NHL team if more than one team\n"
-"            match it will ask for the correct team.\n"
-"            `channel` defaults to the current channel\n"
+msgid "\n"
+"        Creates the next gdt for the server\n"
 "        "
 msgstr ""
-"\n"
-"            Adds a hockey team goal updates to a channel do 'all' for all teams\n"
-"\n"
-"            `team` needs to be all or part of an NHL team if more than one team\n"
-"            match it will ask for the correct team.\n"
-"            `channel` defaults to the current channel\n"
-"        "
 
-#: hockey.py:575 hockey.py:618
-msgid " is not an available team!"
-msgstr " är inte ett tillgängligt lag!"
+#: hockey/gamedaythreads.py:163
+msgid "No team was setup for game day threads in this server."
+msgstr ""
 
-#: hockey.py:585 hockey.py:917
-msgid "I don't have embed links permission!"
-msgstr "Jag har inte tillstånd att bädda in länkar!"
+#: hockey/gamedaythreads.py:168
+msgid "You need to first toggle thread creation with `{prefix}gdt toggle`."
+msgstr ""
 
-#: hockey.py:594
-msgid " goals will be posted in "
-msgstr " Mål kommer att postas i "
+#: hockey/gamedaythreads.py:173
+msgid "Game day threads created."
+msgstr ""
 
-#: hockey.py:600
+#: hockey/gamedaythreads.py:184 hockey/gamedaythreads.py:237
+msgid "You cannot have both game day channels and game day threads in the same server. Use `{prefix}gdc toggle` first to disable game day channels then try again."
+msgstr ""
+
+#: hockey/gamedaythreads.py:192
+msgid "Game day threads "
+msgstr ""
+
+#: hockey/gamedaythreads.py:202
+msgid "Game day threads will be created in {channel}."
+msgstr ""
+
+#: hockey/gamedaythreads.py:224
 #, docstring
-msgid ""
-"\n"
-"            Removes a teams goal updates from a channel\n"
-"            defaults to the current channel\n"
+msgid "\n"
+"        Setup game day channels for a single team or all teams\n\n"
+"        Required parameters:\n"
+"        `<team>` must use quotes if a space is in the name will search for partial team name\n\n"
+"        Optional Parameters:\n"
+"        `[channel]` The channel that game day threads will be created in. If not provided will default\n"
+"        to the current text channel.\n"
 "        "
 msgstr ""
-"\n"
-"            Removes a teams goal updates from a channel\n"
-"            defaults to the current channel\n"
-"        "
 
-#: hockey.py:608
-msgid "no teams are currently being posted in "
-msgstr "inga lag postas för tillfället i "
+#: hockey/gamedaythreads.py:250
+msgid "I don't have permission to create public threads in this channel."
+msgstr ""
 
-#: hockey.py:612 hockey.py:628
-msgid "All goal updates will not be posted in "
-msgstr "Alla måluppdateringar kommer inte postas i "
+#: hockey/gamedaythreads.py:264
+msgid "Game Day threads for {team} setup in {channel}"
+msgstr ""
 
-#: hockey.py:631
-msgid " goal updates removed from "
-msgstr " måluppdateringar borttagna från "
+#: hockey/goal.py:499
+msgid "Empty Net "
+msgstr ""
 
-#: hockey.py:638
+#: hockey/goal.py:522 hockey/goal.py:561 hockey/goal.py:570
+msgid "{time_remaining} left in the {period_ord} period"
+msgstr ""
+
+#: hockey/goal.py:544
+msgid " left in the "
+msgstr ""
+
+#: hockey/goal.py:546
+msgid " period"
+msgstr ""
+
+#: hockey/helper.py:92
+msgid "`{arg}` is not a valid year."
+msgstr ""
+
+#: hockey/helper.py:303
+msgid "`{argument}` is not a valid timezone. Please see `{prefix}hockeyset timezone list`."
+msgstr ""
+
+#: hockey/hockey.py:55
 #, docstring
-msgid ""
-"\n"
-"            Display the current version\n"
+msgid "\n"
+"    Gather information and post goal updates for NHL hockey teams\n"
+"    "
+msgstr ""
+
+#: hockey/hockey.py:518 hockey/hockey.py:521
+msgid "Emoji changing cancelled"
+msgstr ""
+
+#: hockey/hockey_commands.py:48
+#, docstring
+msgid "\n"
+"        Display the current version\n"
 "        "
 msgstr ""
-"\n"
-"            Display the current version\n"
-"        "
 
-#: hockey.py:641
+#: hockey/hockey_commands.py:51
 msgid "Hockey version "
-msgstr "Hockeyversion "
+msgstr ""
 
-#: hockey.py:645
+#: hockey/hockey_commands.py:55
+#, docstring
+msgid "\n"
+"        Search for hockey related items on https://hockeyhub.github.io/\n\n"
+"        lines   team    Team lines on Daily Faceoff\n"
+"        stats   [year] team Team stats on nhl.com, year optional\n"
+"        schedule    team    Team schedule on nhl.com\n"
+"        draft   team oryear Draft history for team or year on Elite Prospects\n"
+"        cap team orplayer   Cap information for team or player on CapFriendly\n"
+"        player  player  Search for player on Elite Prospects\n"
+"        depth   team    Team depth chart on Elite Prospects\n"
+"        prospects   team    Team prospects on Elite Prospects\n"
+"        trades  team    Team trade history on NHL Trade Tracker\n"
+"        jersey  [team] number orname    Find a player by jersey number\n"
+"        highlights  [team]  Game Highlights, team optional\n"
+"        reddit  team    Team subreddit on Reddit\n"
+"        "
+msgstr ""
+
+#: hockey/hockey_commands.py:79
 #, docstring
 msgid "Set your role to a team role"
-msgstr "Sätt din roll som en lagroll"
+msgstr ""
 
-#: hockey.py:651 hockey.py:688 hockey.py:746 hockey.py:921 hockey.py:943
-msgid " Does not appear to be an NHL team!"
-msgstr " Verkar inte vara ett NHL-lag!"
+#: hockey/hockey_commands.py:89 hockey/hockey_commands.py:94
+#: hockey/hockey_commands.py:109 hockey/hockey_commands.py:114
+msgid "{role_name} is not an available role!"
+msgstr ""
 
-#: hockey.py:660
-msgid "role applied."
-msgstr "roll tillämpad."
+#: hockey/hockey_commands.py:91 hockey/hockey_commands.py:111
+msgid " role applied."
+msgstr ""
 
-#: hockey.py:663 hockey.py:700
-msgid " is not an available role!"
-msgstr " är inte en tillgänglig roll!"
-
-#: hockey.py:667
+#: hockey/hockey_commands.py:102
 #, docstring
 msgid "Subscribe to goal notifications"
-msgstr "Prenumerera på målnotifikationer"
+msgstr ""
 
-#: hockey.py:697
-msgid " role applied."
-msgstr " roll tillämpad "
-
-#: hockey.py:704
+#: hockey/hockey_commands.py:120
 #, docstring
-msgid ""
-"\n"
-"            Displays current standings\n"
-"\n"
-"            If a search is provided you can see a teams complete stats\n"
-"            by searching for team or get all standings at once \n"
-"            separated by division\n"
+msgid "\n"
+"        Displays current standings\n\n"
+"        `[search]` If provided you can see a teams complete stats\n"
+"        by searching for team or get all standings at once\n"
+"        separated by division\n"
 "        "
 msgstr ""
-"\n"
-"            Displays current standings\n"
-"\n"
-"            If a search is provided you can see a teams complete stats\n"
-"            by searching for team or get all standings at once \n"
-"            separated by division\n"
-"        "
 
-#: hockey.py:717
-msgid " Does not appear to be a valid standing type!"
-msgstr " Verkar inte vara en giltig ställningstyp!"
-
-#: hockey.py:733
+#: hockey/hockey_commands.py:141 hockey/hockey_commands.py:172
 #, docstring
-msgid ""
-"\n"
-"            Gets all NHL games for the current season\n"
-"\n"
-"            If team is provided it will grab that teams schedule\n"
+msgid "\n"
+"        Gets all NHL games for the current season\n\n"
+"        If team is provided it will grab that teams schedule.\n"
+"        A date may also be provided and the bot will search for games within\n"
+"        that date range.\n"
+"        Dates must be in the format of `YYYY-MM-DD` if provided.\n"
+"        Team and Date can be provided at the same time and then\n"
+"        only that teams games may appear in that date range if they exist.\n"
 "        "
 msgstr ""
-"\n"
-"            Gets all NHL games for the current season\n"
-"\n"
-"            If team is provided it will grab that teams schedule\n"
-"        "
 
-#: hockey.py:761
-msgid " have no recent or upcoming games!"
-msgstr " har inga nyliga eller kommande matcher!"
+#: hockey/hockey_commands.py:187 hockey/hockey_commands.py:190
+#: hockey/hockey_commands.py:437 hockey/hockey_commands.py:440
+#: hockey/hockey_commands.py:484 hockey/hockey_commands.py:487
+msgid "Dates must be only 1 year apart."
+msgstr ""
 
-#: hockey.py:765
+#: hockey/hockey_commands.py:193 hockey/hockey_commands.py:198
+#: hockey/hockey_commands.py:443 hockey/hockey_commands.py:448
+#: hockey/hockey_commands.py:490 hockey/hockey_commands.py:495
+msgid "Please select a year prior to now."
+msgstr ""
+
+#: hockey/hockey_commands.py:214
 #, docstring
-msgid ""
-"\n"
-"            Search for a player or get a team roster\n"
+msgid "\n"
+"        Display game heatmaps.\n\n"
+"        `[style]` must be one of \"all\", \"ev\", \"5v5\", \"sva\", \"home5v4\", or \"away5v4\"\n\n"
+"        If team is provided it will grab that teams schedule.\n"
+"        A date may also be provided and the bot will search for games within\n"
+"        that date range.\n"
+"        Dates must be in the format of `YYYY-MM-DD` if provided.\n"
+"        Team and Date can be provided at the same time and then\n"
+"        only that teams games may appear in that date range if they exist.\n"
 "        "
 msgstr ""
-"\n"
-"            Search for a player or get a team roster\n"
-"        "
 
-#: hockey.py:796
-msgid "{} is not an NHL team or Player!"
-msgstr "{} är inte ett NHL-lag eller en spelare!"
+#: hockey/hockey_commands.py:230 hockey/hockey_commands.py:279
+msgid "Style must be one of {styles}."
+msgstr ""
 
-#: hockey.py:801
+#: hockey/hockey_commands.py:262
 #, docstring
-msgid ""
-"\n"
-"            Display a nice embed of server specific rules\n"
+msgid "\n"
+"        Display games gameflow.\n\n"
+"        `[strength]` must be one of \"all\", \"ev\", \"5v5\", or \"sva\".\n"
+"        `[corsi]` either true or false.\n\n"
+"        If team is provided it will grab that teams schedule.\n"
+"        A date may also be provided and the bot will search for games within\n"
+"        that date range.\n"
+"        Dates must be in the format of `YYYY-MM-DD` if provided.\n"
+"        Team and Date can be provided at the same time and then\n"
+"        only that teams games may appear in that date range if they exist.\n"
 "        "
 msgstr ""
-"\n"
-"            Display a nice embed of server specific rules\n"
-"        "
 
-#: hockey.py:819
+#: hockey/hockey_commands.py:310
 #, docstring
-msgid ""
-"\n"
-"            Generates a pickems page for voting on a specified day must be \"DD-MM-YYYY\"\n"
+msgid "\n"
+"        Gets upcoming NHL games for the current season as a list\n\n"
+"        If team is provided it will grab that teams schedule\n"
+"        A date may also be provided and the bot will search for games within\n"
+"        that date range.\n"
+"        Dates must be in the format of `YYYY-MM-DD` if provided.\n"
+"        Team and Date can be provided at the same time and then\n"
+"        only that teams games may appear in that date range if they exist.\n"
 "        "
 msgstr ""
-"\n"
-"            Generates a pickems page for voting on a specified day must be \"DD-MM-YYYY\"\n"
+
+#: hockey/hockey_commands.py:341
+#, docstring
+msgid "\n"
+"        Gets NHL games and their game recap links\n\n"
+"        If team is provided it will grab that teams schedule\n"
+"        A date may also be provided and the bot will search for games within\n"
+"        that date range.\n"
+"        Dates must be in the format of `YYYY-MM-DD` if provided.\n"
+"        Team and Date can be provided at the same time and then\n"
+"        only that teams games may appear in that date range if they exist.\n"
 "        "
-
-#: hockey.py:826
-msgid ""
-"**Welcome to our daily Pick'ems challenge!  Below you will see today's games!  Vote for who you think will win!  You get one point for each correct prediction.  We will be tracking points over the course of the season and will be rewarding weekly, worst and full-season winners!**\n"
-"\n"
-"- Click the reaction for the team you think will win the day's match-up.\n"
-"- Anyone who votes for both teams will have their vote removed and will receive no points!\n"
-"\n"
-"\n"
-"\n"
 msgstr ""
-"**Welcome to our daily Pick'ems challenge!  Below you will see today's games!  Vote for who you think will win!  You get one point for each correct prediction.  We will be tracking points over the course of the season and will be rewarding weekly, worst and full-season winners!**\n"
-"\n"
-"- Click the reaction for the team you think will win the day's match-up.\n"
-"- Anyone who votes for both teams will have their vote removed and will receive no points!\n"
-"\n"
-"\n"
-"\n"
 
-#: hockey.py:866
+#: hockey/hockey_commands.py:371
+#, docstring
+msgid "\n"
+"        Gets all upcoming NHL games for the current season for one team.\n\n"
+"        `<team>` The name of the teams season schedule you want to post.\n"
+"        `[season]` must be YYYYYYYY format. e.g. 20212022.\n"
+"        "
+msgstr ""
+
+#: hockey/hockey_commands.py:385
+msgid "Posting {team}'s season schedule for {season}."
+msgstr ""
+
+#: hockey/hockey_commands.py:425
+#, docstring
+msgid "\n"
+"        Lookup information about a specific player\n\n"
+"        `[season]` The season to get stats data on format can be `YYYY` or `YYYYYYYY`\n"
+"        `<player>` The name of the player to search for\n"
+"        "
+msgstr ""
+
+#: hockey/hockey_commands.py:453
+msgid "No player could be found by that name."
+msgstr ""
+
+#: hockey/hockey_commands.py:472
+#, docstring
+msgid "\n"
+"        Get a teams roster\n\n"
+"        `[season]` The season to get stats data on format can be `YYYY` or `YYYYYYYY`\n"
+"        `<team>` The name of the team to search for\n"
+"        "
+msgstr ""
+
+#: hockey/hockey_commands.py:528
+msgid " in the {season} season"
+msgstr ""
+
+#: hockey/hockey_commands.py:534
+msgid "I could not find a roster for the {team}{year}."
+msgstr ""
+
+#: hockey/hockey_commands.py:545
+#, docstring
+msgid "\n"
+"        Display Leader categories\n\n"
+"        `[season]` must be `YYYY-YYYY` formatted.\n"
+"        `[limit=10]` is the limit of the number of players to show.\n"
+"        `[category]` Must be one of the following (default is goals):\n"
+"            goals\n"
+"            assists\n"
+"            savePct\n"
+"            shutouts\n"
+"            wins\n"
+"            gaa\n"
+"            plusMinus\n"
+"            points\n"
+"            powerPlayGoals\n"
+"            shortHandedGoals\n"
+"            timeOnIcePerGame\n"
+"            faceOffPct\n"
+"            otLosses\n"
+"            losses\n"
+"            shortHandedAssists\n"
+"            pointsPerGame\n"
+"            powerPlayPoints\n"
+"            shootingPctg\n"
+"            hits\n"
+"            shortHandedPoints\n"
+"            penaltyMinutes\n"
+"            shots\n"
+"            powerPlayAssists\n"
+"            gameWinningGoals\n"
+"        "
+msgstr ""
+
+#: hockey/hockey_commands.py:589
+#, docstring
+msgid "\n"
+"        Display a nice embed of server specific rules\n"
+"        "
+msgstr ""
+
+#: hockey/hockey_commands.py:609
+msgid "***Violating [Discord Terms of Service](https://discordapp.com/terms) or [Community Guidelines](https://discordapp.com/guidelines) will result in an immediate ban. You may also be reported to Discord.***"
+msgstr ""
+
+#: hockey/hockey_commands.py:616
+msgid "__RULES__"
+msgstr ""
+
+#: hockey/hockey_commands.py:617
+msgid "__**WARNING**__"
+msgstr ""
+
+#: hockey/hockey_commands.py:639 hockey/hockeypickems.py:1294
+msgid "There is no current leaderboard for this server!"
+msgstr ""
+
+#: hockey/hockey_commands.py:664
 msgid "User has left the server "
-msgstr "Användaren har lämnat servern "
+msgstr ""
 
-#: hockey.py:889
-msgid ", you're #"
-msgstr ", du är #"
+#: hockey/hockey_commands.py:697
+msgid "{member}, you're #{number} on the {leaderboard_type} leaderboard!\n"
+msgstr ""
 
-#: hockey.py:890
-msgid " leaderboard!"
-msgstr " tabellställning"
+#: hockey/hockey_commands.py:706
+msgid "You have {wins}/{total} correct ({percent:.4}%)."
+msgstr ""
 
-#: hockey.py:902
+#: hockey/hockey_commands.py:711
+msgid "You have {wins}/{total} incorrect ({percent:.4}%)."
+msgstr ""
+
+#: hockey/hockey_commands.py:723 hockey/menu.py:193
+msgid " Pickems {style} Leaderboard"
+msgstr ""
+
+#: hockey/hockey_commands.py:748
 #, docstring
-msgid ""
-"\n"
-"            Shows the current server leaderboard either seasonal or weekly\n"
+msgid "\n"
+"        Shows the current server leaderboard\n\n"
+"        `[leaderboard_type]` can be any of the following:\n"
+"        `season` (the default)\n"
+"        `weekly`\n"
+"        `playoffs`\n"
+"        `playoffs weekly`\n"
+"        `pre-season`\n"
+"        `pre-season weekly`\n"
+"        `worst`\n\n"
+"        Leaderboards % is calculated based on cumulative votes compared to number of votes.\n"
+"        This is so that one lucky user who only votes once isn't considered *better*\n"
+"        than people who consistently vote. The only way to win is to keep playing\n"
+"        and picking correctly.\n"
 "        "
 msgstr ""
-"\n"
-"            Shows the current server leaderboard either seasonal or weekly\n"
-"        "
 
-#: hockey.py:915
+#: hockey/hockey_commands.py:773
+#, docstring
+msgid "\n"
+"        View your current pickems votes for the server.\n"
+"        "
+msgstr ""
+
+#: hockey/hockey_commands.py:778
+msgid "This server does not have any pickems setup."
+msgstr ""
+
+#: hockey/hockey_commands.py:781
+msgid "You have voted on the following games:\n"
+msgstr ""
+
+#: hockey/hockey_commands.py:792
+msgid "Pickems votes in {guild}"
+msgstr ""
+
+#: hockey/hockey_commands.py:809
 #, docstring
 msgid "Set the main rules page for the nhl rules command"
-msgstr "Sätter den huvudsakliga regelsidan för NHL-regelkommandon"
-
-#: hockey.py:930
-msgid "Done, here's how it will look."
-msgstr "Klart, här är hur det kommer se ut."
-
-#: hockey.py:934
-#, docstring
-msgid ""
-"\n"
-"            Get team specific discord links\n"
-"\n"
-"            choosing all will create a nicely formatted list of \n"
-"            all current NHL team discord server links\n"
-"        "
-msgstr ""
-"\n"
-"            Get team specific discord links\n"
-"\n"
-"            choosing all will create a nicely formatted list of \n"
-"            all current NHL team discord server links\n"
-"        "
-
-#: hockey.py:959
-msgid ""
-"__**Hockey Discord Master List**__\n"
-"```fix\n"
-"- Do not join other discords to troll.\n"
-"- Respect their rules & their members (Yes even the leafs & habs unfortunately).\n"
-"- We don't control the servers below. If you get banned we can not get you unbanned.\n"
-"- Don't be an asshole because then we all look like assholes. They won't see it as one asshole fan they will see it as a toxic fanbase.\n"
-"- Salt levels may vary. Your team is the best here but don't go on another discord and preach it to an angry mob after we just won.\n"
-"- Not following the above rules will result in appropriate punishments ranging from a warningto a ban. ```\n"
-"\n"
-"https://discord.gg/reddithockey"
-msgstr ""
-"__**Hockey Discord Master List**__\n"
-"```fix\n"
-"- Do not join other discords to troll.\n"
-"- Respect their rules & their members (Yes even the leafs & habs unfortunately).\n"
-"- We don't control the servers below. If you get banned we can not get you unbanned.\n"
-"- Don't be an asshole because then we all look like assholes. They won't see it as one asshole fan they will see it as a toxic fanbase.\n"
-"- Salt levels may vary. Your team is the best here but don't go on another discord and preach it to an angry mob after we just won.\n"
-"- Not following the above rules will result in appropriate punishments ranging from a warningto a ban. ```\n"
-"\n"
-"https://discord.gg/reddithockey"
-
-#: hockey.py:998
-#, docstring
-msgid ""
-"\n"
-"            Testing function with testgame.json\n"
-"        "
-msgstr ""
-"\n"
-"            Testing function with testgame.json\n"
-"        "
-
-#: hockey.py:1027
-#, docstring
-msgid ""
-"\n"
-"            Manually tally the leaderboard\n"
-"        "
-msgstr ""
-"\n"
-"            Manually tally the leaderboard\n"
-"        "
-
-#: hockey.py:1031
-msgid "Leaderboard tallying complete."
-msgstr "Tabellsammanställning klar."
-
-#: hockey.py:1037
-#, docstring
-msgid ""
-"\n"
-"            Test checking for new game day channels\n"
-"        "
-msgstr ""
-"\n"
-"            Test checking for new game day channels\n"
-"        "
-
-#: hockey.py:1045
-#, docstring
-msgid ""
-"\n"
-"            Test the automatic standings function/manually update standings\n"
-"        "
-msgstr ""
-"\n"
-"            Test the automatic standings function/manually update standings\n"
-"        "
-
-#: hockey.py:1056
-#, docstring
-msgid ""
-"\n"
-"            Display current number of servers and channels\n"
-"            the cog is storing in console\n"
-"        "
-msgstr ""
-"\n"
-"            Display current number of servers and channels\n"
-"            the cog is storing in console\n"
-"        "
-
-#: hockey.py:1084
-#, docstring
-msgid ""
-"\n"
-"            Set custom emojis for the bot to use\n"
-"\n"
-"            Requires you to upload a .yaml file with \n"
-"            emojis that the bot can see\n"
-"            an example may be found [here](insert link after commit)\n"
-"            if no emoji is provided for a team the Other\n"
-"            slot will be filled instead\n"
-"            It's recommended to have an emoji for every team\n"
-"            to utilize all features of the cog such as pickems\n"
-"        "
-msgstr ""
-"\n"
-"            Set custom emojis for the bot to use\n"
-"\n"
-"            Requires you to upload a .yaml file with \n"
-"            emojis that the bot can see\n"
-"            an example may be found [here](insert link after commit)\n"
-"            if no emoji is provided for a team the Other\n"
-"            slot will be filled instead\n"
-"            It's recommended to have an emoji for every team\n"
-"            to utilize all features of the cog such as pickems\n"
-"        "
-
-#: hockey.py:1097
-msgid "Upload the .yaml file to use. Type `exit` to cancel."
-msgstr "Ladda upp .yaml fil att använda. skriv `avsluta` för att avbryta"
-
-#: hockey.py:1104 hockey.py:1110
-msgid "That file doesn't seem to be formatted correctly."
-msgstr "Filen ser inte ut att vara korrekt formaterad"
-
-#: hockey.py:1113
-msgid "New emojis set to: "
-msgstr "Nya emojis satta till: "
-
-#: hockey.py:1120
-#, docstring
-msgid ""
-"\n"
-"            Resets the bots game data incase something goes wrong\n"
-"        "
-msgstr ""
-"\n"
-"            Resets the bots game data incase something goes wrong\n"
-"        "
-
-#: hockey.py:1133
-msgid "Saved game data reset."
-msgstr "Sparad matchdata återställd."
-
-#: hockey.py:1139
-#, docstring
-msgid ""
-"\n"
-"            Sets whether or not the game day channels have been created\n"
-"        "
-msgstr ""
-"\n"
-"            Sets whether or not the game day channels have been created\n"
-"        "
-
-#: hockey.py:1143
-msgid "created_gdc set to "
-msgstr "skapade_gdc satta till "
-
-#: hockey.py:1148
-#, docstring
-msgid ""
-"\n"
-"            Checks for manually deleted channels from the GDC channel list \n"
-"            and removes them\n"
-"        "
-msgstr ""
-"\n"
-"            Checks for manually deleted channels from the GDC channel list \n"
-"            and removes them\n"
-"        "
-
-#: hockey.py:1167
-#, docstring
-msgid ""
-"\n"
-"            Removes missing channels from the config\n"
-"        "
-msgstr ""
-"\n"
-"            Removes missing channels from the config\n"
-"        "
-
-#: hockey.py:1178
-msgid "Broken channels removed"
-msgstr "Trasiga kanaler borttagna"
-
-#: hockey.py:1183
-#, docstring
-msgid ""
-"\n"
-"            Removes a server that no longer exists on the bot\n"
-"        "
-msgstr ""
-"\n"
-"            Removes a server that no longer exists on the bot\n"
-"        "
-
-#: hockey.py:1195
-msgid "Saved servers the bot is no longer on have been removed."
-msgstr "Sparade servrar som botten inte längre är på har blivit borttagna"
-
-#: hockey.py:1201
-#, docstring
-msgid ""
-"\n"
-"            Clears the weekly tracker on the current servers pickems\n"
-"\n"
-"            May not be necessary anymore\n"
-"        "
-msgstr ""
-"\n"
-"            Clears the weekly tracker on the current servers pickems\n"
-"\n"
-"            May not be necessary anymore\n"
-"        "
-
-#: hockey.py:1217
-#, docstring
-msgid ""
-"\n"
-"            Tests the philips Hue light integration\n"
-"            This is hard coded at the moment with no plans to make work generally\n"
-"            this will be safely ignored.\n"
-"        "
-msgstr ""
-"\n"
-"            Tests the philips Hue light integration\n"
-"            This is hard coded at the moment with no plans to make work generally\n"
-"            this will be safely ignored.\n"
-"        "
-
-#: hockey.py:1231
-#, docstring
-msgid ""
-"\n"
-"            Toggle the console print for cog functions\n"
-"        "
-msgstr ""
-"\n"
-"            Toggle the console print for cog functions\n"
-"        "
-
-#: hockey.py:1240
-msgid "Console printing is now "
-msgstr "Konsolutskrift är nu "
-
-#: hockey.py:1245
-#, docstring
-msgid ""
-"\n"
-"            Toggle the test game loop\n"
-"        "
-msgstr ""
-"\n"
-"            Toggle the test game loop\n"
-"        "
-
-#: hockey.py:1252
-msgid "Test loop set to "
-msgstr "Test slinga är nu "
-
-#: hockey.py:1257
-#, docstring
-msgid ""
-"\n"
-"            Clears the servers current pickems object list\n"
-"        "
-msgstr ""
-"\n"
-"            Clears the servers current pickems object list\n"
-"        "
-
-#: hockey.py:1261
-msgid "All pickems removed on this server."
-msgstr "Alla pickems borttagna från den här servern."
-
-#: hockey.py:1266
-#, docstring
-msgid ""
-"\n"
-"            Clears the servers pickems leaderboard\n"
-"        "
-msgstr ""
-"\n"
-"            Clears the servers pickems leaderboard\n"
-"        "
-
-#: hockey.py:1270
-msgid "Server leaderboard reset."
-msgstr "Server tabellställning återställd."
-
-#: goal.py:149
-msgid "Could not post goal in "
-msgstr "Kunde inte posta mål i "
-
-#: goal.py:174
-msgid "Cannot find message "
-msgstr "Kan inte hitta meddelande "
-
-#: goal.py:216
-msgid "Could not edit goal in"
-msgstr "Kunde inte redigera in mål"
-
-#: goal.py:252 goal.py:253
-msgid "Goals: **"
-msgstr "Mål: **"
-
-#: goal.py:252 goal.py:253
-msgid ""
-"** \n"
-"Shots: **"
-msgstr ""
-"** \n"
-"Skott: **"
-
-#: goal.py:258 goal.py:271 goal.py:282 goal.py:288
-msgid " left in the "
-msgstr " kvar av "
-
-#: goal.py:258 goal.py:271 goal.py:282 goal.py:288
-msgid " period"
-msgstr " period "
-
-#: game.py:102
-msgid "Error grabbing game data: "
-msgstr "Fel uppstod vid inhämtande av matchstatistik: "
-
-#: game.py:176 game.py:258
-msgid "Game start "
-msgstr "Matchstart "
-
-#: game.py:182 game.py:183 game.py:243 game.py:244
-msgid "Goals: **"
-msgstr "Mål: **"
-
-#: game.py:182 game.py:183 game.py:243 game.py:244
-msgid ""
-"** \n"
-"Shots: **"
-msgstr ""
-"** \n"
-"Shots: **"
-
-#: game.py:201
-msgid " Period Goals"
-msgstr " Period Mål "
-
-#: game.py:218 game.py:219
-msgid " Shootout"
-msgstr " Straffläggning"
-
-#: game.py:222 game.py:255
-msgid "Stars of the game"
-msgstr "Matchens stjärnor"
-
-#: game.py:226 game.py:228
-msgid " Left in the "
-msgstr " Kvar av"
-
-#: game.py:226 game.py:228
-msgid " period"
 msgstr ""
 
-#: game.py:268
-msgid ""
-"**__Current Score__**\n"
-msgstr ""
-"**__Current Score__**\n"
-
-#: game.py:377
-msgid " Period starting "
-msgstr " Period börjar "
-
-#: game.py:377
-msgid " at "
-msgstr " vid "
-
-#: game.py:384 game.py:408 game.py:508
-msgid "Could not post goal in "
-msgstr "Kunde inte posta mål i "
-
-#: game.py:503
-msgid " minutes until "
-msgstr " minuter till "
-
-#: game.py:504
-msgid " starts"
-msgstr " börjar"
-
-#: embeds.py:16
-msgid "***Any violation of the [Discord TOS](https://discordapp.com/terms) or [Community Guidelines](https://discordapp.com/guidelines) will result in immediate banning and possibly reported to discord.***"
-msgstr "***Någon som helst avvikelse från [Discord TOS](https://discordapp.com/terms) eller [gemenskapens regler](https://discordapp.com/guidelines) kommer leda till omedelbar ban och möjlig rapport till discord.***"
-
-#: embeds.py:21
-msgid "__RULES__"
-msgstr "__REGLER__"
-
-#: embeds.py:22
-msgid "__**WARNING**__"
-msgstr "__**VARNING**__"
-
-#: embeds.py:38
-msgid " Pickems "
-msgstr " Pickems"
-
-#: embeds.py:38
-msgid " Leaderboard"
-msgstr " Tabellställning "
-
-#: embeds.py:40
-msgid "Page"
-msgstr "Sida"
-
-#: embeds.py:65
-msgid "Shots"
-msgstr "Skott"
-
-#: embeds.py:66
-msgid "Goals"
-msgstr "Mål"
-
-#: embeds.py:67
-msgid "Assists"
-msgstr "Assist"
-
-#: embeds.py:68
-msgid "Hits"
-msgstr "Tacklingar"
-
-#: embeds.py:69
-msgid "Face Off Percent"
-msgstr "Tekningsprocent"
-
-#: embeds.py:71
-msgid "Blocked Shots"
-msgstr "Blockerade skott"
-
-#: embeds.py:72
-msgid "PIM"
-msgstr "Utvisningsminuter"
-
-#: embeds.py:80
-msgid "Saves"
-msgstr "Räddningar"
-
-#: embeds.py:81
-msgid "Save Percentage"
-msgstr "Räddningsprocent"
-
-#: embeds.py:82
-msgid "Goals Against Average"
-msgstr "Genomsnitt mål mot"
-
-#: menu.py:47
+#: hockey/hockey_commands.py:815
 msgid "I don't have embed links permission!"
-msgstr "Jag har inte tillstånd att bädda in länkar!"
-
-#: helper.py:31
-msgid ""
-"There's multiple teams with that name, pick one of these:\n"
 msgstr ""
-"There's multiple teams with that name, pick one of these:\n"
 
-#: helper.py:42 helper.py:56
-msgid "I guess not."
-msgstr "Jan antar inte."
+#: hockey/hockey_commands.py:820
+msgid "Done, here's how it will look."
+msgstr ""
 
-#: pickems.py:44
+#: hockey/hockey_commands.py:826
+#, docstring
+msgid "\n"
+"        Get team specific discord links\n\n"
+"        choosing all will create a nicely formatted list of\n"
+"        all current NHL team discord server links\n"
+"        "
+msgstr ""
+
+#: hockey/hockey_commands.py:842
+msgid "Here is the {team} server invite link:"
+msgstr ""
+
+#: hockey/hockey_commands.py:847
+msgid "You are not authorized to use this command."
+msgstr ""
+
+#: hockey/hockey_commands.py:876
+msgid "__**Hockey Discord Master List**__\n"
+"```fix\n"
+"- Do not join other discords to troll.\n"
+"- Respect their rules & their members (Yes even the leafs & habs unfortunately).\n"
+"- We don't control the servers below. If you get banned we can not get you unbanned.\n"
+"- Don't be an asshole because then we all look like assholes. They won't see it as one asshole fan they will see it as a toxic fanbase.\n"
+"- Salt levels may vary. Your team is the best here but don't go on another discord and preach it to an angry mob after we just won.\n"
+"- Not following the above rules will result in appropriate punishments ranging from a warning to a ban. ```\n\n"
+"https://discord.gg/reddithockey\n"
+"https://discord.gg/rishockey\n"
+"https://discord.gg/sdpn\n"
+"https://discord.gg/thehockeyguy"
+msgstr ""
+
+#: hockey/hockeypickems.py:25
+msgid "**Welcome to our daily Pick'ems challenge!  Below you will see today's games!  Vote for who you think will win!  You get one point for each correct prediction. Votes are weighted based on total number of votes you have made. So the more you play and guess correctly the higher you will be on the leaderboard.**\n\n"
+"- Click the button for the team you think will win the day's match-up.\n"
+"{guild_message}"
+msgstr ""
+
+#: hockey/hockeypickems.py:427
+msgid "Pickems <t:{date}:D>"
+msgstr ""
+
+#: hockey/hockeypickems.py:428
+msgid "Pickems-{month}-{day}"
+msgstr ""
+
+#: hockey/hockeypickems.py:447
+msgid "pickems-{month}-{day}"
+msgstr ""
+
+#: hockey/hockeypickems.py:491
+msgid "**WINNER:** {team_emoji} {team}"
+msgstr ""
+
+#: hockey/hockeypickems.py:495 hockey/schedule.py:350
+msgid "Postponed"
+msgstr ""
+
+#: hockey/hockeypickems.py:810
+#, docstring
+msgid "\n"
+"        Commands for managing pickems\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:817
+#, docstring
+msgid "\n"
+"        Show the servers current pickems settings\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:835
+msgid "**Pickems Settings for {guild}**\n"
+"__Channel:__ **{channel}**\n"
+"__Base {currency}:__ {base_credits}\n"
+"__Weekly {currency}:__ Top {top_members} members will earn {top_credits} {currency}\n"
+"__Threads:__\n"
+" {channels}\n"
+msgstr ""
+
+#: hockey/hockeypickems.py:854
+#, docstring
+msgid "\n"
+"        Settings for awarding credits on correct pickems votes\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:863
+#, docstring
+msgid "\n"
+"        Set the base awarded credits for correct pickems votes.\n\n"
+"        `<amount>` The number of credits that will be awarded to everyone\n"
+"        who voted correctly on the game.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:875 hockey/hockeypickems.py:914
+#: hockey/hockeypickems.py:954
+msgid "This command is restricted to bot owner while the bank is global."
+msgstr ""
+
+#: hockey/hockeypickems.py:890
+msgid "Correct pickems voters will receive {credits} {credits_name}."
+msgstr ""
+
+#: hockey/hockeypickems.py:896
+msgid "Base credits for correct pickems votes have been removed."
+msgstr ""
+
+#: hockey/hockeypickems.py:903
+#, docstring
+msgid "\n"
+"        Set the amount of credits awarded for the top x winners of pickems.\n\n"
+"        `<amount>` The number of credits that will be awarded to the winners\n"
+"        every week.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:931 hockey/hockeypickems.py:971
+msgid "The top {amount} users every week will receive {pickems_credits} {currency_name}."
+msgstr ""
+
+#: hockey/hockeypickems.py:944
+#, docstring
+msgid "\n"
+"        Set the number of top winners to receive the top weekly award credits.\n\n"
+"        `<amount>` The number of top members to receive the weekly awarded amount.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:985
+#, docstring
+msgid "\n"
+"        Customize the pickems message for this server\n\n"
+"        `[message]` Optional additional messaged added at the\n"
+"        end of pickems message setup. If not provided the default\n"
+"        message will only be sent at the start of the pickems page.\n\n"
+"        `{currency}` will be replaced the bots currency name.\n"
+"        `{base_credits}` will be replaced with the credits earned\n"
+"        by each member who votes correctly.\n"
+"        `{top_credits}` will be replaced with the credits earned\n"
+"        by the top users weekly.\n"
+"        `{top_members}` will be replaced with the top number of\n"
+"        users per week to earn the weekly reward.\n\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:1020
+msgid "Pickems pages will now start with:"
+msgstr ""
+
+#: hockey/hockeypickems.py:1026
+msgid "Pickems is not available at this time. Speak to the bot owner about enabling it."
+msgstr ""
+
+#: hockey/hockeypickems.py:1040
+#, docstring
+msgid "\n"
+"        Sets up automatically created pickems threads every week.\n\n"
+"        `[channel]` the channel where pickems threads will be created.\n"
+"        If not provided this will use the current channel.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:1052
+msgid "You cannot create threads within threads."
+msgstr ""
+
+#: hockey/hockeypickems.py:1057
+msgid "I don't have permission to create public threads!"
+msgstr ""
+
+#: hockey/hockeypickems.py:1066
+msgid "I will now automatically create pickems pages every day."
+msgstr ""
+
+#: hockey/hockeypickems.py:1072
+#, docstring
+msgid "\n"
+"        Stop posting new pickems threads and clear existing list of pickems threads.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:1079
+msgid "I have cleared existing pickems threads."
+msgstr ""
+
+#: hockey/hockeypickems.py:1084
+#, docstring
+msgid "\n"
+"        Generates a pickems page for voting on\n\n"
+"        `[date]` is a specified day in the format \"YYYY-MM-DD\"\n"
+"        if `date` is not provided the current day is used instead.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:1099
+msgid "`date` must be in the format `YYYY-MM-DD`."
+msgstr ""
+
+#: hockey/hockeypickems.py:1113
+#, docstring
+msgid "\n"
+"        Clears the servers current pickems object list\n\n"
+"        `<true_or_false>` `True` if you're sure you want to clear the settings.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:1124
+msgid "All pickems removed on this server."
+msgstr ""
+
+#: hockey/hockeypickems.py:1126
+msgid "I will not remove the current pickems on this server."
+msgstr ""
+
+#: hockey/hockeypickems.py:1131
+#, docstring
+msgid "\n"
+"        Settings for clearing/resetting pickems leaderboards\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:1138
+#, docstring
+msgid "\n"
+"        Clears the entire pickems leaderboard in the server.\n\n"
+"        `<true_or_false>` `True` if you're sure you want to clear the settings.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:1145
+msgid "Server leaderboard reset."
+msgstr ""
+
+#: hockey/hockeypickems.py:1147
+msgid "I will not reset the pickems leaderboard in this server."
+msgstr ""
+
+#: hockey/hockeypickems.py:1151
+#, docstring
+msgid "\n"
+"        Manually tallies this servers pickems leaderboard incase votes\n"
+"        aren't working properly.\n\n"
+"        `<true_or_false>` `True` if you're sure you want to clear the settings.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:1159
+msgid "Server leaderboard has been saved."
+msgstr ""
+
+#: hockey/hockeypickems.py:1161
+msgid "I will not tally this servers pickems leaderboard."
+msgstr ""
+
+#: hockey/hockeypickems.py:1165 hockey/hockeypickems.py:1182
+#: hockey/hockeypickems.py:1202 hockey/hockeypickems.py:1221
+#: hockey/hockeypickems.py:1241
+#, docstring
+msgid "\n"
+"        Clears the weekly tracker on the current servers pickems\n\n"
+"        `<true_or_false>` `True` if you're sure you want to clear the settings.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:1176
+msgid "Servers weekly leaderboard reset."
+msgstr ""
+
+#: hockey/hockeypickems.py:1178
+msgid "I will not reset the pickems weekly leaderboard in this server."
+msgstr ""
+
+#: hockey/hockeypickems.py:1194
+msgid "Servers seasonal leaderboard reset."
+msgstr ""
+
+#: hockey/hockeypickems.py:1196
+msgid "I will not reset the pickems seasonal leaderboard in this server."
+msgstr ""
+
+#: hockey/hockeypickems.py:1213
+msgid "Servers weekly playoffs leaderboard reset."
+msgstr ""
+
+#: hockey/hockeypickems.py:1216
+msgid "I will not reset the pickems weekly playoffs leaderboard in this server."
+msgstr ""
+
+#: hockey/hockeypickems.py:1233
+msgid "Servers playoffs leaderboard reset."
+msgstr ""
+
+#: hockey/hockeypickems.py:1235
+msgid "I will not reset the pickems playoffs leaderboard in this server."
+msgstr ""
+
+#: hockey/hockeypickems.py:1252
+msgid "Servers weekly pre-season leaderboard reset."
+msgstr ""
+
+#: hockey/hockeypickems.py:1255
+msgid "I will not reset the pickems weekly pre-season leaderboard in this server."
+msgstr ""
+
+#: hockey/hockeypickems.py:1262
+#, docstring
+msgid "\n"
+"        Clears the pre-season tracker on the current servers pickems\n\n"
+"        `<true_or_false>` `True` if you're sure you want to clear the settings.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:1274
+msgid "Servers pre-season leaderboard reset."
+msgstr ""
+
+#: hockey/hockeypickems.py:1277
+msgid "I will not reset the pickems pre-season leaderboard in this server."
+msgstr ""
+
+#: hockey/hockeypickems.py:1289
+#, docstring
+msgid "\n"
+"        Allows moderators to set a users points on the leaderboard\n"
+"        "
+msgstr ""
+
+#: hockey/hockeypickems.py:1322
+msgid "{user} now has {season} points on the season, {weekly} points for the week, and {total} votes overall."
+msgstr ""
+
+#: hockey/hockeyset.py:28
+#, docstring
+msgid "\n"
+"        Show hockey settings for this server\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:34 hockey/hockeyset.py:183 hockey/hockeyset.py:223
+#: hockey/hockeyset.py:265 hockey/hockeyset.py:308 hockey/hockeyset.py:348
+#: hockey/hockeyset.py:395
+msgid "On"
+msgstr ""
+
+#: hockey/hockeyset.py:34 hockey/hockeyset.py:183 hockey/hockeyset.py:223
+#: hockey/hockeyset.py:265 hockey/hockeyset.py:308 hockey/hockeyset.py:348
+#: hockey/hockeyset.py:395
+msgid "Off"
+msgstr ""
+
+#: hockey/hockeyset.py:58
+msgid "[Standings"
+msgstr ""
+
+#: hockey/hockeyset.py:62
+msgid "Standings"
+msgstr ""
+
+#: hockey/hockeyset.py:73
+msgid "Team(s): {teams}\n"
+msgstr ""
+
+#: hockey/hockeyset.py:75
+msgid "Game States: {game_states}\n"
+msgstr ""
+
+#: hockey/hockeyset.py:79
+msgid "Game Start: {game_start}\n"
+"Goals: {goals}\n"
+msgstr ""
+
+#: hockey/hockeyset.py:84
+msgid " Hockey Settings"
+msgstr ""
+
+#: hockey/hockeyset.py:87
+msgid "Standings Settings"
+msgstr ""
+
+#: hockey/hockeyset.py:88
+msgid "Notifications"
+msgstr ""
+
+#: hockey/hockeyset.py:91
+msgid "{guild} Hockey Settings\n"
+" {channels}\n"
+"Notifications\n"
+"{notifications}\n"
+"Standings Settings\n"
+"{standings_chn}: {standings}\n"
+msgstr ""
+
+#: hockey/hockeyset.py:109
+#, docstring
+msgid "\n"
+"        commands for enabling/disabling slash commands\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:117
+#, docstring
+msgid "Toggle this cog to register slash commands"
+msgstr ""
+
+#: hockey/hockeyset.py:120
+msgid "enabled"
+msgstr ""
+
+#: hockey/hockeyset.py:120
+msgid "disabled"
+msgstr ""
+
+#: hockey/hockeyset.py:121
+msgid "Slash commands are {verb}."
+msgstr ""
+
+#: hockey/hockeyset.py:143
+msgid "__The following team roles **are** mentionable:__ {teams}\n\n"
+msgstr ""
+
+#: hockey/hockeyset.py:147
+msgid "__The following team roles **are not** mentionable:__ {non_mention}\n\n"
+msgstr ""
+
+#: hockey/hockeyset.py:151
+msgid "__The following team roles could not be found:__ {non_role}\n\n"
+msgstr ""
+
+#: hockey/hockeyset.py:158
+#, docstring
+msgid "\n"
+"        Settings related to role notifications\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:168
+#, docstring
+msgid "\n"
+"        Set the servers goal notification style. Options are:\n\n"
+"        `True` - The bot will try to find correct role names for each team and mention that role.\n"
+"        `False` - The bot will not post any mention for roles.\n\n"
+"        The role name must match exactly `@Team Name GOAL` to work. For example\n"
+"        `@Edmonton Oilers GOAL` will be pinged but `@edmonton oilers goal` will not.\n\n"
+"        If the role is mentionable by everyone when set to True this will ping the role.\n"
+"        Alternatively, if the role is not mentionable by everyone but the bot has permission\n"
+"        to mention everyone, setting this to True will allow the bot to ping.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:184 hockey/hockeyset.py:309 hockey/hockeyset.py:349
+#: hockey/hockeyset.py:396
+msgid "__Game State Notifications:__ **{verb}**\n\n"
+msgstr ""
+
+#: hockey/hockeyset.py:186 hockey/hockeyset.py:226 hockey/hockeyset.py:268
+#: hockey/hockeyset.py:311 hockey/hockeyset.py:351 hockey/hockeyset.py:398
+msgid "No settings have been changed, run this command again followed by `on` or `off` to enable/disable this setting."
+msgstr ""
+
+#: hockey/hockeyset.py:194 hockey/hockeyset.py:358
+msgid "__Goal Notifications:__ **On**\n\n"
+msgstr ""
+
+#: hockey/hockeyset.py:201 hockey/hockeyset.py:323
+msgid "Okay, I will not mention any goals in this server."
+msgstr ""
+
+#: hockey/hockeyset.py:208
+#, docstring
+msgid "\n"
+"        Set the servers Regular Season OT notification style. Options are:\n\n"
+"        `True` - The bot will try to find correct role names for each team and mention that role.\n"
+"        `False` - The bot will not post any mention for roles.\n\n"
+"        The role name must match exactly `@Team Name GOAL` to work. For example\n"
+"        `@Edmonton Oilers GOAL` will be pinged but `@edmonton oilers goal` will not.\n\n"
+"        If the role is mentionable by everyone when set to True this will ping the role.\n"
+"        Alternatively, if the role is not mentionable by everyone but the bot has permission\n"
+"        to mention everyone, setting this to True will allow the bot to ping.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:224
+msgid "__OT Notifications:__ **{verb}**\n\n"
+msgstr ""
+
+#: hockey/hockeyset.py:235
+msgid "__OT Notifications:__ **On**\n\n"
+msgstr ""
+
+#: hockey/hockeyset.py:242
+msgid "Okay, I will not mention OT Period start in this server."
+msgstr ""
+
+#: hockey/hockeyset.py:250
+#, docstring
+msgid "\n"
+"        Set the servers Shootout notification style. Options are:\n\n"
+"        `True` - The bot will try to find correct role names for each team and mention that role.\n"
+"        `False` - The bot will not post any mention for roles.\n\n"
+"        The role name must match exactly `@Team Name GOAL` to work. For example\n"
+"        `@Edmonton Oilers GOAL` will be pinged but `@edmonton oilers goal` will not.\n\n"
+"        If the role is mentionable by everyone when set to True this will ping the role.\n"
+"        Alternatively, if the role is not mentionable by everyone but the bot has permission\n"
+"        to mention everyone, setting this to True will allow the bot to ping.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:266
+msgid "__SO Period Notifications:__ **{verb}**\n\n"
+msgstr ""
+
+#: hockey/hockeyset.py:277
+msgid "__SO Period Notifications:__ **On**\n\n"
+msgstr ""
+
+#: hockey/hockeyset.py:284
+msgid "Okay, I will not notify SO Period start in this server."
+msgstr ""
+
+#: hockey/hockeyset.py:292
+#, docstring
+msgid "\n"
+"        Set the servers game start notification style. Options are:\n\n"
+"        `True` - The bot will try to find correct role names for each team and mention that role.\n"
+"        Server permissions can override this.\n"
+"        `False` - The bot will not post any mention for roles.\n\n"
+"        The role name must match exactly `@Team Name` to work. For example\n"
+"        `@Edmonton Oilers` will be pinged but `@edmonton oilers` will not.\n\n"
+"        If the role is mentionable by everyone when set to True this will ping the role.\n"
+"        Alternatively, if the role is not mentionable by everyone but the bot has permission\n"
+"        to mention everyone, setting this to True will allow the bot to ping.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:318 hockey/hockeyset.py:405
+msgid "__Game State Notifications:__ **On**\n\n"
+msgstr ""
+
+#: hockey/hockeyset.py:333
+#, docstring
+msgid "\n"
+"        Set the specified channels goal notification style. Options are:\n\n"
+"        `True` - The bot will try to find correct role names for each team and mention that role.\n"
+"        `False` - The bot will not post any mention for roles.\n\n"
+"        The role name must match exactly `@Team Name GOAL` to work. For example\n"
+"        `@Edmonton Oilers GOAL` will be pinged but `@edmonton oilers goal` will not.\n\n"
+"        If the role is mentionable by everyone when set to True this will ping the role.\n"
+"        Alternatively, if the role is not mentionable by everyone but the bot has permission\n"
+"        to mention everyone, setting this to True will allow the bot to ping.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:364
+msgid "Okay, I will not mention any goals in {channel}.\n\n"
+" Note: This does not affect server wide settings from `[p]hockeyset notifications goals`"
+msgstr ""
+
+#: hockey/hockeyset.py:379
+#, docstring
+msgid "\n"
+"        Set the specified channels game start notification style. Options are:\n\n"
+"        `True` - The bot will try to find correct role names for each team and mention that role.\n"
+"        Server permissions can override this.\n"
+"        `False` - The bot will not post any mention for roles.\n\n"
+"        The role name must match exactly `@Team Name` to work. For example\n"
+"        `@Edmonton Oilers` will be pinged but `@edmonton oilers` will not.\n\n"
+"        If the role is mentionable by everyone when set to True this will ping the role.\n"
+"        Alternatively, if the role is not mentionable by everyone but the bot has permission\n"
+"        to mention everyone, setting this to True will allow the bot to ping.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:411
+msgid "Okay, I will not mention any updates in {channel}.\n\n"
+" Note: This does not affect server wide settings from `[p]hockeyset notifications goals`"
+msgstr ""
+
+#: hockey/hockeyset.py:426
+#, docstring
+msgid "\n"
+"        Posts automatic standings when all games for the day are done\n\n"
+"        `<standings_type>` can be a division name or all\n"
+"        `[channel]` The channel you want standings to be posted into, if not provided\n"
+"        this will use the current channel.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:443
+msgid "I require permission to send messages, embed links, and read message history in {channel}."
+msgstr ""
+
+#: hockey/hockeyset.py:453
+msgid "You must choose from: {standings_types}."
+msgstr ""
+
+#: hockey/hockeyset.py:469
+msgid "Sending standings to {channel}"
+msgstr ""
+
+#: hockey/hockeyset.py:473
+msgid "{standings_type} standings will now be automatically updated in {channel}."
+msgstr ""
+
+#: hockey/hockeyset.py:482
+#, docstring
+msgid "\n"
+"        Toggles automatic standings updates\n\n"
+"        This updates at the same time as the game day channels (usually 9AM PST)\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:490
+msgid "Okay, standings "
+msgstr ""
+
+#: hockey/hockeyset.py:490
+msgid " be updated automatically."
+msgstr ""
+
+#: hockey/hockeyset.py:502
+#, docstring
+msgid "\n"
+"        Toggle specific updates from a designated channel\n\n"
+"        `<channel>` is a text channel for the updates.\n"
+"        `<state>` must be one of `preview`, `live`, `final`, `goal` and `periodrecap`.\n\n"
+"        `preview` updates are the pre-game notifications 60, 30, and 10 minutes\n"
+"        before the game starts and the pre-game notification at the start of the day.\n\n"
+"        Note: This may disable pickems if it is not selected.\n"
+"        `live` are the period start notifications.\n"
+"        `final` is the final game update including 3 stars.\n"
+"        `goal` is all goal updates.\n"
+"        `periodrecap` is a recap of the period at the intermission.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:524
+msgid "{channel} game updates set to {states}"
+msgstr ""
+
+#: hockey/hockeyset.py:525
+msgid "None"
+msgstr ""
+
+#: hockey/hockeyset.py:530
+msgid "You have not setup any team updates in {channel}. You can do so with `{prefix}hockeyset add`."
+msgstr ""
+
+#: hockey/hockeyset.py:541
+#, docstring
+msgid "\n"
+"        Toggle including goal images when a goal is posted\n\n"
+"        `[channel]` The channel you specifically want goal images enabled for.\n"
+"        If channel is not provided the server-wide setting will be toggled instead.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:552
+msgid "I will include goal images whenever I post a goal embed in this server."
+msgstr ""
+
+#: hockey/hockeyset.py:556
+msgid "I will not include goal images whenever I post a goal embed in this server."
+msgstr ""
+
+#: hockey/hockeyset.py:565
+msgid "I will include goal images whenever I post a goal embed in {channel}."
+msgstr ""
+
+#: hockey/hockeyset.py:571
+msgid "I will not include goal images whenever I post a goal embed in {channel}."
+msgstr ""
+
+#: hockey/hockeyset.py:584
+#, docstring
+msgid "\n"
+"        Adds a hockey team goal updates to a channel do 'all' for all teams\n\n"
+"        `<team>` needs to be all or part of an NHL team if more than one team\n"
+"        match it will ask for the correct team.\n"
+"        `[channel]` The channel to post updates into. Defaults to the current channel\n"
+"        if not provided.\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:602
+msgid "{team} is already posting updates in {channel}"
+msgstr ""
+
+#: hockey/hockeyset.py:610
+msgid "{team} goals will be posted in {channel}"
+msgstr ""
+
+#: hockey/hockeyset.py:623
+#, docstring
+msgid "\n"
+"        Removes a teams goal updates from a channel\n"
+"        defaults to the current channel\n"
+"        "
+msgstr ""
+
+#: hockey/hockeyset.py:632
+msgid "No teams are currently being posted in {channel}."
+msgstr ""
+
+#: hockey/hockeyset.py:639 hockey/hockeyset.py:649
+msgid "No game updates will be posted in {channel}."
+msgstr ""
+
+#: hockey/hockeyset.py:655
+msgid "{team} goal updates removed from {channel}."
+msgstr ""
+
+#: hockey/menu.py:155
+msgid "for {teams} "
+msgstr ""
+
+#: hockey/menu.py:156
+msgid "No schedule could be found {team}in dates between {last_searched}"
+msgstr ""
+
+#: hockey/menu.py:172 hockey/menu.py:357 hockey/standings.py:374
+#: hockey/standings.py:990 hockey/stats.py:275
+msgid "You are not authorized to interact with this."
+msgstr ""
+
+#: hockey/pickems.py:55
+msgid "Voting has ended! You have voted for {emoji} {team}"
+msgstr ""
+
+#: hockey/pickems.py:66
+msgid "You have already voted! Changing vote to: {emoji} {team}"
+msgstr ""
+
+#: hockey/pickems.py:74
+msgid "You have already voted for {emoji} {team}!"
+msgstr ""
+
+#: hockey/pickems.py:82
+msgid "Voting has ended, You did not vote on this game!"
+msgstr ""
+
+#: hockey/pickems.py:88
+msgid "Setting your vote to: {emoji} {team}"
+msgstr ""
+
+#: hockey/pickems.py:204
 msgid "You have voted for "
-msgstr "Du har röstat för "
+msgstr ""
 
-#: pickems.py:54
+#: hockey/pickems.py:211
 msgid "You did not vote on this game!"
-msgstr "Du röstade inte på den här matchen!"
+msgstr ""
 
-#: pickems.py:119
-msgid "Pickem already exists, adding channel"
-msgstr "Pickem finns redan, lägger till kanal"
+#: hockey/player.py:177
+msgid "Born: "
+msgstr ""
 
-#: pickems.py:183
-msgid "Error tallying leaderboard in "
-msgstr "Problem med sammanställning av tabell i "
+#: hockey/player.py:178
+msgid "Deceased: "
+msgstr ""
+
+#: hockey/player.py:179
+msgid "Hometown: "
+msgstr ""
+
+#: hockey/player.py:180
+msgid "Position: "
+msgstr ""
+
+#: hockey/player.py:181
+msgid "Height: "
+msgstr ""
+
+#: hockey/player.py:182
+msgid "Weight: "
+msgstr ""
+
+#: hockey/player.py:183
+msgid "Rookie"
+msgstr ""
+
+#: hockey/player.py:184
+msgid "Junior"
+msgstr ""
+
+#: hockey/player.py:185
+msgid "Suspended"
+msgstr ""
+
+#: hockey/player.py:233
+msgid "[Elite Prospects]({ep_url})"
+msgstr ""
+
+#: hockey/player.py:234
+msgid "[Cap Friendly]({cf_url})"
+msgstr ""
+
+#: hockey/player.py:238
+msgid "[HHOF]( https://www.hhof.com/LegendsOfHockey/jsp/SearchPlayer.jsp?player={dda_id})"
+msgstr ""
+
+#: hockey/player.py:256 hockey/player.py:479 hockey/player.py:488
+#: hockey/player.py:571 hockey/player.py:580 hockey/player.py:681
+#: hockey/player.py:690 hockey/player.py:754 hockey/player.py:763
+msgid "No Team"
+msgstr ""
+
+#: hockey/player.py:496 hockey/player.py:588 hockey/player.py:698
+#: hockey/player.py:771
+msgid "GP"
+msgstr ""
+
+#: hockey/player.py:497 hockey/player.py:589
+msgid "Shots"
+msgstr ""
+
+#: hockey/player.py:498 hockey/player.py:590
+msgid "Goals"
+msgstr ""
+
+#: hockey/player.py:499 hockey/player.py:591
+msgid "Assists"
+msgstr ""
+
+#: hockey/player.py:500 hockey/player.py:592
+msgid "Hits"
+msgstr ""
+
+#: hockey/player.py:501 hockey/player.py:593
+msgid "Faceoff %"
+msgstr ""
+
+#: hockey/player.py:503
+msgid "Blocked Shots"
+msgstr ""
+
+#: hockey/player.py:504 hockey/player.py:596
+msgid "PIM"
+msgstr ""
+
+#: hockey/player.py:505 hockey/player.py:598
+msgid "Avg. TOI"
+msgstr ""
+
+#: hockey/player.py:508 hockey/player.py:512 hockey/player.py:604
+#: hockey/player.py:609 hockey/player.py:706 hockey/player.py:710
+#: hockey/player.py:780 hockey/player.py:784
+msgid "Stats"
+msgstr ""
+
+#: hockey/player.py:595
+msgid "Blocked"
+msgstr ""
+
+#: hockey/player.py:604 hockey/player.py:780
+msgid "Playoffs"
+msgstr ""
+
+#: hockey/player.py:699 hockey/player.py:772
+msgid "SO"
+msgstr ""
+
+#: hockey/player.py:700 hockey/player.py:773
+msgid "Saves"
+msgstr ""
+
+#: hockey/player.py:701 hockey/player.py:774
+msgid "Save %"
+msgstr ""
+
+#: hockey/player.py:702 hockey/player.py:775
+msgid "GAA"
+msgstr ""
+
+#: hockey/player.py:703 hockey/player.py:776
+msgid "Started"
+msgstr ""
+
+#: hockey/schedule.py:341 hockey/schedule.py:346
+msgid "Games"
+msgstr ""
+
+#: hockey/schedule.py:341 hockey/schedule.py:346
+msgid "Game"
+msgstr ""
+
+#: hockey/schedule.py:396
+msgid "Games Continued"
+msgstr ""
+
+#: hockey/standings.py:284
+msgid "Playoffs {season}"
+msgstr ""
+
+#: hockey/standings.py:799 hockey/standings.py:806 hockey/standings.py:813
+msgid "Rank"
+msgstr ""
+
+#: hockey/standings.py:800 hockey/standings.py:807 hockey/standings.py:814
+msgid "Home"
+msgstr ""
+
+#: hockey/standings.py:801 hockey/standings.py:808 hockey/standings.py:815
+msgid "Road"
+msgstr ""
+
+#: hockey/standings.py:802 hockey/standings.py:809 hockey/standings.py:816
+msgid "PP"
+msgstr ""
+
+#: hockey/standings.py:803 hockey/standings.py:810 hockey/standings.py:817
+msgid "L10"
+msgstr ""
+
+#: hockey/stats.py:172
+msgid "Pick a category"
+msgstr ""
+
+#: hockey/stats.py:183 hockey/stats.py:212
+msgid "Season"
+msgstr ""
+
+#: hockey/stats.py:267
+msgid "Some of the provided inputs were invalid. Try again."
+msgstr ""
 

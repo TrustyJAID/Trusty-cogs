@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
-"POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"POT-Creation-Date: 2022-05-05 18:04+0000\n"
+"PO-Revision-Date: 2023-05-10 16:10\n"
 "Last-Translator: \n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -16,23 +16,4 @@ msgstr ""
 "X-Crowdin-File: /dpy-2.0/elements/locales/messages.pot\n"
 "X-Crowdin-File-ID: 518\n"
 "Language: sv_SE\n"
-
-#: elements/core.py:363
-#, docstring
-msgid "\n"
-"        Display information about an element\n\n"
-"        `element` can be the name, symbol or atomic number of the element\n"
-"        `measurement` can be any of the Elements data listed here\n"
-"        https://mendeleev.readthedocs.io/en/stable/data.html#electronegativities\n"
-"        "
-msgstr ""
-
-#: elements/core.py:389
-#, docstring
-msgid "\n"
-"        Display information about multiple elements\n\n"
-"        `elements` can be the name, symbol or atomic number of the element\n"
-"        separated by spaces\n"
-"        "
-msgstr ""
 

@@ -1,157 +1,288 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR ORGANIZATION
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2019-02-09 00:37+0100\n"
-"PO-Revision-Date: 2019-02-09 01::03+0100\n"
-"Last-Translator: Predä <EMAIL@ADDRESS>\n"
-"Language-Team: FRENCH <LL@li.org>\n"
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-10-15 01:52+0000\n"
+"PO-Revision-Date: 2023-05-10 16:09\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: redgettext 2.2\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/translate/locales/messages.pot\n"
+"X-Crowdin-File-ID: 542\n"
+"Language: fr_FR\n"
 
-
-#: translate.py:62
-#, docstring
-msgid ""
-"\n"
-"        Translate messages using google translate\n"
-"    "
+#: translate/api.py:131
+msgid "{_from} to {_to} | Requested by "
 msgstr ""
-"\n"
-"        Traduire des messages en utilisant Google Traduction\n\n"
-"    "
 
-#: translate.py:90
-msgid " said:"
-msgstr " a dit :"
-
-#: translate.py:91
-msgid " to "
-msgstr " vers "
-
-#: translate.py:91
-msgid "Requested by "
-msgstr "Demandé par "
-
-#: translate.py:185
-msgid "said:"
-msgstr "a dit :"
-
-#: translate.py:305
-#, docstring
-msgid ""
-"\n"
-"            Translate messages with google translate\n"
-"\n"
-"            `to_language` is the language you would like to translate\n"
-"            `message` is the message to translate\n"
-"        "
+#: translate/api.py:242
+msgid "API Requests:"
 msgstr ""
-"\n"
-"            Traduire des messages avec Google Traduction\n"
-"\n"
-"            `to_language` est la langue que vous souhaitez traduire\n\n"
-"            `message` est le message que vous voulez traduire\n\n"
-"        "
 
-#: translate.py:313
+#: translate/api.py:243
+msgid "API Detect Language:"
+msgstr ""
+
+#: translate/api.py:244
+msgid "Characters requested:"
+msgstr ""
+
+#: translate/api.py:247
+msgid "__Global Usage__:\n"
+msgstr ""
+
+#: translate/api.py:256
+msgid "__{guild} Usage__:\n"
+msgstr ""
+
+#: translate/api.py:312 translate/translate.py:110
 msgid "The bot owner needs to set an api key first!"
-msgstr "Le propriétaire du bot doit d'abord définir la clé API !"
+msgstr ""
 
-#: translate.py:340
+#: translate/api.py:343
+msgid "The detected language is the same as the language being translated to."
+msgstr ""
+
+#: translate/api.py:451 translate/api.py:523
+msgid "{author}:\n"
+"{translated_text}"
+msgstr ""
+
+#: translate/converters.py:56
+msgid "{arg} is not a valid channel, user or role."
+msgstr ""
+
+#: translate/translate.py:35
 #, docstring
-msgid ""
-"\n"
-"            Toggle the bot auto translating\n"
+msgid "\n"
+"    Translate messages using Google Translate\n"
+"    "
+msgstr ""
+
+#: translate/translate.py:125
+msgid "I cannot translate `{from_lang}` to `{to}`"
+msgstr ""
+
+#: translate/translate.py:137
+msgid "Nothing to be translated."
+msgstr ""
+
+#: translate/translate.py:153
+#, docstring
+msgid "\n"
+"        Toggle the bot auto translating\n"
 "        "
 msgstr ""
-"\n"
-"            Activer la traduction automatique du bot\n\n"
-"        "
 
-#: translate.py:349
+#: translate/translate.py:160
 #, docstring
-msgid ""
-"\n"
-"            Toggle translations to flag emoji reactions\n"
+msgid "\n"
+"        Shows translation usage\n"
 "        "
 msgstr ""
-"\n"
-"            Activer la traduction en utilisant des drapeaux dans les réactions\n\n"
-"        "
 
-#: translate.py:355 translate.py:372
+#: translate/translate.py:164
+msgid "That is only available for the bot owner."
+msgstr ""
+
+#: translate/translate.py:168
+msgid "Guild `{guild_id}` not found."
+msgstr ""
+
+#: translate/translate.py:173
+msgid "This command is only available inside guilds."
+msgstr ""
+
+#: translate/translate.py:182
+#, docstring
+msgid "\n"
+"        Set blacklist options for translations\n\n"
+"        blacklisting supports channels, users, or roles\n"
+"        "
+msgstr ""
+
+#: translate/translate.py:193
+#, docstring
+msgid "\n"
+"        Set whitelist options for translations\n\n"
+"        whitelisting supports channels, users, or roles\n"
+"        "
+msgstr ""
+
+#: translate/translate.py:206
+#, docstring
+msgid "\n"
+"        Add a channel, user, or role to translation whitelist\n"
+"        "
+msgstr ""
+
+#: translate/translate.py:211
+msgid "You must supply 1 or more channels users or roles to be whitelisted."
+msgstr ""
+
+#: translate/translate.py:219
+msgid "`{list_type}` added to translation whitelist."
+msgstr ""
+
+#: translate/translate.py:229
+#, docstring
+msgid "\n"
+"        Remove a channel, user, or role from translation whitelist\n"
+"        "
+msgstr ""
+
+#: translate/translate.py:234
+msgid "You must supply 1 or more channels, users, or roles to be removed from the whitelist"
+msgstr ""
+
+#: translate/translate.py:245
+msgid "`{list_type}` removed from translation whitelist."
+msgstr ""
+
+#: translate/translate.py:253
+#, docstring
+msgid "\n"
+"        List Channels, Users, and Roles in the servers translation whitelist.\n"
+"        "
+msgstr ""
+
+#: translate/translate.py:265
+msgid "`{whitelisted}` are currently whitelisted."
+msgstr ""
+
+#: translate/translate.py:269
+msgid "There are currently no channels, users, or roles in this servers translate allowlist."
+msgstr ""
+
+#: translate/translate.py:280
+#, docstring
+msgid "\n"
+"        Add a channel, user, or role to translation blacklist\n"
+"        "
+msgstr ""
+
+#: translate/translate.py:285
+msgid "You must supply 1 or more channels users or roles to be blacklisted."
+msgstr ""
+
+#: translate/translate.py:293
+msgid "`{list_type}` added to translation blacklist."
+msgstr ""
+
+#: translate/translate.py:303
+#, docstring
+msgid "\n"
+"        Remove a channel, user, or role from translation blacklist\n"
+"        "
+msgstr ""
+
+#: translate/translate.py:308
+msgid "You must supply 1 or more channels, users, or roles to be removed from the blacklist"
+msgstr ""
+
+#: translate/translate.py:319
+msgid "`{list_type}` removed from translation blacklist."
+msgstr ""
+
+#: translate/translate.py:327
+#, docstring
+msgid "\n"
+"        List Channels, Users, and Roles in the servers translation blacklist.\n"
+"        "
+msgstr ""
+
+#: translate/translate.py:339
+msgid "`{blacklisted}` are currently blacklisted."
+msgstr ""
+
+#: translate/translate.py:343
+msgid "There are currently no channels, users, or roles in this servers translate blocklist."
+msgstr ""
+
+#: translate/translate.py:352
+#, docstring
+msgid "\n"
+"        Toggle translations to flag emoji reactions\n"
+"        "
+msgstr ""
+
+#: translate/translate.py:358 translate/translate.py:379
+#: translate/translate.py:414
 msgid "on"
-msgstr "activée"
+msgstr ""
 
-#: translate.py:357 translate.py:374
+#: translate/translate.py:360 translate/translate.py:381
+#: translate/translate.py:416
 msgid "off"
-msgstr "désactivée"
+msgstr ""
 
-#: translate.py:359
+#: translate/translate.py:364
 msgid "Reaction translations have been turned "
-msgstr "La traduction en se servant des réactions a été "
+msgstr ""
 
-#: translate.py:366
+#: translate/translate.py:371
 #, docstring
-msgid ""
-"\n"
-"            Toggle translations with flag emojis in text\n"
+msgid "\n"
+"        Toggle multiple translations for the same message\n\n"
+"        This will also ignore the translated message from\n"
+"        being translated into another language\n"
 "        "
 msgstr ""
-"\n"
-"            Activer la traduction en utilisant des émojis de drapeaux dans le texte\n"
-"        "
 
-#: translate.py:376
+#: translate/translate.py:384
+msgid "Multiple translations have been turned "
+msgstr ""
+
+#: translate/translate.py:391
+#, docstring
+msgid "\n"
+"        Set the cooldown before a message can be reacted to again\n"
+"        for translation\n\n"
+"        `<time>` Number of seconds until that message can be reacted to again\n"
+"        Note: If multiple reactions are not allowed the timeout setting\n"
+"        is ignored until the cache cleanup ~10 minutes.\n"
+"        "
+msgstr ""
+
+#: translate/translate.py:401
+msgid "Translation timeout set to {time}s."
+msgstr ""
+
+#: translate/translate.py:408
+#, docstring
+msgid "\n"
+"        Toggle translations with flag emojis in text\n"
+"        "
+msgstr ""
+
+#: translate/translate.py:420
 msgid "Flag emoji translations have been turned "
-msgstr "La traduction en utilisant des émojis de drapeaux a été "
+msgstr ""
 
-#: translate.py:382
+#: translate/translate.py:426
 #, docstring
-msgid ""
-"\n"
-"            You must get an API key from google to set this up\n"
-"\n"
-"            Note: Using this cog costs money, current rates are $20 per 1 million characters.\n"
-"\n"
-"            1. Go to Google Developers Console and log in with your Google account. \n"
-"            (https://console.developers.google.com/)\n"
-"            2. You should be prompted to create a new project (name does not matter).\n"
-"            3. Click on Enable APIs and Services at the top.\n"
-"            4. In the list of APIs choose or search for Cloud Translate API and click on it. \n"
-"            Choose Enable.\n"
-"            5. Click on Credentials on the left navigation bar.\n"
-"            6. Click on Create Credential at the top.\n"
-"            7. At the top click the link for \"API key\".\n"
-"            8. No application restrictions are needed. Click Create at the bottom.\n"
-"            9. You now have a key to add to `[p]translateset`\n"
+msgid "\n"
+"        You must get an API key from Google to set this up\n\n"
+"        Note: Using this cog costs money, current rates are $20 per 1 million characters.\n"
 "        "
 msgstr ""
-"\n"
-"            Vous devez obtenir une clé d'API de Google pour configurer ceci\n"
-"\n"
-"            Remarque : L'utilisation de ce cog coûte de l'argent, les taux actuels sont d'environ 17€ pour 1 million de caractères.\n"
-"\n"
-"            1. Allez sur la console développeurs Google, et connectez-vous avec votre compte Google. \n\n"
-"            (https://console.developers.google.com/)\n\n"
-"            2. Vous devriez être invité à créer un nouveau projet (le nom n'a pas d'importance).\n\n"
-"            3. Cliquez sur \"Activer des API et des services\" en haut de la page.\n\n"
-"            4. Dans la liste des APIs, choisissez ou recherchez Cloud Translate API, cliquez dessus. \n\n"
-"            Choisissez \"Activer\".\n\n"
-"            5. Cliquez sur \"Identifiants\" dans la barre de navigation en bas à gauche.\n\n"
-"            6. Cliquez sur \"Créer des identifiants\" en haut de la page.\n\n"
-"            7. En haut cliquez sur le lien pour \"Clé API\".\n\n"
-"            8. Aucunes restrictions d'applications sont nécessaires. Cliquez sur \"Créer\" en bas de la page.\n\n"
-"            9. Vous avez maintenant une clé à ajouter sur `[p]translateset`\n\n"
-"        "
 
-#: translate.py:400
-msgid "API key set."
-msgstr "Clé API définie."
+#: translate/translate.py:431
+msgid "1. Go to Google Developers Console and log in with your Google account.(https://console.developers.google.com/)\n"
+"2. You should be prompted to create a new project (name does not matter).\n"
+"3. Click on Enable APIs and Services at the top.\n"
+"4. In the list of APIs choose or search for Cloud Translate API and click on it.Choose Enable.\n"
+"5. Click on Credentials on the left navigation bar.\n"
+"6. Click on Create Credential at the top.\n"
+"7. At the top click the link for \"API key\".\n"
+"8. No application restrictions are needed. Click Create at the bottom.\n"
+"9. You now have a key to add to \n"
+"`{prefix}set api google_translate api_key,YOUR_KEY_HERE`\n"
+msgstr ""
 

@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
-"POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"POT-Creation-Date: 2023-03-20 21:24+0000\n"
+"PO-Revision-Date: 2023-05-10 16:09\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -30,7 +30,7 @@ msgstr ""
 msgid "Resuming Spotify playback on {device}."
 msgstr ""
 
-#: spotify/components.py:290 spotify/spotify_commands.py:206
+#: spotify/components.py:290 spotify/spotify_commands.py:153
 msgid "I could not find an active device to play songs on."
 msgstr ""
 
@@ -38,7 +38,7 @@ msgstr ""
 msgid "Shuffling Spotify on {device}."
 msgstr ""
 
-#: spotify/components.py:421 spotify/spotify_commands.py:1558
+#: spotify/components.py:421
 msgid "Setting {device}'s volume to {volume}."
 msgstr ""
 
@@ -58,7 +58,7 @@ msgstr ""
 msgid "Now playing all songs on {device}."
 msgstr ""
 
-#: spotify/components.py:584 spotify/spotify_commands.py:167
+#: spotify/components.py:584 spotify/spotify_commands.py:111
 msgid "I am not authorized to perform this action for you."
 msgstr ""
 
@@ -74,435 +74,245 @@ msgstr ""
 msgid "Pick a device"
 msgstr ""
 
-#: spotify/helpers.py:287
+#: spotify/helpers.py:111
+msgid "That is not a valid Spotify track URL."
+msgstr ""
+
+#: spotify/helpers.py:125
+msgid "That is not a valid Spotify artist URL."
+msgstr ""
+
+#: spotify/helpers.py:143
+msgid "`{argument}` is not a valid mode."
+msgstr ""
+
+#: spotify/helpers.py:443
 msgid "{argument} is not a valid genre."
 msgstr ""
 
-#: spotify/helpers.py:317
+#: spotify/helpers.py:473
 msgid "{argument} is not a valid scope."
 msgstr ""
 
-#: spotify/helpers.py:337 spotify/spotify.py:187
-#: spotify/spotify_commands.py:774
-msgid "The bot owner needs to set their Spotify credentials before this command can be used. See `{prefix}spotify set creds` for more details."
-msgstr ""
-
-#: spotify/helpers.py:376
-msgid "You must provide either an artist or track seed or a genre for this to work"
-msgstr ""
-
-#: spotify/helpers.py:390
+#: spotify/helpers.py:486
 msgid "{argument} is not a valid Spotify URL or URI."
 msgstr ""
 
-#: spotify/menus.py:93 spotify/menus.py:130 spotify/menus.py:179
-#: spotify/menus.py:228 spotify/menus.py:284 spotify/menus.py:315
-#: spotify/menus.py:345 spotify/menus.py:422 spotify/menus.py:447
-#: spotify/menus.py:471
+#: spotify/menus.py:105
+msgid "Genres: {genres}\n"
+msgstr ""
+
+#: spotify/menus.py:108
+msgid "Tracks: {tracks}\n"
+msgstr ""
+
+#: spotify/menus.py:115
+msgid "Artists: \n"
+"{artists}\n"
+msgstr ""
+
+#: spotify/menus.py:125
+msgid "Target Mode: {mode}\n"
+msgstr ""
+
+#: spotify/menus.py:130
+msgid "Target Key: {pitch_key}\n"
+msgstr ""
+
+#: spotify/menus.py:137 spotify/menus.py:174 spotify/menus.py:223
+#: spotify/menus.py:272 spotify/menus.py:328 spotify/menus.py:359
+#: spotify/menus.py:389 spotify/menus.py:466 spotify/menus.py:491
+#: spotify/menus.py:515
 msgid "Page"
 msgstr ""
 
-#: spotify/menus.py:123
+#: spotify/menus.py:167
 msgid "Top Tracks\n"
 msgstr ""
 
-#: spotify/menus.py:411
+#: spotify/menus.py:455
 msgid "{user}'s Spotify Playlists"
 msgstr ""
 
-#: spotify/menus.py:438
+#: spotify/menus.py:482
 msgid "{user}'s Top Tracks"
 msgstr ""
 
-#: spotify/menus.py:463
+#: spotify/menus.py:507
 msgid "{user}'s Top Artists"
 msgstr ""
 
-#: spotify/menus.py:528
+#: spotify/menus.py:572
 msgid " is currently listening to"
 msgstr ""
 
-#: spotify/menus.py:624
+#: spotify/menus.py:670
 msgid "Saved Tracks"
 msgstr ""
 
-#: spotify/menus.py:832 spotify/menus.py:962 spotify/menus.py:981
-#: spotify/menus.py:1089
+#: spotify/menus.py:791
+msgid "You're not currently listening to Spotify."
+msgstr ""
+
+#: spotify/menus.py:882 spotify/menus.py:1012 spotify/menus.py:1031
+#: spotify/menus.py:1139
 msgid "You are not authorized to interact with this."
 msgstr ""
 
-#: spotify/slash.py:53
-#, docstring
-msgid "Displays your currently played spotify song"
-msgstr ""
-
-#: spotify/slash.py:101
-#, docstring
-msgid "Get Spotify Recommendations"
-msgstr ""
-
-#: spotify/slash.py:154
-#, docstring
-msgid "Change the currently playing spotify device"
-msgstr ""
-
-#: spotify/slash.py:162
-#, docstring
-msgid "\n"
-"        Set your default device to attempt to start playing new tracks on\n"
-"        if you aren't currently listening to Spotify.\n"
-"        "
-msgstr ""
-
-#: spotify/slash.py:171
-#, docstring
-msgid "List all available devices for Spotify"
-msgstr ""
-
-#: spotify/slash.py:211
-#, docstring
-msgid "Forget all your spotify settings and credentials on the bot"
-msgstr ""
-
-#: spotify/slash.py:217
-#, docstring
-msgid "Shows your current Spotify Settings"
-msgstr ""
-
-#: spotify/slash.py:223
-#, docstring
-msgid "Display all available genres for recommendations"
-msgstr ""
-
-#: spotify/slash.py:231
-#, docstring
-msgid "Display your most recently played songs on Spotify"
-msgstr ""
-
-#: spotify/slash.py:237
-#, docstring
-msgid "List your top tracks on Spotify"
-msgstr ""
-
-#: spotify/slash.py:243
-#, docstring
-msgid "List your top artists on Spotify"
-msgstr ""
-
-#: spotify/slash.py:249
-#, docstring
-msgid "List new releases on Spotify"
-msgstr ""
-
-#: spotify/slash.py:255
-#, docstring
-msgid "Pauses Spotify for you"
-msgstr ""
-
-#: spotify/slash.py:261
-#, docstring
-msgid "Resumes Spotify for you"
-msgstr ""
-
-#: spotify/slash.py:267
-#, docstring
-msgid "Skips to the next track in queue on Spotify"
-msgstr ""
-
-#: spotify/slash.py:273
-#, docstring
-msgid "Skip to the previous track in queue on Spotify"
-msgstr ""
-
-#: spotify/slash.py:281
-#, docstring
-msgid "Play a track, playlist, or album on Spotify"
-msgstr ""
-
-#: spotify/slash.py:287
-#, docstring
-msgid "Queue a song to play next on Spotify"
-msgstr ""
-
-#: spotify/slash.py:295
-#, docstring
-msgid "Set your Spotify players repeat state"
-msgstr ""
-
-#: spotify/slash.py:301
-#, docstring
-msgid "Set your Spotify players shuffle state"
-msgstr ""
-
-#: spotify/slash.py:308
-#, docstring
-msgid "Seek to a specific point in the current song."
-msgstr ""
-
-#: spotify/slash.py:316
-#, docstring
-msgid "Set your Spotify players volume percentage"
-msgstr ""
-
-#: spotify/slash.py:322
-#, docstring
-msgid "List your Spotify featured Playlists"
-msgstr ""
-
-#: spotify/slash.py:328
-#, docstring
-msgid "List your Spotify Playlists"
-msgstr ""
-
-#: spotify/slash.py:334
-#, docstring
-msgid "View details about your Spotify playlists"
-msgstr ""
-
-#: spotify/slash.py:346
-#, docstring
-msgid "Create a Spotify Playlist"
-msgstr ""
-
-#: spotify/slash.py:354 spotify/slash.py:362
-#, docstring
-msgid "Add a track to a Spotify Playlist"
-msgstr ""
-
-#: spotify/slash.py:370
-#, docstring
-msgid "Add a playlist to your Spotify library"
-msgstr ""
-
-#: spotify/slash.py:376
-#, docstring
-msgid "Add an artist to your Spotify Library"
-msgstr ""
-
-#: spotify/slash.py:382
-#, docstring
-msgid "View an artists albums on Spotify"
-msgstr ""
-
-#: spotify/slash.py:441
-msgid "No tracks found from that search."
-msgstr ""
-
-#: spotify/slash.py:481 spotify/slash.py:562
-msgid "Queueing {track} by {artist} on {device}."
-msgstr ""
-
-#: spotify/slash.py:486 spotify/slash.py:533 spotify/slash.py:569
-msgid "Now playing {track} by {artist} on {device}."
-msgstr ""
-
-#: spotify/slash.py:497
-msgid "I cannot queue a playlist."
-msgstr ""
-
-#: spotify/slash.py:504
-msgid "Now playing {track} on {device}."
-msgstr ""
-
-#: spotify/slash.py:510
-msgid "I cannot queue an artist."
-msgstr ""
-
-#: spotify/slash.py:517
-msgid "Now playing top tracks by {track} on {device}."
-msgstr ""
-
-#: spotify/slash.py:523
-msgid "I cannot queue an album."
-msgstr ""
-
-#: spotify/slash.py:575 spotify/slash.py:579
-msgid "No Spotify track could be found on that message."
-msgstr ""
-
-#: spotify/slash.py:600
-msgid "You are not allowed to run this command here."
-msgstr ""
-
-#: spotify/slash.py:606
-msgid "Commands are not allowed in this channel or guild."
-msgstr ""
-
-#: spotify/spotify.py:44
+#: spotify/spotify.py:45
 #, docstring
 msgid "\n"
 "    Display information from Spotify's API\n"
 "    "
 msgstr ""
 
-#: spotify/spotify.py:202
+#: spotify/spotify.py:195 spotify/spotify_commands.py:725
+msgid "The bot owner needs to set their Spotify credentials before this command can be used. See `{prefix}spotify set creds` for more details."
+msgstr ""
+
+#: spotify/spotify.py:210
 msgid "Your refresh token has been revoked, clearing data."
 msgstr ""
 
-#: spotify/spotify.py:212
+#: spotify/spotify.py:217
 msgid "I've already sent you a link for authorization, please complete that first before trying a new command."
 msgstr ""
 
-#: spotify/spotify.py:221
+#: spotify/spotify.py:226
 msgid "You have blocked direct messages, please enable them to authorize spotify commands."
 msgstr ""
 
-#: spotify/spotify.py:236
+#: spotify/spotify.py:242
 msgid "Please accept the authorization [here]({auth}) and **DM me** with the final full url."
 msgstr ""
 
-#: spotify/spotify.py:242
+#: spotify/spotify.py:248
 msgid "Please accept the authorization in the following link and reply to me with the full url\n\n"
 " {auth}"
 msgstr ""
 
-#: spotify/spotify.py:264
+#: spotify/spotify.py:267
 msgid "Detected authentication via dashboard for."
 msgstr ""
 
-#: spotify/spotify.py:270
+#: spotify/spotify.py:277
 msgid "Alright I won't interact with spotify for you."
 msgstr ""
 
-#: spotify/spotify.py:275
+#: spotify/spotify.py:281
 msgid "Detected authentication via dashboard for {user}."
 msgstr ""
 
-#: spotify/spotify.py:282
+#: spotify/spotify.py:291
 msgid "Credentials not valid"
 msgstr ""
 
-#: spotify/spotify.py:283
+#: spotify/spotify.py:297
 msgid "Your authorization has been set!"
 msgstr ""
 
-#: spotify/spotify.py:289
+#: spotify/spotify.py:305
 msgid "You must follow the *latest* link I sent you for authorization. Older links are no longer valid."
 msgstr ""
 
-#: spotify/spotify_commands.py:61
-#, docstring
-msgid "\n"
-"        Spotify commands\n"
-"        "
+#: spotify/spotify.py:390
+msgid "No tracks found from that search."
 msgstr ""
 
-#: spotify/spotify_commands.py:67
+#: spotify/spotify.py:430 spotify/spotify.py:511
+msgid "Queueing {track} by {artist} on {device}."
+msgstr ""
+
+#: spotify/spotify.py:435 spotify/spotify.py:482 spotify/spotify.py:518
+msgid "Now playing {track} by {artist} on {device}."
+msgstr ""
+
+#: spotify/spotify.py:446
+msgid "I cannot queue a playlist."
+msgstr ""
+
+#: spotify/spotify.py:453
+msgid "Now playing {track} on {device}."
+msgstr ""
+
+#: spotify/spotify.py:459
+msgid "I cannot queue an artist."
+msgstr ""
+
+#: spotify/spotify.py:466
+msgid "Now playing top tracks by {track} on {device}."
+msgstr ""
+
+#: spotify/spotify.py:472
+msgid "I cannot queue an album."
+msgstr ""
+
+#: spotify/spotify.py:524 spotify/spotify.py:528
+msgid "No Spotify track could be found on that message."
+msgstr ""
+
+#: spotify/spotify_commands.py:84
 #, docstring
 msgid "\n"
 "        Setup Spotify cog\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:73
+#: spotify/spotify_commands.py:90
 #, docstring
 msgid "\n"
 "        View Spotify Playlists\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:79
+#: spotify/spotify_commands.py:96
 #, docstring
 msgid "\n"
 "        View Spotify Artist info\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:86
+#: spotify/spotify_commands.py:103
 #, docstring
 msgid "\n"
 "        Spotify device commands\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:93
-#, docstring
-msgid "\n"
-"        Slash command toggling for Spotify\n"
-"        "
-msgstr ""
-
-#: spotify/spotify_commands.py:100
-#, docstring
-msgid "Toggle this cog to register slash commands in this server"
-msgstr ""
-
-#: spotify/spotify_commands.py:102
-msgid "This cogs slash commands are already enabled globally."
-msgstr ""
-
-#: spotify/spotify_commands.py:106 spotify/spotify_commands.py:124
-#: spotify/spotify_commands.py:139 spotify/spotify_commands.py:154
-msgid "enabled"
-msgstr ""
-
-#: spotify/spotify_commands.py:106 spotify/spotify_commands.py:124
-#: spotify/spotify_commands.py:139 spotify/spotify_commands.py:154
-msgid "disabled"
-msgstr ""
-
-#: spotify/spotify_commands.py:107
-msgid "Slash commands are {verb} in this guild."
-msgstr ""
-
-#: spotify/spotify_commands.py:116 spotify/spotify_commands.py:149
-#, docstring
-msgid "\n"
-"        Toggle right click play on spotify for messages\n"
-"        "
-msgstr ""
-
-#: spotify/spotify_commands.py:120
-msgid "This cogs context commands are already enabled globally."
-msgstr ""
-
-#: spotify/spotify_commands.py:125 spotify/spotify_commands.py:155
-msgid "Context commands are {verb}."
-msgstr ""
-
-#: spotify/spotify_commands.py:136
-#, docstring
-msgid "Toggle this cog to register slash commands"
-msgstr ""
-
-#: spotify/spotify_commands.py:140
-msgid "Slash commands are {verb}."
-msgstr ""
-
-#: spotify/spotify_commands.py:180 spotify/spotify_commands.py:685
+#: spotify/spotify_commands.py:125 spotify/spotify_commands.py:635
 msgid "It appears you're not currently listening to Spotify."
 msgstr ""
 
-#: spotify/spotify_commands.py:193 spotify/spotify_commands.py:223
+#: spotify/spotify_commands.py:139
 msgid "You need to authorize me to interact with spotify."
 msgstr ""
 
-#: spotify/spotify_commands.py:220
+#: spotify/spotify_commands.py:170
 msgid "This action is prohibited for non-premium users."
 msgstr ""
 
-#: spotify/spotify_commands.py:222
+#: spotify/spotify_commands.py:172
 msgid "I couldn't perform that action for you."
 msgstr ""
 
-#: spotify/spotify_commands.py:236
+#: spotify/spotify_commands.py:185
 msgid "An exception has occured, please contact the bot owner for more assistance."
 msgstr ""
 
-#: spotify/spotify_commands.py:259
+#: spotify/spotify_commands.py:208
 #, docstring
 msgid "\n"
 "        Show settings for menu timeouts\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:263
+#: spotify/spotify_commands.py:212
 msgid "Delete After: {delete_after}\n"
 "Clear After: {clear_after}\n"
 "Timeout: {timeout}"
 msgstr ""
 
-#: spotify/spotify_commands.py:270
+#: spotify/spotify_commands.py:219
 #, docstring
 msgid "\n"
 "        Set whether or not to show private playlists\n\n"
@@ -511,15 +321,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:278
+#: spotify/spotify_commands.py:227
 msgid "I will show private playlists now."
 msgstr ""
 
-#: spotify/spotify_commands.py:280
+#: spotify/spotify_commands.py:229
 msgid "I will stop showing private playlists now."
 msgstr ""
 
-#: spotify/spotify_commands.py:286
+#: spotify/spotify_commands.py:235
 #, docstring
 msgid "\n"
 "        Set whether or not to clear reactions after sending the message\n\n"
@@ -527,34 +337,34 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:293
+#: spotify/spotify_commands.py:242
 msgid "I will now clear reactions after the menu has timed out.\n"
 msgstr ""
 
-#: spotify/spotify_commands.py:295
+#: spotify/spotify_commands.py:244
 msgid "I will stop clearing reactions after the menu has timed out.\n"
 msgstr ""
 
-#: spotify/spotify_commands.py:297
+#: spotify/spotify_commands.py:246
 msgid "I don't have manage messages permissions so this might not work as expected."
 msgstr ""
 
-#: spotify/spotify_commands.py:305
+#: spotify/spotify_commands.py:254
 #, docstring
 msgid "\n"
 "        Set whether or not to delete the spotify message after timing out\n\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:311
+#: spotify/spotify_commands.py:260
 msgid "I will now delete the menu message after timeout.\n"
 msgstr ""
 
-#: spotify/spotify_commands.py:313
+#: spotify/spotify_commands.py:262
 msgid "I will stop deleting the menu message after timeout.\n"
 msgstr ""
 
-#: spotify/spotify_commands.py:319
+#: spotify/spotify_commands.py:268
 #, docstring
 msgid "\n"
 "        Set the timeout time for spotify menus\n\n"
@@ -564,29 +374,29 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:328
+#: spotify/spotify_commands.py:277
 msgid "I will timeout menus after {time} seconds.\n"
 msgstr ""
 
-#: spotify/spotify_commands.py:334
+#: spotify/spotify_commands.py:283
 #, docstring
 msgid "\n"
 "        Resets the bot to use the default emojis\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:340
+#: spotify/spotify_commands.py:289
 msgid "I will now use the default emojis."
 msgstr ""
 
-#: spotify/spotify_commands.py:346
+#: spotify/spotify_commands.py:295
 #, docstring
 msgid "\n"
 "        Show information about the currently set emoji pack\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:365
+#: spotify/spotify_commands.py:314
 #, docstring
 msgid "\n"
 "        Change the emojis used by the bot for various actions\n\n"
@@ -619,27 +429,27 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:398
+#: spotify/spotify_commands.py:347
 msgid "There was an error reading your yaml file."
 msgstr ""
 
-#: spotify/spotify_commands.py:401
+#: spotify/spotify_commands.py:350
 msgid "You must provide a `.yaml` file to use this command."
 msgstr ""
 
-#: spotify/spotify_commands.py:450
+#: spotify/spotify_commands.py:399
 msgid "New Emojis"
 msgstr ""
 
-#: spotify/spotify_commands.py:451
+#: spotify/spotify_commands.py:400
 msgid "The following emojis have been replaced:\n"
 msgstr ""
 
-#: spotify/spotify_commands.py:460
+#: spotify/spotify_commands.py:409
 msgid "Emojis were reset as there was an error with one of them."
 msgstr ""
 
-#: spotify/spotify_commands.py:469
+#: spotify/spotify_commands.py:418
 #, docstring
 msgid "\n"
 "        Set customized scope for what you want your bot to allow\n\n"
@@ -664,32 +474,32 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:506
+#: spotify/spotify_commands.py:455
 msgid "The following scopes were added: {added}\n"
 msgstr ""
 
-#: spotify/spotify_commands.py:508
+#: spotify/spotify_commands.py:457
 msgid "The following scopes were removed: {removed}\n"
 msgstr ""
 
-#: spotify/spotify_commands.py:514
+#: spotify/spotify_commands.py:463
 #, docstring
 msgid "\n"
 "        View the current scopes being requested\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:518
+#: spotify/spotify_commands.py:467
 msgid "Current scopes:\n"
 "{scopes}"
 msgstr ""
 
-#: spotify/spotify_commands.py:523
+#: spotify/spotify_commands.py:472
 #, docstring
 msgid "Instructions to set the Spotify API tokens."
 msgstr ""
 
-#: spotify/spotify_commands.py:524
+#: spotify/spotify_commands.py:473
 msgid "1. Go to Spotify developers and log in with your Spotify account.\n"
 "(https://developer.spotify.com/dashboard/applications)\n"
 "2. Click \"Create An App\".\n"
@@ -702,52 +512,52 @@ msgid "1. Go to Spotify developers and log in with your Spotify account.\n"
 "Note: The redirect URI Must be set in the Spotify Dashboard and must match either `https://localhost/` or the one you set with the `[p]set api` command"
 msgstr ""
 
-#: spotify/spotify_commands.py:552
+#: spotify/spotify_commands.py:501
 #, docstring
 msgid "\n"
 "        Forget all your spotify settings and credentials on the bot\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:560
+#: spotify/spotify_commands.py:509
 msgid "All your spotify data deleted from my settings."
 msgstr ""
 
-#: spotify/spotify_commands.py:566
+#: spotify/spotify_commands.py:515
 #, docstring
 msgid "\n"
 "        Shows your current Spotify Settings\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:573
+#: spotify/spotify_commands.py:522
 msgid " Spotify Profile"
 msgstr ""
 
-#: spotify/spotify_commands.py:577
+#: spotify/spotify_commands.py:526
 msgid "Show Private Playlists: {show_private}\n"
 msgstr ""
 
-#: spotify/spotify_commands.py:593
+#: spotify/spotify_commands.py:542
 msgid "Default Spotify Device: {device}"
 msgstr ""
 
-#: spotify/spotify_commands.py:595
+#: spotify/spotify_commands.py:544
 msgid "Spotify Name: [{display_name}](https://open.spotify.com/user/{user_id})\n"
 "Subscription: {product}\n"
 msgstr ""
 
-#: spotify/spotify_commands.py:600
+#: spotify/spotify_commands.py:549
 msgid "Country: {country}\n"
 "Spotify ID: {id}\n"
 "Email: {email}\n"
 msgstr ""
 
-#: spotify/spotify_commands.py:603
+#: spotify/spotify_commands.py:552
 msgid "Private Data"
 msgstr ""
 
-#: spotify/spotify_commands.py:617
+#: spotify/spotify_commands.py:566
 #, docstring
 msgid "\n"
 "        Displays your currently played spotify song\n\n"
@@ -756,26 +566,26 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:629
+#: spotify/spotify_commands.py:579
 msgid "That user is not currently listening to Spotify on Discord."
 msgstr ""
 
-#: spotify/spotify_commands.py:674
+#: spotify/spotify_commands.py:624
 #, docstring
 msgid "\n"
 "        Tell the bot to play the users current song in their current voice channel\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:687
+#: spotify/spotify_commands.py:637
 msgid "I cannot play podcasts from spotify."
 msgstr ""
 
-#: spotify/spotify_commands.py:695
+#: spotify/spotify_commands.py:645
 msgid "You don't appear to be listening to something I can play in audio."
 msgstr ""
 
-#: spotify/spotify_commands.py:717
+#: spotify/spotify_commands.py:667
 #, docstring
 msgid "\n"
 "        Search Spotify for things to play\n\n"
@@ -791,129 +601,152 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:747
+#: spotify/spotify_commands.py:698
 msgid "No {search_type} could be found matching that query."
 msgstr ""
 
-#: spotify/spotify_commands.py:766
+#: spotify/spotify_commands.py:717
 #, docstring
 msgid "\n"
 "        Display all available genres for the recommendations\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:780
+#: spotify/spotify_commands.py:731
 msgid "The following are available genres for Spotify's recommendations:\n\n"
 " {genres}"
 msgstr ""
 
-#: spotify/spotify_commands.py:794
+#: spotify/spotify_commands.py:748
 #, docstring
 msgid "\n"
 "        Get Spotify Recommendations\n\n"
 "        `<recommendations>` Requires at least 1 of the following matching objects:\n"
-"         - `genre` Must be a valid genre type. Do `[p]spotify genres` to see what's available.\n"
-"         - `tracks` Any spotify URL or URI leading to tracks will be added to the seed\n"
-"         - `artists` Any spotify URL or URI leading to artists will be added to the seed\n\n"
-"         The following parameters also exist and must include some additional parameter:\n"
-"         - `acousticness` + a value from 0-100\n"
-"         - `danceability` + a value from 0-100\n"
-"         - `duration_ms` the duration target of the tracks\n"
-"         - `energy` + a value from 0-100\n"
-"         - `instrumentalness` + a value from 0-100\n"
-"         - `key` A value from 0-11 representing Pitch Class notation\n"
-"         - `liveness` + a value from 0-100\n"
-"         - `loudness` + A value from -60 to 0 represending dB\n"
-"         - `mode` + either major or minor\n"
-"         - `popularity` + a value from 0-100\n"
-"         - `speechiness` + a value from 0-100\n"
-"         - `tempo` + the tempo in BPM\n"
-"         - `time_signature` + the measure of bars e.g. `3` for `3/4` or `6/8`\n"
-"         - `valence` + a value from 0-100\n"
+"         - `genre:` Must be a valid genre type. Do `[p]spotify genres` to see what's available.\n"
+"         - `tracks:` Any spotify URL or URI leading to tracks will be added to the seed\n"
+"         - `artists:` Any spotify URL or URI leading to artists will be added to the seed\n\n"
+"         The following target parameters also exist and must include some additional value:\n"
+"         `acousticness:`, `danceability:`, `energy:`, `instrumentalness:`,\n"
+"         `liveness:`, `popularity:`, `speechiness:`, and/or `valence:` + a value from 0-100\n\n"
+"         `key:` + A value from 0-11 representing Pitch Class notation\n"
+"         `loudness:` + A value from -60 to 0 represending dB\n"
+"         `mode:` + either major or minor\n"
+"         `tempo:` + the tempo in BPM\n"
+"         `time_signature:` + the measure of bars e.g. `3` for `3/4` or `6/8`\n"
+"         `duration_ms:` the duration target of the tracks\n\n"
+"         e.g. `[p]spotify recommendations genre: edm electronic valence: 100 mode: major`\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:829
+#: spotify/spotify_commands.py:773
+msgid "You must provide either genres, tracks, or artists to seed the recommendations."
+msgstr ""
+
+#: spotify/spotify_commands.py:804
 msgid "I could not find any recommendations with those parameters"
 msgstr ""
 
-#: spotify/spotify_commands.py:851
+#: spotify/spotify_commands.py:826
 #, docstring
 msgid "\n"
 "        Displays your most recently played songs on Spotify\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:879
+#: spotify/spotify_commands.py:855
 #, docstring
 msgid "\n"
 "        List your top tracks on spotify\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:907
+#: spotify/spotify_commands.py:883
 #, docstring
 msgid "\n"
 "        List your top artists on spotify\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:935
+#: spotify/spotify_commands.py:911
 #, docstring
 msgid "\n"
 "        List new releases on Spotify\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:960
+#: spotify/spotify_commands.py:936
 #, docstring
 msgid "\n"
 "        Pauses spotify for you\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:972
+#: spotify/spotify_commands.py:948
 msgid "Pausing playback."
 msgstr ""
 
-#: spotify/spotify_commands.py:988
+#: spotify/spotify_commands.py:964
 #, docstring
 msgid "\n"
 "        Resumes spotify for you\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1015
+#: spotify/spotify_commands.py:981
 msgid "You are already playing music on Spotify."
 msgstr ""
 
-#: spotify/spotify_commands.py:1018
+#: spotify/spotify_commands.py:984
 msgid "Resuming playback."
 msgstr ""
 
-#: spotify/spotify_commands.py:1034
+#: spotify/spotify_commands.py:1000
 #, docstring
 msgid "\n"
 "        Skips to the next track in queue on Spotify\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1046
+#: spotify/spotify_commands.py:1012
 msgid "Skipping to next track."
 msgstr ""
 
-#: spotify/spotify_commands.py:1062
+#: spotify/spotify_commands.py:1028
 #, docstring
 msgid "\n"
 "        Skips to the previous track in queue on Spotify\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1074
+#: spotify/spotify_commands.py:1040
 msgid "Skipping to previous track."
 msgstr ""
 
+#: spotify/spotify_commands.py:1069 spotify/spotify_commands.py:1169
+msgid "Now playing {track} by {artist}"
+msgstr ""
+
 #: spotify/spotify_commands.py:1095
+msgid "Now playing {track}"
+msgstr ""
+
+#: spotify/spotify_commands.py:1103
+msgid "Now playing top tracks by {track}"
+msgstr ""
+
+#: spotify/spotify_commands.py:1113
+msgid "Now playing {track} by {artist}."
+msgstr ""
+
+#: spotify/spotify_commands.py:1145
+msgid "Now playing {playlist}"
+msgstr ""
+
+#: spotify/spotify_commands.py:1198
+msgid "Now playing your last 50 liked songs."
+msgstr ""
+
+#: spotify/spotify_commands.py:1210
 #, docstring
 msgid "\n"
 "        Play a track, playlist, or album on Spotify\n\n"
@@ -925,31 +758,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1141 spotify/spotify_commands.py:1240
-msgid "Now playing {track} by {artist}"
-msgstr ""
-
-#: spotify/spotify_commands.py:1162
-msgid "Now playing {track}"
-msgstr ""
-
-#: spotify/spotify_commands.py:1170
-msgid "Now playing top tracks by {track}"
-msgstr ""
-
-#: spotify/spotify_commands.py:1181
-msgid "Now playing {track} by {artist}."
-msgstr ""
-
-#: spotify/spotify_commands.py:1210
-msgid "Now playing {playlist}"
-msgstr ""
-
-#: spotify/spotify_commands.py:1263
+#: spotify/spotify_commands.py:1254
 msgid "I could not find any URL's or matching playlist names."
 msgstr ""
 
-#: spotify/spotify_commands.py:1279
+#: spotify/spotify_commands.py:1275
 #, docstring
 msgid "\n"
 "        Queue a song to play next in Spotify\n\n"
@@ -958,23 +771,23 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1300
+#: spotify/spotify_commands.py:1290
 msgid "I can only add tracks to your spotify queue."
 msgstr ""
 
-#: spotify/spotify_commands.py:1316
+#: spotify/spotify_commands.py:1307
 msgid "Queueing {track} by {artist}"
 msgstr ""
 
-#: spotify/spotify_commands.py:1335
+#: spotify/spotify_commands.py:1346
 #, docstring
 msgid "\n"
 "        Repeats your current song on spotify\n\n"
-"        `<state>` must accept one of `off`, `track`, or `context`.\n"
+"        `[\"off\"|\"track\"|\"context\"]` must accept one of `off`, `track`, or `context`.\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1346
+#: spotify/spotify_commands.py:1357
 msgid "Repeat must accept either `off`, `track`, or `context`."
 msgstr ""
 
@@ -990,15 +803,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1446
+#: spotify/spotify_commands.py:1438
 msgid "Shuffling songs on Spotify."
 msgstr ""
 
-#: spotify/spotify_commands.py:1448
+#: spotify/spotify_commands.py:1440
 msgid "Turning off shuffle on Spotify."
 msgstr ""
 
-#: spotify/spotify_commands.py:1464
+#: spotify/spotify_commands.py:1456
 #, docstring
 msgid "\n"
 "        Seek to a specific point in the current song\n\n"
@@ -1007,11 +820,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1498
+#: spotify/spotify_commands.py:1490
 msgid "Seeking to {time}."
 msgstr ""
 
-#: spotify/spotify_commands.py:1514
+#: spotify/spotify_commands.py:1506
 #, docstring
 msgid "\n"
 "        Set your spotify volume percentage\n\n"
@@ -1019,7 +832,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1584
+#: spotify/spotify_commands.py:1541
+msgid "Setting the volume on {device} to {volume}."
+msgstr ""
+
+#: spotify/spotify_commands.py:1567
 #, docstring
 msgid "\n"
 "        Change the currently playing spotify device\n\n"
@@ -1027,19 +844,19 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1614
+#: spotify/spotify_commands.py:1601
 msgid "Pick the device you want to transfer playback to"
 msgstr ""
 
-#: spotify/spotify_commands.py:1619
+#: spotify/spotify_commands.py:1606
 msgid "I will not transfer spotify playback for you."
 msgstr ""
 
-#: spotify/spotify_commands.py:1626
+#: spotify/spotify_commands.py:1613
 msgid "Transferring playback to {device}"
 msgstr ""
 
-#: spotify/spotify_commands.py:1650
+#: spotify/spotify_commands.py:1637
 #, docstring
 msgid "\n"
 "        Set your default device to attempt to start playing new tracks on\n"
@@ -1048,37 +865,37 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1684
+#: spotify/spotify_commands.py:1671
 msgid "Pick the device you want to set as your default player"
 msgstr ""
 
-#: spotify/spotify_commands.py:1697 spotify/spotify_commands.py:1709
+#: spotify/spotify_commands.py:1684 spotify/spotify_commands.py:1696
 msgid "Saving default device as {device}."
 msgstr ""
 
-#: spotify/spotify_commands.py:1702
+#: spotify/spotify_commands.py:1689
 msgid "I will not save your default device for you."
 msgstr ""
 
-#: spotify/spotify_commands.py:1728
+#: spotify/spotify_commands.py:1750
 #, docstring
 msgid "\n"
 "        List all available devices for Spotify\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1743
+#: spotify/spotify_commands.py:1765
 msgid "{author}'s Spotify Devices:\n"
 msgstr ""
 
-#: spotify/spotify_commands.py:1769
+#: spotify/spotify_commands.py:1791
 #, docstring
 msgid "\n"
 "        List your Spotify featured Playlists\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1797
+#: spotify/spotify_commands.py:1819
 #, docstring
 msgid "\n"
 "        List your Spotify Playlists\n\n"
@@ -1088,11 +905,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1828 spotify/spotify_commands.py:1878
+#: spotify/spotify_commands.py:1853 spotify/spotify_commands.py:1905
 msgid "You don't have any saved playlists I can show here."
 msgstr ""
 
-#: spotify/spotify_commands.py:1844
+#: spotify/spotify_commands.py:1869
 #, docstring
 msgid "\n"
 "        View details about your spotify playlists\n\n"
@@ -1102,7 +919,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1901
+#: spotify/spotify_commands.py:1928
 #, docstring
 msgid "\n"
 "        Create a Spotify Playlist\n\n"
@@ -1112,19 +929,19 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1917
+#: spotify/spotify_commands.py:1944
 msgid "Created {public} playlist named: {name}"
 msgstr ""
 
-#: spotify/spotify_commands.py:1918
+#: spotify/spotify_commands.py:1945
 msgid "Public"
 msgstr ""
 
-#: spotify/spotify_commands.py:1918
+#: spotify/spotify_commands.py:1945
 msgid "Private"
 msgstr ""
 
-#: spotify/spotify_commands.py:1940
+#: spotify/spotify_commands.py:1967
 #, docstring
 msgid "\n"
 "        Add 1 (or more) tracks to a spotify playlist\n\n"
@@ -1133,15 +950,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:1965 spotify/spotify_commands.py:2028
+#: spotify/spotify_commands.py:1992 spotify/spotify_commands.py:2055
 msgid "You did not provide any tracks for me to add to the playlist."
 msgstr ""
 
-#: spotify/spotify_commands.py:1985 spotify/spotify_commands.py:2044
+#: spotify/spotify_commands.py:2012 spotify/spotify_commands.py:2071
 msgid "I could not find a playlist matching {name}."
 msgstr ""
 
-#: spotify/spotify_commands.py:2006
+#: spotify/spotify_commands.py:2033
 #, docstring
 msgid "\n"
 "        Remove 1 (or more) tracks to a spotify playlist\n\n"
@@ -1150,7 +967,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:2065
+#: spotify/spotify_commands.py:2092
 #, docstring
 msgid "\n"
 "        Add a playlist to your spotify library\n\n"
@@ -1159,11 +976,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:2085
+#: spotify/spotify_commands.py:2112
 msgid "You did not provide any playlists for me to add to your library."
 msgstr ""
 
-#: spotify/spotify_commands.py:2111
+#: spotify/spotify_commands.py:2138
 #, docstring
 msgid "\n"
 "        Add an artist to your spotify library\n\n"
@@ -1171,11 +988,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:2134
+#: spotify/spotify_commands.py:2161
 msgid "Now following {artist}"
 msgstr ""
 
-#: spotify/spotify_commands.py:2154
+#: spotify/spotify_commands.py:2181
 #, docstring
 msgid "\n"
 "        View an artists albums\n\n"
@@ -1183,7 +1000,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: spotify/spotify_commands.py:2174
+#: spotify/spotify_commands.py:2202
 msgid "You did not provide an artist link or URI."
 msgstr ""
 

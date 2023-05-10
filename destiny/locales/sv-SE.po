@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
-"POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"POT-Creation-Date: 2023-05-04 02:31+0000\n"
+"PO-Revision-Date: 2023-05-10 16:10\n"
 "Last-Translator: \n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -17,188 +17,116 @@ msgstr ""
 "X-Crowdin-File-ID: 644\n"
 "Language: sv_SE\n"
 
-#: destiny/api.py:167
+#: destiny/api.py:240
 msgid "That token is invalid."
 msgstr ""
 
-#: destiny/api.py:192
+#: destiny/api.py:264
 msgid "The refresh token is invalid."
 msgstr ""
 
-#: destiny/api.py:206
+#: destiny/api.py:301
 msgid "The bot owner needs to provide some API tokens first."
 msgstr ""
 
-#: destiny/api.py:209
+#: destiny/api.py:304
 msgid "Go to the following url authorize this application and provide everything after `?code=` shown in the URL.\n"
 msgstr ""
 
-#: destiny/api.py:373
+#: destiny/api.py:579
 msgid "No manifest found, getting response from API."
 msgstr ""
 
-#: destiny/api.py:414
+#: destiny/api.py:615
 msgid "This command requires the Manifest to be downloaded to work."
 msgstr ""
 
-#: destiny/api.py:646
+#: destiny/api.py:976
 msgid "You need to authenticate your Bungie.net account before this command will work."
 msgstr ""
 
-#: destiny/api.py:655
+#: destiny/api.py:991
 msgid "That user has not provided an OAuth scope to view destiny data."
 msgstr ""
 
-#: destiny/api.py:690 destiny/api.py:692
+#: destiny/api.py:1020 destiny/api.py:1022
 msgid "Credentials saved."
 msgstr ""
 
-#: destiny/api.py:711 destiny/api.py:719
+#: destiny/api.py:1039
+msgid "Account set to {name}"
+msgstr ""
+
+#: destiny/api.py:1046
 msgid "Account set to {name} {platform}"
 msgstr ""
 
-#: destiny/api.py:732
+#: destiny/api.py:1059
 msgid "There are multiple destiny memberships available, which one would you like to use?\n"
 msgstr ""
 
-#: destiny/api.py:745
+#: destiny/api.py:1072
 msgid "Crossave"
 msgstr ""
 
-#: destiny/converter.py:18
-#, docstring
-msgid "Returns the correct history code if provided a named one"
+#: destiny/api.py:1333 destiny/api.py:1360 destiny/api.py:1381
+msgid "Perk {count}"
 msgstr ""
 
-#: destiny/converter.py:170
+#: destiny/converter.py:468
 msgid "That is not an available activity, pick from these: {activity_list}"
 msgstr ""
 
-#: destiny/converter.py:179
-#, docstring
-msgid "Returns a tuple of strings of the correct stats page type to use"
-msgstr ""
-
-#: destiny/converter.py:201
+#: destiny/converter.py:498
 msgid "That is not an available stats page, pick from these: {activity_list}"
 msgstr ""
 
-#: destiny/converter.py:210
-#, docstring
-msgid "Returns specific type of information to display with search\n"
-"    By default we want to list the available perks on the weapon\n"
-"    Sometimes a user may want to view an items lore card\n\n"
-"    returns True to show lore pages instead\n"
-"    returns False to show detailed info instead\n\n"
-"    "
+#: destiny/converter.py:551
+msgid "No characters could be found at this time."
 msgstr ""
 
-#: destiny/converter.py:243
-#, docstring
-msgid "Returns the correct item type code if provided a named one\n"
-"    This is essentially the enum for item type as a converter\n"
-"    None: 0\n"
-"    Currency: 1\n"
-"    Armor: 2\n"
-"    Weapon: 3\n"
-"    Message: 7\n"
-"    Engram: 8\n"
-"    Consumable: 9\n"
-"    ExchangeMaterial: 10\n"
-"    MissionReward: 11\n"
-"    QuestStep: 12\n"
-"    QuestStepComplete: 13\n"
-"    Emblem: 14\n"
-"    Quest: 15\n"
-"    Subclass: 16\n"
-"    ClanBanner: 17\n"
-"    Aura: 18\n"
-"    Mod: 19\n"
-"    Dummy: 20\n"
-"    Ship: 21\n"
-"    Vehicle: 22\n"
-"    Emote: 23\n"
-"    Ghost: 24\n"
-"    Package: 25\n"
-"    Bounty: 26\n"
-"    Wrapper: 27\n"
-"    SeasonalArtifact: 28\n"
-"    Finisher: 29\n"
-"    "
-msgstr ""
-
-#: destiny/converter.py:318
-msgid "That is not an available item type, pick from these: {activity_list}"
-msgstr ""
-
-#: destiny/converter.py:327
-#, docstring
-msgid "Returns the correct item type code if provided a named one"
-msgstr ""
-
-#: destiny/destiny.py:39
+#: destiny/destiny.py:62
 #, docstring
 msgid "\n"
 "    Get information from the Destiny 2 API\n"
 "    "
 msgstr ""
 
-#: destiny/destiny.py:81
-#, docstring
-msgid "Get information from the Destiny 2 API"
+#: destiny/destiny.py:159
+msgid "I have downloaded the latest Destiny Manifest: {version}"
 msgstr ""
 
-#: destiny/destiny.py:84
+#: destiny/destiny.py:164
+msgid "There is a Destiny Manifest update available from {old_ver} to version {version}"
+msgstr ""
+
+#: destiny/destiny.py:175
+msgid "The Destiny API servers appear to be offline. Try again later."
+msgstr ""
+
+#: destiny/destiny.py:177
 msgid "I can't seem to find your Destiny profile."
 msgstr ""
 
-#: destiny/destiny.py:96
-#, docstring
-msgid "\n"
-"        Slash command toggling for destiny\n"
-"        "
-msgstr ""
-
-#: destiny/destiny.py:104
-#, docstring
-msgid "Toggle this cog to register slash commands"
-msgstr ""
-
-#: destiny/destiny.py:107
-msgid "enabled"
-msgstr ""
-
-#: destiny/destiny.py:107
-msgid "disabled"
-msgstr ""
-
-#: destiny/destiny.py:108
-msgid "Slash commands are {verb}."
-msgstr ""
-
-#: destiny/destiny.py:116
+#: destiny/destiny.py:188
 #, docstring
 msgid "\n"
 "        Remove your authorization to the destiny API on the bot\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:126
+#: destiny/destiny.py:193
 msgid "Your authorization has been reset."
 msgstr ""
 
-#: destiny/destiny.py:134
+#: destiny/destiny.py:198
 #, docstring
 msgid "\n"
 "        Search for a destiny item, vendor, record, etc.\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:176 destiny/destiny.py:203 destiny/destiny.py:224
-msgid "Perk {count}"
-msgstr ""
-
-#: destiny/destiny.py:235
+#: destiny/destiny.py:208
 #, docstring
 msgid "\n"
 "        Search for a specific item in Destiny 2\n\n"
@@ -209,77 +137,81 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:271
+#: destiny/destiny.py:237
 msgid "`{search}` could not be found."
 msgstr ""
 
-#: destiny/destiny.py:338
+#: destiny/destiny.py:302
 msgid "Lore: \n\n"
 msgstr ""
 
-#: destiny/destiny.py:345
+#: destiny/destiny.py:309
 msgid "Lore Continued"
 msgstr ""
 
-#: destiny/destiny.py:384
+#: destiny/destiny.py:323
+msgid "That item search could not be found."
+msgstr ""
+
+#: destiny/destiny.py:346
 #, docstring
 msgid "\n"
 "        Get your Steam ID to give people to join your in-game fireteam\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:401
+#: destiny/destiny.py:356
 msgid "Use the following code in game to join {author}'s Fireteam:{join_code}"
 msgstr ""
 
-#: destiny/destiny.py:413
+#: destiny/destiny.py:365
 #, docstring
 msgid "\n"
 "        Clan settings\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:436
-msgid "One or more options you have provided are not available in DM's."
-msgstr ""
-
-#: destiny/destiny.py:445
+#: destiny/destiny.py:372
 #, docstring
 msgid "\n"
 "        Display basic information about the clan set in this server\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:470 destiny/destiny.py:639 destiny/destiny.py:708
+#: destiny/destiny.py:389 destiny/destiny.py:505 destiny/destiny.py:535
 msgid "No clan ID has been setup for this server. Use `{prefix}destiny clan set` to set one."
 msgstr ""
 
-#: destiny/destiny.py:484
+#: destiny/destiny.py:401
 msgid "I could not find any information about this servers clan."
 msgstr ""
 
-#: destiny/destiny.py:513
+#: destiny/destiny.py:437
 msgid "Level: {level}/{level_cap}\n"
 "Weekly Progress: {weekly_progress}/{weekly_limit}"
 msgstr ""
 
-#: destiny/destiny.py:526
+#: destiny/destiny.py:450
 msgid "Motto"
 msgstr ""
 
-#: destiny/destiny.py:527
+#: destiny/destiny.py:451
 msgid "Clan XP"
 msgstr ""
 
-#: destiny/destiny.py:528
+#: destiny/destiny.py:452
 msgid "Members"
 msgstr ""
 
-#: destiny/destiny.py:529
+#: destiny/destiny.py:453
 msgid "Clan Founded"
 msgstr ""
 
-#: destiny/destiny.py:536
+#: destiny/destiny.py:455
+msgid "Weekly Clan Rewards Earned"
+msgstr ""
+
+#: destiny/destiny.py:462
 #, docstring
 msgid "\n"
 "        Set the clan ID for this server\n\n"
@@ -290,36 +222,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:564
+#: destiny/destiny.py:483
 msgid "I could not find a clan with that ID."
 msgstr ""
 
-#: destiny/destiny.py:571
+#: destiny/destiny.py:487
 msgid "Server's clan set to"
 msgstr ""
 
-#: destiny/destiny.py:585
-msgid "Pending Clan Members"
-msgstr ""
-
-#: destiny/destiny.py:586
-msgid "React with the user you would like to approve into the clan."
-msgstr ""
-
-#: destiny/destiny.py:597
-msgid "Destiny/Steam Name: {destiny_name}\n"
-"Bungie.net Name: {bungie_name}"
-msgstr ""
-
-#: destiny/destiny.py:598 destiny/destiny.py:599
-msgid "Not Set"
-msgstr ""
-
-#: destiny/destiny.py:601
-msgid "User {count}"
-msgstr ""
-
-#: destiny/destiny.py:619
+#: destiny/destiny.py:493
 #, docstring
 msgid "\n"
 "        Display pending clan members.\n\n"
@@ -328,19 +239,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:649
+#: destiny/destiny.py:512
 msgid "There is no one pending clan approval."
 msgstr ""
 
-#: destiny/destiny.py:657
-msgid "No one will be approved into the clan."
-msgstr ""
-
-#: destiny/destiny.py:677
-msgid "{destiny_name} AKA {bungie_name} has been approved into the clan."
-msgstr ""
-
-#: destiny/destiny.py:688
+#: destiny/destiny.py:524
 #, docstring
 msgid "\n"
 "        Get the full clan roster\n\n"
@@ -349,11 +252,102 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:799
+#: destiny/destiny.py:622
 msgid "Displaying member roster for the servers clan."
 msgstr ""
 
-#: destiny/destiny.py:807 destiny/destiny.py:924 destiny/destiny.py:1007
+#: destiny/destiny.py:629
+#, docstring
+msgid "\n"
+"        Show exactly when Weekyl and Daily reset is\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:652
+msgid "Weekly reset is <t:{weekly}:R> (<t:{weekly}>).\n"
+"Daily Reset is <t:{daily}:R> (<t:{daily}>)."
+msgstr ""
+
+#: destiny/destiny.py:661
+#, docstring
+msgid "\n"
+"        Get the latest news articles from Bungie.net\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:747 destiny/destiny.py:2180
+msgid "Gilded "
+msgstr ""
+
+#: destiny/destiny.py:776
+msgid "Commendations: {score}\n"
+"{commendations}\n"
+msgstr ""
+
+#: destiny/destiny.py:795 destiny/destiny.py:2273
+msgid "Artifact Bonus: {bonus}"
+msgstr ""
+
+#: destiny/destiny.py:797
+msgid "Time Played Total: **{time}**\n"
+msgstr ""
+
+#: destiny/destiny.py:798
+msgid "Last Played: **{time}**\n"
+msgstr ""
+
+#: destiny/destiny.py:804
+msgid "Active Score: **{active}**\n"
+"Legacy Score: **{legacy}**\n"
+"Lifetime Score: **{lifetime}**\n"
+msgstr ""
+
+#: destiny/destiny.py:809
+msgid "Triumphs"
+msgstr ""
+
+#: destiny/destiny.py:813
+msgid "Titles"
+msgstr ""
+
+#: destiny/destiny.py:816
+msgid "Engram Tracker"
+msgstr ""
+
+#: destiny/destiny.py:822
+#, docstring
+msgid "\n"
+"        View and pull from the postmaster\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:845
+msgid "Postmaster"
+msgstr ""
+
+#: destiny/destiny.py:863
+#, docstring
+msgid "\n"
+"        Show your commendation scores\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:890
+msgid "Score: **{total_score}**\n"
+"{bar}\n"
+"Given: {given} - Received: {received}"
+msgstr ""
+
+#: destiny/destiny.py:894
+msgid "{name} Commendations"
+msgstr ""
+
+#: destiny/destiny.py:931
+msgid "Total: {total}\n"
+"{each}"
+msgstr ""
+
+#: destiny/destiny.py:955
 #, docstring
 msgid "\n"
 "        Display a menu of your basic character's info\n"
@@ -361,167 +355,225 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:859
-#, docstring
-msgid "\n"
-"        Show exactly when Weekyl and Daily reset is\n"
-"        "
-msgstr ""
-
-#: destiny/destiny.py:884
-msgid "Weekly reset is <t:{weekly}:R> (<t:{weekly}>).\n"
-"Daily Reset is <t:{daily}:R> (<t:{daily}>)."
-msgstr ""
-
-#: destiny/destiny.py:896
-#, docstring
-msgid "\n"
-"        Allows you to interact with your vault through discord\n"
-"        "
-msgstr ""
-
-#: destiny/destiny.py:1068 destiny/destiny.py:2033
-msgid "Gilded "
-msgstr ""
-
-#: destiny/destiny.py:1106 destiny/destiny.py:2105
-msgid "Artifact Bonus: {bonus}"
-msgstr ""
-
-#: destiny/destiny.py:1108
-msgid "Time Played Total: **{time}**\n"
-msgstr ""
-
-#: destiny/destiny.py:1109
-msgid "Last Played: **{time}**\n"
-msgstr ""
-
-#: destiny/destiny.py:1113
-msgid "Titles"
-msgstr ""
-
-#: destiny/destiny.py:1114 destiny/destiny.py:1612 destiny/destiny.py:1717
-msgid "Current Currencies"
-msgstr ""
-
-#: destiny/destiny.py:1130
+#: destiny/destiny.py:995
 #, docstring
 msgid "\n"
 "        Find Destiny Lore\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:1148
+#: destiny/destiny.py:1002
 msgid "The manifest needs to be downloaded for this to work."
 msgstr ""
 
-#: destiny/destiny.py:1165
+#: destiny/destiny.py:1016
 msgid "Continued"
 msgstr ""
 
-#: destiny/destiny.py:1190
+#: destiny/destiny.py:1049
 #, docstring
 msgid "\n"
 "        Display Xûr's current location\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:1225 destiny/destiny.py:1288
+#: destiny/destiny.py:1076 destiny/destiny.py:1144
 msgid "Xûr's not around, come back {next_xur}."
 msgstr ""
 
-#: destiny/destiny.py:1241 destiny/destiny.py:1304
+#: destiny/destiny.py:1091 destiny/destiny.py:1158
 msgid "Unknown"
 msgstr ""
 
-#: destiny/destiny.py:1242
+#: destiny/destiny.py:1092
 msgid "Xûr's current location is {location}."
 msgstr ""
 
-#: destiny/destiny.py:1251
+#: destiny/destiny.py:1102
 #, docstring
 msgid "\n"
 "        Display a menu of Xûr's current wares\n\n"
-"        `[full=False]` Show perk definition on Xûr's current wares\n"
+"        `[character_class]` Which class you want to see the inventory for.\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:1310
-msgid "Xûr's current wares"
+#: destiny/destiny.py:1147
+msgid "I can't seem to find that vendors inventory."
 msgstr ""
 
-#: destiny/destiny.py:1386 destiny/destiny.py:1950
+#: destiny/destiny.py:1169
+msgid "{name}'s current wares"
+msgstr ""
+
+#: destiny/destiny.py:1172
+msgid "Next Refresh {date}"
+msgstr ""
+
+#: destiny/destiny.py:1258
 msgid "Total: **{total}**\n"
 msgstr ""
 
-#: destiny/destiny.py:1419
+#: destiny/destiny.py:1268
+msgid "**Refreshes {refresh_time}**"
+msgstr ""
+
+#: destiny/destiny.py:1274
+msgid "Cost: "
+msgstr ""
+
+#: destiny/destiny.py:1312
 #, docstring
 msgid "\n"
-"        Display items currently available on the Eververse in a menu\n\n"
-"        `[item_types]` can be one of `ghosts`, `ships`, `sparrows`,\n"
-"        `shaders`, `ornaments` and `finishers` to filter specific items.\n"
+"        Commands for looking up various vendor information\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:1455 destiny/destiny.py:1496
-msgid "I can't access the eververse at the moment."
-msgstr ""
-
-#: destiny/destiny.py:1491
-msgid "Cost"
-msgstr ""
-
-#: destiny/destiny.py:1516
+#: destiny/destiny.py:1324
 #, docstring
 msgid "\n"
-"        Display Spiders wares\n"
+"        Display items currently available on the Eververse in a menu.\n\n"
+"        `[character_class]` Which class you want to see the inventory for.\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:1545
-msgid "I can't access the Spider at the moment."
-msgstr ""
-
-#: destiny/destiny.py:1621
+#: destiny/destiny.py:1340
 #, docstring
 msgid "\n"
-"        Display Rahool's wares\n"
+"        Display Rahool's wares.\n\n"
+"        `[character_class]` Which class you want to see the inventory for.\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:1650
-msgid "I can't access the Master Rahool at the moment."
-msgstr ""
-
-#: destiny/destiny.py:1726
+#: destiny/destiny.py:1356
 #, docstring
 msgid "\n"
-"        Display Banshee-44's wares\n"
+"        Display Banshee-44's wares.\n\n"
+"        `[character_class]` Which class you want to see the inventory for.\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:1758
-msgid "I can't access the Banshee-44 at the moment."
-msgstr ""
-
-#: destiny/destiny.py:1834
+#: destiny/destiny.py:1372
 #, docstring
 msgid "\n"
 "        Display Ada-1's wares\n\n"
-"        `[character]` Show inventory specific to a character class. Must be either\n"
-"        Hunter, Warlock, or Titan. Default is whichever is the first character found.\n"
+"        `[character_class]` Which class you want to see the inventory for.\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:1871
-msgid "I can't access the Ada-1 at the moment."
+#: destiny/destiny.py:1388
+#, docstring
+msgid "\n"
+"        Display Saint-14's wares\n\n"
+"        `[character_class]` Which class you want to see the inventory for.\n"
+"        "
 msgstr ""
 
-#: destiny/destiny.py:1884
-msgid "I cannot find an inventory for character class {character}."
+#: destiny/destiny.py:1405
+#, docstring
+msgid "\n"
+"        Display any vendors wares.\n\n"
+"        `<vendor>` - The vendor whose inventory you want to see.\n"
+"        "
 msgstr ""
 
-#: destiny/destiny.py:1980
+#: destiny/destiny.py:1434
+#, docstring
+msgid "Get Random Items"
+msgstr ""
+
+#: destiny/destiny.py:1459
+#, docstring
+msgid "\n"
+"        Get a random Exotic Weapon or choose a specific Class\n"
+"        to get a random armour piece\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:1479 destiny/destiny.py:1812
+#, docstring
+msgid "\n"
+"        Get information about this weeks Nightfall activity\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:1529
+#, docstring
+msgid "\n"
+"        Get information about available activities\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:1602
+msgid "Resets {reset}\n"
+msgstr ""
+
+#: destiny/destiny.py:1620
+msgid "Recommended Power Level: {power}\n"
+msgstr ""
+
+#: destiny/destiny.py:1660
+msgid "Rewards"
+msgstr ""
+
+#: destiny/destiny.py:1663
+msgid "Completion"
+msgstr ""
+
+#: destiny/destiny.py:1692 destiny/destiny.py:1761
+msgid "Raid Completion State"
+msgstr ""
+
+#: destiny/destiny.py:1737
+#, docstring
+msgid "\n"
+"        Show your current raid completion state\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:1833
+msgid "I could not find any Dares of Eternity information."
+msgstr ""
+
+#: destiny/destiny.py:1840
+#, docstring
+msgid "\n"
+"        Show which weapons you're missing deepsight resonance for crafting\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:1898
+msgid "Missing Craftable Weapons"
+msgstr ""
+
+#: destiny/destiny.py:1947 destiny/destiny.py:2058 destiny/destiny.py:2094
+msgid "Empty Loadout"
+msgstr ""
+
+#: destiny/destiny.py:1950
+msgid "{name} Loadouts"
+msgstr ""
+
+#: destiny/destiny.py:2000
+#, docstring
+msgid "\n"
+"        Commands for interacting with your loadouts\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:2012
+#, docstring
+msgid "\n"
+"        Equip a loadout on a specific character\n\n"
+"        `<character>` The character you want to select a loadout for\n"
+"        `<loadout>` The loadout you want to equip\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:2084
+msgid "I could not find any loadout information"
+msgstr ""
+
+#: destiny/destiny.py:2102 destiny/destiny.py:2130
 #, docstring
 msgid "\n"
 "        Display a menu of each character's equipped weapons and their info\n\n"
@@ -530,35 +582,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:2127
-#, docstring
-msgid "\n"
-"        Display a menu of each characters gambit stats\n"
-"        "
+#: destiny/destiny.py:2257
+msgid "Weapons"
 msgstr ""
 
-#: destiny/destiny.py:2140
-#, docstring
-msgid "\n"
-"        Display a menu of each character's pvp stats\n"
-"        "
-msgstr ""
-
-#: destiny/destiny.py:2153
-#, docstring
-msgid "\n"
-"        Display a menu for each character's RAID stats\n"
-"        "
-msgstr ""
-
-#: destiny/destiny.py:2166
-#, docstring
-msgid "\n"
-"        Display a menu of past quickplay matches\n"
-"        "
-msgstr ""
-
-#: destiny/destiny.py:2179
+#: destiny/destiny.py:2297
 #, docstring
 msgid "\n"
 "        Display a menu of each character's last 5 activities\n\n"
@@ -579,203 +607,207 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:2216
+#: destiny/destiny.py:2333
 msgid "Assists"
 msgstr ""
 
-#: destiny/destiny.py:2217
+#: destiny/destiny.py:2334
 msgid "Kills"
 msgstr ""
 
-#: destiny/destiny.py:2218
+#: destiny/destiny.py:2335
 msgid "Deaths"
 msgstr ""
 
-#: destiny/destiny.py:2219 destiny/destiny.py:2383 destiny/destiny.py:2442
+#: destiny/destiny.py:2336 destiny/destiny.py:2515 destiny/destiny.py:2587
 msgid "Opponents Defeated"
 msgstr ""
 
-#: destiny/destiny.py:2220 destiny/destiny.py:2384 destiny/destiny.py:2443
+#: destiny/destiny.py:2337 destiny/destiny.py:2516 destiny/destiny.py:2588
 msgid "Efficiency"
 msgstr ""
 
-#: destiny/destiny.py:2221
+#: destiny/destiny.py:2338
 msgid "KDR"
 msgstr ""
 
-#: destiny/destiny.py:2222
+#: destiny/destiny.py:2339
 msgid "KDA"
 msgstr ""
 
-#: destiny/destiny.py:2223
+#: destiny/destiny.py:2340
 msgid "Score"
 msgstr ""
 
-#: destiny/destiny.py:2224
+#: destiny/destiny.py:2341
 msgid "Duration"
 msgstr ""
 
-#: destiny/destiny.py:2225
+#: destiny/destiny.py:2342
 msgid "Player Count"
 msgstr ""
 
-#: destiny/destiny.py:2226
+#: destiny/destiny.py:2343
 msgid "Team Score"
 msgstr ""
 
-#: destiny/destiny.py:2227
+#: destiny/destiny.py:2344
 msgid "Completed"
 msgstr ""
 
-#: destiny/destiny.py:2253
+#: destiny/destiny.py:2363
 msgid "Something went wrong I couldn't get info on character {char_id} for activity {activity}"
 msgstr ""
 
-#: destiny/destiny.py:2308 destiny/destiny.py:2324 destiny/destiny.py:2452
+#: destiny/destiny.py:2427 destiny/destiny.py:2443 destiny/destiny.py:2597
 msgid "Win Loss Ratio"
 msgstr ""
 
-#: destiny/destiny.py:2309
+#: destiny/destiny.py:2428
 msgid "Invasions"
 msgstr ""
 
-#: destiny/destiny.py:2310
+#: destiny/destiny.py:2429
 msgid "Invasion Kills"
 msgstr ""
 
-#: destiny/destiny.py:2311
+#: destiny/destiny.py:2430
 msgid "Invasion Deaths"
 msgstr ""
 
-#: destiny/destiny.py:2312
+#: destiny/destiny.py:2431
 msgid "Invader Deaths"
 msgstr ""
 
-#: destiny/destiny.py:2313
+#: destiny/destiny.py:2432
 msgid "Invader Kills"
 msgstr ""
 
-#: destiny/destiny.py:2314
+#: destiny/destiny.py:2433
 msgid "Primeval Kills"
 msgstr ""
 
-#: destiny/destiny.py:2315
+#: destiny/destiny.py:2434
 msgid "Blocker Kills"
 msgstr ""
 
-#: destiny/destiny.py:2316
+#: destiny/destiny.py:2435
 msgid "Mob Kills"
 msgstr ""
 
-#: destiny/destiny.py:2317
+#: destiny/destiny.py:2436
 msgid "High Value Targets Killed"
 msgstr ""
 
-#: destiny/destiny.py:2318
+#: destiny/destiny.py:2437
 msgid "Motes Picked Up"
 msgstr ""
 
-#: destiny/destiny.py:2319 destiny/destiny.py:2486
+#: destiny/destiny.py:2438 destiny/destiny.py:2631
 msgid "Motes Deposited"
 msgstr ""
 
-#: destiny/destiny.py:2320 destiny/destiny.py:2488
+#: destiny/destiny.py:2439 destiny/destiny.py:2633
 msgid "Motes Denied"
 msgstr ""
 
-#: destiny/destiny.py:2321
+#: destiny/destiny.py:2440
 msgid "Motes Lost"
 msgstr ""
 
-#: destiny/destiny.py:2341
+#: destiny/destiny.py:2465
 msgid "Something went wrong I couldn't get info on character {char_id}"
 msgstr ""
 
-#: destiny/destiny.py:2385 destiny/destiny.py:2444
+#: destiny/destiny.py:2517 destiny/destiny.py:2589
 msgid "Best Single Game Kills"
 msgstr ""
 
-#: destiny/destiny.py:2386 destiny/destiny.py:2445
+#: destiny/destiny.py:2518 destiny/destiny.py:2590
 msgid "Best Single Game Score"
 msgstr ""
 
-#: destiny/destiny.py:2387 destiny/destiny.py:2446
+#: destiny/destiny.py:2519 destiny/destiny.py:2591
 msgid "Precision Kills"
 msgstr ""
 
-#: destiny/destiny.py:2388 destiny/destiny.py:2447
+#: destiny/destiny.py:2520 destiny/destiny.py:2592
 msgid "Longest Killing Spree"
 msgstr ""
 
-#: destiny/destiny.py:2389 destiny/destiny.py:2448
+#: destiny/destiny.py:2521 destiny/destiny.py:2593
 msgid "Longest Single Life"
 msgstr ""
 
-#: destiny/destiny.py:2390 destiny/destiny.py:2449
+#: destiny/destiny.py:2522 destiny/destiny.py:2594
 msgid "Total time playing"
 msgstr ""
 
-#: destiny/destiny.py:2391 destiny/destiny.py:2450
+#: destiny/destiny.py:2523 destiny/destiny.py:2595
 msgid "Average Life Span"
 msgstr ""
 
-#: destiny/destiny.py:2392 destiny/destiny.py:2451
+#: destiny/destiny.py:2524 destiny/destiny.py:2596
 msgid "Best Weapon Type"
 msgstr ""
 
-#: destiny/destiny.py:2400 destiny/destiny.py:2460
+#: destiny/destiny.py:2539
+msgid "__**Raids Completed:**__\n"
+msgstr ""
+
+#: destiny/destiny.py:2545 destiny/destiny.py:2605
 msgid "Kills | Deaths | Assists"
 msgstr ""
 
-#: destiny/destiny.py:2412 destiny/destiny.py:2500
+#: destiny/destiny.py:2557 destiny/destiny.py:2645
 msgid "KDR/KDA"
 msgstr ""
 
-#: destiny/destiny.py:2420 destiny/destiny.py:2505
+#: destiny/destiny.py:2565 destiny/destiny.py:2650
 msgid "Resurrections/Received"
 msgstr ""
 
-#: destiny/destiny.py:2454
+#: destiny/destiny.py:2599
 msgid "Gambit"
 msgstr ""
 
-#: destiny/destiny.py:2465
+#: destiny/destiny.py:2610
 msgid "Blockers"
 msgstr ""
 
-#: destiny/destiny.py:2466
+#: destiny/destiny.py:2611
 msgid "Invasions: {invasions}"
 msgstr ""
 
-#: destiny/destiny.py:2469
+#: destiny/destiny.py:2614
 msgid "Kills: {kills}\n"
 "Deaths: {deaths}"
 msgstr ""
 
-#: destiny/destiny.py:2474
+#: destiny/destiny.py:2619
 msgid "Killed: {killed}\n"
 "Killed By: {by}"
 msgstr ""
 
-#: destiny/destiny.py:2478
+#: destiny/destiny.py:2623
 msgid "Invaders"
 msgstr ""
 
-#: destiny/destiny.py:2485
+#: destiny/destiny.py:2630
 msgid "{motes:,} ({lost} Lost)"
 msgstr ""
 
-#: destiny/destiny.py:2492
+#: destiny/destiny.py:2637
 msgid "Primevals: {prime:,}\n"
 "High Value Targets: {high:,}\n"
 "Mobs: {mobs:,}"
 msgstr ""
 
-#: destiny/destiny.py:2495
+#: destiny/destiny.py:2640
 msgid "Kill Stats"
 msgstr ""
 
-#: destiny/destiny.py:2519
+#: destiny/destiny.py:2675
 #, docstring
 msgid "\n"
 "        Display each character's stats for a specific activity\n"
@@ -784,55 +816,125 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:2546
+#: destiny/destiny.py:2695
 msgid "No stats could be found for that activity and character."
 msgstr ""
 
-#: destiny/destiny.py:2566
+#: destiny/destiny.py:2735
 #, docstring
 msgid "\n"
-"        See the current manifest version and optionally re-download it\n"
+"        Destiny manifest commands\n\n"
+"        The manifest is useful at improving lookup speed of items and other\n"
+"        various functions of the cog.\n"
 "        "
 msgstr ""
 
-#: destiny/destiny.py:2574
+#: destiny/destiny.py:2746
+#, docstring
+msgid "\n"
+"        Setup the manifest to automatically download when an update is available.\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:2751
+msgid "I will automatically download manifest updates."
+msgstr ""
+
+#: destiny/destiny.py:2753
+msgid "I will **not** automatically download manifest updates."
+msgstr ""
+
+#: destiny/destiny.py:2760
+#, docstring
+msgid "\n"
+"        Set a channel that will post when the manifest needs to be updated.\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:2766
+msgid "I will not notify any channels about updated manifest versions."
+msgstr ""
+
+#: destiny/destiny.py:2771
+msgid "I will notify {channel} when there is a manifest update."
+msgstr ""
+
+#: destiny/destiny.py:2779
+#, docstring
+msgid "\n"
+"        Enable caching of the Destiny Manifest to improve response times\n\n"
+"        `<enable>` Must be either `disable`, `lazy`, or `enable`.\n"
+"            - `disable` disables caching of the Manifest meaning every command will load the\n"
+"            manifest from disk.\n"
+"            - `lazy` will cache the data after it has been looked at once, this is recommended.\n"
+"            - `enable` will pre-emptively cache the data on cog load forcing all data\n"
+"            to be in the cache. This can lead to excess unnecessary data being used.\n\n"
+"        ⚠️Warning⚠️ - Enabling this can lead to higher than expected memory usage\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:2793
+msgid "The manifest will cache itself after being used once."
+msgstr ""
+
+#: destiny/destiny.py:2795
+msgid "The manifest will cache itself whenever the cog is loaded."
+msgstr ""
+
+#: destiny/destiny.py:2797
+msgid "The manifest will not be cached."
+msgstr ""
+
+#: destiny/destiny.py:2804
+#, docstring
+msgid "\n"
+"        Check if the current manifest is up-to-date and optionally download\n"
+"        the newest one.\n"
+"        "
+msgstr ""
+
+#: destiny/destiny.py:2814
 msgid "You need to set your API authentication tokens with `[p]destiny token` first."
 msgstr ""
 
-#: destiny/destiny.py:2583
+#: destiny/destiny.py:2824
 msgid "Not Downloaded"
 msgstr ""
 
-#: destiny/destiny.py:2584
+#: destiny/destiny.py:2825
 msgid "Current manifest version is {version}."
 msgstr ""
 
-#: destiny/destiny.py:2585
-msgid "re-download"
+#: destiny/destiny.py:2826
+msgid "re-download the"
 msgstr ""
 
-#: destiny/destiny.py:2587
+#: destiny/destiny.py:2828
 msgid "\n\n"
 "There is an update available to version {version}"
 msgstr ""
 
-#: destiny/destiny.py:2590
-msgid "download"
+#: destiny/destiny.py:2831
+msgid "download the **new**"
 msgstr ""
 
-#: destiny/destiny.py:2594
-msgid "Would you like to {redownload} the manifest?"
+#: destiny/destiny.py:2835
+msgid "Would you like to {redownload} manifest?"
 msgstr ""
 
-#: destiny/destiny.py:2601
-msgid "I will not download the manifest."
+#: destiny/destiny.py:2841
+msgid "Manifest Version {version} was downloaded."
 msgstr ""
 
-#: destiny/destiny.py:2607 destiny/destiny.py:2617
+#: destiny/destiny.py:2846 destiny/destiny.py:2855
 msgid "There was an issue downloading the manifest."
 msgstr ""
 
-#: destiny/destiny.py:2624
+#: destiny/destiny.py:2849
+msgid "I will not download the manifest."
+msgstr ""
+
+#: destiny/destiny.py:2863
 #, docstring
 msgid "\n"
 "        Set the API tokens for Destiny 2's API\n\n"
@@ -846,94 +948,52 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: destiny/menus.py:29 destiny/menus.py:55
+#: destiny/menus.py:70
+msgid "Are you sure you want to approve {bnet_name} into the clan?"
+msgstr ""
+
+#: destiny/menus.py:92
+msgid "{user} has been approved into the clan."
+msgstr ""
+
+#: destiny/menus.py:113
+msgid "Pending Clan Members"
+msgstr ""
+
+#: destiny/menus.py:137 destiny/menus.py:163 destiny/menus.py:403
 msgid "Page {number}"
 msgstr ""
 
-#: destiny/menus.py:296
+#: destiny/menus.py:290
+msgid "Equip"
+msgstr ""
+
+#: destiny/menus.py:305
+msgid "Equipping {name} loadout."
+msgstr ""
+
+#: destiny/menus.py:309
+msgid "There was an error equipping that loadout."
+msgstr ""
+
+#: destiny/menus.py:317
+msgid "Select a Character"
+msgstr ""
+
+#: destiny/menus.py:333
+msgid "Pull from Postmaster"
+msgstr ""
+
+#: destiny/menus.py:377
+msgid "Transferring {items} from the postmaster."
+msgstr ""
+
+#: destiny/menus.py:383
+msgid "Some of the items selected could not be pulled from the postmaster.\n"
+"{errors}"
+msgstr ""
+
+#: destiny/menus.py:667
 msgid "You are not authorized to interact with this."
-msgstr ""
-
-#: destiny/slash.py:23
-#, docstring
-msgid "Remove your authorization to the Destiny API on this bot"
-msgstr ""
-
-#: destiny/slash.py:28
-#, docstring
-msgid "Get your Steam ID to give people to join your in-game fireteam"
-msgstr ""
-
-#: destiny/slash.py:33
-#, docstring
-msgid "Show exactly when Weekly and Daily reset is"
-msgstr ""
-
-#: destiny/slash.py:38
-#, docstring
-msgid "Display a menu of your basic character's info"
-msgstr ""
-
-#: destiny/slash.py:43
-#, docstring
-msgid "Display Xûr's current location"
-msgstr ""
-
-#: destiny/slash.py:48
-#, docstring
-msgid "Display a menu of Xûr's current wares"
-msgstr ""
-
-#: destiny/slash.py:53
-#, docstring
-msgid "Display Rahool's wares"
-msgstr ""
-
-#: destiny/slash.py:58
-#, docstring
-msgid "Display Banshee-44's wares"
-msgstr ""
-
-#: destiny/slash.py:63
-#, docstring
-msgid "Display Ada-1's wares"
-msgstr ""
-
-#: destiny/slash.py:73
-#, docstring
-msgid "Display a menu of each character's equipped weapons and their info"
-msgstr ""
-
-#: destiny/slash.py:84
-#, docstring
-msgid "Display each character's stats for a specific activity"
-msgstr ""
-
-#: destiny/slash.py:89
-#, docstring
-msgid "Display a menu of each character's last 5 activities"
-msgstr ""
-
-#: destiny/slash.py:114
-#, docstring
-msgid "Search for a specific item in Destiny 2"
-msgstr ""
-
-#: destiny/slash.py:123
-#, docstring
-msgid "Display basic informaition about a clan in this server"
-msgstr ""
-
-#: destiny/slash.py:142
-#, docstring
-msgid "Get the full clan roster"
-msgstr ""
-
-#: destiny/slash.py:180
-msgid "You are not allowed to run this command here."
-msgstr ""
-
-#: destiny/slash.py:194
-msgid "Commands are not allowed in this channel or guild."
 msgstr ""
 

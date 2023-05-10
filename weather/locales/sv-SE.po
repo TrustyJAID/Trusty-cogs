@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
-"POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"POT-Creation-Date: 2023-04-02 16:33+0000\n"
+"PO-Revision-Date: 2023-05-10 16:10\n"
 "Last-Translator: \n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -17,25 +17,112 @@ msgstr ""
 "X-Crowdin-File-ID: 440\n"
 "Language: sv_SE\n"
 
-#: weather/weather.py:27
-msgid "`{units}` is not a vaild option!"
+#: weather/api.py:339 weather/api.py:340
+msgid "No Data"
 msgstr ""
 
-#: weather/weather.py:33
+#: weather/api.py:343
+msgid "{weather_emoji} **Weather**: {weather}\n"
+"😓 **Humidity**: {humidity}%\n"
+"💨 **Wind Speed**: {wind_speed} {direction}\n"
+"🌡 **Temperature**: {temp} {temp_units}\n"
+"{cloudiness_emoji} **Cloudiness**: {clouds}%\n"
+"👓 **Visibility**: {visibility} m\n"
+"🌄 **Sunrise**: {sunrise_ts}\n"
+"🌇 **Sunset**: {sunset_ts}\n"
+"☀️ **UV Index**: {uvi}\n"
+"🎈 **Atmospheric Pressure**: {pressure} hPa\n"
+msgstr ""
+
+#: weather/api.py:371 weather/api.py:469
+msgid "🌧️ **Rain**: {rain}\n"
+msgstr ""
+
+#: weather/api.py:375 weather/api.py:473
+msgid "🌨️ **Snow**: {snow}\n"
+msgstr ""
+
+#: weather/api.py:445
+msgid "{weather_emoji} **Weather**: {weather}\n"
+"😓 **Humidity**: {humidity}%\n"
+"💨 **Wind Speed**: {wind_speed} {direction}\n"
+"🌡 **Temperature**: {temp} {temp_units}\n"
+"{cloudiness_emoji} **Cloudiness**: {clouds}%\n"
+"👓 **Visibility**: {visibility} m\n"
+"☀️ **UV Index**: {uvi}\n"
+"🎈 **Atmospheric Pressure**: {pressure} hPa\n"
+msgstr ""
+
+#: weather/api.py:541
+msgid "{weather_emoji} **Weather**: {weather}\n"
+"😓 **Humidity**: {humidity}%\n"
+"💨 **Wind Speed**: {wind_speed} {direction}\n"
+"🌡 **Temperature**: {temp} {temp_units}\n"
+"{cloudiness_emoji} **Cloudiness**: {clouds}%\n"
+"🌄 **Sunrise**: {sunrise_ts}\n"
+"🌇 **Sunset**: {sunset_ts}\n"
+"☀️ **UV Index**: {uvi}\n"
+"🎈 **Atmospheric Pressure**: {pressure} hPa\n"
+msgstr ""
+
+#: weather/api.py:567
+msgid "🌧️ **Rain**: {rain} mm\n"
+msgstr ""
+
+#: weather/api.py:571
+msgid "🌨️ **Snow**: {snow} mm\n"
+msgstr ""
+
+#: weather/api.py:574
+msgid "Moon Phase: {moon}"
+msgstr ""
+
+#: weather/api.py:656 weather/weather.py:122
+msgid "No locations found matching `{search}`."
+msgstr ""
+
+#: weather/api.py:765
+msgid "Weather for {location}"
+msgstr ""
+
+#: weather/api.py:771
+msgid "Current Weather"
+msgstr ""
+
+#: weather/api.py:784
+msgid "Powered by https://openweathermap.org"
+msgstr ""
+
+#: weather/menus.py:177
+msgid "Forecast"
+msgstr ""
+
+#: weather/menus.py:191
+msgid "Hourly"
+msgstr ""
+
+#: weather/menus.py:205
+msgid "Current"
+msgstr ""
+
+#: weather/menus.py:218
+msgid "Select a Page"
+msgstr ""
+
+#: weather/menus.py:377
+msgid "You are not authorized to interact with this."
+msgstr ""
+
+#: weather/weather.py:21
 #, docstring
 msgid "Get weather data from https://openweathermap.org"
 msgstr ""
 
-#: weather/weather.py:72
-#, docstring
-msgid "\n"
-"        Display weather in a given location\n\n"
-"        `location` must take the form of `city, Country Code`\n"
-"        example: `[p]weather New York,US`\n"
-"        "
+#: weather/weather.py:81
+msgid "The bot owner needs to set an api key. See `{prefix}weather set creds`."
 msgstr ""
 
-#: weather/weather.py:84
+#: weather/weather.py:144
 #, docstring
 msgid "\n"
 "        Display weather in a given location\n\n"
@@ -44,17 +131,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: weather/weather.py:96
-#, docstring
-msgid "\n"
-"        Display weather in a given location\n\n"
-"        `cityid` must be a valid openweathermap city ID\n"
-"        (get list here: <https://bulk.openweathermap.org/sample/city.list.json.gz>)\n"
-"        example: `[p]weather cityid 2172797`\n"
-"        "
-msgstr ""
-
-#: weather/weather.py:109
+#: weather/weather.py:183
 #, docstring
 msgid "\n"
 "        Display weather in a given location\n\n"
@@ -64,93 +141,71 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: weather/weather.py:121
+#: weather/weather.py:206
+msgid "No locations found matching `{lat}, {lon}`."
+msgstr ""
+
+#: weather/weather.py:215
 #, docstring
 msgid "Set user or guild default units"
 msgstr ""
 
-#: weather/weather.py:128
+#: weather/weather.py:222
 #, docstring
 msgid "\n"
 "        Sets the guild default weather units\n\n"
-"        `units` must be one of imperial, metric, or kelvin\n"
+"        `units` must be one of imperial, metric, or standard (kelvin)\n"
 "        "
 msgstr ""
 
-#: weather/weather.py:135
+#: weather/weather.py:229
 msgid "Server's default units set to `{units}`"
 msgstr ""
 
-#: weather/weather.py:140
+#: weather/weather.py:234
 #, docstring
 msgid "\n"
 "        Sets the bots default weather units\n\n"
-"        `units` must be one of imperial, metric, or kelvin\n"
+"        `units` must be one of imperial, metric, or standard (kelvin)\n"
 "        "
 msgstr ""
 
-#: weather/weather.py:146
+#: weather/weather.py:240
 msgid "Bots default units set to {units}"
 msgstr ""
 
-#: weather/weather.py:150
+#: weather/weather.py:244
 #, docstring
 msgid "\n"
 "        Sets the user default weather units\n\n"
-"        `units` must be one of imperial, metric, or kelvin\n"
+"        `units` must be one of imperial, metric, or standard (kelvin)\n"
 "        Note: User settings override guild settings.\n"
 "        "
 msgstr ""
 
-#: weather/weather.py:159
+#: weather/weather.py:253
 msgid "{author} default units set to `{units}`"
 msgstr ""
 
-#: weather/weather.py:232
-msgid "🌍 **Location**"
+#: weather/weather.py:261
+#, docstring
+msgid "\n"
+"        How to setup the weather cog credentials\n\n"
+"        1. go to https://openweathermap.org\n"
+"        2. Create an account.\n"
+"        3. go to https://home.openweathermap.org/api_keys\n"
+"        4. Enter an API key name and click Generate\n"
+"        5. Copy the key and run `[p]set api openweathermap api_key YOUR_API_KEY_HERE`\n"
+"        6. go to https://home.openweathermap.org/subscriptions and Subscribe to One Call by Call\n"
+"        "
 msgstr ""
 
-#: weather/weather.py:235
-msgid "🌎 **Location**"
-msgstr ""
-
-#: weather/weather.py:235
-msgid "*Unavailable*"
-msgstr ""
-
-#: weather/weather.py:238
-msgid "📏 **Lat,Long**"
-msgstr ""
-
-#: weather/weather.py:240
-msgid "☁ **Condition**"
-msgstr ""
-
-#: weather/weather.py:242
-msgid "😓 **Humidity**"
-msgstr ""
-
-#: weather/weather.py:244
-msgid "💨 **Wind Speed**"
-msgstr ""
-
-#: weather/weather.py:246
-msgid "🌡 **Temperature**"
-msgstr ""
-
-#: weather/weather.py:250
-msgid "🔆 **Min - Max**"
-msgstr ""
-
-#: weather/weather.py:255
-msgid "🌄 **Sunrise**"
-msgstr ""
-
-#: weather/weather.py:256
-msgid "🌇 **Sunset**"
-msgstr ""
-
-#: weather/weather.py:257
-msgid "Powered by https://openweathermap.org"
+#: weather/weather.py:271
+msgid "1. go to https://openweathermap.org\n"
+"2. Create an account.\n"
+"3. go to https://home.openweathermap.org/api_keys\n"
+"4. Enter an API key name and click Generate\n"
+"5. Copy the key and run `{prefix}set api openweathermap api_key YOUR_API_KEY_HERE`\n"
+"6. go to https://home.openweathermap.org/subscriptions and Subscribe to One Call by Call\n"
 msgstr ""
 

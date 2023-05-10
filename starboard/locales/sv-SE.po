@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
-"POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"POT-Creation-Date: 2023-05-04 02:38+0000\n"
+"PO-Revision-Date: 2023-05-10 16:10\n"
 "Last-Translator: \n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -17,14 +17,14 @@ msgstr ""
 "X-Crowdin-File-ID: 530\n"
 "Language: sv_SE\n"
 
-#: starboard/converters.py:17 starboard/starboard.py:216
-#: starboard/starboard.py:249 starboard/starboard.py:310
-#: starboard/starboard.py:379 starboard/starboard.py:420
-#: starboard/starboard.py:461 starboard/starboard.py:514
-#: starboard/starboard.py:555 starboard/starboard.py:600
-#: starboard/starboard.py:631 starboard/starboard.py:662
-#: starboard/starboard.py:701 starboard/starboard.py:743
-#: starboard/starboard.py:777
+#: starboard/converters.py:17 starboard/starboard.py:221
+#: starboard/starboard.py:261 starboard/starboard.py:322
+#: starboard/starboard.py:393 starboard/starboard.py:438
+#: starboard/starboard.py:483 starboard/starboard.py:540
+#: starboard/starboard.py:583 starboard/starboard.py:628
+#: starboard/starboard.py:659 starboard/starboard.py:694
+#: starboard/starboard.py:737 starboard/starboard.py:779
+#: starboard/starboard.py:818
 msgid "There are no starboards setup on this server!"
 msgstr ""
 
@@ -50,11 +50,11 @@ msgstr ""
 msgid "Context"
 msgstr ""
 
-#: starboard/menus.py:29
+#: starboard/menus.py:32
 msgid "Starboard settings for {guild}"
 msgstr ""
 
-#: starboard/menus.py:32
+#: starboard/menus.py:35
 msgid "Name: **{name}**\n"
 "Enabled: **{enabled}**\n"
 "Emoji: {emoji}\n"
@@ -65,23 +65,23 @@ msgid "Name: **{name}**\n"
 "Selfstar: **{selfstar}**\n"
 msgstr ""
 
-#: starboard/menus.py:53
+#: starboard/menus.py:56
 msgid "Blocked Channels: {chans}\n"
 msgstr ""
 
-#: starboard/menus.py:55
+#: starboard/menus.py:58
 msgid "Blocked roles: {roles}\n"
 msgstr ""
 
-#: starboard/menus.py:62
+#: starboard/menus.py:65
 msgid "Allowed Channels: {chans}\n"
 msgstr ""
 
-#: starboard/menus.py:64
+#: starboard/menus.py:67
 msgid "Allowed roles: {roles}\n"
 msgstr ""
 
-#: starboard/menus.py:71
+#: starboard/menus.py:74
 msgid "Starboard info continued"
 msgstr ""
 
@@ -134,42 +134,42 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:141 starboard/starboard.py:756
+#: starboard/starboard.py:141 starboard/starboard.py:792
 msgid "That emoji is not on this guild!"
 msgstr ""
 
-#: starboard/starboard.py:144 starboard/starboard.py:567
+#: starboard/starboard.py:144 starboard/starboard.py:595
 msgid "I don't have permission to post in "
 msgstr ""
 
-#: starboard/starboard.py:150 starboard/starboard.py:572
+#: starboard/starboard.py:150 starboard/starboard.py:600
 msgid "I don't have permission to embed links in "
 msgstr ""
 
-#: starboard/starboard.py:157
+#: starboard/starboard.py:158
 msgid "{name} starboard name is already being used"
 msgstr ""
 
-#: starboard/starboard.py:162
+#: starboard/starboard.py:166
 msgid "Starboard set to {channel} with emoji {emoji}"
 msgstr ""
 
-#: starboard/starboard.py:169
+#: starboard/starboard.py:173
 #, docstring
 msgid "\n"
 "        Cleanup stored deleted channels or roles in the blocklist/allowlist\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:174
+#: starboard/starboard.py:178
 msgid "There are no Starboards setup on this server."
 msgstr ""
 
-#: starboard/starboard.py:199
+#: starboard/starboard.py:203
 msgid "Removed {channels} channels and roles, and {boards} boards that no longer exist"
 msgstr ""
 
-#: starboard/starboard.py:208
+#: starboard/starboard.py:213
 #, docstring
 msgid "\n"
 "        Remove a starboard from the server\n\n"
@@ -177,21 +177,21 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:220 starboard/starboard.py:253
-#: starboard/starboard.py:314 starboard/starboard.py:383
-#: starboard/starboard.py:424 starboard/starboard.py:465
-#: starboard/starboard.py:518 starboard/starboard.py:559
-#: starboard/starboard.py:604 starboard/starboard.py:635
-#: starboard/starboard.py:666 starboard/starboard.py:705
-#: starboard/starboard.py:747 starboard/starboard.py:781
+#: starboard/starboard.py:225 starboard/starboard.py:265
+#: starboard/starboard.py:326 starboard/starboard.py:397
+#: starboard/starboard.py:442 starboard/starboard.py:487
+#: starboard/starboard.py:544 starboard/starboard.py:587
+#: starboard/starboard.py:632 starboard/starboard.py:663
+#: starboard/starboard.py:698 starboard/starboard.py:741
+#: starboard/starboard.py:783 starboard/starboard.py:822
 msgid "There's more than one starboard setup in this server. Please provide a name for the starboard you wish to use."
 msgstr ""
 
-#: starboard/starboard.py:229
+#: starboard/starboard.py:241
 msgid "Deleted starboard {name}"
 msgstr ""
 
-#: starboard/starboard.py:239
+#: starboard/starboard.py:251
 #, docstring
 msgid "\n"
 "        Manually star a message\n\n"
@@ -201,23 +201,23 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:261 starboard/starboard.py:322
+#: starboard/starboard.py:273 starboard/starboard.py:334
 msgid "I cannot star messages from another server."
 msgstr ""
 
-#: starboard/starboard.py:264 starboard/starboard.py:325
+#: starboard/starboard.py:276 starboard/starboard.py:337
 msgid "Starboard {name} isn't enabled."
 msgstr ""
 
-#: starboard/starboard.py:268 starboard/starboard.py:329
+#: starboard/starboard.py:280 starboard/starboard.py:341
 msgid "One of your roles is blocked on {starboard} or you don't have a role that is allowed."
 msgstr ""
 
-#: starboard/starboard.py:275 starboard/starboard.py:336
+#: starboard/starboard.py:287 starboard/starboard.py:348
 msgid "That messages channel is either blocked, not in the allowlist, or designated NSFW while the {starboard} channel is not designated as NSFW."
 msgstr ""
 
-#: starboard/starboard.py:300
+#: starboard/starboard.py:312
 #, docstring
 msgid "\n"
 "        Manually unstar a message\n\n"
@@ -227,17 +227,17 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:355
+#: starboard/starboard.py:367
 #, docstring
 msgid "Add/Remove channels/roles from the allowlist"
 msgstr ""
 
-#: starboard/starboard.py:360
+#: starboard/starboard.py:372
 #, docstring
 msgid "Add/Remove channels/roles from the blocklist"
 msgstr ""
 
-#: starboard/starboard.py:370
+#: starboard/starboard.py:384
 #, docstring
 msgid "\n"
 "        Add a channel to the starboard blocklist\n\n"
@@ -246,15 +246,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:391
+#: starboard/starboard.py:405
 msgid "{channel_or_role} is already blocked for starboard {name}"
 msgstr ""
 
-#: starboard/starboard.py:399
+#: starboard/starboard.py:415
 msgid "{channel_or_role} blocked on starboard {name}"
 msgstr ""
 
-#: starboard/starboard.py:411
+#: starboard/starboard.py:429
 #, docstring
 msgid "\n"
 "        Remove a channel to the starboard blocklist\n\n"
@@ -263,15 +263,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:432
+#: starboard/starboard.py:450
 msgid "{channel_or_role} is not on the blocklist for starboard {name}"
 msgstr ""
 
-#: starboard/starboard.py:440
+#: starboard/starboard.py:460
 msgid "{channel_or_role} removed from the blocklist on starboard {name}"
 msgstr ""
 
-#: starboard/starboard.py:452
+#: starboard/starboard.py:474
 #, docstring
 msgid "\n"
 "        Add a channel to the starboard allowlist\n\n"
@@ -280,19 +280,19 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:474
+#: starboard/starboard.py:496
 msgid "{channel_or_role} is already allowed for starboard {name}"
 msgstr ""
 
-#: starboard/starboard.py:482
+#: starboard/starboard.py:506
 msgid "{channel_or_role} allowed on starboard {name}"
 msgstr ""
 
-#: starboard/starboard.py:490
+#: starboard/starboard.py:514
 msgid "The channel you have provided is designated as NSFW but your starboard channel is not. They will both need to be set the same in order for this to work properly."
 msgstr ""
 
-#: starboard/starboard.py:505
+#: starboard/starboard.py:531
 #, docstring
 msgid "\n"
 "        Remove a channel to the starboard allowlist\n\n"
@@ -301,15 +301,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:526
+#: starboard/starboard.py:552
 msgid "{channel_or_role} is not on the allowlist for starboard {name}"
 msgstr ""
 
-#: starboard/starboard.py:534
+#: starboard/starboard.py:562
 msgid "{channel_or_role} removed from the allowlist on starboard {name}"
 msgstr ""
 
-#: starboard/starboard.py:546
+#: starboard/starboard.py:574
 #, docstring
 msgid "\n"
 "        Change the channel that the starboard gets posted to\n\n"
@@ -318,15 +318,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:576
+#: starboard/starboard.py:604
 msgid "Starboard {name} is already posting in {channel}"
 msgstr ""
 
-#: starboard/starboard.py:583
+#: starboard/starboard.py:611
 msgid "Starboard {name} set to post in {channel}"
 msgstr ""
 
-#: starboard/starboard.py:592
+#: starboard/starboard.py:620
 #, docstring
 msgid "\n"
 "        Toggle a starboard on/off\n\n"
@@ -334,15 +334,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:612
+#: starboard/starboard.py:640
 msgid "Starboard {name} disabled."
 msgstr ""
 
-#: starboard/starboard.py:614
+#: starboard/starboard.py:642
 msgid "Starboard {name} enabled."
 msgstr ""
 
-#: starboard/starboard.py:623
+#: starboard/starboard.py:651
 #, docstring
 msgid "\n"
 "        Toggle whether or not a user can star their own post\n\n"
@@ -350,15 +350,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:643
+#: starboard/starboard.py:671
 msgid "Selfstarring on starboard {name} disabled."
 msgstr ""
 
-#: starboard/starboard.py:645
+#: starboard/starboard.py:675
 msgid "Selfstarring on starboard {name} enabled."
 msgstr ""
 
-#: starboard/starboard.py:654
+#: starboard/starboard.py:686
 #, docstring
 msgid "\n"
 "        Toggle whether or not the bot will add the emoji automatically to the starboard message.\n\n"
@@ -366,15 +366,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:674
+#: starboard/starboard.py:706
 msgid "Autostarring on starboard {name} disabled."
 msgstr ""
 
-#: starboard/starboard.py:676
+#: starboard/starboard.py:710
 msgid "Autostarring on starboard {name} enabled."
 msgstr ""
 
-#: starboard/starboard.py:688
+#: starboard/starboard.py:724
 #, docstring
 msgid "\n"
 "        Change the default colour for a starboard\n\n"
@@ -387,15 +387,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:715
+#: starboard/starboard.py:751
 msgid "The provided colour option is not valid."
 msgstr ""
 
-#: starboard/starboard.py:722
+#: starboard/starboard.py:758
 msgid "Starboard `{name}` colour set to `{colour}`."
 msgstr ""
 
-#: starboard/starboard.py:734
+#: starboard/starboard.py:770
 #, docstring
 msgid "\n"
 "        Set the emoji for the starboard\n\n"
@@ -404,11 +404,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:760
+#: starboard/starboard.py:796
 msgid "{emoji} set for starboard {name}"
 msgstr ""
 
-#: starboard/starboard.py:767
+#: starboard/starboard.py:808
 #, docstring
 msgid "\n"
 "        Set the threshold before posting to the starboard\n\n"
@@ -418,7 +418,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: starboard/starboard.py:792
+#: starboard/starboard.py:833
 msgid "Threshold of {threshold} reactions set for {name}"
 msgstr ""
 

@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
-"POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"POT-Creation-Date: 2023-05-04 02:38+0000\n"
+"PO-Revision-Date: 2023-05-10 16:10\n"
 "Last-Translator: \n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -82,105 +82,105 @@ msgstr ""
 msgid "`Sending a testing message to "
 msgstr ""
 
-#: welcome/welcome.py:63
+#: welcome/welcome.py:64
 #, docstring
 msgid "Welcomes new members and goodbye those who leave to the guild\n"
 "    in the default channel rewritten for V3 from\n"
 "    https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"
 msgstr ""
 
-#: welcome/welcome.py:108
+#: welcome/welcome.py:115
 #, docstring
 msgid "Sets welcome module settings"
 msgstr ""
 
-#: welcome/welcome.py:113
+#: welcome/welcome.py:120
 #, docstring
 msgid "\n"
 "        Show the servers welcome settings\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:119
+#: welcome/welcome.py:126
 msgid "Random Greeting "
 msgstr ""
 
-#: welcome/welcome.py:120
+#: welcome/welcome.py:127
 msgid "Random Goodbye "
 msgstr ""
 
-#: welcome/welcome.py:121
+#: welcome/welcome.py:128
 msgid "Grouped welcomes "
 msgstr ""
 
-#: welcome/welcome.py:122
+#: welcome/welcome.py:129
 msgid "Welcomes On "
 msgstr ""
 
-#: welcome/welcome.py:123
+#: welcome/welcome.py:130
 msgid "Channel "
 msgstr ""
 
-#: welcome/welcome.py:124
+#: welcome/welcome.py:131
 msgid "Goodbyes On "
 msgstr ""
 
-#: welcome/welcome.py:125
+#: welcome/welcome.py:132
 msgid "Leaving Channel "
 msgstr ""
 
-#: welcome/welcome.py:126
+#: welcome/welcome.py:133
 msgid "Previous greeting deleted "
 msgstr ""
 
-#: welcome/welcome.py:127
+#: welcome/welcome.py:134
 msgid "Previous goodbye deleted "
 msgstr ""
 
-#: welcome/welcome.py:128
+#: welcome/welcome.py:135
 msgid "Greeting deleted after "
 msgstr ""
 
-#: welcome/welcome.py:129
+#: welcome/welcome.py:136
 msgid "Goodbye deleted after "
 msgstr ""
 
-#: welcome/welcome.py:130
+#: welcome/welcome.py:137
 msgid "Minimum days old to welcome "
 msgstr ""
 
-#: welcome/welcome.py:131
+#: welcome/welcome.py:138
 msgid "Whisper "
 msgstr ""
 
-#: welcome/welcome.py:132
+#: welcome/welcome.py:139
 msgid "Bots message "
 msgstr ""
 
-#: welcome/welcome.py:133
+#: welcome/welcome.py:140
 msgid "Bots role "
 msgstr ""
 
-#: welcome/welcome.py:134
+#: welcome/welcome.py:141
 msgid "Embeds "
 msgstr ""
 
-#: welcome/welcome.py:139
+#: welcome/welcome.py:146
 msgid "Welcome settings for "
 msgstr ""
 
-#: welcome/welcome.py:154 welcome/welcome.py:161
+#: welcome/welcome.py:161 welcome/welcome.py:168
 msgid " None"
 msgstr ""
 
-#: welcome/welcome.py:177
+#: welcome/welcome.py:184
 #, docstring
 msgid "\n"
 "        Manage welcome messages\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:186 welcome/welcome.py:448
+#: welcome/welcome.py:195 welcome/welcome.py:483
 #, docstring
 msgid "\n"
 "        Determine the bots allowed mentions for welcomes\n\n"
@@ -190,33 +190,33 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:195 welcome/welcome.py:198 welcome/welcome.py:457
-#: welcome/welcome.py:460
+#: welcome/welcome.py:205 welcome/welcome.py:210 welcome/welcome.py:493
+#: welcome/welcome.py:498
 msgid "You must provide either `users`, `roles` or `everyone`."
 msgstr ""
 
-#: welcome/welcome.py:205 welcome/welcome.py:467
+#: welcome/welcome.py:218 welcome/welcome.py:506
 msgid "I don't have mention everyone permissions so these settings may not work properly."
 msgstr ""
 
-#: welcome/welcome.py:213 welcome/welcome.py:475
+#: welcome/welcome.py:226 welcome/welcome.py:514
 msgid "Mention settings have been set to {set_to} for {settings}"
 msgstr ""
 
-#: welcome/welcome.py:220
+#: welcome/welcome.py:235
 #, docstring
 msgid "Set whether to group welcome messages"
 msgstr ""
 
-#: welcome/welcome.py:223
+#: welcome/welcome.py:238
 msgid "I will now group welcomes."
 msgstr ""
 
-#: welcome/welcome.py:225
+#: welcome/welcome.py:240
 msgid "I will no longer group welcomes."
 msgstr ""
 
-#: welcome/welcome.py:229
+#: welcome/welcome.py:246
 #, docstring
 msgid "\n"
 "        Adds a welcome message format for the guild to be chosen at random\n\n"
@@ -232,69 +232,69 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:247
+#: welcome/welcome.py:264
 msgid "Welcome message added for the guild."
 msgstr ""
 
-#: welcome/welcome.py:251
+#: welcome/welcome.py:268
 #, docstring
 msgid "Removes a welcome message from the random message list"
 msgstr ""
 
-#: welcome/welcome.py:254
+#: welcome/welcome.py:271
 msgid "Choose a welcome message to delete:\n\n"
 msgstr ""
 
-#: welcome/welcome.py:267 welcome/welcome.py:521
+#: welcome/welcome.py:284 welcome/welcome.py:562
 msgid "That's not a number in the list :/"
 msgstr ""
 
-#: welcome/welcome.py:272 welcome/welcome.py:526
+#: welcome/welcome.py:289 welcome/welcome.py:567
 msgid "**This message was deleted:**\n"
 msgstr ""
 
-#: welcome/welcome.py:276
+#: welcome/welcome.py:293
 #, docstring
 msgid "\n"
 "        Lists the welcome messages of this guild\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:280
+#: welcome/welcome.py:297
 msgid "Welcome messages:\n\n"
 msgstr ""
 
-#: welcome/welcome.py:289
+#: welcome/welcome.py:306
 #, docstring
 msgid "\n"
 "        Turns on/off welcoming new users to the guild\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:296
+#: welcome/welcome.py:313
 msgid "I will now welcome new users to the guild."
 msgstr ""
 
-#: welcome/welcome.py:298
+#: welcome/welcome.py:315
 msgid "I will no longer welcome new users."
 msgstr ""
 
-#: welcome/welcome.py:303 welcome/welcome.py:575
+#: welcome/welcome.py:320 welcome/welcome.py:620
 #, docstring
 msgid "\n"
 "        Turns on/off deleting the previous welcome message when a user joins\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:311
+#: welcome/welcome.py:328
 msgid "I will now delete the previous welcome message when a new user joins."
 msgstr ""
 
-#: welcome/welcome.py:315
+#: welcome/welcome.py:334
 msgid "I will stop deleting the previous welcome message when a new user joins."
 msgstr ""
 
-#: welcome/welcome.py:321
+#: welcome/welcome.py:342
 #, docstring
 msgid "\n"
 "        Turns on/off showing how many users join each day.\n\n"
@@ -302,15 +302,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:330
+#: welcome/welcome.py:352
 msgid "I will now show how many people join the server each day."
 msgstr ""
 
-#: welcome/welcome.py:332
+#: welcome/welcome.py:356
 msgid "I will stop showing how many people join the server each day."
 msgstr ""
 
-#: welcome/welcome.py:337
+#: welcome/welcome.py:364
 #, docstring
 msgid "\n"
 "        Set the minimum number of days a user account must be to show up in the welcome message\n\n"
@@ -318,11 +318,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:347
+#: welcome/welcome.py:374
 msgid "I will now show users joining who are {days} days old."
 msgstr ""
 
-#: welcome/welcome.py:354
+#: welcome/welcome.py:383
 #, docstring
 msgid "\n"
 "        Set what to do when a username matches the bots filter.\n\n"
@@ -331,19 +331,19 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:367
+#: welcome/welcome.py:396
 msgid "I will now replace usernames matching cores filter with `{replacement}`"
 msgstr ""
 
-#: welcome/welcome.py:373 welcome/welcome.py:384
+#: welcome/welcome.py:402 welcome/welcome.py:415
 msgid "Filter is not loaded, run `{prefix}load filter` and add some words to filter for this to work"
 msgstr ""
 
-#: welcome/welcome.py:380
+#: welcome/welcome.py:409
 msgid "I will not post welcome messages for usernames that match cores filter."
 msgstr ""
 
-#: welcome/welcome.py:394 welcome/welcome.py:593
+#: welcome/welcome.py:425 welcome/welcome.py:642
 #, docstring
 msgid "\n"
 "        Set the time after which a welcome message is deleted in seconds.\n\n"
@@ -351,15 +351,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:401
+#: welcome/welcome.py:432
 msgid "I will now delete welcome messages after {time} seconds."
 msgstr ""
 
-#: welcome/welcome.py:406 welcome/welcome.py:605
+#: welcome/welcome.py:437 welcome/welcome.py:654
 msgid "I will not delete welcome messages after a set time."
 msgstr ""
 
-#: welcome/welcome.py:413
+#: welcome/welcome.py:444
 #, docstring
 msgid "\n"
 "        Sets the channel to send the welcome message\n\n"
@@ -367,27 +367,27 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:423 welcome/welcome.py:564
+#: welcome/welcome.py:454 welcome/welcome.py:607
 msgid "I do not have permissions to send messages to {channel}"
 msgstr ""
 
-#: welcome/welcome.py:430
+#: welcome/welcome.py:461
 msgid "I will now send welcome messages to {channel}"
 msgstr ""
 
-#: welcome/welcome.py:435
+#: welcome/welcome.py:468
 #, docstring
 msgid "Test the welcome message deleted after 60 seconds"
 msgstr ""
 
-#: welcome/welcome.py:440
+#: welcome/welcome.py:473
 #, docstring
 msgid "\n"
 "        Manage goodbye messages\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:482
+#: welcome/welcome.py:523
 #, docstring
 msgid "\n"
 "        Adds a goodbye message format for the guild to be chosen at random\n\n"
@@ -402,102 +402,102 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:499
+#: welcome/welcome.py:540
 msgid "Goodbye message added for the guild."
 msgstr ""
 
-#: welcome/welcome.py:503
+#: welcome/welcome.py:544
 #, docstring
 msgid "\n"
 "        Removes a goodbye message from the random message list\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:508
+#: welcome/welcome.py:549
 msgid "Choose a goodbye message to delete:\n\n"
 msgstr ""
 
-#: welcome/welcome.py:530
+#: welcome/welcome.py:571
 #, docstring
 msgid "\n"
 "        Lists the goodbye messages of this guild\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:534
+#: welcome/welcome.py:575
 msgid "Goodbye messages:\n\n"
 msgstr ""
 
-#: welcome/welcome.py:543
+#: welcome/welcome.py:584
 #, docstring
 msgid "\n"
 "        Turns on/off goodbying users who leave to the guild\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:550
+#: welcome/welcome.py:591
 msgid "I will now say goodbye when a member leaves the server."
 msgstr ""
 
-#: welcome/welcome.py:552
+#: welcome/welcome.py:594
 msgid "I will no longer say goodbye to members leaving the server."
 msgstr ""
 
-#: welcome/welcome.py:559
+#: welcome/welcome.py:602
 #, docstring
 msgid "\n"
 "        Sets the channel to send the goodbye message\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:570
+#: welcome/welcome.py:613
 msgid "I will now send goodbye messages to {channel}"
 msgstr ""
 
-#: welcome/welcome.py:582
+#: welcome/welcome.py:628
 msgid "I will now delete the previous goodbye message when user leaves."
 msgstr ""
 
-#: welcome/welcome.py:585
+#: welcome/welcome.py:632
 msgid "I will stop deleting the previous goodbye message when a user leaves."
 msgstr ""
 
-#: welcome/welcome.py:600
+#: welcome/welcome.py:649
 msgid "I will now delete goodbye messages after {time} seconds."
 msgstr ""
 
-#: welcome/welcome.py:610
+#: welcome/welcome.py:659
 #, docstring
 msgid "Test the goodbye message deleted after 60 seconds"
 msgstr ""
 
-#: welcome/welcome.py:615
+#: welcome/welcome.py:664
 #, docstring
 msgid "\n"
 "        Special welcome for bots\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:622
+#: welcome/welcome.py:671
 #, docstring
 msgid "Test the bot joining message"
 msgstr ""
 
-#: welcome/welcome.py:629
+#: welcome/welcome.py:678
 #, docstring
 msgid "Set the welcome msg for bots.\n\n"
 "        Leave blank to reset to regular user welcome"
 msgstr ""
 
-#: welcome/welcome.py:637
+#: welcome/welcome.py:686
 msgid "Bot message reset. Bots will now be welcomed as regular users."
 msgstr ""
 
-#: welcome/welcome.py:640
+#: welcome/welcome.py:689
 msgid "Bot welcome message set for the guild."
 msgstr ""
 
-#: welcome/welcome.py:647
+#: welcome/welcome.py:696
 #, docstring
 msgid "\n"
 "        Set the role to put bots in when they join.\n\n"
@@ -505,19 +505,19 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:656
+#: welcome/welcome.py:705
 msgid "I cannot assign roles higher than my own."
 msgstr ""
 
-#: welcome/welcome.py:659
+#: welcome/welcome.py:708
 msgid "Bots that join this guild will be given "
 msgstr ""
 
-#: welcome/welcome.py:661
+#: welcome/welcome.py:710
 msgid "Bots that join this guild will not be given a role."
 msgstr ""
 
-#: welcome/welcome.py:666
+#: welcome/welcome.py:717
 #, docstring
 msgid "Sets whether or not a DM is sent to the new user\n\n"
 "        Options:\n"
@@ -528,51 +528,51 @@ msgid "Sets whether or not a DM is sent to the new user\n\n"
 "        DMs will not be sent to bots"
 msgstr ""
 
-#: welcome/welcome.py:681
+#: welcome/welcome.py:732
 msgid "You must select either `off`, `only`, or `both`."
 msgstr ""
 
-#: welcome/welcome.py:687
+#: welcome/welcome.py:738
 msgid "I will no longer send DMs to new users"
 msgstr ""
 
-#: welcome/welcome.py:690
+#: welcome/welcome.py:741
 msgid "I will now send welcome messages to {channel} as well as to the new user in a DM"
 msgstr ""
 
-#: welcome/welcome.py:695
+#: welcome/welcome.py:746
 msgid "I will now only send welcome messages to the new user as a DM"
 msgstr ""
 
-#: welcome/welcome.py:701
+#: welcome/welcome.py:752
 #, docstring
 msgid "\n"
 "        Set various embed options\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:708
+#: welcome/welcome.py:759
 #, docstring
 msgid "\n"
 "        Toggle embed messages\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:715 welcome/welcome.py:907 welcome/welcome.py:922
-#: welcome/welcome.py:937
+#: welcome/welcome.py:766 welcome/welcome.py:982 welcome/welcome.py:997
+#: welcome/welcome.py:1012
 msgid "off"
 msgstr ""
 
-#: welcome/welcome.py:717 welcome/welcome.py:909 welcome/welcome.py:924
-#: welcome/welcome.py:939
+#: welcome/welcome.py:768 welcome/welcome.py:984 welcome/welcome.py:999
+#: welcome/welcome.py:1014
 msgid "on"
 msgstr ""
 
-#: welcome/welcome.py:718
+#: welcome/welcome.py:769
 msgid "Welcome embeds turned {verb}"
 msgstr ""
 
-#: welcome/welcome.py:722
+#: welcome/welcome.py:773
 #, docstring
 msgid "\n"
 "        Set the embed colour\n\n"
@@ -580,7 +580,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:732
+#: welcome/welcome.py:783
 #, docstring
 msgid "\n"
 "        Set the embed title\n\n"
@@ -590,7 +590,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:744
+#: welcome/welcome.py:795
 #, docstring
 msgid "\n"
 "        Set the embed footer\n\n"
@@ -600,7 +600,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:756
+#: welcome/welcome.py:809
 #, docstring
 msgid "\n"
 "        Set the embed thumbnail image\n\n"
@@ -613,16 +613,16 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:782 welcome/welcome.py:816 welcome/welcome.py:857
-#: welcome/welcome.py:893
+#: welcome/welcome.py:837 welcome/welcome.py:875 welcome/welcome.py:922
+#: welcome/welcome.py:966
 msgid "That's not a valid option. You must provide a link, `avatar` or `server`."
 msgstr ""
 
-#: welcome/welcome.py:786
+#: welcome/welcome.py:843
 msgid "Thumbnail cleared."
 msgstr ""
 
-#: welcome/welcome.py:790
+#: welcome/welcome.py:847
 #, docstring
 msgid "\n"
 "        Set the embed icon image\n\n"
@@ -635,18 +635,18 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:820
+#: welcome/welcome.py:881
 msgid "Icon cleared."
 msgstr ""
 
-#: welcome/welcome.py:824
+#: welcome/welcome.py:885
 #, docstring
 msgid "\n"
 "        Set embed image options\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:831
+#: welcome/welcome.py:894
 #, docstring
 msgid "\n"
 "        Set the embed image link for greetings\n\n"
@@ -659,11 +659,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:861
+#: welcome/welcome.py:928
 msgid "Greeting image cleared."
 msgstr ""
 
-#: welcome/welcome.py:865
+#: welcome/welcome.py:934
 #, docstring
 msgid "\n"
 "        Set the embed image link for goodbyes\n\n"
@@ -676,22 +676,22 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:897
+#: welcome/welcome.py:972
 msgid "Goodbye image cleared."
 msgstr ""
 
-#: welcome/welcome.py:901
+#: welcome/welcome.py:976
 #, docstring
 msgid "\n"
 "        Toggle the timestamp in embeds\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:910
+#: welcome/welcome.py:985
 msgid "Timestamps turned {verb}"
 msgstr ""
 
-#: welcome/welcome.py:914
+#: welcome/welcome.py:989
 #, docstring
 msgid "\n"
 "        Toggle the author field being filled in the embed\n\n"
@@ -699,11 +699,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:925
+#: welcome/welcome.py:1000
 msgid "Author field turned {verb}"
 msgstr ""
 
-#: welcome/welcome.py:929
+#: welcome/welcome.py:1004
 #, docstring
 msgid "\n"
 "        Toggle mentioning the user when they join\n\n"
@@ -711,7 +711,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: welcome/welcome.py:940
+#: welcome/welcome.py:1015
 msgid "Mentioning the user turned {verb}"
 msgstr ""
 

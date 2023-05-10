@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: trusty-cogs\n"
-"POT-Creation-Date: 2022-04-18 21:23+0000\n"
-"PO-Revision-Date: 2022-04-22 20:47\n"
+"POT-Creation-Date: 2022-04-30 21:00+0000\n"
+"PO-Revision-Date: 2023-05-10 16:09\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -17,12 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 416\n"
 "Language: fr_FR\n"
 
-#: tarot/tarotreading.py:71
-#, docstring
-msgid "Receive a tarot reading"
-msgstr "Recevoir une lecture du tarot"
-
-#: tarot/tarotreading.py:76
+#: tarot/tarotreading.py:84
 #, docstring
 msgid "\n"
 "        Unique reading based on your discord user ID. Doesn't change.\n\n"
@@ -35,7 +30,7 @@ msgstr "\n"
 "        Si aucun utilisateur n'est fourni, cela sera exécuté pour l'utilisateur qui exécute la commande.\n"
 "        "
 
-#: tarot/tarotreading.py:109
+#: tarot/tarotreading.py:117
 #, docstring
 msgid "\n"
 "        Unique reading as of this very moment.\n\n"
@@ -48,7 +43,7 @@ msgstr "\n"
 "        Si aucun utilisateur n'est fourni, cela sera exécuté pour l'utilisateur qui exécute la commande.\n"
 "        "
 
-#: tarot/tarotreading.py:142
+#: tarot/tarotreading.py:148
 #, docstring
 msgid "\n"
 "        Random card or choose a card based on number or name.\n\n"
