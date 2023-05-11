@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Union
 
 import discord
@@ -55,6 +56,7 @@ class SelectRole(discord.ui.Select):
         )
         self.name = name
         self.disabled_options: List[str] = disabled
+        self.view: SelectRoleView
 
     async def callback(self, interaction: discord.Interaction):
         log.debug("Receiving selection press")
@@ -81,6 +83,8 @@ class SelectRole(discord.ui.Select):
         added_roles = []
         removed_roles = []
         missing_role = False
+        pending = False
+        wait = None
         for role_id in role_ids:
             role = guild.get_role(role_id)
             if role is None:
@@ -94,12 +98,20 @@ class SelectRole(discord.ui.Select):
             config = self.view.cog.config
             if role not in interaction.user.roles:
                 if not await config.role(role).selfassignable():
+                    msg += _(
+                        "{role} Could not be assigned because it is not self assignable."
+                    ).format(role=role.mention)
                     continue
 
-                if await self.view.cog.check_guild_verification(interaction.user, guild):
+                if wait_time := await self.view.cog.check_guild_verification(
+                    interaction.user, guild
+                ):
                     log.debug("Ignoring user due to verification check.")
+                    if wait_time:
+                        wait = datetime.now(timezone.utc) + timedelta(seconds=wait_time)
                     continue
                 if getattr(interaction.user, "pending", False):
+                    pending = True
                     continue
                 log.debug(f"Adding role to {interaction.user.name} in {guild}")
                 response = await self.view.cog.give_roles(
@@ -110,10 +122,19 @@ class SelectRole(discord.ui.Select):
                 added_roles.append(role)
             elif role in interaction.user.roles:
                 if not await config.role(role).selfremovable():
+                    msg += _(
+                        "{role} Could not be removed because it is not self assignable."
+                    ).format(role=role.mention)
                     continue
                 log.debug(f"Removing role from {interaction.user.name} in {guild}")
                 await self.view.cog.remove_roles(interaction.user, [role], _("Role Selection"))
                 removed_roles.append(role)
+        if wait is not None:
+            msg += _(
+                "I cannot assign roles to you until you have spent more time in this server. Try again {time}."
+            ).format(time=discord.utils.format_dt(wait))
+        if pending:
+            msg += _("You need to finish your member verification before I can assign you a role.")
         if missing_role:
             msg += _("One or more of the selected roles no longer exists.\n")
         if added_roles:
@@ -134,7 +155,7 @@ class SelectRole(discord.ui.Select):
 
 
 class SelectRoleView(discord.ui.View):
-    def __init__(self, cog: commands.Cog):
+    def __init__(self, cog: RoleToolsMixin):
         self.cog = cog
         super().__init__(timeout=None)
         pass

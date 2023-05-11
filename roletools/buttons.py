@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Union
 
 import discord
@@ -62,10 +63,24 @@ class ButtonRole(discord.ui.Button):
                     ephemeral=True,
                 )
                 return
-            if await self.view.cog.check_guild_verification(interaction.user, guild):
+            if wait_time := await self.view.cog.check_guild_verification(interaction.user, guild):
                 log.debug("Ignoring user due to verification check.")
+                if wait_time:
+                    wait = datetime.now(timezone.utc) + timedelta(seconds=wait_time)
+                    await interaction.response.send_message(
+                        _(
+                            "I cannot assign roles to you until you have spent more time in this server. Try again {time}."
+                        ).format(time=discord.utils.format_dt(wait)),
+                        ephemeral=True,
+                    )
                 return
             if getattr(interaction.user, "pending", False):
+                await interaction.response.send_message(
+                    _(
+                        "You need to finish your member verification before I can assign you a role."
+                    ),
+                    ephemeral=True,
+                )
                 return
             log.debug(f"Adding role to {interaction.user.name} in {guild}")
             response = await self.view.cog.give_roles(interaction.user, [role], _("Button Role"))
