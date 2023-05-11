@@ -60,7 +60,7 @@ class SelectRole(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         log.debug("Receiving selection press")
-
+        no_selection = self.values == []
         role_ids = []
         disabled_role = False
         for option in self.values:
@@ -148,9 +148,10 @@ class SelectRole(discord.ui.Select):
         if msg:
             await interaction.followup.send(msg, ephemeral=True)
         else:
-            await interaction.followup.send(
-                _("I have not made any role changes to you."), ephemeral=True
-            )
+            msg = _("I have not made any role changes to you.\n")
+            if no_selection:
+                msg += _("You have made no selections, try again to change your roles.")
+            await interaction.followup.send(msg, ephemeral=True)
         await interaction.message.edit()
 
 
