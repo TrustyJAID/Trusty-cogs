@@ -150,7 +150,7 @@ class SelectRole(discord.ui.Select):
         else:
             msg = _("I have not made any role changes to you.\n")
             if no_selection:
-                msg += _("You have made no selections, try again to change your roles.")
+                msg += _("You have made no selections; try again to change your roles.")
             await interaction.followup.send(msg, ephemeral=True)
         await interaction.message.edit()
 
