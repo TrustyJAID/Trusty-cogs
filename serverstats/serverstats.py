@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from copy import copy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from typing import Dict, List, Literal, Optional, Tuple, Union, cast
 
@@ -704,7 +704,7 @@ class ServerStats(commands.GroupCog):
         role: Union[discord.Role, Tuple[discord.Role], None],
     ) -> List[discord.Member]:
         now = datetime.now(timezone.utc)
-        after = now - datetime.timedelta(days=days)
+        after = now - timedelta(days=days)
         member_list = []
         if role:
             if not isinstance(role, discord.Role):
