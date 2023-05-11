@@ -20,7 +20,7 @@ from redbot.core.utils.chat_formatting import (
 )
 from tabulate import tabulate
 
-from .api import DestinyAPI
+from .api import DestinyAPI, MyTyping
 from .converter import (
     DestinyActivity,
     DestinyCharacter,
@@ -63,7 +63,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.8.0"
+    __version__ = "1.8.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -188,7 +188,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Remove your authorization to the destiny API on the bot
         """
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             await self.red_delete_data_for_user(requester="user", user_id=ctx.author.id)
         msg = _("Your authorization has been reset.")
         await ctx.send(msg)
@@ -213,7 +213,7 @@ class Destiny(DestinyAPI, commands.Cog):
         using `details`, `true`, or `stats` will show the weapons stat bars
         using `lore` here will instead display the weapons lore card instead if it exists.
         """
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             show_lore = True if details_or_lore is False else False
             if search.startswith("lore "):
                 search = search.replace("lore ", "")
@@ -348,7 +348,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         if not await self.has_oauth(ctx):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             bungie_id = await self.config.user(ctx.author).oauth.membership_id()
             creds = await self.get_bnet_user(ctx.author, bungie_id)
             bungie_name = creds.get("uniqueName", "")
@@ -374,7 +374,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         if not await self.has_oauth(ctx):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             if clan_id:
                 clan_re = re.compile(
                     r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.I
@@ -538,7 +538,7 @@ class Destiny(DestinyAPI, commands.Cog):
             ).format(prefix=prefix)
             await ctx.send(msg)
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
 
             clan = await self.get_clan_members(ctx.author, clan_id)
             headers = [
@@ -629,7 +629,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Show exactly when Weekyl and Daily reset is
         """
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             today = datetime.datetime.now(datetime.timezone.utc)
             tuesday = today + datetime.timedelta(days=((1 - today.weekday()) % 7))
             weekly = datetime.datetime(
@@ -661,7 +661,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Get the latest news articles from Bungie.net
         """
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             try:
                 news = await self.get_news()
             except Destiny2APIError as e:
@@ -824,7 +824,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         if not await self.has_oauth(ctx):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             try:
                 chars = await self.get_characters(
                     ctx.author,
@@ -865,7 +865,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         if not await self.has_oauth(ctx):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             try:
                 components = DestinyComponents(DestinyComponentType.social_commendations)
                 chars = await self.get_characters(ctx.author, components=components)
@@ -960,7 +960,7 @@ class Destiny(DestinyAPI, commands.Cog):
             return
         if not user:
             user = ctx.author
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             try:
                 chars = await self.get_characters(user)
                 await self.save(chars, "character.json")
@@ -995,7 +995,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Find Destiny Lore
         """
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             try:
                 data = await self.get_entities("DestinyLoreDefinition")
             except Exception:
@@ -1051,7 +1051,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         if not await self.has_oauth(ctx):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             try:
                 chars = await self.get_characters(ctx.author)
 
@@ -1114,7 +1114,7 @@ class Destiny(DestinyAPI, commands.Cog):
         vendor_id: str,
         character: Optional[str] = None,
     ):
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             char_id = character
             if character is None:
                 try:
@@ -1460,14 +1460,15 @@ class Destiny(DestinyAPI, commands.Cog):
         Get a random Exotic Weapon or choose a specific Class
         to get a random armour piece
         """
-        item = await self.get_random_item(weapons_or_class, 6)
-        em = discord.Embed(title=item["displayProperties"]["name"], colour=0xF1C40F)
-        if "flavorText" in item:
-            em.description = item["flavorText"]
-        if item["displayProperties"]["hasIcon"]:
-            em.set_thumbnail(url=IMAGE_URL + item["displayProperties"]["icon"])
-        if "screenshot" in item:
-            em.set_image(url=IMAGE_URL + item["screenshot"])
+        async with MyTyping(ctx, ephemeral=False):
+            item = await self.get_random_item(weapons_or_class, 6)
+            em = discord.Embed(title=item["displayProperties"]["name"], colour=0xF1C40F)
+            if "flavorText" in item:
+                em.description = item["flavorText"]
+            if item["displayProperties"]["hasIcon"]:
+                em.set_thumbnail(url=IMAGE_URL + item["displayProperties"]["icon"])
+            if "screenshot" in item:
+                em.set_image(url=IMAGE_URL + item["screenshot"])
         await ctx.send(embed=em)
 
     @destiny.command(name="nightfall", aliases=["nf"])
@@ -1482,7 +1483,7 @@ class Destiny(DestinyAPI, commands.Cog):
         user = ctx.author
         if not await self.has_oauth(ctx):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             embeds = []
             try:
                 milestones = await self.get_milestones(user)
@@ -1532,7 +1533,7 @@ class Destiny(DestinyAPI, commands.Cog):
         user = ctx.author
         if not await self.has_oauth(ctx):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             embeds = []
             try:
                 milestones = await self.get_milestones(user)
@@ -1679,7 +1680,7 @@ class Destiny(DestinyAPI, commands.Cog):
             "3618845105",  # Duality
             "526718853",  # Spire of the Watcher
         }
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             ms_defs = await self.get_definition(
                 "DestinyMilestoneDefinition", list(raid_milestones)
             )
@@ -1748,7 +1749,7 @@ class Destiny(DestinyAPI, commands.Cog):
             "292102995",  # King's Fall
             "3699252268",  # Root of Nightmares
         }
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             ms_defs = await self.get_definition(
                 "DestinyMilestoneDefinition", list(raid_milestones)
             )
@@ -1815,7 +1816,7 @@ class Destiny(DestinyAPI, commands.Cog):
         user = ctx.author
         if not await self.has_oauth(ctx):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             try:
                 chars = await self.get_characters(user)
             except Destiny2APIError as e:
@@ -1844,7 +1845,7 @@ class Destiny(DestinyAPI, commands.Cog):
         if not await self.has_oauth(ctx):
             return
         embeds = []
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             try:
                 chars = await self.get_characters(user)
 
@@ -2018,7 +2019,7 @@ class Destiny(DestinyAPI, commands.Cog):
         if not await self.has_oauth(ctx):
             return
         loadout -= 1
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             try:
                 components = DestinyComponents(
                     DestinyComponentType.characters, DestinyComponentType.character_loadouts
@@ -2108,7 +2109,7 @@ class Destiny(DestinyAPI, commands.Cog):
         user = ctx.author
         if not await self.has_oauth(ctx, user):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             try:
                 chars = await self.get_characters(user)
 
@@ -2136,7 +2137,7 @@ class Destiny(DestinyAPI, commands.Cog):
         user = ctx.author
         if not await self.has_oauth(ctx, user):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             try:
                 chars = await self.get_characters(user)
 
@@ -2314,7 +2315,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         if not await self.has_oauth(ctx):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             if not activity.isdigit():
                 try:
                     activity = await DestinyActivity().convert(ctx, activity)
@@ -2679,7 +2680,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         if not await self.has_oauth(ctx):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             user = ctx.author
             try:
                 chars = await self.get_characters(user)
@@ -2711,7 +2712,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         if not await self.has_oauth(ctx):
             return
-        async with ctx.typing():
+        async with MyTyping(ctx, ephemeral=False):
             user = ctx.author
             try:
                 chars = await self.get_characters(
@@ -2806,7 +2807,7 @@ class Destiny(DestinyAPI, commands.Cog):
         the newest one.
         """
         if not d1:
-            async with ctx.typing():
+            async with MyTyping(ctx, ephemeral=False):
                 try:
                     headers = await self.build_headers()
                 except Exception:
@@ -2835,7 +2836,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 _("Would you like to {redownload} manifest?").format(redownload=redownload),
             )
             if pred:
-                async with ctx.typing():
+                async with MyTyping(ctx, ephemeral=False):
                     try:
                         version = await self.get_manifest()
                         response = _("Manifest Version {version} was downloaded.").format(

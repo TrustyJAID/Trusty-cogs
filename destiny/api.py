@@ -95,6 +95,12 @@ _ = Translator("Destiny", __file__)
 log = logging.getLogger("red.trusty-cogs.Destiny")
 
 
+class MyTyping(discord.ext.commands.context.DeferTyping):
+    async def __aenter__(self):
+        if self.ctx.interaction and not self.ctx.interaction.response.is_done():
+            await self.ctx.defer(ephemeral=self.ephemeral)
+
+
 @cog_i18n(_)
 class DestinyAPI:
     config: Config
@@ -269,7 +275,10 @@ class DestinyAPI:
         code = None
 
         def check(message):
-            return (author.id in self.dashboard_authed) or message.author.id == author.id
+            return (author.id in self.dashboard_authed) or (
+                message.author.id == author.id
+                and re.search(r"\?code=([a-z0-9]+)|(exit|stop)", message.content, flags=re.I)
+            )
 
         try:
             wait_msg = await self.bot.wait_for("message", check=check, timeout=180)
@@ -285,7 +294,7 @@ class DestinyAPI:
             else:
                 code = wait_msg.content
 
-        if code != "exit":
+        if code not in ["exit", "stop"]:
             return code
         return None
 
@@ -429,7 +438,6 @@ class DestinyAPI:
         else:
             all_variables = variables["profileStringVariables"]["data"]["integerValuesByHash"]
         for var in STRING_VAR_RE.finditer(text):
-
             try:
                 repl = str(all_variables[str(var.group("hash"))])
             except KeyError:
@@ -971,7 +979,6 @@ class DestinyAPI:
         Basic checks to see if the user has OAuth setup
         if not or the OAuth keys are expired this will call the refresh
         """
-        is_slash = ctx.interaction is not None
         author = ctx.author
         error_msg = _(
             "You need to authenticate your Bungie.net account before this command will work."
@@ -1005,10 +1012,7 @@ class DestinyAPI:
                     await author.send(str(e))
                 except discord.errors.Forbidden:
                     await ctx.channel.send(str(e))
-                if is_slash:
-                    await ctx.followup.send(error_msg)
-                else:
-                    await ctx.send(error_msg)
+                await ctx.send(error_msg)
                 return False
             except Destiny2MissingAPITokens:
                 # await ctx.send(str(e))
@@ -1016,20 +1020,13 @@ class DestinyAPI:
             data["expires_at"] = now + data["expires_in"]
             data["refresh_expires_at"] = now + data["refresh_expires_in"]
             await self.config.user(author).oauth.set(data)
-            try:
-                await author.send(_("Credentials saved."))
-            except discord.errors.Forbidden:
-                await ctx.channel.send(_("Credentials saved."))
         if not await self.config.user(author).account():
             data = await self.get_user_profile(author)
             platform = ""
             if len(data["destinyMemberships"]) > 1:
                 datas, platform = await self.pick_account(ctx, data)
                 if not datas:
-                    if is_slash:
-                        await ctx.followup.send(error_msg)
-                    else:
-                        await ctx.send(error_msg)
+                    await ctx.send(error_msg)
                     return False
                 await self.config.user(author).account.set(datas)
             else:
