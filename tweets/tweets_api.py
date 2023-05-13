@@ -318,7 +318,12 @@ class TweetsAPI:
             if user_tokens.get("expires_at", 0) <= datetime.now().timestamp():
                 return True
             else:
-                await self.refresh_token(user)
+                try:
+                    await self.refresh_token(user)
+                except Exception:
+                    log.exception("Users tokens could not be refreshed. Clearing.")
+                    await self.config.user(user).tokens.clear()
+                    return await self.authorize_user(ctx, interaction)
                 return True
         oauth_url = oauth.get_authorization_url()
         if interaction is not None or ctx and ctx.interaction:
@@ -391,9 +396,16 @@ class TweetsAPI:
         else:
             user_tokens = await self.config.user(user).tokens()
             if not user_tokens:
-                raise MissingTokenError()
+                raise MissingTokenError("")
             if datetime.now().timestamp() >= user_tokens.get("expires_at", 0):
-                user_tokens = await self.refresh_token(user)
+                try:
+                    user_tokens = await self.refresh_token(user)
+                except Exception:
+                    log.exception("Users tokens could not be refreshed.")
+                    await self.config.user(user).tokens.clear()
+                    raise MissingTokenError(
+                        "You will need to re-authorize to use these commands. Try again."
+                    )
             token_kwargs["bearer_token"] = user_tokens.get("access_token")
         # auth = tweepy.OAuthHandler(consumer, consumer_secret)
         # auth.set_access_token(access_token, access_secret)

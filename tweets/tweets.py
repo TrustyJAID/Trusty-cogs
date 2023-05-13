@@ -24,7 +24,7 @@ class Tweets(TweetsAPI, commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "3.0.0"
+    __version__ = "3.0.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -134,6 +134,7 @@ class Tweets(TweetsAPI, commands.Cog):
         await ctx.send(_("Tweet sent!"))
 
     async def get_twitter_user(self, username: str) -> tweepy.User:
+        username = username.replace("@", "")
         try:
             api = await self.authenticate()
             user = await api.get_user(
@@ -196,6 +197,9 @@ class Tweets(TweetsAPI, commands.Cog):
         """
         Display a users tweets as a scrollable message
         """
+        if username and "@" in username:
+            await ctx.send(_("Don't include the @ symbol in the username."))
+            return
         async with ctx.typing():
             if not await self.authorize_user(ctx):
                 return
@@ -216,6 +220,9 @@ class Tweets(TweetsAPI, commands.Cog):
         Note: This may not work if the username is not present in one of the stream rules.
         You can view existing rules with `[p]tweets stream rules`
         """
+        if "@" in username:
+            await ctx.send(_("Don't include the @ symbol in the username."))
+            return
         resp = await self.get_twitter_user(username)
         if not resp.data:
             await ctx.send(
@@ -304,6 +311,9 @@ class Tweets(TweetsAPI, commands.Cog):
         Note: This may not work if the username is not present in one of the stream rules.
         You can view existing rules with `[p]tweets stream rules`
         """
+        if "@" in username:
+            await ctx.send(_("Don't include the @ symbol in the username."))
+            return
         resp = await self.get_twitter_user(username)
         if not resp.data:
             await ctx.send(
