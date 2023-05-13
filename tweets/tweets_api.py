@@ -538,7 +538,6 @@ class TweetsAPI:
 
     @commands.Cog.listener()
     async def on_tweet(self, response: tweepy.StreamResponse) -> None:
-        log.info(response)
         try:
             tweet = response.data
             user = await self.get_user(tweet.author_id, response.includes)
