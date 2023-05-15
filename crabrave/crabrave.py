@@ -176,7 +176,8 @@ class CrabRave(commands.Cog):
             preset="superfast",
             verbose=False,
             logger=None,
-            temp_audiofile=str(cog_data_path(self) / f"{u_id}crabraveaudio.mp3")
+            temp_audiofile=str(cog_data_path(self) / f"{u_id}crabraveaudio.mp3"),
+            audio_codec="aac"
             # ffmpeg_params=["-filter:a", "volume=0.5"]
         )
         clip.close()
@@ -266,7 +267,8 @@ class CrabRave(commands.Cog):
             preset="superfast",
             verbose=False,
             logger=None,
-            temp_audiofile=str(cog_data_path(self) / f"{u_id}mikuraveaudio.mp3")
+            temp_audiofile=str(cog_data_path(self) / f"{u_id}mikuraveaudio.mp3"),
+            audio_codec="aac"
             # ffmpeg_params=["-filter:a", "volume=0.5"]
         )
         clip.close()
