@@ -215,7 +215,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
             if obj.id not in await self.config.guild(ctx.guild).whitelist():
                 async with self.config.guild(ctx.guild).whitelist() as whitelist:
                     whitelist.append(obj.id)
-                await self._bw_list_cache_update(ctx.guild)
+
         msg = _("`{list_type}` added to translation whitelist.")
         list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=list_type))
@@ -241,7 +241,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
             if obj.id in await self.config.guild(ctx.guild).whitelist():
                 async with self.config.guild(ctx.guild).whitelist() as whitelist:
                     whitelist.remove(obj.id)
-                await self._bw_list_cache_update(ctx.guild)
+
         msg = _("`{list_type}` removed from translation whitelist.")
         list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=list_type))
@@ -289,7 +289,6 @@ class Translate(GoogleTranslateAPI, commands.Cog):
             if obj.id not in await self.config.guild(ctx.guild).blacklist():
                 async with self.config.guild(ctx.guild).blacklist() as blacklist:
                     blacklist.append(obj.id)
-                await self._bw_list_cache_update(ctx.guild)
         msg = _("`{list_type}` added to translation blacklist.")
         list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=list_type))
@@ -315,7 +314,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
             if obj.id in await self.config.guild(ctx.guild).blacklist():
                 async with self.config.guild(ctx.guild).blacklist() as blacklist:
                     blacklist.remove(obj.id)
-                await self._bw_list_cache_update(ctx.guild)
+
         msg = _("`{list_type}` removed from translation blacklist.")
         list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=list_type))
