@@ -444,7 +444,9 @@ class Tweets(TweetsAPI, commands.Cog):
         view = SetApiView("twitter", keys)
         if await ctx.embed_requested():
             em = discord.Embed(description=msg)
-            await ctx.send(embed=em, view=view)
+            message = await ctx.send(embed=em, view=view)
             # await ctx.send(embed=em)
         else:
-            await ctx.send(msg, view=view)
+            message = await ctx.send(msg, view=view)
+        await view.wait()
+        await message.edit(view=None)
