@@ -490,11 +490,13 @@ class SpotifyCommands(SpotifyMixin):
         view = SetApiView("spotify", keys)
         if await ctx.embed_requested():
             em = discord.Embed(description=message)
-            await ctx.send(embed=em, view=view)
+            msg = await ctx.send(embed=em, view=view)
             # await ctx.send(embed=em)
         else:
-            await ctx.send(message, view=view)
+            msg = await ctx.send(message, view=view)
             # await ctx.send(message)
+        await view.wait()
+        await msg.edit(view=None)
 
     @spotify_set.command(name="forgetme")
     async def spotify_forgetme(self, ctx: commands.Context):
