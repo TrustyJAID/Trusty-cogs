@@ -59,24 +59,25 @@ class StarboardEvents:
                     em.color = discord.Colour(starboard.colour)
                 if msg_ref := getattr(message, "reference", None):
                     ref_msg = getattr(msg_ref, "resolved", None)
-                    try:
-                        ref_text = ref_msg.system_content
-                        ref_link = _("\n[Click Here to view reply context]({link})").format(
-                            link=ref_msg.jump_url
-                        )
-                        if len(ref_text + ref_link) > 1024:
-                            ref_text = ref_text[: len(ref_link) - 1] + "\N{HORIZONTAL ELLIPSIS}"
-                        ref_text += ref_link
-                        em.add_field(
-                            name=_("Replying to {author}").format(
-                                author=ref_msg.author.display_name
-                            ),
-                            value=ref_text,
-                        )
-                    except Exception:
-                        pass
+                    if ref_msg is not None:
+                        try:
+                            ref_text = ref_msg.system_content
+                            ref_link = f"\n{ref_msg.jump_url}"
+                            if len(ref_text + ref_link) > 1024:
+                                ref_text = (
+                                    ref_text[: len(ref_link) - 1] + "\N{HORIZONTAL ELLIPSIS}"
+                                )
+                            ref_text += ref_link
+                            em.add_field(
+                                name=_("Replying to {author}").format(
+                                    author=ref_msg.author.display_name
+                                ),
+                                value=ref_text,
+                            )
+                        except Exception:
+                            pass
                 em.timestamp = message.created_at
-                jump_link = _("\n\nOriginal message {link}").format(link=message.jump_url)
+                jump_link = f"\n{message.jump_url}"
                 if em.description:
                     with_context = f"{em.description}{jump_link}"
                     if len(with_context) > 4096:
@@ -100,20 +101,23 @@ class StarboardEvents:
             )
             if msg_ref := getattr(message, "reference", None):
                 ref_msg = getattr(msg_ref, "resolved", None)
-                try:
-                    ref_text = ref_msg.system_content
-                    ref_link = ref_msg.jump_url
-                    if len(ref_text + ref_link) > 1024:
-                        ref_text = ref_text[: len(ref_link) - 1] + "\N{HORIZONTAL ELLIPSIS}"
-                    ref_text += ref_link
-                    em.add_field(
-                        name=_("Replying to {author}").format(author=ref_msg.author.display_name),
-                        value=ref_text,
-                    )
-                except Exception:
-                    pass
+                if ref_msg is not None:
+                    try:
+                        ref_text = ref_msg.system_content
+                        ref_link = f"\n{ref_msg.jump_url}"
+                        if len(ref_text + ref_link) > 1024:
+                            ref_text = ref_text[: len(ref_link) - 1] + "\N{HORIZONTAL ELLIPSIS}"
+                        ref_text += ref_link
+                        em.add_field(
+                            name=_("Replying to {author}").format(
+                                author=ref_msg.author.display_name
+                            ),
+                            value=ref_text,
+                        )
+                    except Exception:
+                        pass
             em.timestamp = message.created_at
-            jump_link = _("\n\n{link}").format(link=message.jump_url)
+            jump_link = f"\n{message.jump_url}"
             if em.description:
                 with_context = f"{em.description}{jump_link}"
                 if len(with_context) > 2048:
