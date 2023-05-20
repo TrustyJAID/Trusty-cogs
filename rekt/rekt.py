@@ -132,4 +132,4 @@ class Rekt(commands.Cog):
         embed.set_author(name=_("Are you REKT?"))
         msg = await ctx.send(embed=embed)
         for emoji in rektemoji:
-            await msg.add_reaction(emoji=emoji)
+            await msg.add_reaction(emoji)
