@@ -197,10 +197,67 @@ class SelectMenuPages(menus.ListPageSource):
 class RoleToolsSelectOption(discord.ui.RoleSelect):
     def __init__(self, placeholder: str = _("Select a role")):
         super().__init__(min_values=1, max_values=1, placeholder=placeholder)
+        self.current_role: discord.Role
 
     async def callback(self, interaction: discord.Interaction):
         index = interaction.guild.roles.index(self.values[0])
         await self.view.show_checked_page(index, interaction)
+
+
+class StickyToggleButton(discord.ui.Button):
+    def __init__(
+        self,
+    ):
+        super().__init__(style=discord.ButtonStyle.green, label=_("Sticky"))
+        self.view: BaseMenu
+
+    async def callback(self, interaction: discord.Interaction):
+        cog = interaction.client.get_cog("RoleTools")
+        current = await cog.config.role(self.view._source.current_role).sticky()
+        await cog.config.role(self.view._source.current_role).sticky.set(not current)
+        await self.view.show_page(self.view.current_page, interaction)
+
+
+class AutoToggleButton(discord.ui.Button):
+    def __init__(
+        self,
+    ):
+        super().__init__(style=discord.ButtonStyle.green, label=_("Auto"))
+        self.view: BaseMenu
+
+    async def callback(self, interaction: discord.Interaction):
+        cog = interaction.client.get_cog("RoleTools")
+        current = await cog.config.role(self.view._source.current_role).auto()
+        await cog.config.role(self.view._source.current_role).auto.set(not current)
+        await self.view.show_page(self.view.current_page, interaction)
+
+
+class SelfAddToggleButton(discord.ui.Button):
+    def __init__(
+        self,
+    ):
+        super().__init__(style=discord.ButtonStyle.green, label=_("Selfassignable"))
+        self.view: BaseMenu
+
+    async def callback(self, interaction: discord.Interaction):
+        cog = interaction.client.get_cog("RoleTools")
+        current = await cog.config.role(self.view._source.current_role).selfassignable()
+        await cog.config.role(self.view._source.current_role).selfassignable.set(not current)
+        await self.view.show_page(self.view.current_page, interaction)
+
+
+class SelfRemToggleButton(discord.ui.Button):
+    def __init__(
+        self,
+    ):
+        super().__init__(style=discord.ButtonStyle.green, label=_("Selfremovable"))
+        self.view: BaseMenu
+
+    async def callback(self, interaction: discord.Interaction):
+        cog = interaction.client.get_cog("RoleTools")
+        current = await cog.config.role(self.view._source.current_role).selfremovable()
+        await cog.config.role(self.view._source.current_role).selfremovable.set(not current)
+        await self.view.show_page(self.view.current_page, interaction)
 
 
 class RolePages(menus.ListPageSource):
@@ -210,8 +267,10 @@ class RolePages(menus.ListPageSource):
     def is_paginating(self):
         return True
 
-    async def format_page(self, menu: menus.MenuPages, role: discord.Role):
+    async def format_page(self, menu: BaseMenu, role: discord.Role):
+        self.current_role = role
         role_settings = await menu.cog.config.role(role).all()
+        menu.update_buttons(role_settings)
         msg = _("Role Settings for {role}\n".format(role=role.name))
         jump_url = "https://discord.com/channels/{guild}/{channel}/{message}"
         em = discord.Embed(title=msg, colour=role.colour)
@@ -336,8 +395,6 @@ class BaseMenu(discord.ui.View):
         self,
         source: menus.PageSource,
         cog: commands.Cog,
-        clear_reactions_after: bool = True,
-        delete_message_after: bool = False,
         timeout: int = 60,
         message: discord.Message = None,
         **kwargs: Any,
@@ -350,7 +407,7 @@ class BaseMenu(discord.ui.View):
         self.message = message
         self._source = source
         self.ctx = None
-        self.author = None
+        self.author: Optional[discord.Member] = None
         self.current_page = kwargs.get("page_start", 0)
         self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
         self.back_button = BackButton(discord.ButtonStyle.grey, 0)
@@ -365,6 +422,14 @@ class BaseMenu(discord.ui.View):
         if isinstance(source, RolePages):
             self.select_view = RoleToolsSelectOption()
             self.add_item(self.select_view)
+            self.auto = AutoToggleButton()
+            self.add_item(self.auto)
+            self.sticky = StickyToggleButton()
+            self.add_item(self.sticky)
+            self.selfassignable = SelfAddToggleButton()
+            self.add_item(self.selfassignable)
+            self.selfremovable = SelfRemToggleButton()
+            self.add_item(self.selfremovable)
 
     @property
     def source(self):
@@ -372,6 +437,29 @@ class BaseMenu(discord.ui.View):
 
     async def on_timeout(self):
         await self.message.edit(view=None)
+
+    def update_buttons(self, data: dict):
+        buttons = {
+            "sticky": self.sticky,
+            "auto": self.auto,
+            "selfassignable": self.selfassignable,
+            "selfremovable": self.selfremovable,
+        }
+        for key, button in buttons.items():
+            if key in data:
+                if data[key]:
+                    button.style = discord.ButtonStyle.green
+                else:
+                    button.style = discord.ButtonStyle.red
+            if self.author is not None:
+                if self.author.id == self.ctx.guild.owner_id:
+                    button.disabled = False
+                else:
+                    button.disabled = (
+                        self.author.guild_permissions.manage_roles
+                        and self.source.current_role >= self.author.top_role
+                    )
+            button.disabled |= not self.source.current_role.is_assignable()
 
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
