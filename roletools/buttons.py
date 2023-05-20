@@ -36,7 +36,6 @@ class ButtonRole(discord.ui.Button):
         self.name = name
 
     async def callback(self, interaction: discord.Interaction):
-        log.debug("Receiving button press")
         guild = interaction.message.guild
         if self.disabled:
             await interaction.response.send_message(
@@ -64,7 +63,7 @@ class ButtonRole(discord.ui.Button):
                 )
                 return
             if wait_time := await self.view.cog.check_guild_verification(interaction.user, guild):
-                log.debug("Ignoring user due to verification check.")
+                # log.debug("Ignoring user due to verification check.")
                 if wait_time:
                     wait = datetime.now(timezone.utc) + timedelta(seconds=wait_time)
                     await interaction.response.send_message(
@@ -82,7 +81,7 @@ class ButtonRole(discord.ui.Button):
                     ephemeral=True,
                 )
                 return
-            log.debug(f"Adding role to {interaction.user.name} in {guild}")
+            # log.debug(f"Adding role to {interaction.user.name} in {guild}")
             response = await self.view.cog.give_roles(interaction.user, [role], _("Button Role"))
             if response:
                 await interaction.response.send_message(
@@ -102,7 +101,7 @@ class ButtonRole(discord.ui.Button):
                     ephemeral=True,
                 )
                 return
-            log.debug(f"Removing role from {interaction.user.name} in {guild}")
+            # log.debug(f"Removing role from {interaction.user.name} in {guild}")
             await self.view.cog.remove_roles(interaction.user, [role], _("Button Role"))
             await interaction.response.send_message(
                 _("I have removed the {role} role from you.").format(role=role.mention),
@@ -114,9 +113,8 @@ class ButtonRoleConverter(discord.app_commands.Transformer):
     @classmethod
     async def convert(cls, ctx: commands.Context, argument: str) -> ButtonRole:
         async with ctx.cog.config.guild(ctx.guild).buttons() as buttons:
-            log.debug(argument)
             if argument.lower() in buttons:
-                log.debug("Button exists")
+                # log.debug("%s Button exists", argument.lower())
                 button_data = buttons[argument.lower()]
                 role_id = button_data["role_id"]
                 emoji = button_data["emoji"]

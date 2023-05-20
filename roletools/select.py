@@ -59,7 +59,6 @@ class SelectRole(discord.ui.Select):
         self.view: SelectRoleView
 
     async def callback(self, interaction: discord.Interaction):
-        log.debug("Receiving selection press")
         no_selection = self.values == []
         role_ids = []
         disabled_role = False
@@ -106,14 +105,14 @@ class SelectRole(discord.ui.Select):
                 if wait_time := await self.view.cog.check_guild_verification(
                     interaction.user, guild
                 ):
-                    log.debug("Ignoring user due to verification check.")
+                    # log.debug("Ignoring %s due to verification check.", interaction.user.name)
                     if wait_time:
                         wait = datetime.now(timezone.utc) + timedelta(seconds=wait_time)
                     continue
                 if getattr(interaction.user, "pending", False):
                     pending = True
                     continue
-                log.debug(f"Adding role to {interaction.user.name} in {guild}")
+                # log.debug("Adding role to %s in %s", interaction.user.name, guild)
                 response = await self.view.cog.give_roles(
                     interaction.user, [role], _("Role Selection")
                 )
@@ -126,7 +125,7 @@ class SelectRole(discord.ui.Select):
                         "{role} Could not be removed because it is not self assignable."
                     ).format(role=role.mention)
                     continue
-                log.debug(f"Removing role from {interaction.user.name} in {guild}")
+                # log.debug("Removing role from %s in %s", interaction.user.name, guild)
                 await self.view.cog.remove_roles(interaction.user, [role], _("Role Selection"))
                 removed_roles.append(role)
         if wait is not None:
@@ -171,12 +170,10 @@ class SelectOptionRoleConverter(discord.app_commands.Transformer):
     @classmethod
     async def convert(cls, ctx: commands.Context, argument: str) -> SelectRoleOption:
         async with ctx.cog.config.guild(ctx.guild).select_options() as select_options:
-            log.debug(argument)
             if argument.lower() in select_options:
                 select_data = select_options[argument.lower()]
                 role_id = select_data["role_id"]
                 emoji = select_data["emoji"]
-                log.debug(emoji)
                 if emoji and len(emoji) > 20:
                     emoji = discord.PartialEmoji.from_str(emoji)
                 label = select_data["label"]
@@ -228,7 +225,7 @@ class SelectRoleConverter(discord.app_commands.Transformer):
     @classmethod
     async def convert(cls, ctx: commands.Context, argument: str) -> SelectRole:
         async with ctx.cog.config.guild(ctx.guild).select_menus() as select_menus:
-            log.debug(argument)
+            # log.debug(argument)
             if argument.lower() in select_menus:
                 select_data = select_menus[argument.lower()]
                 options = []
@@ -568,7 +565,7 @@ class RoleToolsSelect(RoleToolsMixin):
                         options = [i.value for i in child.options]
                         if custom_id in options:
                             child.disabled_options.append(name.lower())
-                            log.debug(f"Adding {custom_id} to view")
+                            # log.debug(f"Adding {custom_id} to view")
                 if name in self.settings.get(ctx.guild.id, {}).get("select_options", {}):
                     del self.settings[ctx.guild.id]["select_options"][name]
                 del select_options[name]
