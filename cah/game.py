@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 import discord
 from PIL import Image, ImageDraw, ImageFont
@@ -43,11 +43,25 @@ class Card(NamedTuple):
     def __str__(self):
         return self.text
 
-    async def file(self, path: Path) -> discord.File:
-        img = await self.image(path)
+    async def file(self, path: Path) -> Optional[discord.File]:
+        try:
+            img = await self.image(path)
+        except FileNotFoundError:
+            return None
+        except Exception:
+            log.exception("Error generating image")
+            return None
         file = discord.File(img)
-        img.close()
+
         return file
+
+    @property
+    def file_name(self) -> str:
+        return NotImplemented
+
+    @property
+    def fill(self) -> Tuple[int, int, int, int]:
+        return NotImplemented
 
     async def image(self, path: Path) -> BytesIO:
         loop = asyncio.get_running_loop()
@@ -55,14 +69,13 @@ class Card(NamedTuple):
         card = await loop.run_in_executor(None, task)
         temp = BytesIO()
         card.save(temp, format="webp")
-        card.close()
         temp.name = "card.webp"
         temp.seek(0)
         return temp
 
-    def _image(self, path: Path) -> Image:
-        card = Image.open(path / self.file_name)
-        card = card.convert("RGBA")
+    def _image(self, path: Path) -> Image.Image:
+        with Image.open(path / self.file_name) as card:
+            card = card.convert("RGBA")
         fill = self.fill
         font_size = 30 - 1 * (len(self.text) // 60)
         font_width = int((card.width - 50) / font_size) * 2
@@ -77,21 +90,23 @@ class Card(NamedTuple):
         margin = 25
         offset = 25
         set_offset = 490
-        if self.file_name == "black.png":
+        if isinstance(self, BlackCard):
             text = self.underscore
         else:
             text = self.text
         for line in textwrap.wrap(text, width=font_width):
             draw.text((margin, offset), line, fill=fill, font=font1)
-            offset += font1.getsize(line)[1]
+            offset += font1.getbbox(line)[3] - font1.getbbox(line)[1]
         for line in textwrap.wrap(self.set_name, width=font2_width):
             draw.text((100, set_offset), line, fill=fill, font=font2)
-            set_offset += font2.getsize(line)[1]
+            set_offset += font2.getbbox(line)[3] - font2.getbbox(line)[1]
         if self.pick:
             draw.text((35, 462), "Pick", fill=fill, font=font3)
-            width_start, height_start = font3.getsize("Pick")
-            size = height_start
-            x, y = (40, 450)
+            width_left, height_top, width_right, height_bottom = font3.getbbox("Pick")
+            height_start = height_bottom - height_top
+            width_start = width_right - width_left
+            size = height_start + 4
+            x, y = (40, 452)
             position = (
                 x + width_start,
                 y + height_start,
@@ -109,13 +124,23 @@ class Card(NamedTuple):
 
 
 class WhiteCard(Card):
-    file_name = "white.png"
-    fill = (0, 0, 0, 255)
+    @property
+    def file_name(self):
+        return "white.png"
+
+    @property
+    def fill(self) -> Tuple[int, int, int, int]:
+        return (0, 0, 0, 255)
 
 
 class BlackCard(Card):
-    file_name = "black.png"
-    fill = (255, 255, 255, 255)
+    @property
+    def file_name(self):
+        return "black.png"
+
+    @property
+    def fill(self) -> Tuple[int, int, int, int]:
+        return (255, 255, 255, 255)
 
     def __str__(self):
         return escape(self.underscore, formatting=True)
@@ -156,21 +181,28 @@ class CardSet:
 
 class PlayerHand(discord.ui.Select):
     def __init__(self, player: Player):
+        self.view: PlayerSelect
         cards_to_pick = player.game.round.black_card.pick
         super().__init__(
             placeholder="Pick your card(s)",
-            min_values=cards_to_pick,
-            max_values=cards_to_pick,
+            min_values=cards_to_pick or 1,
+            max_values=cards_to_pick or 1,
         )
         self.player = player
         self.cards = {str(i): card for i, card in enumerate(player.hand)}
         for i, card in self.cards.items():
             self.add_option(label=card.text[:80], value=i)
 
-    async def file(self, path: Path, cards: List[WhiteCard]) -> discord.File:
-        img = await self.played_cards(path, cards)
+    async def file(self, path: Path, cards: List[WhiteCard]) -> Optional[discord.File]:
+        try:
+            img = await self.played_cards(path, cards)
+        except FileNotFoundError:
+            return None
+        except Exception:
+            log.exception("Error generating image")
+            return None
         file = discord.File(img)
-        img.close()
+
         return file
 
     async def played_cards(self, path: Path, cards: List[WhiteCard]) -> BytesIO:
@@ -179,21 +211,20 @@ class PlayerHand(discord.ui.Select):
         img = await loop.run_in_executor(None, task)
         temp = BytesIO()
         img.save(temp, format="webp")
-        img.close()
+
         temp.name = "played_cards.webp"
         temp.seek(0)
         return temp
 
-    def _played_cards(self, path: Path, cards: List[WhiteCard]) -> Image:
+    def _played_cards(self, path: Path, cards: List[WhiteCard]) -> Image.Image:
         imgs = [card._image(path) for card in cards]
         template = Image.new("RGBA", (425 * len(cards), 576))
         for i, img in enumerate(imgs):
             template.paste(img, (i * 425, 0), img)
-        for i in imgs:
-            i.close()
         return template
 
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         cards = [self.cards[i] for i in self.values]
         for card in cards:
             self.player.hand.remove(card)
@@ -201,8 +232,12 @@ class PlayerHand(discord.ui.Select):
         self.player.game.draw_cards(self.player, len(cards))
         self.player.game.round.play_cards(self.player, cards)
         img = await self.file(self.player.game.path, cards)
-        await interaction.response.send_message(
-            f"You played: {''.join(str(c) for c in cards)}", files=[img], ephemeral=True
+        kwargs: dict = {"ephemeral": True}
+        if img is not None:
+            kwargs["file"] = img
+
+        await interaction.followup.send(
+            f"You played: {humanize_list([str(c) for c in cards])}", **kwargs
         )
         self.view.stop()
         await self.player.game.round.edit()
@@ -222,7 +257,13 @@ class PlayerSelect(discord.ui.View):
         self._current_hand = PlayerHand(self.player)
         self.add_item(self._current_hand)
         new_image = await self.player.file(self.player.game.path)
-        await interaction.edit_original_response(attachments=[new_image], view=self)
+        if new_image is not None:
+            await interaction.edit_original_response(attachments=[new_image], view=self)
+        else:
+            msg = "Pick a card\n"
+            for number, card in enumerate(self.player.hand):
+                msg += f"- {card}\n"
+            await interaction.edit_original_response(content=msg)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception, item):
         log.exception("Error in Player Hand")
@@ -230,6 +271,7 @@ class PlayerSelect(discord.ui.View):
 
 class NeverHaveIEverButton(discord.ui.Button):
     def __init__(self):
+        self.view: PlayerSelect
         super().__init__(label="Never Have I Ever", style=discord.ButtonStyle.blurple)
 
     async def callback(self, interaction: discord.Interaction):
@@ -260,10 +302,16 @@ class NeverHaveIEver(discord.ui.Modal):
         self.add_item(self.explanation)
         self.add_item(self.chosen_cards)
 
-    async def file(self, path: Path, cards: List[WhiteCard]) -> discord.File:
-        img = await self.discarded_cards(path, cards)
+    async def file(self, path: Path, cards: List[WhiteCard]) -> Optional[discord.File]:
+        try:
+            img = await self.discarded_cards(path, cards)
+        except FileNotFoundError:
+            return None
+        except Exception:
+            log.exception("Error generating image")
+            return None
         file = discord.File(img)
-        img.close()
+
         return file
 
     async def discarded_cards(self, path: Path, cards: List[WhiteCard]) -> BytesIO:
@@ -272,12 +320,12 @@ class NeverHaveIEver(discord.ui.Modal):
         img = await loop.run_in_executor(None, task)
         temp = BytesIO()
         img.save(temp, format="webp")
-        img.close()
+
         temp.name = "discarded_cards.webp"
         temp.seek(0)
         return temp
 
-    def _discarded_cards(self, path: Path, cards: List[WhiteCard]) -> Image:
+    def _discarded_cards(self, path: Path, cards: List[WhiteCard]) -> Image.Image:
         imgs = [card._image(path) for card in cards]
         height = 580 * min(1 + len(imgs) // 5, 2)
         width = 425 * max(min(5, len(imgs)), 1)
@@ -286,11 +334,10 @@ class NeverHaveIEver(discord.ui.Modal):
             div = divmod(i, 5)
             x = 425 * div[1]
             template.paste(img, (x, (580 * (i // 5))), img)
-        for i in imgs:
-            i.close()
         return template
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         cards = [self.cards[int(i)] for i in self.chosen_cards.values]
         for card in cards:
             self.player.game.discard_pile.add_white(card)
@@ -302,7 +349,10 @@ class NeverHaveIEver(discord.ui.Modal):
             f"{self.explanation.value}"
         )
         img = await self.file(self.player.game.path, cards)
-        await interaction.response.send_message(msg, files=[img])
+        if img is not None:
+            await interaction.followup.send(msg, file=img)
+        else:
+            await interaction.followup.send(msg)
 
 
 class Player:
@@ -314,10 +364,16 @@ class Player:
         self._current_hand: Optional[PlayerHand] = None
         self.game = game
 
-    async def file(self, path: Path) -> discord.File:
-        img = await self.make_hand(path)
+    async def file(self, path: Path) -> Optional[discord.File]:
+        try:
+            img = await self.make_hand(path)
+        except FileNotFoundError:
+            return None
+        except Exception:
+            log.exception("Error generating image")
+            return None
         file = discord.File(img)
-        img.close()
+
         return file
 
     async def make_hand(self, path: Path) -> BytesIO:
@@ -326,12 +382,12 @@ class Player:
         img = await loop.run_in_executor(None, task)
         temp = BytesIO()
         img.save(temp, format="webp")
-        img.close()
+
         temp.name = "hand.webp"
         temp.seek(0)
         return temp
 
-    def _make_hand(self, path: Path) -> Image:
+    def _make_hand(self, path: Path) -> Image.Image:
         images = [c._image(path) for c in self.hand]
         template = Image.new("RGBA", size=(1800, 700))
         rotation = 9
@@ -342,8 +398,6 @@ class Player:
                 expand=True,
             )
             template.paste(rotated_image, (i * 150, 700 - rotated_image.height), rotated_image)
-        for i in images:
-            i.close()
         return template
 
     @property
@@ -353,7 +407,7 @@ class Player:
         return PlayerSelect(self)
 
     @classmethod
-    def join_game(cls, user: discord.User, game: CAHGame):
+    def join_game(cls, user: discord.abc.User, game: CAHGame):
         if len(game.white_cards) + len(game.discard_pile.white_cards) < 10:
             raise TooManyPlayers("Too many players and not enough cards")
         ret = cls(user, game)
@@ -365,21 +419,23 @@ class Player:
 
 class JoinButton(discord.ui.Button):
     def __init__(self):
+        self.view: Round
         super().__init__(label="Join Round", style=discord.ButtonStyle.green)
 
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         if interaction.user.id == self.view.game.card_czar.id:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "You are the Card Czar, you're not allowed to play a card.", ephemeral=True
             )
             return
         if interaction.user.id in self.view.game.players:
-            player = self.view.game.players.get(interaction.user.id)
+            player: Player = self.view.game.players[interaction.user.id]
         else:
             try:
-                player = Player.join_game(interaction.user, self.view.game)
+                player: Player = Player.join_game(interaction.user, self.view.game)
             except TooManyPlayers:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     "Sorry, there's too many players and not enough cards to let you join this game.",
                     ephemeral=True,
                 )
@@ -387,13 +443,18 @@ class JoinButton(discord.ui.Button):
             self.view.game.players[interaction.user.id] = player
         view = player.view
         img = await player.file(self.view.game.path)
-        await interaction.response.send_message(
-            "Pick a card", files=[img], view=view, ephemeral=True
-        )
+        if img is None:
+            msg = "Pick a card\n"
+            for number, card in enumerate(player.hand):
+                msg += f"- {card}\n"
+            await interaction.followup.send(msg, view=view, ephemeral=True)
+        else:
+            await interaction.followup.send("Pick a card", file=img, view=view, ephemeral=True)
 
 
 class StopButton(discord.ui.Button):
     def __init__(self):
+        self.view: Round
         super().__init__(label="Stop", style=discord.ButtonStyle.red)
 
     async def callback(self, interaction: discord.Interaction):
@@ -412,6 +473,7 @@ class StopButton(discord.ui.Button):
 
 class EndRoundButton(discord.ui.Button):
     def __init__(self):
+        self.view: Round
         super().__init__(label="End Round", style=discord.ButtonStyle.red)
 
     async def callback(self, interaction: discord.Interaction):
@@ -442,6 +504,7 @@ class DiscardPile:
 
 class WinnerSelect(discord.ui.Select):
     def __init__(self, cards: Dict[int, List[WhiteCard]]):
+        self.view: Winner
         super().__init__(placeholder="Pick Winner")
         self.cards = cards
         for i, player in enumerate(self.cards.items()):
@@ -449,7 +512,8 @@ class WinnerSelect(discord.ui.Select):
             self.add_option(label=label, value=f"{player[0]}")
 
     async def callback(self, interaction: discord.Interaction):
-        cards = self.cards.get(int(self.values[0]))
+        await interaction.response.defer()
+        cards = self.cards.get(int(self.values[0]), [])
         winner = interaction.guild.get_member(int(self.values[0]))
         if winner is not None:
             self.view.game.card_czar = winner
@@ -457,12 +521,13 @@ class WinnerSelect(discord.ui.Select):
         else:
             member_str = "Unknown Member"
         img = await self.view.file(self.view.game.path, cards)
-        await interaction.response.send_message(
-            f"{member_str} won with the card(s): {self.view.game.round.black_card.format(cards)}",
-            allowed_mentions=discord.AllowedMentions(users=False),
-            files=[img],
+        kwargs: dict = {"allowed_mentions": discord.AllowedMentions(users=False)}
+        if img is not None:
+            kwargs["file"] = img
+        await interaction.followup.send(
+            f"# {member_str} won with the card(s): {self.view.game.round.black_card.format(cards)}",
+            **kwargs,
         )
-        self.view.game.card_czar = winner
         self.view.game.players[int(self.values[0])].points += 1
         self.view.picked_winner = True
         self.view.stop()
@@ -470,17 +535,23 @@ class WinnerSelect(discord.ui.Select):
 
 class Winner(discord.ui.View):
     def __init__(self, game: CAHGame, cards: Dict[int, List[WhiteCard]]):
-        self.game = game
+        self.game: CAHGame = game
         self.cards = cards
         super().__init__(timeout=30)
         self.select = WinnerSelect(self.cards)
         self.add_item(self.select)
         self.picked_winner = False
 
-    async def file(self, path: Path, cards: List[WhiteCard]) -> discord.File:
-        img = await self.winning_cards(path, cards)
+    async def file(self, path: Path, cards: List[WhiteCard]) -> Optional[discord.File]:
+        try:
+            img = await self.winning_cards(path, cards)
+        except FileNotFoundError:
+            return None
+        except Exception:
+            log.exception("Error generating image")
+            return None
         file = discord.File(img)
-        img.close()
+
         return file
 
     async def winning_cards(self, path: Path, cards: List[WhiteCard]) -> BytesIO:
@@ -489,12 +560,12 @@ class Winner(discord.ui.View):
         img = await loop.run_in_executor(None, task)
         temp = BytesIO()
         img.save(temp, format="webp")
-        img.close()
+
         temp.name = "Winner.webp"
         temp.seek(0)
         return temp
 
-    def _winning_cards(self, path: Path, cards: List[WhiteCard]) -> Image:
+    def _winning_cards(self, path: Path, cards: List[WhiteCard]) -> Image.Image:
         imgs = [card._image(path) for card in cards]
         template = Image.new("RGBA", (425 * len(cards), 576))
         for i, img in enumerate(imgs):
@@ -514,12 +585,12 @@ class Winner(discord.ui.View):
             cards = self.cards[choice]
             img = await self.file(self.game.path, cards)
             winner_str = (
-                f"{member_str} won with the card(s): {self.game.round.black_card.format(cards)}"
+                f"# {member_str} won with the card(s): {self.game.round.black_card.format(cards)}"
             )
             await self.game.ctx.send(
                 f"Rando Cardrissian has picked a winner for you.\n{winner_str}",
                 allowed_mentions=discord.AllowedMentions(users=False),
-                files=[img],
+                file=img,
             )
 
     async def on_error(self, interaction: discord.Interaction, error: Exception, item):
@@ -564,16 +635,22 @@ class Round(discord.ui.View):
     def play_cards(self, player: Player, cards: List[WhiteCard]):
         self.played_cards[player.user.id] = cards
 
+    def __str__(self):
+        players = (
+            f"Number of Players: {len(self.played_cards)}" if len(self.played_cards) > 0 else ""
+        )
+        return (
+            f"# Round: {self.round_number+1}\n"
+            f"Card Czar: {self.game._card_czar.mention}\n"
+            f"> ## {self.black_card}\n\n"
+            f"{self.timestamp}\n"
+        ) + players
+
     async def start(self, ctx: commands.Context):
         img = await self.black_card.file(self.game.path)
         self.message = await ctx.send(
-            (
-                f"Round: {self.round_number+1}\n"
-                f"Card Czar: {self.game._card_czar.mention}\n"
-                f"**{self.black_card}**\n\n"
-                f"{self.timestamp}"
-            ),
-            files=[img],
+            str(self),
+            file=img,
             allowed_mentions=discord.AllowedMentions(users=False),
             view=self,
         )
@@ -581,18 +658,15 @@ class Round(discord.ui.View):
     async def edit(self):
         if self.message is not None:
             await self.message.edit(
-                content=(
-                    f"Round: {self.round_number+1}\n"
-                    f"Card Czar: {self.game._card_czar.mention}\n"
-                    f"**{self.black_card}**\n\n"
-                    f"{self.timestamp}\n"
-                    f"Number of Players: {len(self.played_cards)}."
-                ),
+                content=str(self),
                 allowed_mentions=discord.AllowedMentions(users=False),
             )
 
     def stop(self) -> None:
         super().stop()
+        if self.message is not None:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self.message.edit(view=None))
         if self.game._wait_task is not None:
             self.game._wait_task.cancel()
         self.game._round_wait.set()
@@ -639,36 +713,48 @@ class CAHGame:
         return self._round
 
     @property
-    def card_czar(self):
+    def card_czar(self) -> discord.abc.User:
         return self._card_czar
 
     @card_czar.setter
-    def card_czar(self, other: discord.abc.User):
+    def card_czar(self, other: Union[discord.Member, discord.User]):
         self._card_czar = other
 
     async def wait_loop(self, seconds: int):
         await asyncio.sleep(seconds)
         self._round_wait.set()
 
+    async def played_cards_file(self) -> Optional[discord.File]:
+        try:
+            img = await self.make_played_cards()
+        except FileNotFoundError:
+            return None
+        except Exception:
+            log.exception("Error generating image")
+            return None
+        file = discord.File(img)
+
+        return file
+
     async def make_played_cards(self) -> BytesIO:
         loop = asyncio.get_running_loop()
         img = await loop.run_in_executor(None, self._make_played_cards)
         temp = BytesIO()
         img.save(temp, format="webp")
-        img.close()
+
         temp.name = "played_cards.webp"
         temp.seek(0)
         return temp
 
     def _make_played_cards(self):
-        width = 425 * self.round.black_card.pick
+        width = 425 * (self.round.black_card.pick or 1)
         height = 580 * len(self.round.played_cards)
         template = Image.new("RGBA", (width, height))
         for row, cards in enumerate(self.round.played_cards.values()):
             for column, card in enumerate(cards):
                 img = card._image(self.path)
                 template.paste(img, (column * 425, row * 580), img)
-                img.close()
+
         return template
 
     async def start(self):
@@ -692,13 +778,16 @@ class CAHGame:
                 choices = ""
                 for i, cards in enumerate(self.round.played_cards.values()):
                     choices += f"{i+1}. {self.round.black_card.format(cards)}\n\n"
-                msg = f"{self.card_czar.mention} is the Card Czar!\n{self.round.black_card}\n\n{choices}"
-                img = await self.make_played_cards()
+                msg = (
+                    f"# {self.card_czar.mention} is the Card Czar!\n"
+                    f"> ## {self.round.black_card}\n\n"
+                    f"{choices}"
+                )
+                img = await self.played_cards_file()
                 pages = list(pagify(msg))
                 for page in pages[:-1]:
                     await self.ctx.send(page)
-                await self.ctx.send(pages[-1], files=[discord.File(img)], view=winner)
-                img.close()
+                await self.ctx.send(pages[-1], file=img, view=winner)
                 await winner.wait()
             else:
                 if not self.__stopped.done():
