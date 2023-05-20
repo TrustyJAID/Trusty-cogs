@@ -86,7 +86,7 @@ class CardSetTransformer(discord.app_commands.Transformer):
 
 class CardsAgainstHumanity(commands.Cog):
 
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
     __author__ = ["TrustyJAID", "crhallberg", "Cards Against Humanity®️"]
 
     def __init__(self, bot):

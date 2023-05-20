@@ -88,7 +88,6 @@ class Card(NamedTuple):
             draw.text((100, set_offset), line, fill=fill, font=font2)
             set_offset += font2.getsize(line)[1]
         if self.pick:
-
             draw.text((35, 462), "Pick", fill=fill, font=font3)
             width_start, height_start = font3.getsize("Pick")
             size = height_start
@@ -568,8 +567,14 @@ class Round(discord.ui.View):
     async def start(self, ctx: commands.Context):
         img = await self.black_card.file(self.game.path)
         self.message = await ctx.send(
-            f"Round: {self.round_number+1}\n**{self.black_card}**\n\n{self.timestamp}",
+            (
+                f"Round: {self.round_number+1}\n"
+                f"Card Czar: {self.game._card_czar.mention}\n"
+                f"**{self.black_card}**\n\n"
+                f"{self.timestamp}"
+            ),
             files=[img],
+            allowed_mentions=discord.AllowedMentions(users=False),
             view=self,
         )
 
@@ -577,13 +582,19 @@ class Round(discord.ui.View):
         if self.message is not None:
             await self.message.edit(
                 content=(
-                    f"Round: {self.round_number+1}\n**{self.black_card}**\n\n"
-                    f"{self.timestamp}\nNumber of Players: {len(self.played_cards)}."
-                )
+                    f"Round: {self.round_number+1}\n"
+                    f"Card Czar: {self.game._card_czar.mention}\n"
+                    f"**{self.black_card}**\n\n"
+                    f"{self.timestamp}\n"
+                    f"Number of Players: {len(self.played_cards)}."
+                ),
+                allowed_mentions=discord.AllowedMentions(users=False),
             )
 
     def stop(self) -> None:
         super().stop()
+        if self.game._wait_task is not None:
+            self.game._wait_task.cancel()
         self.game._round_wait.set()
 
     async def on_error(self, interaction: discord.Interaction, error: Exception, item):
@@ -621,6 +632,7 @@ class CAHGame:
         self._card_czar: discord.abc.User = ctx.author
         self._round_wait: asyncio.Event = asyncio.Event()
         self.path = cog_data_path(ctx.cog)
+        self._wait_task: Optional[asyncio.Task] = None
 
     @property
     def round(self) -> Round:
@@ -672,7 +684,7 @@ class CAHGame:
             end_time = datetime.now() + timedelta(seconds=60)
             self._round = Round(self, card, end_time, round_number)
             await self.round.start(self.ctx)
-            asyncio.create_task(self.wait_loop(60))
+            self._wait_task = asyncio.create_task(self.wait_loop(60))
             await self._round_wait.wait()
             self._round_wait.clear()
             if self.round.played_cards:
