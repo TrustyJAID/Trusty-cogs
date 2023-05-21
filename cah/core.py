@@ -14,6 +14,15 @@ from .game import CAHGame, CardSet
 
 log = logging.getLogger("red.trusty-cogs.cah")
 
+WHITE_CARD_URL = "https://i.imgur.com/mlkVIxg.png"
+BLACK_CARD_URL = "https://i.imgur.com/OrM8UcC.png"
+FONT_URL = (
+    "https://github.com/adampash/Lifehacker.me/blob/master/fonts/HelveticaNeue-Bold.ttf?raw=true"
+)
+CARD_SETS_URL = (
+    "https://raw.githubusercontent.com/crhallberg/json-against-humanity/latest/cah-all-full.json"
+)
+
 
 class CardSetTransformer(discord.app_commands.Transformer):
     @classmethod
@@ -113,32 +122,28 @@ class CardsAgainstHumanity(commands.Cog):
 
     async def get_font_file(self):
         path = cog_data_path(self) / "HelveticaNeue-Bold.ttf"
-        url = "https://github.com/adampash/Lifehacker.me/blob/master/fonts/HelveticaNeue-Bold.ttf?raw=true"
         log.info("Downloading Font file")
         with path.open("wb") as outfile:
-            outfile.write(await self.download_data(url))
+            outfile.write(await self.download_data(FONT_URL))
 
     async def get_card_sets(self) -> List[dict]:
-        url = "https://raw.githubusercontent.com/crhallberg/json-against-humanity/latest/cah-all-full.json"
         log.info("Downloading card sets")
-        data = json.loads(await self.download_data(url))
+        data = json.loads(await self.download_data(CARD_SETS_URL))
         await self.config.card_sets.set(data)
         return data
 
     async def get_black_card(self):
         path = cog_data_path(self) / "black.png"
-        url = "https://i.imgur.com/OrM8UcC.png"
         log.info("Downloading Black Card Image")
         with path.open("wb") as outfile:
-            data = await self.download_data(url)
+            data = await self.download_data(BLACK_CARD_URL)
             outfile.write(data)
 
     async def get_white_card(self):
         path = cog_data_path(self) / "white.png"
-        url = "https://i.imgur.com/mlkVIxg.png"
         log.info("Downloading White Card Image")
         with path.open("wb") as outfile:
-            data = await self.download_data(url)
+            data = await self.download_data(WHITE_CARD_URL)
             outfile.write(data)
 
     async def download_files(self):
@@ -209,6 +214,13 @@ class CardsAgainstHumanity(commands.Cog):
             except Exception:
                 log.exception("Error downloading the %s", name)
                 msg += f"There was an issue downloading the {name}\n"
+                path = str(cog_data_path(self))
+                if name in ["white card image", "black card image"]:
+                    url = WHITE_CARD_URL if name == "white card image" else BLACK_CARD_URL
+                    white_or_black = "white" if name == "white card image" else "black"
+                    msg += f"- You can manually download this image from {url} and place it in `{path}` with the name {white_or_black}.png."
+                if name == "font file":
+                    msg += f"- You can manually download this font file from {FONT_URL} and place it in `{path}` with the name HelveticaNeue-Bold.ttf."
         await ctx.send(msg)
 
     @cah.command(name="list")
