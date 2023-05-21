@@ -50,7 +50,7 @@ class Badges(commands.Cog):
         """
         return
 
-    def remove_white_barcode(self, img: Image) -> Image:
+    def remove_white_barcode(self, img: Image.Image) -> Image:
         """https://stackoverflow.com/questions/765736/using-pil-to-make-all-white-pixels-transparent"""
         img = img.convert("RGBA")
         datas = img.getdata()
@@ -65,7 +65,7 @@ class Badges(commands.Cog):
         img.putdata(newData)
         return img
 
-    def invert_barcode(self, img: Image) -> Image:
+    def invert_barcode(self, img: Image.Image) -> Image:
         """https://stackoverflow.com/questions/765736/using-pil-to-make-all-white-pixels-transparent"""
         img = img.convert("RGBA")
         datas = img.getdata()
@@ -88,8 +88,8 @@ class Badges(commands.Cog):
                 return BytesIO(test)
 
     def make_template(
-        self, user: Union[discord.User, discord.Member], badge: Badge, template: Image
-    ) -> Image:
+        self, user: Union[discord.User, discord.Member], badge: Badge, template: Image.Image
+    ) -> Image.Image:
         """Build the base template before determining animated or not"""
         if hasattr(user, "roles"):
             department = (
@@ -120,7 +120,6 @@ class Badges(commands.Cog):
         if badge.is_inverted:
             fill = (255, 255, 255)
             barcode = self.invert_barcode(barcode)
-        template = Image.open(template)
         template = template.convert("RGBA")
         barcode = barcode.convert("RGBA")
         barcode = barcode.resize((555, 125), Image.ANTIALIAS)
@@ -151,13 +150,13 @@ class Badges(commands.Cog):
         draw.text((420, 475), _("LEVEL ") + level, fill="red", font=font1)
         # adds user level
         if badge.badge_name != "discord" and user is discord.Member:
-            draw.text((60, 585), str(user.joined_at), fill=fill, font=font2)
+            draw.text((60, 605), str(user.joined_at), fill=fill, font=font2)
         else:
-            draw.text((60, 585), str(user.created_at), fill=fill, font=font2)
+            draw.text((60, 605), str(user.created_at), fill=fill, font=font2)
         barcode.close()
         return template
 
-    def make_animated_gif(self, template: Image, avatar: BytesIO) -> BytesIO:
+    def make_animated_gif(self, template: Image.Image, avatar: Image.Image) -> BytesIO:
         """Create animated badge from gif avatar"""
         gif_list = [frame.copy() for frame in ImageSequence.Iterator(avatar)]
         img_list = []
@@ -184,7 +183,7 @@ class Badges(commands.Cog):
                 break
         return temp
 
-    def make_badge(self, template: Image, avatar: Image):
+    def make_badge(self, template: Image.Image, avatar: Image.Image):
         """Create basic badge from regular avatar"""
         watermark = avatar.convert("RGBA")
         watermark.putalpha(128)
@@ -199,7 +198,7 @@ class Badges(commands.Cog):
 
     async def create_badge(self, user, badge, is_gif: bool):
         """Async create badges handler"""
-        template_img = await self.dl_image(badge.file_name)
+        template_img = Image.open(await self.dl_image(badge.file_name))
         task = functools.partial(self.make_template, user=user, badge=badge, template=template_img)
         loop = asyncio.get_running_loop()
         task = loop.run_in_executor(None, task)
@@ -207,9 +206,11 @@ class Badges(commands.Cog):
             template = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
             return
-        if user.is_avatar_animated() and is_gif:
-            url = user.avatar_url_as(format="gif")
-            avatar = Image.open(await self.dl_image(url))
+        if user.display_avatar.is_animated() and is_gif:
+            avatar = user.display_avatar.with_format("gif")
+            temp = BytesIO()
+            await avatar.save(temp)
+            avatar = Image.open(temp)
             task = functools.partial(self.make_animated_gif, template=template, avatar=avatar)
             task = loop.run_in_executor(None, task)
             try:
@@ -218,8 +219,10 @@ class Badges(commands.Cog):
                 return
 
         else:
-            url = user.avatar_url_as(format="png")
-            avatar = Image.open(await self.dl_image(url))
+            avatar = user.display_avatar.with_format("gif")
+            temp = BytesIO()
+            await avatar.save(temp)
+            avatar = Image.open(temp)
             task = functools.partial(self.make_badge, template=template, avatar=avatar)
             task = loop.run_in_executor(None, task)
             try:
