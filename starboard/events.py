@@ -5,7 +5,6 @@ from typing import Dict, List, Literal, Union, cast
 
 import discord
 from discord.utils import snowflake_time
-from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
@@ -22,7 +21,7 @@ log = logging.getLogger("red.trusty-cogs.Starboard")
 class StarboardEvents:
     bot: Red
     config: Config
-    starboards: Dict[int, StarboardEntry]
+    starboards: Dict[int, Dict[str, StarboardEntry]]
     ready: asyncio.Event
 
     async def _build_embed(
@@ -62,7 +61,7 @@ class StarboardEvents:
                     if ref_msg is not None:
                         try:
                             ref_text = ref_msg.system_content
-                            ref_link = f"\n{ref_msg.jump_url}"
+                            ref_link = f"\n\n{ref_msg.jump_url}"
                             if len(ref_text + ref_link) > 1024:
                                 ref_text = (
                                     ref_text[: len(ref_link) - 1] + "\N{HORIZONTAL ELLIPSIS}"
@@ -77,7 +76,7 @@ class StarboardEvents:
                         except Exception:
                             pass
                 em.timestamp = message.created_at
-                jump_link = f"\n{message.jump_url}"
+                jump_link = f"\n\n{message.jump_url}"
                 if em.description:
                     with_context = f"{em.description}{jump_link}"
                     if len(with_context) > 4096:
@@ -104,7 +103,7 @@ class StarboardEvents:
                 if ref_msg is not None:
                     try:
                         ref_text = ref_msg.system_content
-                        ref_link = f"\n{ref_msg.jump_url}"
+                        ref_link = f"\n\n{ref_msg.jump_url}"
                         if len(ref_text + ref_link) > 1024:
                             ref_text = ref_text[: len(ref_link) - 1] + "\N{HORIZONTAL ELLIPSIS}"
                         ref_text += ref_link
@@ -117,7 +116,7 @@ class StarboardEvents:
                     except Exception:
                         pass
             em.timestamp = message.created_at
-            jump_link = f"\n{message.jump_url}"
+            jump_link = f"\n\n{message.jump_url}"
             if em.description:
                 with_context = f"{em.description}{jump_link}"
                 if len(with_context) > 2048:
@@ -167,18 +166,19 @@ class StarboardEvents:
     @commands.Cog.listener()
     async def on_raw_reaction_clear(self, payload: discord.RawReactionActionEvent) -> None:
         await self.ready.wait()
+        if not payload.guild_id:
+            return
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
         if guild.id not in self.starboards:
             return
         # starboards = await self.config.guild(guild).starboards()
-        for name, starboard in self.starboards[guild.id].items():
+        for starboard in self.starboards[guild.id].values():
             # starboard = StarboardEntry.from_json(s_board)
-            star_channel = guild.get_channel(starboard.channel)
+            star_channel = guild.get_channel_or_thread(starboard.channel)
             if not star_channel:
                 continue
             async with starboard.lock:
@@ -200,6 +200,8 @@ class StarboardEvents:
         based on the reactions added.
         This covers all reaction event types
         """
+        if not payload.guild_id:
+            return
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
@@ -209,99 +211,95 @@ class StarboardEvents:
 
         if guild.id not in self.starboards:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
 
         member = guild.get_member(payload.user_id)
         if member and member.bot:
             return
         starboard = None
-        for name, s_board in self.starboards[guild.id].items():
-            if s_board.emoji == str(payload.emoji):
-                starboard = s_board
-        if not starboard:
-            return
-        if not starboard.enabled:
-            return
-        allowed_roles = starboard.check_roles(member)
-        allowed_channel = starboard.check_channel(self.bot, channel)
-        if any((not allowed_roles, not allowed_channel)):
-            log.debug("User or channel not in allowlist")
-            return
+        msg = guild._state._get_message(payload.message_id)
+        # I know I am not supposed to use these private methods but I want to avoid
+        # lookups if I can while ensuring historical lookups
+        for starboard in self.starboards[guild.id].values():
+            if starboard.emoji == payload.emoji:
+                if not starboard.enabled:
+                    continue
+                allowed_roles = starboard.check_roles(member)
+                allowed_channel = starboard.check_channel(self.bot, channel)
+                if any((not allowed_roles, not allowed_channel)):
+                    log.debug("User or channel not in allowlist")
+                    continue
 
-        star_channel = guild.get_channel(starboard.channel)
-        if not star_channel:
-            return
-        if (
-            not star_channel.permissions_for(guild.me).send_messages
-            or not star_channel.permissions_for(guild.me).embed_links
-        ):
-            return
+                star_channel = guild.get_channel(starboard.channel)
+                if star_channel is None:
+                    continue
+                if (
+                    not star_channel.permissions_for(guild.me).send_messages
+                    or not star_channel.permissions_for(guild.me).embed_links
+                ):
+                    continue
 
-        async with starboard.lock:
-            star_message = await self._loop_messages(payload, starboard, star_channel)
-            if star_message is True:
-                return
+                async with starboard.lock:
+                    star_message = await self._loop_messages(payload, starboard, star_channel)
+                    if star_message is True:
+                        continue
+                    if msg is None:
+                        try:
+                            msg = await channel.fetch_message(payload.message_id)
+                        except (discord.errors.NotFound, discord.Forbidden):
+                            continue
+                    if star_message is False:
+                        if getattr(payload, "event_type", None) == "REACTION_REMOVE":
+                            # Return early so we don't create a new starboard message
+                            # when the first time we're seeing the message is on a
+                            # reaction remove event
+                            continue
 
-            if star_message is False:
-                if getattr(payload, "event_type", None) == "REACTION_REMOVE":
-                    # Return early so we don't create a new starboard message
-                    # when the first time we're seeing the message is on a
-                    # reaction remove event
-                    return
-                try:
-                    msg = await channel.fetch_message(payload.message_id)
-                except (discord.errors.NotFound, discord.Forbidden):
-                    return
-                reactions = [payload.user_id]
-                if payload.user_id == msg.author.id:
-                    if not starboard.selfstar:
-                        reactions.remove(payload.user_id)
-                star_message = StarboardMessage(
-                    guild=guild.id,
-                    original_message=payload.message_id,
-                    original_channel=payload.channel_id,
-                    new_message=None,
-                    new_channel=None,
-                    author=msg.author.id,
-                    reactions=reactions,
-                )
-            starboard.stars_added += 1
-            key = f"{payload.channel_id}-{payload.message_id}"
-            # await star_message.update_count(self.bot, starboard, remove)
-            count = len(star_message.reactions)
-            log.debug(f"First time {count=} {starboard.threshold=}")
-            if count < starboard.threshold:
-                if key not in starboard.messages:
+                        reactions = [payload.user_id]
+                        if payload.user_id == msg.author.id:
+                            if not starboard.selfstar:
+                                reactions.remove(payload.user_id)
+                        star_message = StarboardMessage(
+                            guild=guild.id,
+                            original_message=payload.message_id,
+                            original_channel=payload.channel_id,
+                            new_message=None,
+                            new_channel=None,
+                            author=msg.author.id,
+                            reactions=reactions,
+                        )
+                    starboard.stars_added += 1
+                    key = f"{payload.channel_id}-{payload.message_id}"
+                    # await star_message.update_count(self.bot, starboard, remove)
+                    count = len(star_message.reactions)
+                    # log.debug(f"First time {count=} {starboard.threshold=}")
+                    if count < starboard.threshold:
+                        if key not in starboard.messages:
+                            self.starboards[guild.id][starboard.name].messages[key] = star_message
+                        await self._save_starboards(guild)
+                        continue
+                    if not starboard.selfstar and msg.author.id == payload.user_id:
+                        log.debug("Is a selfstar so let's return")
+                        # this is here to prevent 1 threshold selfstars
+                        continue
+                    embeds = await self._build_embed(guild, msg, starboard)
+                    count_msg = "{emoji} **#{count}**".format(emoji=payload.emoji, count=count)
+                    post_msg = await star_channel.send(count_msg, embeds=embeds)
+                    if starboard.autostar:
+                        try:
+                            await post_msg.add_reaction(starboard.emoji)
+                        except Exception:
+                            log.exception("Error adding autostar.")
+                    if key not in starboard.messages:
+                        self.starboards[guild.id][starboard.name].messages[key] = star_message
+                    star_message.new_message = post_msg.id
+                    star_message.new_channel = star_channel.id
+                    starboard.starred_messages += 1
+                    index_key = f"{star_channel.id}-{post_msg.id}"
                     self.starboards[guild.id][starboard.name].messages[key] = star_message
-                await self._save_starboards(guild)
-                return
-            try:
-                msg = await channel.fetch_message(payload.message_id)
-            except (discord.errors.NotFound, discord.Forbidden):
-                return
-            if not starboard.selfstar and msg.author.id == payload.user_id:
-                log.debug("Is a selfstar so let's return")
-                # this is here to prevent 1 threshold selfstars
-                return
-            embeds = await self._build_embed(guild, msg, starboard)
-            count_msg = "{} **#{}**".format(payload.emoji, count)
-            post_msg = await star_channel.send(count_msg, embeds=embeds)
-            if starboard.autostar:
-                try:
-                    await post_msg.add_reaction(starboard.emoji)
-                except Exception:
-                    log.exception("Error adding autostar.")
-            if key not in starboard.messages:
-                self.starboards[guild.id][starboard.name].messages[key] = star_message
-            star_message.new_message = post_msg.id
-            star_message.new_channel = star_channel.id
-            starboard.starred_messages += 1
-            index_key = f"{star_channel.id}-{post_msg.id}"
-            self.starboards[guild.id][starboard.name].messages[key] = star_message
-            self.starboards[guild.id][starboard.name].starboarded_messages[index_key] = key
-            await self._save_starboards(guild)
+                    self.starboards[guild.id][starboard.name].starboarded_messages[index_key] = key
+                    await self._save_starboards(guild)
 
     async def red_delete_data_for_user(
         self,

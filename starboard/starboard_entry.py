@@ -30,10 +30,10 @@ class StarboardEntry:
     def __init__(self, **kwargs):
 
         super().__init__()
-        self.name: str = kwargs.get("name")
+        self.name: str = kwargs.get("name", "starboard")
         self.guild: int = kwargs.get("guild", None)
-        self.channel: int = kwargs.get("channel")
-        self.emoji: str = kwargs.get("emoji")
+        self.channel: int = kwargs.get("channel", 0)
+        self.emoji: discord.PartialEmoji = discord.PartialEmoji.from_str(kwargs.get("emoji", "⭐"))
         self.colour: str = kwargs.get("colour", "user")
         self.enabled: bool = kwargs.get("enabled", True)
         self.selfstar: bool = kwargs.get("selfstar", False)
@@ -46,6 +46,7 @@ class StarboardEntry:
         self.starred_messages: int = kwargs.get("starred_messages", 0)
         self.stars_added: int = kwargs.get("stars_added", 0)
         self.lock: asyncio.Lock = asyncio.Lock()
+        self.inherit: bool = kwargs.get("inherit", False)
 
     def __repr__(self) -> str:
         return (
@@ -117,36 +118,44 @@ class StarboardEntry:
         guild = bot.get_guild(self.guild)
         if guild is None:
             return False
-        if not guild.get_channel(self.channel):
+        if not guild.get_channel_or_thread(self.channel):
             return False
         if channel is None:
             return False
-        sb_channel = guild.get_channel(self.channel)
+        sb_channel = guild.get_channel_or_thread(self.channel)
         if sb_channel is None:
             return False
         if channel.is_nsfw() and not sb_channel.is_nsfw():
             return False
         whitelisted_channels = [
-            guild.get_channel(cid).id
+            guild.get_channel_or_thread(cid).id
             for cid in self.whitelist
-            if guild.get_channel(cid) is not None
+            if guild.get_channel_or_thread(cid) is not None
         ]
         blacklisted_channels = [
-            guild.get_channel(cid).id
+            guild.get_channel_or_thread(cid).id
             for cid in self.blacklist
-            if guild.get_channel(cid) is not None
+            if guild.get_channel_or_thread(cid) is not None
         ]
         if whitelisted_channels:
             if channel.id in whitelisted_channels:
                 return True
             if channel.category_id and channel.category_id in whitelisted_channels:
                 return True
+            if self.inherit:
+                if isinstance(channel, (discord.Thread, discord.ForumChannel)):
+                    if channel.parent.id in whitelisted_channels:
+                        return True
             return False
         if blacklisted_channels:
             if channel.id in blacklisted_channels:
                 return False
             if channel.category_id and channel.category_id in blacklisted_channels:
                 return False
+            if self.inherit:
+                if isinstance(channel, (discord.Thread, discord.ForumChannel)):
+                    if channel.parent.id in blacklisted_channels:
+                        return False
         return True
 
     async def to_json(self) -> dict:
@@ -155,7 +164,7 @@ class StarboardEntry:
             "guild": self.guild,
             "enabled": self.enabled,
             "channel": self.channel,
-            "emoji": self.emoji,
+            "emoji": str(self.emoji),
             "colour": self.colour,
             "selfstar": self.selfstar,
             "blacklist": self.blacklist,
@@ -168,6 +177,7 @@ class StarboardEntry:
             "autostar": self.autostar,
             "starred_messages": self.starred_messages,
             "stars_added": self.stars_added,
+            "inherit": self.inherit,
         }
 
     @classmethod
@@ -211,6 +221,7 @@ class StarboardEntry:
             log.debug("Converting whitelist")
             whitelist += data.get("whitelist_channel", [])
             whitelist += data.get("whitelist_role", [])
+        inherit = data.get("inherit", False)
         return cls(
             name=data.get("name"),
             guild=guild,
@@ -227,6 +238,7 @@ class StarboardEntry:
             starboarded_messages=starboarded_messages,
             starred_messages=starred_messages,
             stars_added=stars_added,
+            inherit=inherit,
         )
 
 
@@ -258,10 +270,7 @@ class StarboardMessage:
         if self.new_message is None:
             return
         try:
-            if version_info >= VersionInfo.from_str("3.4.6"):
-                message_edit = star_channel.get_partial_message(self.new_message)
-            else:
-                message_edit = await star_channel.fetch_message(self.new_message)
+            message_edit = star_channel.get_partial_message(self.new_message)
             self.new_message = None
             self.new_channel = None
             await message_edit.delete()
@@ -272,10 +281,7 @@ class StarboardMessage:
         if self.new_message is None:
             return
         try:
-            if version_info >= VersionInfo.from_str("3.4.6"):
-                message_edit = star_channel.get_partial_message(self.new_message)
-            else:
-                message_edit = await star_channel.fetch_message(self.new_message)
+            message_edit = star_channel.get_partial_message(self.new_message)
             await message_edit.edit(content=content)
         except (discord.errors.NotFound, discord.errors.Forbidden):
             return
@@ -305,8 +311,8 @@ class StarboardMessage:
         """
         guild = bot.get_guild(self.guild)
         # log.debug(f"{guild=} {self.guild=}")
-        orig_channel = guild.get_channel(self.original_channel)
-        new_channel = guild.get_channel(self.new_channel)
+        orig_channel = guild.get_channel_or_thread(self.original_channel)
+        new_channel = guild.get_channel_or_thread(self.new_channel)
         orig_reaction = []
         if orig_channel:
             try:
