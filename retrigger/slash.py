@@ -293,6 +293,23 @@ class ReTriggerSlash(ReTriggerMixin):
         ctx = await interaction.client.get_context(interaction)
         await self.set_reply(ctx, trigger, set_to)
 
+    @edit_slash.command(name="thread")
+    @app_commands.describe(
+        set_to="True will create a Public Thread, False will create a Private Thread, blank will not create a thread.",
+        thread_name="The name of the thread created. You can use replacements like in text responses.",
+    )
+    @app_commands.checks.has_permissions(manage_messages=True, manage_threads=True)
+    async def set_create_thread_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[Trigger, TriggerTransformer],
+        set_to: Optional[bool],
+        thread_name: Optional[str] = None,
+    ):
+        """Set whether or not to create a thread from the trigger."""
+        ctx = await interaction.client.get_context(interaction)
+        await self.set_create_thread(ctx, trigger, set_to, thread_name=thread_name)
+
     @edit_slash.command(name="tts")
     async def set_tts_slash(
         self,

@@ -107,27 +107,18 @@ class ReTriggerPages(menus.ListPageSource):
             "__Created__: **{created}**\n"
             "__Response__: **{response}**\n"
             "__NSFW__: **{nsfw}**\n"
+            "__Thread__: {thread}\n"
         )
-        if embeds:
-            info = info.format(
-                name=trigger.name,
-                enabled=good if trigger.enabled else bad,
-                author=author.mention,
-                created=discord.utils.format_dt(trigger.created_at, style="R"),
-                count=trigger.count,
-                response=responses,
-                nsfw=trigger.nsfw,
-            )
-        else:
-            info = info.format(
-                name=trigger.name,
-                enabled=good if trigger.enabled else bad,
-                author=author.name,
-                created=discord.utils.format_dt(trigger.created_at, style="R"),
-                count=trigger.count,
-                response=responses,
-                nsfw=trigger.nsfw,
-            )
+        info = info.format(
+            name=trigger.name,
+            enabled=good if trigger.enabled else bad,
+            author=author.mention,
+            created=discord.utils.format_dt(trigger.created_at, style="R"),
+            count=trigger.count,
+            response=responses,
+            nsfw=trigger.nsfw,
+            thread=trigger.thread.format_str(),
+        )
         text_response = ""
         if trigger.ignore_commands:
             info += _("__Ignore commands__: **{ignore}**\n").format(ignore=trigger.ignore_commands)
@@ -614,7 +605,9 @@ class ReTriggerMenu(discord.ui.View):
                 options=options, placeholder=_("Pick a Trigger")
             )
             self.add_item(self.select_view)
-        self.message = await ctx.send(**kwargs, view=self)
+        self.message = await ctx.send(
+            **kwargs, allowed_mentions=discord.AllowedMentions(users=False, roles=False), view=self
+        )
         return self.message
 
     async def _get_kwargs_from_page(self, page: int):

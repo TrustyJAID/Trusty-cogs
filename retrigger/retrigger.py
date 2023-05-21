@@ -18,6 +18,7 @@ from redbot.core.utils.predicates import ReactionPredicate
 
 from .converters import (
     ChannelUserRole,
+    ConfirmView,
     MultiResponse,
     Trigger,
     TriggerExists,
@@ -76,7 +77,7 @@ class ReTrigger(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.22.0"
+    __version__ = "2.23.0"
 
     def __init__(self, bot):
         super().__init__()
@@ -828,6 +829,54 @@ class ReTrigger(
         # self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} replies set to: {set_to}").format(
             name=trigger.name, set_to=trigger.reply
+        )
+        await ctx.send(msg)
+
+    @_edit.command(name="thread", aliases=["makethread", "createthread"])
+    @checks.mod_or_permissions(manage_messages=True, manage_threads=True)
+    async def set_create_thread(
+        self,
+        ctx: commands.Context,
+        trigger: TriggerExists,
+        public_or_private: Optional[bool] = None,
+        *,
+        thread_name: Optional[str] = None,
+    ) -> None:
+        """
+        Set whether or not this trigger will attempt to create a private thread on the triggered
+        message. This will automatically add the user who triggered this to the thread.
+
+        `<trigger>` is the name of the trigger.
+        `<public_or_private>` `True` will create a public thread, `False` will create a private thread. `None`
+        or leaving this option blank will tell the trigger not to create a thread.
+        `<thread_name>` The name of the thread created. This uses replacements if you want dynamic
+        information such as the users name, etc.
+
+        See https://regex101.com/ for help building a regex pattern.
+        See `[p]retrigger explain` or click the link below for more details.
+        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await self._no_trigger(ctx, trigger)
+        if not await self.can_edit(ctx.author, trigger):
+            return await self._not_authorized(ctx)
+        if not thread_name and public_or_private is not None:
+            await ctx.send(_("A thread name is required."))
+            return
+        trigger.thread.public = public_or_private
+        if public_or_private is False:
+            view = ConfirmView(ctx, default=True)
+            await ctx.send(
+                _("Would you like non-moderators to be able to add users to the created thread?"),
+                view=view,
+            )
+            await view.wait()
+            trigger.thread.invitable = view.result
+        trigger.thread.name = thread_name
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        msg = _("Trigger {name} create threads set to: {set_to}").format(
+            name=trigger.name, set_to=trigger.thread.public
         )
         await ctx.send(msg)
 

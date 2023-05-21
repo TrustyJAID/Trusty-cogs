@@ -1,12 +1,12 @@
 import asyncio
 import logging
+from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Literal, Optional, Pattern, Tuple, Union
+from typing import Dict, List, Optional, Pattern, Tuple, Union
 
 import discord
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
 from discord.ext.commands.errors import BadArgument
-from redbot import VersionInfo, version_info
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.menus import start_adding_reactions
@@ -19,6 +19,34 @@ try:
     import regex as re
 except ImportError:
     import re
+
+
+class ConfirmView(discord.ui.View):
+    def __init__(self, ctx: Union[commands.Context, discord.Interaction], default: bool = False):
+        super().__init__()
+        self.result = default
+        self.ctx = ctx
+
+    @discord.ui.button(label=_("Yes"), style=discord.ButtonStyle.green)
+    async def yes_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.result = True
+        self.stop()
+        await interaction.response.edit_message(view=None)
+
+    @discord.ui.button(label=_("No"), style=discord.ButtonStyle.red)
+    async def no_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.result = False
+        self.stop()
+        await interaction.response.edit_message(view=None)
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if isinstance(self.ctx, discord.Interaction):
+            if interaction.user.id != self.ctx.user.id:
+                return False
+        else:
+            if interaction.user.id != self.ctx.author.id:
+                return False
+        return True
 
 
 class TriggerResponse(Enum):
@@ -40,13 +68,31 @@ class TriggerResponse(Enum):
     randtext = "randtext"
     image = "image"
     randimage = "randimage"
+    create_thread = "create_thread"
 
     def __str__(self):
         return str(self.value)
 
     @property
-    def multi_allowed(self):
-        return self in [
+    def is_automod(self) -> bool:
+        return self in {
+            TriggerResponse.delete,
+            TriggerResponse.kick,
+            TriggerResponse.ban,
+            TriggerResponse.add_role,
+            TriggerResponse.remove_role,
+        }
+
+    @property
+    def is_role_change(self) -> bool:
+        return self in {
+            TriggerResponse.add_role,
+            TriggerResponse.remove_role,
+        }
+
+    @property
+    def multi_allowed(self) -> bool:
+        return self in {
             TriggerResponse.dm,
             TriggerResponse.dmme,
             TriggerResponse.remove_role,
@@ -62,7 +108,8 @@ class TriggerResponse(Enum):
             TriggerResponse.command,
             TriggerResponse.mock,
             TriggerResponse.delete,
-        ]
+            TriggerResponse.create_thread,
+        }
 
 
 MULTI_RESPONSES = [
@@ -80,6 +127,7 @@ MULTI_RESPONSES = [
     "rename",
     "command",
     "mock",
+    "create_thread",
 ]
 
 
@@ -168,6 +216,30 @@ class MultiResponse(Converter):
         return result
 
 
+@dataclass
+class TriggerThread:
+    name: Optional[str] = None
+    public: Optional[bool] = None
+    invitable: bool = True
+
+    def format_str(self):
+        if self.public is None:
+            return _("None")
+        elif self.public is True:
+            return _("\n- Public Thread created\n- Thread Name: `{name}`").format(name=self.name)
+        else:
+            return _(
+                "\n- Private Thread created\n- Invitable: {invitable}\n- Thread Name: `{name}`"
+            ).format(name=self.name, invitable=self.invitable)
+
+    def to_json(self) -> dict:
+        return {
+            "name": self.name,
+            "public": self.public,
+            "invitable": self.invitable,
+        }
+
+
 class Trigger:
     """
     Trigger class to handle trigger objects
@@ -199,6 +271,7 @@ class Trigger:
         "everyone_mention",
         "nsfw",
         "_created_at",
+        "thread",
     )
 
     def __init__(
@@ -239,6 +312,7 @@ class Trigger:
         self.role_mention: bool = kwargs.get("role_mention", False)
         self.everyone_mention: bool = kwargs.get("everyone_mention", False)
         self.nsfw: bool = kwargs.get("nsfw", False)
+        self.thread: TriggerThread = kwargs.get("thread", TriggerThread())
 
     def enable(self):
         """Explicitly enable this trigger"""
@@ -286,16 +360,17 @@ class Trigger:
     async def check_bw_list(self, message: discord.Message) -> bool:
         can_run = True
         author: discord.Member = message.author
-        channel: discord.TextChannel = message.channel
+        channel: discord.abc.GuildChannel = message.channel
         if self.whitelist:
             can_run = False
             if channel.id in self.whitelist:
                 can_run = True
             if channel.category_id and channel.category_id in self.whitelist:
                 can_run = True
-            if getattr(channel, "parent", None) and channel.parent in self.whitelist:
-                # this is a thread
-                can_run = True
+            if isinstance(channel, (discord.Thread, discord.ForumChannel)):
+                if channel.parent.id in self.whitelist:
+                    # this is a thread
+                    can_run = True
             if message.author.id in self.whitelist:
                 can_run = True
             for role in author.roles:
@@ -309,8 +384,10 @@ class Trigger:
                 can_run = False
             if channel.category_id and channel.category_id in self.blacklist:
                 can_run = False
-            if getattr(channel, "parent", None) and channel.parent in self.blacklist:
-                can_run = False
+            if isinstance(channel, (discord.Thread, discord.ForumChannel)):
+                if channel.parent.id in self.blacklist:
+                    # this is a thread
+                    can_run = False
             if message.author.id in self.blacklist:
                 can_run = False
             for role in author.roles:
@@ -328,18 +405,13 @@ class Trigger:
     def timestamp(self):
         return self.created_at.timestamp()
 
-    def allowed_mentions(self):
-        if version_info >= VersionInfo.from_str("3.4.6"):
-            return discord.AllowedMentions(
-                everyone=self.everyone_mention,
-                users=self.user_mention,
-                roles=self.role_mention,
-                replied_user=self.reply if self.reply is not None else False,
-            )
-        else:
-            return discord.AllowedMentions(
-                everyone=self.everyone_mention, users=self.user_mention, roles=self.role_mention
-            )
+    def allowed_mentions(self) -> discord.AllowedMentions:
+        return discord.AllowedMentions(
+            everyone=self.everyone_mention,
+            users=self.user_mention,
+            roles=self.role_mention,
+            replied_user=self.reply if self.reply is not None else False,
+        )
 
     def __repr__(self):
         return "<ReTrigger name={0.name} author={0.author} response={0.response_type} pattern={0.regex.pattern}>".format(
@@ -391,6 +463,7 @@ class Trigger:
             "everyone_mention": self.everyone_mention,
             "role_mention": self.role_mention,
             "nsfw": self.nsfw,
+            "thread": self.thread.to_json(),
         }
 
     @classmethod
@@ -414,17 +487,21 @@ class Trigger:
             t.value in ["ban", "kick", "delete"] for t in response_type
         ):
             data["check_edits"] = not ignore_edits
-        return cls(name, regex, response_type, author, **data)
+        thread = TriggerThread()
+        if "thread" in data:
+            thread = TriggerThread(**data.pop("thread"))
+        return cls(name, regex, response_type, author, thread=thread, **data)
 
 
 class TriggerExists(Converter):
     async def convert(self, ctx: commands.Context, argument: str) -> Union[Trigger, str]:
         guild = ctx.guild
         result = None
-        if ctx.guild.id not in ctx.cog.triggers:
+        cog = ctx.bot.get_cog("ReTrigger")
+        if ctx.guild.id not in cog.triggers:
             raise BadArgument(_("There are no triggers setup on this server."))
-        if argument in ctx.cog.triggers[guild.id]:
-            return ctx.cog.triggers[guild.id][argument]
+        if argument in cog.triggers[guild.id]:
+            return cog.triggers[guild.id][argument]
         else:
             result = argument
         return result
@@ -531,7 +608,7 @@ class ChannelUserRole(IDConverter):
                 match = id_match or channel_match
                 if match:
                     channel_id = match.group(1)
-                    result = guild.get_channel(int(channel_id))
+                    result = guild.get_channel_or_thread(int(channel_id))
                 else:
                     result = discord.utils.get(guild.text_channels, name=argument)
             if converter == "member":
