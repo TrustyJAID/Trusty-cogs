@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import discord
 from redbot.core import commands
@@ -54,9 +54,25 @@ class SelectRole(discord.ui.Select):
             placeholder=placeholder,
             custom_id=custom_id,
         )
+        self._original_labels: Dict[str, Dict[str, Optional[str]]] = {
+            o.value: {"label": o.label, "description": o.description} for o in options
+        }
         self.name = name
         self.disabled_options: List[str] = disabled
         self.view: SelectRoleView
+
+    def update_options(self, guild: discord.Guild):
+        for option in self.options:
+            role_id = option.value.split("-")[-1]
+            role = guild.get_role(int(role_id))
+            original = self._original_labels[option.value]
+            if role is not None:
+                if original["label"]:
+                    option.label = original["label"].replace("{count}", str(len(role.members)))
+                if original["description"]:
+                    option.description = original["description"].replace(
+                        "{count}", str(len(role.members))
+                    )
 
     async def callback(self, interaction: discord.Interaction):
         no_selection = self.values == []
@@ -151,7 +167,8 @@ class SelectRole(discord.ui.Select):
             if no_selection:
                 msg += _("You have made no selections; try again to change your roles.")
             await interaction.followup.send(msg, ephemeral=True)
-        await interaction.message.edit()
+        self.update_options(guild)
+        await interaction.message.edit(view=self.view)
 
 
 class SelectRoleView(discord.ui.View):
@@ -251,7 +268,7 @@ class SelectRoleConverter(discord.app_commands.Transformer):
                     except KeyError:
                         log.exception("Somehow this errored")
                         continue
-                return SelectRole(
+                sr = SelectRole(
                     name=argument.lower(),
                     custom_id=f"RTSelect-{argument.lower()}-{ctx.guild.id}",
                     min_values=select_data["min_values"],
@@ -259,6 +276,8 @@ class SelectRoleConverter(discord.app_commands.Transformer):
                     placeholder=select_data["placeholder"],
                     options=options,
                 )
+                sr.update_options(ctx.guild)
+                return sr
             else:
                 raise commands.BadArgument(
                     _("Select Option with name `{name}` does not seem to exist.").format(
@@ -338,6 +357,9 @@ class RoleToolsSelect(RoleToolsMixin):
                     options=options,
                     disabled=disabled,
                 )
+                guild = self.bot.get_guild(guild_id)
+                if guild is not None:
+                    select.update_options(guild)
                 view.add_item(select)
                 self.bot.add_view(view)
                 self.views.append(view)
@@ -426,6 +448,7 @@ class RoleToolsSelect(RoleToolsMixin):
             options=options,
             placeholder=placeholder,
         )
+        select_menus.update_options(ctx.guild)
         view = SelectRoleView(self)
         view.add_item(select_menus)
         self.views.append(view)

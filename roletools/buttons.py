@@ -29,11 +29,17 @@ class ButtonRole(discord.ui.Button):
         role_id: int,
         name: str,
     ):
+        self._original_label = label
         super().__init__(
             style=discord.ButtonStyle(style), label=label, emoji=emoji, custom_id=custom_id
         )
         self.role_id = role_id
         self.name = name
+
+    def replace_label(self, guild: discord.Guild) -> str:
+        role = guild.get_role(self.role_id)
+        label = self._original_label.replace("{count}", str(len(role.members)))
+        self.label = label
 
     async def callback(self, interaction: discord.Interaction):
         guild = interaction.message.guild
@@ -107,6 +113,8 @@ class ButtonRole(discord.ui.Button):
                 _("I have removed the {role} role from you.").format(role=role.mention),
                 ephemeral=True,
             )
+        self.replace_label(guild)
+        await interaction.message.edit(view=self.view)
 
 
 class ButtonRoleConverter(discord.app_commands.Transformer):
@@ -128,6 +136,7 @@ class ButtonRoleConverter(discord.app_commands.Transformer):
                     role_id=role_id,
                     name=argument.lower(),
                 )
+                button.replace_label(ctx.guild)
                 return button
             else:
                 raise commands.BadArgument(
@@ -165,7 +174,7 @@ class ButtonRoleConverter(discord.app_commands.Transformer):
 
 
 class ButtonRoleView(discord.ui.View):
-    def __init__(self, cog: commands.Cog):
+    def __init__(self, cog: RoleToolsMixin):
         self.cog = cog
         super().__init__(timeout=None)
         pass
@@ -175,6 +184,7 @@ class RoleToolsButtons(RoleToolsMixin):
     """This class handles setting up button roles"""
 
     async def initialize_buttons(self):
+        await self.bot.wait_until_red_ready()
         for guild_id, settings in self.settings.items():
             for button_name, button_data in settings["buttons"].items():
                 log.debug(f"Adding Button {button_name}")
@@ -191,6 +201,9 @@ class RoleToolsButtons(RoleToolsMixin):
                     role_id=role_id,
                     name=button_name,
                 )
+                guild = self.bot.get_guild(guild_id)
+                if guild is not None:
+                    button.replace_label(guild)
                 view.add_item(button)
                 self.bot.add_view(view)
                 self.views.append(view)
@@ -283,6 +296,7 @@ class RoleToolsButtons(RoleToolsMixin):
             role_id=role.id,
             name=name.lower(),
         )
+        button.replace_label(ctx.guild)
         view = ButtonRoleView(self)
         view.add_item(button)
         self.views.append(view)
