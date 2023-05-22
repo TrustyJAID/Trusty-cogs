@@ -121,8 +121,8 @@ class Events:
                 url = str(guild.icon.url)
             elif url == "splash":
                 url = str(guild.splash_url)
-            elif url == "avatar" and isinstance(member, discord.Member):
-                url = str(member.display_avatar)
+            elif url == "avatar":
+                url = str(member.display_avatar) if isinstance(member, discord.Member) else ""
             em.set_thumbnail(url=url)
         if EMBED_DATA["image"] or EMBED_DATA["image_goodbye"]:
             url = ""
@@ -134,8 +134,8 @@ class Events:
                 url = str(guild.icon.url)
             elif url == "splash":
                 url = str(guild.splash_url)
-            elif url == "avatar" and isinstance(member, discord.Member):
-                url = str(member.display_avatar)
+            elif url == "avatar":
+                url = str(member.display_avatar) if isinstance(member, discord.Member) else ""
             em.set_image(url=url)
         if EMBED_DATA["icon_url"]:
             url = EMBED_DATA["icon_url"]
@@ -143,8 +143,8 @@ class Events:
                 url = str(guild.icon.url)
             elif url == "splash":
                 url = str(guild.splash_url)
-            elif url == "avatar" and isinstance(member, discord.Member):
-                url = str(member.display_avatar)
+            elif url == "avatar":
+                url = str(member.display_avatar) if isinstance(member, discord.Member) else ""
             em.set_author(name=username, icon_url=url)
         if EMBED_DATA["timestamp"]:
             em.timestamp = datetime.now(timezone.utc)
@@ -482,13 +482,14 @@ class Events:
             if not channel:
                 return
             if guild_settings["GROUPED"]:
-                member = [ctx.author, ctx.me]
+                member = ctx.author
+                members = cast(List[discord.Member], [ctx.author, ctx.me])
             if is_embed and channel.permissions_for(guild.me).embed_links:
-                em = await self.make_embed(member, guild, rand_msg, is_welcome)
+                em = await self.make_embed(members, guild, rand_msg, is_welcome)
                 if await self.config.guild(guild).EMBED_DATA.mention():
                     if guild_settings["GROUPED"]:
                         await channel.send(
-                            humanize_list([m.mention for m in member]), embed=em, delete_after=60
+                            humanize_list([m.mention for m in members]), embed=em, delete_after=60
                         )
                     else:
                         await channel.send(member.mention, embed=em, delete_after=60, **sanitize)
@@ -496,7 +497,7 @@ class Events:
                     await channel.send(embed=em, delete_after=60, **sanitize)
             else:
                 await channel.send(
-                    await self.convert_parms(member, guild, rand_msg, is_welcome),
+                    await self.convert_parms(members, guild, rand_msg, is_welcome),
                     delete_after=60,
                     **sanitize,
                 )
