@@ -36,10 +36,13 @@ class ButtonRole(discord.ui.Button):
         self.role_id = role_id
         self.name = name
 
-    def replace_label(self, guild: discord.Guild) -> str:
+    def replace_label(self, guild: discord.Guild):
         role = guild.get_role(self.role_id)
-        label = self._original_label.replace("{count}", str(len(role.members)))
-        self.label = label
+        if role is None:
+            return
+        if self._original_label is not None:
+            label = self._original_label.replace("{count}", str(len(role.members)))
+            self.label = label
 
     async def callback(self, interaction: discord.Interaction):
         guild = interaction.message.guild
