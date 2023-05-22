@@ -483,9 +483,9 @@ class Events:
                 return
             if guild_settings["GROUPED"]:
                 member = ctx.author
-                members = cast(List[discord.Member], member)
+                members = cast(List[discord.Member], [ctx.author, ctx.me])
             if is_embed and channel.permissions_for(guild.me).embed_links:
-                em = await self.make_embed(member, guild, rand_msg, is_welcome)
+                em = await self.make_embed(members, guild, rand_msg, is_welcome)
                 if await self.config.guild(guild).EMBED_DATA.mention():
                     if guild_settings["GROUPED"]:
                         await channel.send(
@@ -497,7 +497,7 @@ class Events:
                     await channel.send(embed=em, delete_after=60, **sanitize)
             else:
                 await channel.send(
-                    await self.convert_parms(member, guild, rand_msg, is_welcome),
+                    await self.convert_parms(members, guild, rand_msg, is_welcome),
                     delete_after=60,
                     **sanitize,
                 )
