@@ -41,6 +41,7 @@ class RoleToolsMixin(ABC):
         self.bot: Red
         self.settings: Dict[Any, Any]
         self._ready: asyncio.Event
+        self.views: Dict[str, discord.ui.View]
 
     @commands.group()
     @commands.guild_only()

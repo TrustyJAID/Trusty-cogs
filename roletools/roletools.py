@@ -85,7 +85,7 @@ class RoleTools(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.5.4"
+    __version__ = "1.5.5"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -120,7 +120,7 @@ class RoleTools(
         self.config.register_member(sticky_roles=[])
         self.settings: Dict[int, Any] = {}
         self._ready: asyncio.Event = asyncio.Event()
-        self.views = []
+        self.views = {}
 
     def cog_check(self, ctx: commands.Context) -> bool:
         return self._ready.is_set()
@@ -133,6 +133,7 @@ class RoleTools(
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def cog_load(self) -> None:
+        await self.bot.wait_until_red_ready()
         if await self.config.version() < "1.0.1":
             sticky_role_config = Config.get_conf(
                 None, identifier=1358454876, cog_name="StickyRoles"
@@ -171,14 +172,15 @@ class RoleTools(
 
         self.settings = await self.config.all_guilds()
         try:
-            await self.initialize_buttons()
-        except Exception:
-            log.exception("Error initializing Buttons")
-
-        try:
             await self.initialize_select()
         except Exception:
             log.exception("Error initializing Select")
+        try:
+            await self.initialize_buttons()
+        except Exception:
+            log.exception("Error initializing Buttons")
+        for view in self.views.values():
+            self.bot.add_view(view)
         self._ready.set()
 
     async def cog_unload(self):

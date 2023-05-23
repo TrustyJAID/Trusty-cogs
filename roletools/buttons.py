@@ -187,11 +187,10 @@ class RoleToolsButtons(RoleToolsMixin):
     """This class handles setting up button roles"""
 
     async def initialize_buttons(self):
-        await self.bot.wait_until_red_ready()
         for guild_id, settings in self.settings.items():
             for button_name, button_data in settings["buttons"].items():
                 log.debug(f"Adding Button {button_name}")
-                view = ButtonRoleView(self)
+
                 role_id = button_data["role_id"]
                 emoji = button_data["emoji"]
                 if emoji is not None:
@@ -207,9 +206,10 @@ class RoleToolsButtons(RoleToolsMixin):
                 guild = self.bot.get_guild(guild_id)
                 if guild is not None:
                     button.replace_label(guild)
-                view.add_item(button)
-                self.bot.add_view(view)
-                self.views.append(view)
+                for message_ids in button_data.get("messages", []):
+                    if message_ids not in self.views:
+                        self.views[message_ids] = ButtonRoleView(self)
+                    self.views[message_ids].add_item(button)
 
     @roletools.group(name="buttons", aliases=["button"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
@@ -302,10 +302,10 @@ class RoleToolsButtons(RoleToolsMixin):
         button.replace_label(ctx.guild)
         view = ButtonRoleView(self)
         view.add_item(button)
-        self.views.append(view)
         msg = await ctx.send("Here is how your button will look.", view=view)
         async with self.config.guild(ctx.guild).buttons() as buttons:
             buttons[name.lower()]["messages"].append(f"{msg.channel.id}-{msg.id}")
+        self.views[f"{msg.channel.id}-{msg.id}"] = view
 
     @buttons.command(name="delete", aliases=["del", "remove"])
     async def delete_button(self, ctx: Context, *, name: str) -> None:
@@ -318,7 +318,7 @@ class RoleToolsButtons(RoleToolsMixin):
             if name in buttons:
                 role_id = buttons[name]["role_id"]
                 custom_id = f"{name.lower()}-{role_id}"
-                for view in self.views:
+                for view in self.views.values():
                     for child in view.children:
                         if child.custom_id == custom_id:
                             child.disabled = True
