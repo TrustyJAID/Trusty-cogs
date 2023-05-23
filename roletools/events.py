@@ -397,10 +397,10 @@ class RoleToolsEvents(RoleToolsMixin):
             to_add.add(role)
         log.debug("Adding %s to %s", to_add, member.name)
         if atomic:
-            log.debug("Atomic is true")
+            log.verbose("Atomic is true")
             await member.add_roles(*list(to_add), reason=reason)
         else:
-            log.debug("Atomic is false")
+            log.verbose("Atomic is false")
             await member.edit(roles=list(to_add), reason=reason)
         return ret
 
