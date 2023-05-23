@@ -1,7 +1,6 @@
 # https://github.com/NotSoSuper/NotSoBot
 
 import asyncio
-import logging
 import os
 import random
 import re
@@ -22,13 +21,14 @@ import wand.color
 import wand.drawing
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageSequence
 from pyfiglet import figlet_format
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 
 from .converter import ImageFinder
 from .vw import macintoshplus
 
-log = logging.getLogger("red.trusty-cogs.NotSoBot")
+log = getLogger("red.trusty-cogs.NotSoBot")
 
 try:
     import aalib
@@ -340,7 +340,7 @@ class NotSoBot(commands.Cog):
                 if len(getattr(img, "sequence", [])) > 1:
                     is_gif = True
                 if is_gif:
-                    log.debug("Is gif")
+                    log.verbose("Is gif")
                     for change in img.sequence:
                         change.transform(resize="512x512")
                         change.liquid_rescale(
@@ -361,7 +361,7 @@ class NotSoBot(commands.Cog):
                     # for i in range(len(img.sequence)):
                     # with img.sequence[i] as change:
                 else:
-                    log.debug("Is not gif")
+                    log.verbose("Is not gif")
                     for x in range(0, 30):
                         if x == 0:
                             log.debug("Cloning initial image")
@@ -870,7 +870,7 @@ class NotSoBot(commands.Cog):
             count = 0
             list_im = []
             for url in urls:
-                log.debug(url)
+                log.verbose("merge url: %s", url)
                 count += 1
                 b, mime = await self.bytes_download(str(url))
                 if sys.getsizeof(b) == 215:

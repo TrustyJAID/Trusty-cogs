@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from .select import SelectOptionRoleConverter, SelectRoleConverter
 
 
-log = logging.getLogger("red.trusty-cogs.ReTrigger")
+log = getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("Roletools", __file__)
 
 

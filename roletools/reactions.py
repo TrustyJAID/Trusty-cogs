@@ -1,8 +1,8 @@
 import asyncio
-import logging
 from typing import Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
@@ -16,7 +16,7 @@ from .menus import BaseMenu, ReactRolePages
 
 roletools = RoleToolsMixin.roletools
 
-log = logging.getLogger("red.Trusty-cogs.RoleTools")
+log = getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
 
 
@@ -401,7 +401,7 @@ class RoleToolsReactions(RoleToolsMixin):
         send_to_react = False
         async with self.config.guild(ctx.guild).reaction_roles() as cur_setting:
             for role, emoji in role_emoji:
-                log.debug(type(emoji))
+                log.verbose("bulkreact emoji: %s", type(emoji))
                 if isinstance(emoji, discord.PartialEmoji):
                     use_emoji = str(emoji.id)
                 else:

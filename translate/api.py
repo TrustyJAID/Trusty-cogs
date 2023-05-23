@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import re
 import time
 from copy import deepcopy
@@ -11,6 +10,7 @@ import aiohttp
 import discord
 from discord.ext import tasks
 from discord.ext.commands.errors import BadArgument
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
@@ -20,7 +20,7 @@ from .flags import FLAGS
 
 BASE_URL = "https://translation.googleapis.com"
 _ = Translator("Translate", __file__)
-log = logging.getLogger("red.trusty-cogs.Translate")
+log = getLogger("red.trusty-cogs.Translate")
 
 FLAG_REGEX = re.compile(r"|".join(rf"{re.escape(f)}" for f in FLAGS.keys()))
 
@@ -275,7 +275,7 @@ class StatsCounter:
 
     async def add_detect(self, guild: Optional[discord.Guild]):
         if guild:
-            log.debug(f"adding detect to {guild.name}")
+            log.debug("adding detect to %s", guild.name)
             if guild.id not in self._guild_counter:
                 self._guild_counter[guild.id] = await self.config.guild(guild).count()
             self._guild_counter[guild.id]["detect"] += 1
@@ -285,7 +285,7 @@ class StatsCounter:
 
     async def add_requests(self, guild: Optional[discord.Guild], message: str):
         if guild:
-            log.debug(f"Adding requests to {guild.name}")
+            log.debug("Adding requests to %s", guild.name)
             if guild.id not in self._guild_counter:
                 self._guild_counter[guild.id] = await self.config.guild(guild).count()
             self._guild_counter[guild.id]["requests"] += 1
@@ -549,7 +549,6 @@ class GoogleTranslateAPI:
         flag: Optional[str] = None,
         reacted_user: Optional[discord.Member] = None,
     ) -> Optional[discord.Embed]:
-
         to_translate = None
         if message.embeds != []:
             if message.embeds[0].description:

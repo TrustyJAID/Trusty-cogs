@@ -1,9 +1,9 @@
-import logging
 import re
 from datetime import datetime
 from typing import List, Optional, Pattern
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core.i18n import Translator
 
 from .constants import TEAMS
@@ -11,7 +11,7 @@ from .errors import NoSchedule
 from .helper import DATE_RE
 
 _ = Translator("Hockey", __file__)
-log = logging.getLogger("red.trusty-cogs.hockey")
+log = getLogger("red.trusty-cogs.hockey")
 
 __all__ = (
     "StopButton",
@@ -189,7 +189,7 @@ class FilterModal(discord.ui.Modal):
                 pattern = rf"{short}\b|" + r"|".join(rf"\b{i}\b" for i in team.split())
                 if nick:
                     pattern += r"|" + r"|".join(rf"\b{i}\b" for i in nick)
-                # log.debug(pattern)
+                log.trace("FilterModal pattern: %s", pattern)
                 reg: Pattern = re.compile(rf"\b{pattern}", flags=re.I)
                 for pot in potential_teams:
                     find = reg.findall(pot)
@@ -232,12 +232,12 @@ class TeamModal(discord.ui.Modal):
             if "Team" in team:
                 continue
             pattern = rf"{team}|{data['tri_code']}|{'|'.join(n for n in data['nickname'])}"
-            # log.debug(pattern)
+            log.trace("TeamModal pattern: %s", pattern)
             reg: Pattern = re.compile(pattern, flags=re.I)
             find = reg.search(self.team.value)
             if find:
                 teams.append(team)
-        log.debug(teams)
+        log.trace("TeamModal teams: %s", teams)
         if not teams:
             await interaction.response.send_message(
                 _("`{content}` is not a valid team.").format(content=self.view.value[:200]),
@@ -250,7 +250,7 @@ class TeamModal(discord.ui.Modal):
         for page in self.view.pages:
             if teams[0].lower() in page.author.name.lower():
                 page_num = self.view.pages.index(page)
-        log.debug(f"Setting page number {page_num} {teams[0]}")
+        log.verbose("Setting page number %s %s", page_num, teams[0])
         await self.view.show_page(page_num, interaction=interaction)
 
 

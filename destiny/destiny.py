@@ -1,6 +1,5 @@
 import csv
 import datetime
-import logging
 import random
 import re
 from io import BytesIO, StringIO
@@ -10,6 +9,7 @@ import aiohttp
 import discord
 from discord import app_commands
 from discord.ext import tasks
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
@@ -54,7 +54,7 @@ IMAGE_URL = "https://www.bungie.net"
 AUTH_URL = "https://www.bungie.net/en/oauth/authorize"
 TOKEN_URL = "https://www.bungie.net/platform/app/oauth/token/"
 _ = Translator("Destiny", __file__)
-log = logging.getLogger("red.trusty-cogs.Destiny")
+log = getLogger("red.trusty-cogs.Destiny")
 
 
 @cog_i18n(_)
@@ -121,7 +121,7 @@ class Destiny(DestinyAPI, commands.Cog):
         if payload["provider"] != "destiny":
             return
         if "code" not in payload:
-            log.error(f"Received Destiny OAuth without a code parameter {user_id} - {payload}")
+            log.error("Received Destiny OAuth without a code parameter %s - %s", user_id, payload)
             return
         self.dashboard_authed[int(user_id)] = payload
 
@@ -237,7 +237,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 await ctx.send(_("`{search}` could not be found.").format(search=search))
                 return
             embeds = []
-            # log.debug(items[0])
+            log.trace("Item: %s", items[0])
             for item_hash, item in items.items():
                 embed = discord.Embed()
 
@@ -260,7 +260,6 @@ class Destiny(DestinyAPI, commands.Cog):
                     + "\n\n"
                 )
                 if item["itemType"] in [3] and not show_lore:
-
                     stats_str = ""
                     rpm = ""
                     recoil = ""
@@ -539,7 +538,6 @@ class Destiny(DestinyAPI, commands.Cog):
             await ctx.send(msg)
             return
         async with MyTyping(ctx, ephemeral=False):
-
             clan = await self.get_clan_members(ctx.author, clan_id)
             headers = [
                 "Discord Name",
@@ -1040,7 +1038,7 @@ class Destiny(DestinyAPI, commands.Cog):
             name = data["displayProperties"]["name"]
             if current.lower() in name.lower():
                 choices.append(app_commands.Choice(name=name, value=name))
-        log.debug(len(choices))
+        log.verbose("parse_search_lore choices: %s", len(choices))
         return choices[:25]
 
     @destiny.command(aliases=["whereisxûr"])
@@ -1416,7 +1414,6 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @vendor_search.autocomplete("vendor")
     async def find_vendor(self, interaction: discord.Interaction, current: str):
-
         possible_options = await self.search_definition("DestinyVendorDefinition", current)
         choices = []
         for key, choice in possible_options.items():
@@ -1880,7 +1877,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 if not any(i in v.get("parentNodeHashes", []) for i in weapon_slots):
                     continue
                 presentation_node_hashes.add(int(k))
-            log.debug(f"Presentation Node {presentation_node_hashes}")
+            log.debug("Presentation Node %s", presentation_node_hashes)
             msg = ""
             for r_hash, i in weapon_info.items():
                 if not any(h in i.get("parentNodeHashes", []) for h in presentation_node_hashes):
@@ -2214,7 +2211,6 @@ class Destiny(DestinyAPI, commands.Cog):
                         continue
                     name = data["displayProperties"]["name"]
                     if data["equippable"] and data["itemType"] == 3:
-
                         desc = data["displayProperties"]["description"]
                         item_type = data["itemTypeAndTierDisplayName"]
                         try:
@@ -2361,9 +2357,9 @@ class Destiny(DestinyAPI, commands.Cog):
                     data = await self.get_activity_history(user, char_id, activity)
                 except Exception:
                     log.error(
-                        _(
-                            "Something went wrong I couldn't get info on character {char_id} for activity {activity}"
-                        ).format(char_id=char_id, activity=activity)
+                        "Something went wrong I couldn't get info on character %s for activity %s",
+                        char_id,
+                        activity,
                     )
                     continue
                 if not data:
@@ -2449,7 +2445,6 @@ class Destiny(DestinyAPI, commands.Cog):
     async def build_character_stats(
         self, user: discord.Member, chars: dict, stat_type: str
     ) -> List[discord.Embed]:
-
         embeds: List[discord.Embed] = []
         for char_id, char in chars["characters"]["data"].items():
             # log.debug(char)
@@ -2462,11 +2457,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     agg_hashes = [a["activityHash"] for a in aggregate["activities"]]
                     acts = await self.get_definition("DestinyActivityDefinition", agg_hashes)
             except Exception:
-                log.error(
-                    _("Something went wrong I couldn't get info on character {char_id}").format(
-                        char_id=char_id
-                    )
-                )
+                log.error("Something went wrong I couldn't get info on character %s", char_id)
                 continue
             if not data:
                 continue
@@ -2482,7 +2473,9 @@ class Destiny(DestinyAPI, commands.Cog):
                     embeds.append(embed)
             except Exception:
                 log.error(
-                    f"User {user.id} had an issue generating stats for character {char_id}",
+                    "User %s had an issue generating stats for character %s",
+                    user.id,
+                    char_id,
                     exc_info=True,
                 )
                 continue
@@ -2547,7 +2540,6 @@ class Destiny(DestinyAPI, commands.Cog):
         if "emblemPath" in char:
             embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
         for stat, values in data[stat_type]["allTime"].items():
-
             if values["basic"]["value"] < 0 or stat not in ATTRS:
                 continue
             embed.add_field(name=ATTRS[stat], value=str(values["basic"]["displayValue"]))
@@ -2652,7 +2644,6 @@ class Destiny(DestinyAPI, commands.Cog):
         if "emblemPath" in char:
             embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
         for stat, values in data.items():
-
             if values["basic"]["value"] < 0 or stat not in ATTRS:
                 continue
             embed.add_field(name=ATTRS[stat], value=str(values["basic"]["displayValue"]))

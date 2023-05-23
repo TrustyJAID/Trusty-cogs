@@ -1,9 +1,9 @@
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.vendored.discord.ext import menus
@@ -14,7 +14,7 @@ from .game import Game
 from .helper import utc_to_local
 
 _ = Translator("Hockey", __file__)
-log = logging.getLogger("red.trusty-cogs.hockey")
+log = getLogger("red.trusty-cogs.hockey")
 
 
 class Schedule(menus.PageSource):
@@ -61,13 +61,20 @@ class Schedule(menus.PageSource):
         skip_prev: bool = False,
         game_id: Optional[int] = None,
     ) -> dict:
-        log.debug(f"Cache size is {len(self._cache)} {page_number=} {game_id=}")
+        log.debug(
+            "Cache size is %s page_number=%s game_id=%s", len(self._cache), page_number, game_id
+        )
         if game_id is not None:
             for game in self._cache:
                 if game["gamePk"] == game_id:
-                    log.debug("getting game")
+                    log.verbose("getting game %s", game_id)
                     page_number = self._cache.index(game)
-                    log.debug(f"{page_number=} {self.last_page=}")
+                    log.verbose(
+                        "game_id=%s page_number=%s last_page=%s",
+                        game_id,
+                        page_number,
+                        self.last_page,
+                    )
                     self._last_page = page_number
                     self._index = page_number
                     return self._cache[page_number]
@@ -88,7 +95,7 @@ class Schedule(menus.PageSource):
         return page
 
     async def format_page(self, menu: menus.MenuPages, game: dict) -> discord.Embed:
-        log.debug(BASE_URL + game["link"])
+        log.trace("%s%s", BASE_URL, game["link"])
         if self._session is not None:
             async with aiohttp.ClientSession() as session:
                 async with session.get(BASE_URL + game["link"]) as resp:
@@ -332,7 +339,7 @@ class ScheduleList(menus.PageSource):
             home_abr = home_team
             away_abr = away_team
             broadcast_str = ""
-            log.debug(game)
+            log.verbose("ScheduleList game: %s", game)
             if "broadcasts" in game and self.show_broadcasts:
                 broadcasts = game["broadcasts"]
                 if broadcasts:
@@ -493,7 +500,7 @@ class ScheduleList(menus.PageSource):
         Actually grab the list of games.
         """
         # compare_date = datetime.utcnow().strftime("%Y-%m-%d")
-        log.debug(date)
+        log.verbose("_next_batch date: %s", date)
         days_to_check = 0
         if self.team != []:
             days_to_check = 7
@@ -524,7 +531,7 @@ class ScheduleList(menus.PageSource):
             params["teamId"] = ",".join(str(TEAMS[t]["id"]) for t in self.team)
         self._last_searched = f"<t:{date_timestamp}> to <t:{end_date_timestamp}>"
         async with self._session.get(url, params=params) as resp:
-            log.debug(resp.url)
+            log.verbose("_next_batch Response URL: %s", resp.url)
             data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
         if not games:

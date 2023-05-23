@@ -1,7 +1,7 @@
-import logging
 from typing import Optional
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
@@ -13,7 +13,7 @@ from .standings import Conferences, Divisions, Standings
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.trusty-cogs.Hockey")
+log = getLogger("red.trusty-cogs.Hockey")
 
 hockeyset_commands = MixinMeta.hockeyset_commands
 

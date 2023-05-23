@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import random
 from dataclasses import dataclass
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import aiohttp
+from red_commons.logging import getLogger
 
 BASE_URL = "https://{ip}/clip/v2/"
 
-log = logging.getLogger("red.trusty-cogs.hue")
+log = getLogger("red.trusty-cogs.hue")
 
 
 class HueError(Exception):
@@ -382,7 +382,7 @@ class Light:
 
     async def edit(self):
         body = self.to_json()
-        log.info(body)
+        log.verbose("Light - edit - body: $s", body)
         return await self._client.request("PUT", self.url, body=body)
 
     async def flash(
@@ -485,10 +485,10 @@ class Client:
     ) -> dict:
         async with self.session.request(method, url, json=body, params=params) as resp:
             data = await resp.json()
-            log.info(data)
+            log.verbose("Light - request - data: $s", data)
             if "errors" in data:
                 for error in data["errors"]:
-                    log.debug(error["description"])
+                    log.verbose("Client, error description: %s", error["description"])
         return data
 
     async def auth(self):

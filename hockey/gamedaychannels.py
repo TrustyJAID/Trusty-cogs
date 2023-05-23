@@ -1,8 +1,8 @@
-import logging
 from datetime import datetime
 from typing import Optional
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
@@ -11,7 +11,7 @@ from .abc import MixinMeta
 from .game import Game
 from .helper import StateFinder, TeamFinder, get_chn_name
 
-log = logging.getLogger("red.trusty-cogs.Hockey")
+log = getLogger("red.trusty-cogs.Hockey")
 
 _ = Translator("Hockey", __file__)
 
@@ -325,14 +325,10 @@ class GameDayChannels(MixinMeta):
             # Return none if there's no category to create the channel
             return
         if not category.permissions_for(guild.me).manage_channels:
-            log.info(
-                f"Cannot create new GDC in {repr(guild)} due to too many missing permissions."
-            )
+            log.info("Cannot create new GDC in %r due to too many missing permissions.", guild)
             return
         if len(category.channels) >= 50:
-            log.info(
-                f"Cannot create new GDC in {repr(guild)} due to too many channels in category."
-            )
+            log.info("Cannot create new GDC in %r due to too many channels in category.", guild)
             return
         if game_data is None:
             team = await self.config.guild(guild).gdc_team()
@@ -353,7 +349,7 @@ class GameDayChannels(MixinMeta):
         try:
             new_chn = await guild.create_text_channel(chn_name, category=category)
         except discord.Forbidden:
-            log.error(f"Error creating channel in {repr(guild)}")
+            log.error("Error creating channel in %r", guild)
         except Exception:
             log.exception(f"Error creating channels in {repr(guild)}")
             return
@@ -413,7 +409,7 @@ class GameDayChannels(MixinMeta):
                 await self.config.channel(chn).clear()
                 await chn.delete()
             except discord.errors.Forbidden:
-                log.error(f"Cannot delete GDC channels in {guild.id} due to permissions issue.")
+                log.error("Cannot delete GDC channels in %s due to permissions issue.", guild.id)
             except Exception:
                 log.exception(f"Cannot delete GDC channels in {guild.id}")
         await self.config.guild(guild).gdc.clear()

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal, Optional, Union
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 from tabulate import tabulate
@@ -15,7 +15,7 @@ from .constants import HEADSHOT_URL, TEAMS
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.trusty-cogs.hockey")
+log = getLogger("red.trusty-cogs.hockey")
 
 
 # This is somewhat unnecessary but for consistency we have the expected
@@ -248,7 +248,7 @@ class SimplePlayer:
     def get_embed(self) -> discord.Embed:
         try:
             team_id = self.current_team_id or self.last_nhl_team_id
-            log.debug(team_id)
+            log.verbose("SimplePlayer team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
             logo = TEAMS[team_name]["logo"]
@@ -269,8 +269,8 @@ class SimplePlayer:
         self, season: Optional[str], session: Optional[aiohttp.ClientSession] = None
     ) -> Union[Player, Goalie, Skater]:
         url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYear"
-        log.debug(url)
-        log.debug(season)
+        log.verbose("get_full_stats url: %s", url)
+        log.verbose("get_full_stats url: %s", season)
         if session is None:
             async with aiohttp.ClientSession() as new_session:
                 async with new_session.get(url) as resp:
@@ -300,7 +300,7 @@ class SimplePlayer:
                         *stats,
                     )
                     return await player.get_full_stats(season or stats_season)
-        log.debug(f"Returning {repr(self)}")
+        log.verbose("Returning %r", self)
         return self
 
     def full_name_url(self) -> str:
@@ -324,7 +324,7 @@ class SimplePlayer:
         else:
             async with session.get(url) as resp:
                 data = await resp.json()
-        log.info(data)
+        log.info("SimplePlayer from_id data %s", data)
         return cls(*data["data"][0].values())
 
 
@@ -436,8 +436,8 @@ class Skater(SimplePlayer):
         url = (
             f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYearPlayoffs"
         )
-        log.debug(url)
-        log.debug(season)
+        log.debug("Skater get_full_stats url: %s", url)
+        log.debug("Skater get_full_stats season: %s", season)
         if session is None:
             async with aiohttp.ClientSession() as new_session:
                 async with new_session.get(url) as resp:
@@ -471,7 +471,7 @@ class Skater(SimplePlayer):
     def get_embed(self) -> discord.Embed:
         try:
             team_id = self.current_team_id
-            log.debug(team_id)
+            log.debug("Skater get_embed team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
             logo = TEAMS[team_name]["logo"]
@@ -481,7 +481,7 @@ class Skater(SimplePlayer):
             logo = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         try:
             team_id = self.last_nhl_team_id
-            log.debug(team_id)
+            log.debug("Skater get_embed team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             emoji = f'<:{TEAMS[team_name]["emoji"]}>'
         except IndexError:
@@ -563,7 +563,7 @@ class SkaterPlayoffs(Skater):
     def get_embed(self) -> discord.Embed:
         try:
             team_id = self.current_team_id
-            log.debug(team_id)
+            log.debug("SkaterPlayoffs get_embed team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
             logo = TEAMS[team_name]["logo"]
@@ -573,7 +573,7 @@ class SkaterPlayoffs(Skater):
             logo = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         try:
             team_id = self.last_nhl_team_id
-            log.debug(team_id)
+            log.debug("SkaterPlayoffs get_embed team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             emoji = f'<:{TEAMS[team_name]["emoji"]}>'
         except IndexError:
@@ -649,8 +649,8 @@ class Goalie(SimplePlayer):
         url = (
             f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYearPlayoffs"
         )
-        log.debug(url)
-        log.debug(season)
+        log.verbose("Goalie get_full_stats url: %s", url)
+        log.verbose("Goalie get_full_stats season: %s", season)
         if session is None:
             async with aiohttp.ClientSession() as new_session:
                 async with new_session.get(url) as resp:
@@ -673,7 +673,7 @@ class Goalie(SimplePlayer):
     def get_embed(self) -> discord.Embed:
         try:
             team_id = self.current_team_id
-            log.debug(team_id)
+            log.verbose("Goalie team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
             logo = TEAMS[team_name]["logo"]
@@ -683,7 +683,7 @@ class Goalie(SimplePlayer):
             logo = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         try:
             team_id = self.last_nhl_team_id
-            log.debug(team_id)
+            log.verbose("Goalie team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             emoji = f'<:{TEAMS[team_name]["emoji"]}>'
         except IndexError:
@@ -746,7 +746,7 @@ class GoaliePlayoffs(Goalie):
     def get_embed(self) -> discord.Embed:
         try:
             team_id = self.current_team_id
-            log.debug(team_id)
+            log.verbose("GoaliePlayoffs team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
             logo = TEAMS[team_name]["logo"]
@@ -756,7 +756,7 @@ class GoaliePlayoffs(Goalie):
             logo = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         try:
             team_id = self.last_nhl_team_id
-            log.debug(team_id)
+            log.verbose("GoaliePlayoffs team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             emoji = f'<:{TEAMS[team_name]["emoji"]}>'
         except IndexError:

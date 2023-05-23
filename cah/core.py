@@ -1,18 +1,18 @@
 import json
-import logging
 import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .game import CAHGame, CardSet
 
-log = logging.getLogger("red.trusty-cogs.cah")
+log = getLogger("red.trusty-cogs.cah")
 
 WHITE_CARD_URL = "https://i.imgur.com/mlkVIxg.png"
 BLACK_CARD_URL = "https://i.imgur.com/OrM8UcC.png"
@@ -31,7 +31,7 @@ class CardSetTransformer(discord.app_commands.Transformer):
         white_cards = []
         black_cards = []
         official = False
-        log.info(f"{argument} card set searching")
+        log.info("%s card set searching", argument)
         if argument.lower() == "official":
             official = True
             for cardset in card_sets.values():

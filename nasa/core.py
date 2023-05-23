@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Literal, Optional
 
 import aiohttp
 import discord
 from discord.ext import tasks
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import bounded_gather
@@ -46,12 +46,11 @@ if TYPE_CHECKING:
 
 _ = Translator("NASA", __file__)
 
-log = logging.getLogger("red.trusty-cogs.NASACog")
+log = getLogger("red.trusty-cogs.NASACog")
 
 
 @cog_i18n(_)
 class NASACog(commands.Cog):
-
     __author__ = ["TrustyJAID"]
     __version__ = "1.0.0"
 
@@ -506,7 +505,6 @@ class NASACog(commands.Cog):
         await BaseMenu(source=TLEPages(feed)).start(ctx=ctx)
 
     async def request(self, url: str, parameters: dict = {}, include_api_key: bool = True) -> dict:
-
         if include_api_key:
             tokens = await self.bot.get_shared_api_tokens("nasa")
             parameters["api_key"] = tokens.get("api_key", "DEMO_KEY")
@@ -515,7 +513,7 @@ class NASACog(commands.Cog):
             self._last_rate_limit_limit = resp.headers.get("X-RateLimit-Limit", None)
             if resp.status == 200:
                 data = await resp.json()
-                log.debug(resp.url)
+                log.verbose("Response URL: %s", resp.url)
             else:
                 raise APIError(
                     f"There was an error with the API: Error Code {resp.status}\n"

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -8,12 +7,13 @@ from typing import Dict, List, NamedTuple, Optional
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 from redbot.core import i18n
 from redbot.core.utils.chat_formatting import humanize_list
 
 _ = i18n.Translator("Weather", __file__)
 
-log = logging.getLogger("red.Trusty-cogs.weather")
+log = getLogger("red.Trusty-cogs.weather")
 
 
 HEADERS = {"User-Agent": "Trusty-cogs Weather cog for Red-DiscordBot"}
@@ -306,7 +306,7 @@ class Zipcode:
         else:
             async with session.get(url, params=params) as resp:
                 data = await resp.json()
-        log.debug(data)
+        log.debug("Zipcode get data: %s", data)
         if "cod" in data and data["cod"] != "200":
             raise APIError(data["message"])
 
@@ -742,7 +742,7 @@ class OneCall:
         else:
             async with session.get(url, params=params) as resp:
                 data = await resp.json()
-        log.debug(data)
+        log.verbose("OneCall get data: %s", data)
         if "cod" in data and data["cod"] != "200":
             raise APIError(data["message"])
         return cls.from_json(data, units, name, state, country)

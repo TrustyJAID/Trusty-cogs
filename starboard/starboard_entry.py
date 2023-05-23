@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot import VersionInfo, version_info
 from redbot.core.bot import Red
 from redbot.core.utils import AsyncIter
 
-log = logging.getLogger("red.trusty-cogs.starboard")
+log = getLogger("red.trusty-cogs.starboard")
 
 
 @dataclass
@@ -28,7 +28,6 @@ class FakePayload:
 @dataclass
 class StarboardEntry:
     def __init__(self, **kwargs):
-
         super().__init__()
         self.name: str = kwargs.get("name", "starboard")
         self.guild: int = kwargs.get("guild", None)

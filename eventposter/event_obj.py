@@ -1,4 +1,3 @@
-import logging
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple, Union, cast
@@ -10,12 +9,13 @@ from dateutil.tz import gettz
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 from discord.utils import snowflake_time
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
 
-log = logging.getLogger("red.trusty-cogs.EventPoster")
+log = getLogger("red.trusty-cogs.EventPoster")
 
 _ = Translator("EventPoster", __file__)
 
@@ -372,7 +372,7 @@ class Event(discord.ui.View):
         self.add_item(self.maybe_button)
         self.add_item(self.leave_button)
         self.select_view = None
-        log.debug(self.select_options)
+        log.verbose("Event select_options: %s", self.select_options)
         if self.select_options:
             self.select_view = PlayerClassSelect(
                 custom_id=f"playerclass-{self.hoster}",
@@ -388,11 +388,11 @@ class Event(discord.ui.View):
         if self.max_slots and len(self.members) >= self.max_slots:
             self.join_button.disabled = True
             self.select_view.disabled = True
-            log.debug(f"Setting Join Button to {self.join_button.disabled}")
+            log.debug("Setting Join Button to %s", self.join_button.disabled)
         if self.max_slots and len(self.members) < self.max_slots:
             self.join_button.disabled = False
             self.select_view.disabled = False
-            log.debug(f"Setting Join Button to {self.join_button.disabled}")
+            log.debug("Setting Join Button to %s", self.join_button.disabled)
 
     async def interaction_check(self, interaction: discord.Interaction):
         """
@@ -445,14 +445,14 @@ class Event(discord.ui.View):
             return True
         if self.start:
             future = (self.start + timedelta(seconds=seconds)).timestamp()
-            log.debug(f"{humanize_timedelta(seconds = future-now)}")
+            log.verbose("should_remove self.start %s", humanize_timedelta(seconds=future - now))
             return now > future
         else:
             future = (
                 snowflake_time(self.message).replace(tzinfo=timezone.utc)
                 + timedelta(seconds=seconds)
             ).timestamp()
-            log.debug(f"{humanize_timedelta(seconds = future-now)}")
+            log.verbose("should_remove else %s", humanize_timedelta(seconds=future - now))
             return now > future
 
     def remaining(self, seconds: int) -> str:
@@ -467,7 +467,7 @@ class Event(discord.ui.View):
         if self.start:
             future = (self.start + timedelta(seconds=seconds)).timestamp()
             diff = future - now
-            log.debug(f"Set time {future=} {now=} {diff=}")
+            log.debug("Set time self.start future=%s now=%s diff=%s", future, now, diff)
             return humanize_timedelta(seconds=future - now)
         else:
             future = (
@@ -475,7 +475,7 @@ class Event(discord.ui.View):
                 + timedelta(seconds=seconds)
             ).timestamp()
             diff = future - now
-            log.debug(f"Message Time {future=} {now=} {diff=}")
+            log.debug("Message Time ellse future=%s now=%s diff=%s", future, now, diff)
             return humanize_timedelta(seconds=future - now)
 
     async def update_event(self):
@@ -638,7 +638,7 @@ class Event(discord.ui.View):
         config = self.get_config()
         thumbnails = await config.guild(ctx.guild).custom_links()
         for name, link in thumbnails.items():
-            if re.search(fr"(?i)\b{name}\b", self.event):
+            if re.search(rf"(?i)\b{name}\b", self.event):
                 return link
         return None
 
@@ -648,7 +648,7 @@ class Event(discord.ui.View):
         config = self.get_config()
         large_links = await config.guild(ctx.guild).large_links()
         for name, link in large_links.items():
-            if re.search(fr"(?i)\b{name}\b", self.event):
+            if re.search(rf"(?i)\b{name}\b", self.event):
                 return link
         return None
 
@@ -658,7 +658,7 @@ class Event(discord.ui.View):
         new_members = []
         for m in members:
             if isinstance(m, tuple) or isinstance(m, list):
-                log.debug(f"Converting to new members list in {data.get('channel')}")
+                log.debug("Converting to new members list in %s", data.get("channel"))
                 new_members.append(m[0])
             else:
                 new_members.append(m)

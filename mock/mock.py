@@ -1,11 +1,11 @@
-import logging
 import random
 from typing import Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 
-log = logging.getLogger("red.trusty-cogs.mock")
+log = getLogger("red.trusty-cogs.mock")
 
 
 class Mock(commands.Cog):
@@ -57,12 +57,12 @@ class Mock(commands.Cog):
         the `channel` and put them all together
         """
         if isinstance(msg, str):
-            log.debug("Mocking a given string")
+            log.verbose("Mocking a given string")
             result = await self.cap_change(str(msg))
             result += f"\n\n[Mocking Message]({ctx.message.jump_url})"
             author = ctx.message.author
         elif isinstance(msg, discord.Member):
-            log.debug("Mocking a user")
+            log.verbose("Mocking a user")
             total_msg = ""
             async for message in ctx.channel.history(limit=10):
                 if message.author == msg:
@@ -70,13 +70,13 @@ class Mock(commands.Cog):
             result = await self.cap_change(total_msg)
             author = msg
         elif isinstance(msg, discord.Message):
-            log.debug("Mocking a message")
+            log.verbose("Mocking a message")
             result = await self.cap_change(msg.content)
             result += f"\n\n[Mocking Message]({msg.jump_url})"
             author = msg.author
             search_msg = msg
         else:
-            log.debug("Mocking last message in chat")
+            log.verbose("Mocking last message in chat")
             async for message in ctx.channel.history(limit=2):
                 search_msg = message
             author = search_msg.author

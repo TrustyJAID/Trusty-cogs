@@ -1,10 +1,10 @@
 import asyncio
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Union
 
 import discord
 from discord.ext import tasks
+from red_commons.logging import getLogger
 from redbot.core import bank, commands
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
@@ -17,7 +17,7 @@ from .game import Game
 from .pickems import Pickems
 
 _ = Translator("Hockey", __file__)
-log = logging.getLogger("red.trusty-cogs.Hockey")
+log = getLogger("red.trusty-cogs.Hockey")
 
 hockey_commands = MixinMeta.hockey_commands
 # defined in abc.py allowing this to be inherited by multiple files
@@ -52,7 +52,7 @@ class HockeyPickems(MixinMeta):
             await self.save_pickems_data()
         except Exception:
             log.exception("Error saving pickems data")
-        log.debug("Saved pickems data.")
+        log.verbose("Saved pickems data.")
 
     @commands.Cog.listener()
     async def on_thread_update(self, before: discord.Thread, after: discord.Thread):
@@ -66,10 +66,10 @@ class HockeyPickems(MixinMeta):
             return
         if str(before.id) in await self.pickems_config.guild(guild).pickems_channels():
             await after.edit(archived=False)
-            log.debug("Unarchiving %r", after)
+            log.debug("Unarchiving thread %r", after)
         if before.id in await self.config.guild(guild).gdt():
             await after.edit(archived=False)
-            log.debug("Unarchiving %r", after)
+            log.debug("Unarchiving thread %r", after)
         if (
             before.parent
             and before.parent.id == await self.pickems_config.guild(guild).pickems_channel()
@@ -78,17 +78,17 @@ class HockeyPickems(MixinMeta):
                 return
             if (datetime.now(timezone.utc) - before.created_at) < timedelta(days=9):
                 await after.edit(archived=False)
-                log.debug("Unarchiving %r", after)
+                log.debug("Unarchiving thread %r", after)
 
     async def save_pickems_data(self) -> None:
         to_del: Dict[str, List[str]] = {}
-        # log.debug("Saving pickems data")
+        log.trace("Saving pickems data")
         # all_pickems = self.all_pickems.copy()
         async for guild_id, pickems in AsyncIter(self.all_pickems.items(), steps=10):
             async with self.pickems_config.guild_from_id(int(guild_id)).pickems() as data:
                 for name, pickem in pickems.items():
                     if pickem._should_save:
-                        # log.debug("Saving pickem %r", pickem)
+                        log.trace("Saving pickem %r", pickem)
                         data[name] = pickem.to_json()
                     self.all_pickems[guild_id][name]._should_save = False
                     if pickem.game_type in ["P", "PR"]:
@@ -114,7 +114,7 @@ class HockeyPickems(MixinMeta):
             for guild_id, pickems in self.all_pickems.items():
                 for game, pickem in pickems.items():
                     # Don't forget to remove persistent views when the cog is unloaded.
-                    log.debug(f"Stopping {pickem.name}")
+                    log.verbose("Stopping %s", pickem.name)
                     pickem.stop()
 
     @pickems_loop.before_loop
@@ -126,11 +126,11 @@ class HockeyPickems(MixinMeta):
         for guild_id, data in all_data.items():
             pickems_list = data.get("pickems", {})
             if pickems_list is None:
-                log.info(f"Resetting pickems in {guild_id} for incompatible type")
+                log.info("Resetting pickems in %s for incompatible type", guild_id)
                 await self.pickems_config.guild_from_id(int(guild_id)).pickems.clear()
                 continue
             if type(pickems_list) is list:
-                log.info(f"Resetting pickems in {guild_id} for incompatible type")
+                log.info("Resetting pickems in %S for incompatible type", guild_id)
                 await self.pickems_config.guild_from_id(int(guild_id)).pickems.clear()
                 continue
             # pickems = [Pickems.from_json(p) for p in pickems_list]
@@ -168,10 +168,10 @@ class HockeyPickems(MixinMeta):
         for guild_id, pickems in all_pickems.items():
             guild = self.bot.get_guild(int(guild_id))
             if guild is None:
-                # log.debug("Guild ID %s Not available", guild_id)
+                log.trace("Guild ID %s Not available", guild_id)
                 continue
             if str(game.game_id) not in pickems:
-                # log.debug("Game %r not in pickems", game)
+                log.trace("Game %r not in pickems", game)
                 continue
             pickem = self.all_pickems[str(guild_id)][str(game.game_id)]
             should_edit = pickem.disable_buttons()
@@ -181,7 +181,7 @@ class HockeyPickems(MixinMeta):
                 try:
                     channel_id, message_id = message.split("-")
                 except ValueError:
-                    log.debug("Game %r missing message %s", game, message)
+                    log.verbose("Game %r missing message %s", game, message)
                     continue
                 channel = guild.get_channel_or_thread(int(channel_id))
                 if not channel:
@@ -691,7 +691,7 @@ class HockeyPickems(MixinMeta):
                         # keep adding more of these to memory
                         # requiring us to reload over time
             except discord.errors.Forbidden:
-                log.error(f"Missing permissions to delete old pickems channel in {repr(guild)}")
+                log.error("Missing permissions to delete old pickems channel in %r", guild)
                 pass
             except Exception:
                 log.exception(f"Error deleting old pickems channels in {repr(guild)}")
@@ -719,7 +719,7 @@ class HockeyPickems(MixinMeta):
                 # the main loop still get checked
             if not await pickems.check_winner(self.pickems_games[name]):
                 continue
-            log.debug("Tallying results for %s", repr(pickems))
+            log.debug("Tallying results for %r", pickems)
             to_remove.append(name)
             DEFAULT_LEADERBOARD = {
                 "season": 0,
@@ -746,7 +746,7 @@ class HockeyPickems(MixinMeta):
                             try:
                                 await bank.deposit_credits(member, int(base_credits))
                             except Exception:
-                                log.debug("Could not deposit pickems credits for %s", repr(member))
+                                log.debug("Could not deposit pickems credits for %r", member)
                         if pickems.game_type == "P":
                             leaderboard[str(user)]["playoffs"] += 1
                             leaderboard[str(user)]["playoffs_weekly"] += 1
@@ -774,7 +774,7 @@ class HockeyPickems(MixinMeta):
                         # leaving this comment so I remember
         for name in to_remove:
             try:
-                log.debug(f"Removing pickem {name}")
+                log.verbose("Removing pickem %s", name)
                 del self.all_pickems[str(guild.id)][name]
                 async with self.pickems_config.guild(guild).pickems() as data:
                     if name in data:

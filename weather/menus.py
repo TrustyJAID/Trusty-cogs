@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import logging
 from typing import Any, List, Optional, Union
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 
 # from discord.ext.commands.errors import BadArgument
 from redbot.core.commands import commands
@@ -13,7 +13,7 @@ from redbot.vendored.discord.ext import menus
 
 from .api import APIError, Geocoding, OneCall, Units, Zipcode
 
-log = logging.getLogger("red.Trusty-cogs.weather")
+log = getLogger("red.Trusty-cogs.weather")
 _ = Translator("Weather", __file__)
 
 
@@ -37,7 +37,7 @@ class WeatherPages(menus.ListPageSource):
         self._last_coords = None
 
     async def format_page(self, view: BaseMenu, page: Union[Geocoding, Zipcode]):
-        log.debug(page)
+        log.verbose("WeatherPages page: %s", page)
         if self._last_coords != page:
             try:
                 we = await OneCall.get(

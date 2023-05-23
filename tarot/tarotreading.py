@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import random
 import re
 from dataclasses import dataclass
@@ -8,11 +7,12 @@ from random import choice, sample
 from typing import Optional
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 
 from .tarot_cards import card_list as tarot_cards
 
-log = logging.getLogger("red.trusty-cogs.tarot")
+log = getLogger("red.trusty-cogs.tarot")
 
 
 TAROT_RE = re.compile(r"|".join(t["card_name"] for _id, t in tarot_cards.items()), flags=re.I)

@@ -1,4 +1,3 @@
-import logging
 import re
 from typing import Dict, Optional, Union
 
@@ -7,6 +6,7 @@ import discord
 from apraw.models import Submission, Subreddit
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 
@@ -16,7 +16,7 @@ SELF_POST_SCRUB = re.compile(r"^(&#x200B;[\s\n]+)(https?://.+)$")
 
 REDDIT_RE = re.compile(r"\/?r\/([a-zA-Z0-9_]+)")
 
-log = logging.getLogger("red.Trusty-cogs.reddit")
+log = getLogger("red.Trusty-cogs.reddit")
 
 _ = Translator("Reddit", __file__)
 
@@ -111,12 +111,12 @@ async def make_embed_from_submission(
             if data["e"] == "RedditVideo":
                 continue
             if data["e"] == "Image":
-                log.debug(data)
+                log.verbose("make_embed_from_submission Image data: %s", data)
                 has_image = True
                 em.set_image(url=data["s"]["u"])
                 break
             if data["e"] == "AnimatedImage":
-                log.debug(data)
+                log.verbose("make_embed_from_submission AnimatedImage data: %s", data)
                 has_image = True
                 em.set_image(url=data["s"]["gif"])
                 break

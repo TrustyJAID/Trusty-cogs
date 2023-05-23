@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import logging
 import random
 import re
 import sys
@@ -11,12 +10,13 @@ from typing import List, Optional, Pattern, Tuple
 import aiohttp
 import discord
 from PIL import Image, ImageColor, ImageDraw, ImageFont
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 
 from .converter import Stamp
 
-log = logging.getLogger("red.trusty-cogs.bingo")
+log = getLogger("red.trusty-cogs.bingo")
 
 IMAGE_LINKS: Pattern = re.compile(
     r"(https?:\/\/[^\"\'\s]*\.(?:png|jpg|jpeg)(\?size=[0-9]*)?)", flags=re.I
@@ -24,7 +24,6 @@ IMAGE_LINKS: Pattern = re.compile(
 
 
 class Bingo(commands.Cog):
-
     __version__ = "1.2.0"
     __author__ = ["TrustyJAID"]
 
@@ -481,7 +480,7 @@ class Bingo(commands.Cog):
                 font=font,
             )
             letter_count += 1
-        log.info(name)
+        log.verbose("_create_bingo_card name: %s", name)
         draw.text(
             (350, 200),
             name,
@@ -509,7 +508,7 @@ class Bingo(commands.Cog):
                     count += 1
                 draw.rectangle((x0, y0, x1, y1), outline=box_colour)
                 if [x, y] in stamps or [x, y] == [2, 2]:
-                    log.info(f"Filling square {x} {y}")
+                    log.info("Filling square %s %s", x, y)
                     colour = list(ImageColor.getrgb(stamp_colour))
                     colour.append(128)
                     nb = base.copy()

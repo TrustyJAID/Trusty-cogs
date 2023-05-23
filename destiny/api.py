@@ -1,7 +1,6 @@
 import asyncio
 import functools
 import json
-import logging
 import re
 from base64 import b64encode
 from datetime import datetime
@@ -10,6 +9,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
@@ -92,7 +92,7 @@ COMPONENTS = DestinyComponents(
 
 
 _ = Translator("Destiny", __file__)
-log = logging.getLogger("red.trusty-cogs.Destiny")
+log = getLogger("red.trusty-cogs.Destiny")
 
 
 class MyTyping(discord.ext.commands.context.DeferTyping):
@@ -131,10 +131,10 @@ class DestinyAPI:
                     return data["Response"]
                 else:
                     if "message" in data:
-                        log.error(data["message"])
+                        log.error("DestinyAPI request_url error message: %s", data["message"])
                     else:
                         log.error("Incorrect response data")
-                    log.debug(url)
+                    log.verbose("request_url: %s", url)
                     raise Destiny2InvalidParameters(data)
             elif resp.status >= 500:
                 raise ServersUnavailable
@@ -168,7 +168,7 @@ class DestinyAPI:
                     return data["Response"]
                 else:
                     if "message" in data:
-                        log.error(data["message"])
+                        log.error("DestinyAPI post_url error message: %s", data["message"])
                     else:
                         log.error("Incorrect response data")
                     raise Destiny2InvalidParameters(data["Message"])
@@ -584,7 +584,7 @@ class DestinyAPI:
         try:
             data = await self.get_entities(entity, d1)
         except Exception:
-            log.info(_("No manifest found, getting response from API."))
+            log.info("No manifest found, getting response from API.")
             return await self.get_definition_from_api(entity.replace("Lite", ""), entity_hash)
         for item in entity_hash:
             try:
@@ -1075,7 +1075,7 @@ class DestinyAPI:
             message = await ctx.channel.send(msg)
 
         emojis = ReactionPredicate.NUMBER_EMOJIS[1 : -(len(profile["destinyMemberships"]) + 1)]
-        log.debug(emojis)
+        log.verbose("pick_account emojis: %s", emojis)
         start_adding_reactions(message, emojis)
         pred = ReactionPredicate.with_emojis(emojis=emojis, message=message, user=author)
         try:

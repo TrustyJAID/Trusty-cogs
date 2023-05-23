@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import logging
 from datetime import timedelta
 from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
 from discord import app_commands
+from red_commons.logging import getLogger
 from redbot.core import Config
 from redbot.core.i18n import Translator
 
@@ -19,7 +19,7 @@ except ImportError:
 from .converters import Trigger
 
 _ = Translator("ReTrigger", __file__)
-log = logging.getLogger("red.trusty-cogs.ReTrigger")
+log = getLogger("red.trusty-cogs.ReTrigger")
 
 
 class PartialEmojiTransformer(app_commands.Transformer):
@@ -75,7 +75,6 @@ class TriggerTransformer(app_commands.Transformer):
 
 
 class ReTriggerSlash(ReTriggerMixin):
-
     modlog = app_commands.Group(
         name="modlog", description="Set which events to record in the modlog."
     )

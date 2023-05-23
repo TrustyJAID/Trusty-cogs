@@ -1,10 +1,10 @@
-import logging
 import re
 from datetime import datetime, timedelta, timezone
 from random import choice as rand_choice
 from typing import List, Optional, Pattern, Union, cast
 
 import discord
+from red_commons.logging import getLogger
 from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
 from redbot.core.bot import Red
@@ -15,7 +15,7 @@ from redbot.core.utils.common_filters import filter_mass_mentions
 RE_CTX: Pattern = re.compile(r"{([^}]+)\}")
 RE_POS: Pattern = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")
 _ = Translator("Welcome", __file__)
-log = logging.getLogger("red.trusty-cogs.Welcome")
+log = getLogger("red.trusty-cogs.Welcome")
 
 
 @cog_i18n(_)
@@ -166,13 +166,13 @@ class Events:
             return await self.bot_welcome(member, guild)
         td = timedelta(days=await self.config.guild(guild).MINIMUM_DAYS())
         if (datetime.now(timezone.utc) - member.created_at) <= td:
-            log.info(_("Member joined with an account newer than required days."))
+            log.info("Member joined with an account newer than required days.")
             return
         has_filter = self.bot.get_cog("Filter")
         filter_setting = await self.config.guild(guild).FILTER_SETTING()
         if has_filter and filter_setting is None:
             if await has_filter.filter_hits(member.name, guild):
-                log.info(_("Member joined with a bad username."))
+                log.info("Member joined with a bad username.")
                 return
 
         if datetime.now(timezone.utc).date() > self.today_count["now"].date():
@@ -210,13 +210,13 @@ class Events:
                 await member.add_roles(role, reason=_("Automatic Bot Role"))
             except Exception:
                 log.error(
-                    _("welcome.py: unable to add  a role. ") + f"{bot_role} {member}",
+                    "welcome.py: unable to add  a role. %s %s",
+                    bot_role,
+                    member,
                     exc_info=True,
                 )
             else:
-                log.debug(
-                    _("welcome.py: added ") + str(role) + _(" role to ") + _("bot, ") + str(member)
-                )
+                log.debug("welcome.py: added %s role to bot, %s", role, member)
         if bot_welcome:
             # finally, welcome them
             if not channel:
@@ -243,8 +243,8 @@ class Events:
         if channel is None:  # complain even if only whisper
             if not only_whisper:
                 log.info(
-                    _("welcome.py: Channel not found. It was most likely deleted. User joined: ")
-                    + str(member)
+                    "welcome.py: Channel not found. It was most likely deleted. User joined: %s",
+                    member,
                 )
                 return None
             else:
@@ -253,10 +253,11 @@ class Events:
         # we can stop here
 
         if not channel.permissions_for(guild.me).send_messages:
-            log.info(_("Permissions Error. User that joined: ") + "{0}".format(member))
+            log.info("Permissions Error. User that joined: %s", member)
             log.info(
-                _("Bot doesn't have permissions to send messages to ")
-                + "{0.name}'s #{1.name} channel".format(guild, channel)
+                "Bot doesn't have permissions to send messages to %s's $%s",
+                guild.name,
+                channel.name,
             )
             return None
         return channel
@@ -302,11 +303,8 @@ class Events:
                         await member.send(await self.convert_parms(member, guild, msg, False))  # type: ignore
                 except discord.errors.Forbidden:
                     log.info(
-                        _(
-                            "welcome.py: unable to whisper a user. Probably "
-                            "doesn't want to be PM'd"
-                        )
-                        + str(member)
+                        "welcome.py: unable to whisper %s. Probably " "doesn't want to be PM'd",
+                        member,
                     )
                 except Exception:
                     log.error("error sending member join message", exc_info=True)
@@ -381,11 +379,7 @@ class Events:
         # guild_settings = await self.config.guild(guild).guild_settings()
         channel = self.bot.get_channel(await self.config.guild(guild).LEAVE_CHANNEL())
         if channel is None:  # complain even if only whisper
-            log.info(
-                _("welcome.py: Channel not found in {guild}. It was most likely deleted.").format(
-                    guild=guild
-                )
-            )
+            log.info("welcome.py: Channel not found in %s. It was most likely deleted.", guild)
             return
         # we can stop here
         if await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE():
@@ -403,7 +397,7 @@ class Events:
                     await old_msg.delete()
 
         if not channel.permissions_for(guild.me).send_messages:
-            log.info(_("Permissions Error in {guild}"))
+            log.info("Permissions Error in {guild}")
             return
         elif not member.bot:
             if is_embed and channel.permissions_for(guild.me).embed_links:

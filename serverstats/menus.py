@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import logging
 from typing import Any, List, Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.vendored.discord.ext import menus
 
-log = logging.getLogger("red.Trusty-cogs.serverstats")
+log = getLogger("red.Trusty-cogs.serverstats")
 
 _ = Translator("serverstats", __file__)
 

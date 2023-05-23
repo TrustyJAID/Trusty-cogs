@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from typing import Any, List, Optional
 
 import discord
 import tweepy
+from red_commons.logging import getLogger
 
 # from discord.ext.commands.errors import BadArgument
 from redbot.core.commands import commands
@@ -14,7 +14,7 @@ from redbot.vendored.discord.ext import menus
 
 from .tweets_api import EXPANSIONS, MEDIA_FIELDS, TWEET_FIELDS, USER_FIELDS
 
-log = logging.getLogger("red.Trusty-cogs.tweets")
+log = getLogger("red.Trusty-cogs.tweets")
 _ = Translator("Tweets", __file__)
 
 
@@ -92,7 +92,6 @@ class TweetPages(menus.PageSource):
         """
         self._index += 1
         if self._index > (len(self._cache) - 1) or skip:
-
             try:
                 await self._next_batch(_next=True)
             except Exception:
@@ -137,15 +136,14 @@ class TweetPages(menus.PageSource):
         self,
         pagination_token: Optional[str] = None,
     ) -> List[tweepy.Status]:
-
         msg_list = []
         if self._user is None:
-            log.info(f"Getting user ID for {self._username}")
+            log.info("Getting user ID for %s", self._username)
             resp = await self._api.get_user(username=self._username)
             self._user = resp.data
-            log.info(f"{self._user}")
+            log.info("_get_twitter_statuses user: %s", self._user)
         try:
-            log.info(f"Getting tweets for {self._user.id}")
+            log.info("Getting tweets for %s", self._user.id)
             kwargs = {
                 "id": self._user.id,
                 "tweet_fields": TWEET_FIELDS,

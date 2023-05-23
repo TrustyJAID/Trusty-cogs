@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import logging
 from typing import Any, List, Optional
 
 import discord
 from discord.ext.commands.errors import BadArgument
+from red_commons.logging import getLogger
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
@@ -17,7 +17,7 @@ try:
 except ImportError:
     import re
 
-log = logging.getLogger("red.Trusty-cogs.retrigger")
+log = getLogger("red.Trusty-cogs.retrigger")
 _ = Translator("ReTrigger", __file__)
 
 

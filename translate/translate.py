@@ -11,11 +11,11 @@ Support the developer                               https://goo.gl/Brchj4
 Invite the bot to your guild                       https://goo.gl/aQm2G7
 Join the official development guild                https://discord.gg/uekTNPj
 """
-import logging
 from typing import Optional
 
 import discord
 from discord.ext.commands.errors import BadArgument
+from red_commons.logging import getLogger
 from redbot.core import Config, VersionInfo, checks, commands, version_info
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
@@ -27,7 +27,7 @@ from .errors import GoogleTranslateAPIError
 
 BASE_URL = "https://translation.googleapis.com"
 _ = Translator("Translate", __file__)
-log = logging.getLogger("red.trusty-cogs.Translate")
+log = getLogger("red.trusty-cogs.Translate")
 
 
 @cog_i18n(_)

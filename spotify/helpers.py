@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import logging
 import re
 from copy import copy
 from enum import Enum
@@ -11,12 +10,13 @@ import discord
 import tekore
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta
 from tabulate import tabulate
 
-log = logging.getLogger("red.trusty-cogs.spotify")
+log = getLogger("red.trusty-cogs.spotify")
 
 SPOTIFY_RE = re.compile(
     r"(https?:\/\/open\.spotify\.com\/|spotify:?)"

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core.i18n import Translator
 
 from .constants import TEAMS
@@ -12,7 +12,7 @@ from .errors import NotAValidTeamError, UserHasVotedError, VotingHasEndedError
 from .game import Game
 
 _ = Translator("Hockey", __file__)
-log = logging.getLogger("red.trusty-cogs.Hockey")
+log = getLogger("red.trusty-cogs.Hockey")
 
 
 class PickemsButton(discord.ui.Button):
@@ -43,13 +43,12 @@ class PickemsButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         time_now = datetime.now(tz=timezone.utc)
-        log.debug(time_now)
-        log.debug(self.view.game_start)
+        log.verbose("PickemsButton time_now: %s", time_now)
+        log.verbose("PickemsButton game_start: %s", self.view.game_start)
         if str(interaction.user.id) in self.view.votes:
             vote = self.view.votes[str(interaction.user.id)]
             emoji = discord.PartialEmoji.from_str(TEAMS[vote]["emoji"])
             if time_now > self.view.game_start:
-
                 await self.respond(
                     interaction,
                     _("Voting has ended! You have voted for {emoji} {team}").format(
@@ -161,7 +160,7 @@ class Pickems(discord.ui.View):
     async def on_error(
         self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item
     ):
-        log.error(f"{error} - {item}")
+        log.error("Pickems %s - %s", error, item)
 
     def disable_buttons(self) -> bool:
         if self.home_button.disabled and self.away_button.disabled:
@@ -231,7 +230,7 @@ class Pickems(discord.ui.View):
 
     @classmethod
     def from_json(cls, data: Dict[str, Optional[Union[str, Dict[str, str]]]]) -> Pickems:
-        # log.debug(data)
+        log.trace("Pickems from_json data: %s", data)
         game_start = datetime.strptime(data["game_start"], "%Y-%m-%dT%H:%M:%SZ")
         game_start = game_start.replace(tzinfo=timezone.utc)
         return cls(
@@ -258,7 +257,7 @@ class Pickems(discord.ui.View):
         `True` if the winner has been set or the game is postponed
         `False` if the winner has not set and it's not time to clear it yet.
         """
-        log.debug("Setting winner for %r", self)
+        log.trace("Setting winner for %r", self)
         if not game:
             return False
         if game.game_state == "Postponed":
@@ -297,7 +296,7 @@ class Pickems(discord.ui.View):
         if game is not None:
             return await self.set_pickem_winner(game)
         if self.link and after_game:
-            log.debug("Checking winner for %s", repr(self))
+            log.debug("Checking winner for %r", self)
             game = await Game.from_url(self.link)
             return await self.set_pickem_winner(game)
         return False

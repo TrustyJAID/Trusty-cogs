@@ -2,14 +2,14 @@
 # https://github.com/rickyhan/macintoshplus
 """Vaporwaveは音楽のジャンルや芸術運動である[3] [4]このようなバウンスハウス、またはchillwave、そして、より広く、エレクトロニックダンスミュージック、などのインディーseapunkから2010年代初頭のダンスのジャンルに出現した。 、その態度やメッセージに多くの多様性と曖昧さ、vaporwaveがありますが：時々の両方が、大量消費社会の批判とパロディとして機能し80年代のヤッピー文化、[5]とニューエイジの音楽、音響的および審美的に彼らのノスタルジックで好奇心の魅力を紹介しながら、アーティファクト。"""
 import hashlib
-import logging
 import os
 from math import cos, sin, tan
 from random import Random, choice, randint
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
+from red_commons.logging import getLogger
 
-log = logging.getLogger("red.trusty-cogs.NotSoBot.macintoshplus")
+log = getLogger("red.trusty-cogs.NotSoBot.macintoshplus")
 
 
 japanese_corpus = """それは20年前の今日だった
@@ -123,7 +123,7 @@ def draw_text(txt, image, k=0, x=0, y=30):
 
 def insert_bubble(foreground_path, im):
     """insert notification bubble on the bottom right corner"""
-    log.debug("adding bubble:", foreground_path)
+    log.verbose("adding bubble: %s", foreground_path)
     foreground = Image.open(foreground_path)
     background_size = im.size
     foreground_size = foreground.size
@@ -137,7 +137,7 @@ def insert_bubble(foreground_path, im):
 
 def insert_window_as_background(foreground_path, im, k=0):
     """fractal generative art, not a great idea for vaporwave though. not ironic enough"""
-    log.debug("adding window:", foreground_path)
+    log.verbose("adding window: %s", foreground_path)
     foreground = Image.open(foreground_path)
     background_size = im.size
     foreground_size = foreground.size
@@ -156,7 +156,7 @@ def insert_window_as_background(foreground_path, im, k=0):
 
 def insert_cascade(foreground_path, im, k=0, x=100, y=100):
     """another postironic function. raster box drawing"""
-    log.debug("adding window:", foreground_path)
+    log.verbose("adding window: %s", foreground_path)
     foreground = Image.open(foreground_path)
     background_size = im.size
     foreground_size = foreground.size
@@ -165,7 +165,7 @@ def insert_cascade(foreground_path, im, k=0, x=100, y=100):
     v = 0.0
     dy = 0.0
     for i in range(int(k * 100)):  # the step determines the distances between
-        dy = v * i + 0.5 * acc * (i ** 2)
+        dy = v * i + 0.5 * acc * (i**2)
         v = v + acc * i
         pos = (int(x + 11 * i), int(y - dy))
         im.paste(foreground, pos)
@@ -178,7 +178,7 @@ def insert_cascade(foreground_path, im, k=0, x=100, y=100):
 
 def insert_window_as_background2(foreground_path, im):
     """another postironic function. raster box drawing"""
-    log.debug("adding window:", foreground_path)
+    log.verbose("adding window: %s", foreground_path)
     foreground = Image.open(foreground_path)
     background_size = im.size
     foreground_size = foreground.size
@@ -203,7 +203,7 @@ def horizon(background_path, im):
 def insert_pic(foreground_path, im, k=0, x=0, y=1000):
     """add Vaporwaveは音楽のジャンルや芸術運動である style pic. k is for nuanced
     transformations such as rotation and oscillation"""
-    log.debug("adding pic:", foreground_path)
+    log.verbose("adding pic: %s", foreground_path)
 
     foreground = Image.open(foreground_path)
     background_size = im.size

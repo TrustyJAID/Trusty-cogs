@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from abc import ABC
 from multiprocessing.pool import Pool
 from pathlib import Path
@@ -7,6 +6,7 @@ from typing import Dict, Optional, Union
 
 import discord
 from discord.ext import tasks
+from red_commons.logging import getLogger
 from redbot.core import Config, checks, commands, modlog
 from redbot.core.commands import TimedeltaConverter
 from redbot.core.i18n import Translator, cog_i18n
@@ -30,7 +30,7 @@ from .menus import BaseMenu, ExplainReTriggerPages, ReTriggerMenu, ReTriggerPage
 from .slash import ReTriggerSlash
 from .triggerhandler import TriggerHandler
 
-log = logging.getLogger("red.trusty-cogs.ReTrigger")
+log = getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
 
 try:
@@ -232,8 +232,8 @@ class ReTrigger(
             discord.PartialEmoji.from_str(e.strip()) for e in option["value"].split(" ")
         ]
         good_emojis = []
-        log.debug(option["value"])
-        log.debug(list_emojis)
+        log.verbose("ReTrigger _find_good_emojis value: %s", option["value"])
+        log.verbose("ReTrigger _find_good_emojis list_emojis: %s", list_emojis)
         if any([e.is_unicode_emoji() for e in list_emojis]):
             await interaction.response.send_message(
                 "Some emojis were not found, attempting to find unicode emojis."
@@ -1326,7 +1326,7 @@ class ReTrigger(
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        log.debug(trigger)
+        log.debug("disable_trigger trigger: %s", trigger)
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
         trigger.enabled = False

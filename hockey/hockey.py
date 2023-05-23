@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 from abc import ABC
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -9,6 +8,7 @@ from typing import Any, Dict, List, Literal, Optional
 import aiohttp
 import discord
 import yaml
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
@@ -29,7 +29,7 @@ from .teamentry import TeamEntry
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.trusty-cogs.Hockey")
+log = getLogger("red.trusty-cogs.Hockey")
 
 
 class CompositeMetaClass(type(commands.Cog), type(ABC)):
@@ -253,13 +253,13 @@ class Hockey(
                     await self.config.guild_from_id(int(guild_id)).leaderboard.clear()
                 except Exception:
                     pass
-                log.info(f"Migrating leaderboard for {guild_id}")
+                log.info("Migrating leaderboard for %s", guild_id)
             if data.get("pickems"):
                 try:
                     await self.config.guild_from_id(int(guild_id)).pickems.clear()
                 except Exception:
                     pass
-                log.info(f"Migrating pickems for {guild_id}")
+                log.info("Migrating pickems for %s", guild_id)
             if data.get("pickems_channels"):
                 if not isinstance(data["pickems_channels"], list):
                     # this is just because I don't care but should get it working
@@ -270,7 +270,7 @@ class Hockey(
                     await self.config.guild_from_id(int(guild_id)).pickems_channels.clear()
                 except Exception:
                     pass
-                log.info(f"Migrating pickems channels for {guild_id}")
+                log.info("Migrating pickems channels for %s", guild_id)
             if data.get("pickems_category"):
                 await self.pickems_config.guild_from_id(int(guild_id)).pickems_category.set(
                     data["pickems_category"]
@@ -279,7 +279,7 @@ class Hockey(
                     await self.config.guild_from_id(int(guild_id)).pickems_category.clear()
                 except Exception:
                     pass
-                log.info(f"Migrating pickems categories for {guild_id}")
+                log.info("Migrating pickems categories for %s", guild_id)
 
     ##############################################################################
     # Here is all the logic for gathering game data and updating information     #
@@ -350,7 +350,7 @@ class Hockey(
                     if data["game"] is not None and data["game"].game_start - timedelta(
                         hours=1
                     ) >= datetime.now(timezone.utc):
-                        log.debug(
+                        log.verbose(
                             "Skipping %s @ %s checks until closer to game start.",
                             data["game"].away_team,
                             data["game"].home_team,
@@ -377,11 +377,11 @@ class Hockey(
                         game.game_state in ["Live"]
                         and not self.current_games[link]["disabled_buttons"]
                     ):
-                        log.debug("Disabling buttons for %r", game)
+                        log.verbose("Disabling buttons for %r", game)
                         await self.disable_pickems_buttons(game)
                         self.current_games[link]["disabled_buttons"] = True
 
-                    log.debug(
+                    log.verbose(
                         "%s @ %s %s %s - %s",
                         game.away_team,
                         game.home_team,

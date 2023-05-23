@@ -1,4 +1,3 @@
-import logging
 import re
 from typing import List, Union
 
@@ -6,12 +5,13 @@ import discord
 from discord.ext.commands.converter import IDConverter
 from discord.ext.commands.errors import BadArgument
 from rapidfuzz import process
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from unidecode import unidecode
 
 _ = Translator("ServerStats", __file__)
-log = logging.getLogger("red.trusty-cogs.ServerStats")
+log = getLogger("red.trusty-cogs.ServerStats")
 
 
 class GuildConverter(discord.app_commands.Transformer):

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import logging
 from typing import Any, List, Optional
 
 import discord
+from red_commons.logging import getLogger
 
 # from discord.ext.commands.errors import BadArgument
 from redbot.core import bank
@@ -12,7 +12,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.vendored.discord.ext import menus
 
-log = logging.getLogger("red.Trusty-cogs.RoleTools")
+log = getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
 
 
@@ -384,7 +384,7 @@ class RolePages(menus.ListPageSource):
             else:
                 cdn_fmt = " https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/{codepoint:x}.png"
                 url = cdn_fmt.format(codepoint=ord(str(role.display_icon)))
-                log.debug(role.display_icon)
+                log.verbose("RolePages role.display_icon: %s", role.display_icon)
                 em.set_thumbnail(url=url)
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em

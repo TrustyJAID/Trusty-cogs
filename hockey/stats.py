@@ -21,6 +21,8 @@ _ = Translator("Hockey", __file__)
 
 # https://github.com/Rapptz/discord.py/blob/1bfe6b2bb160ce802a1f08afed73941a19a0a651/discord/app_commands/commands.py#L132
 CAMEL_CASE_REGEX = re.compile(r"(?<!^)(?=[A-Z])")
+
+
 # https://github.com/Rapptz/discord.py/blob/1bfe6b2bb160ce802a1f08afed73941a19a0a651/discord/app_commands/commands.py#L190-L191
 def _fix_camel_case(text: str) -> str:
     return CAMEL_CASE_REGEX.sub(" ", text).title()

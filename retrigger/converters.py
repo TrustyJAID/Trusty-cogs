@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Pattern, Tuple, Union
@@ -7,12 +6,13 @@ from typing import Dict, List, Optional, Pattern, Tuple, Union
 import discord
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
 from discord.ext.commands.errors import BadArgument
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 
-log = logging.getLogger("red.trusty-cogs.ReTrigger")
+log = getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
 
 try:
@@ -141,7 +141,7 @@ class MultiResponse(Converter):
         result = []
         match = re.split(r"(;)", argument)
 
-        log.debug(match)
+        log.verbose("MultiResponse match: %s", match)
         my_perms = ctx.channel.permissions_for(ctx.me)
         if match[0].lower() not in MULTI_RESPONSES:
             raise BadArgument(
@@ -199,7 +199,7 @@ class MultiResponse(Converter):
                     if role < ctx.guild.me.top_role and author_perms(ctx, role):
                         good_roles.append(role.id)
                 except BadArgument:
-                    log.error("Role `{}` not found.".format(r))
+                    log.error("Role `%s` not found.", r)
             result = [result[0]]
             for r_id in good_roles:
                 result.append(r_id)
@@ -210,8 +210,8 @@ class MultiResponse(Converter):
                     emoji = await ValidEmoji().convert(ctx, r)
                     good_emojis.append(emoji)
                 except BadArgument:
-                    log.error("Emoji `{}` not found.".format(r))
-            log.debug(good_emojis)
+                    log.error("Emoji `%s` not found.", r)
+            log.verbose("MultiResponse good_emojis: %s", good_emojis)
             result = [result[0]] + good_emojis
         return result
 

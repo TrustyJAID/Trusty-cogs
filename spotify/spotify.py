@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import re
 import time
 from abc import ABC
@@ -8,6 +7,7 @@ from typing import Literal, Mapping, Optional, Tuple
 
 import discord
 import tekore
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
@@ -23,7 +23,7 @@ try:
 except ImportError:
     DASHBOARD = False
 
-log = logging.getLogger("red.trusty-cogs.spotify")
+log = getLogger("red.trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
 
 
@@ -351,7 +351,7 @@ class Spotify(
             if "fields" in em_dict:
                 for field in em_dict["fields"]:
                     content += " " + field["name"] + " " + field["value"]
-            log.debug(content)
+            log.verbose("Spotify content: %s", content)
         content = content.replace("🧑‍🎨", ":artist:")
         # because discord will replace this in URI's automatically 🙄
         song_data = SPOTIFY_RE.finditer(content)
@@ -498,7 +498,7 @@ class Spotify(
                         query = em.title if em.title else ""
                     if not query or query == "-":
                         return
-                    log.debug(query)
+                    log.verbose("play_from_message query: %s", query)
                     search = await user_spotify.search(query, ("track",), "from_token", limit=50)
                     # log.debug(search)
                     tracks = search[0].items

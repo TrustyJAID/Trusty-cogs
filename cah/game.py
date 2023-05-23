@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import functools
-import logging
 import os
 import random
 import textwrap
@@ -14,11 +13,12 @@ from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 import discord
 from PIL import Image, ImageDraw, ImageFont
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.chat_formatting import escape, humanize_list, pagify
 
-log = logging.getLogger("red.trusty-cogs.cah")
+log = getLogger("red.trusty-cogs.cah")
 
 
 class CAHException(Exception):

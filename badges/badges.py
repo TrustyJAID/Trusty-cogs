@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import logging
 import sys
 from io import BytesIO
 from typing import Optional, Union, cast
@@ -8,6 +7,7 @@ from typing import Optional, Union, cast
 import aiohttp
 import discord
 from PIL import Image, ImageDraw, ImageFont, ImageSequence
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.i18n import Translator, cog_i18n
@@ -17,7 +17,7 @@ from .barcode import ImageWriter, generate
 from .templates import blank_template
 
 _ = Translator("Badges", __file__)
-log = logging.getLogger("red.Trusty-cogs.badges")
+log = getLogger("red.Trusty-cogs.badges")
 
 
 @cog_i18n(_)
@@ -112,7 +112,7 @@ class Badges(commands.Cog):
         if str(status) == "dnd":
             status = _("MIA")
         barcode = BytesIO()
-        log.debug(type(barcode))
+        log.verbose("Badges make_template barcode: %s", type(barcode))
         generate("code39", str(user.id), writer=ImageWriter(self), output=barcode)
         barcode = Image.open(barcode)
         barcode = self.remove_white_barcode(barcode)

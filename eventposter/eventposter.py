@@ -1,10 +1,10 @@
 import asyncio
-import logging
 from typing import Dict, Literal, Optional, Tuple, Union
 
 import discord
 from discord.ext import tasks
 from pytz import NonExistentTimeError
+from red_commons.logging import getLogger
 from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
@@ -13,7 +13,7 @@ from redbot.core.utils.views import SimpleMenu
 
 from .event_obj import ApproveView, ConfirmView, Event, ValidImage
 
-log = logging.getLogger("red.trusty-cogs.EventPoster")
+log = getLogger("red.trusty-cogs.EventPoster")
 
 _ = Translator("EventPoster", __file__)
 
@@ -192,7 +192,6 @@ class EventPoster(commands.Cog):
         return
 
     async def remove_user_from_event(self, user: discord.Member, event: Event) -> None:
-
         ctx = await event.get_ctx(self.bot)
         if not ctx:
             return
@@ -340,7 +339,6 @@ class EventPoster(commands.Cog):
             members.insert(0, ctx.author)
         member_list = [m.id for m in members if m is not None]
         if not max_slots:
-
             max_slots = await self.config.guild(ctx.guild).default_max()
             # log.debug(f"using default {max_slots}")
         select_options = await self.config.guild(ctx.guild).playerclass_options()
@@ -792,7 +790,6 @@ class EventPoster(commands.Cog):
         return False
 
     async def check_clear_event(self, ctx: commands.Context) -> bool:
-
         new_view = ConfirmView(ctx)
         msg = _("You already have an event running, would you like to cancel it?")
         await ctx.send(msg, view=new_view)
@@ -832,7 +829,7 @@ class EventPoster(commands.Cog):
                 default_slots=data["default_max"]
             )
         if data["cleanup_seconds"] is not None:
-            log.debug(data["cleanup_seconds"])
+            log.verbose("show_event_settings cleanup_seconds: %s", data["cleanup_seconds"])
             msg += _("__Events End After:__ **{time}**\n").format(
                 time=humanize_timedelta(seconds=data["cleanup_seconds"])
             )

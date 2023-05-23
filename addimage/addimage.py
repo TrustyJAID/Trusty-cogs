@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 import random
 import string
@@ -7,6 +6,7 @@ from pathlib import Path
 from typing import Literal, Optional, cast
 
 import discord
+from red_commons.logging import getLogger
 from redbot import VersionInfo, version_info
 from redbot.core import Config, VersionInfo, checks, commands, version_info
 from redbot.core.data_manager import cog_data_path
@@ -14,7 +14,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 _ = Translator("AddImage", __file__)
-log = logging.getLogger("red.Trusty-cogs.addimage")
+log = getLogger("red.Trusty-cogs.addimage")
 
 
 @cog_i18n(_)
@@ -60,7 +60,8 @@ class AddImage(commands.Cog):
                         os.remove(cog_data_path(self) / str(guild_id) / image["file_loc"])
                     except Exception:
                         log.error(
-                            _("Error deleting image {image}").format(image=image["file_loc"]),
+                            "Error deleting image %s",
+                            image["file_loc"],
                             exc_info=True,
                         )
                         pass
@@ -405,9 +406,7 @@ class AddImage(commands.Cog):
         try:
             os.remove(cog_data_path(self) / str(guild.id) / image["file_loc"])
         except Exception:
-            log.error(
-                _("Error deleting image {image}").format(image=image["file_loc"]), exc_info=True
-            )
+            log.error("Error deleting image %s", image["file_loc"], exc_info=True)
             pass
         await self.config.guild(guild).images.set(all_imgs)
         await ctx.send(name + _(" has been deleted from this guild!"))
@@ -433,9 +432,7 @@ class AddImage(commands.Cog):
         try:
             os.remove(cog_data_path(self) / "global" / image["file_loc"])
         except Exception:
-            log.error(
-                _("Error deleting image {image}").format(image=image["file_loc"]), exc_info=True
-            )
+            log.error("Error deleting image %s", image["file_loc"], exc_info=True)
             pass
         await self.config.images.set(all_imgs)
         await ctx.send(name + _(" has been deleted globally!"))
