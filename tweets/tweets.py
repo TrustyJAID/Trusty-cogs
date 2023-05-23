@@ -1,9 +1,9 @@
 import asyncio
-import logging
 from typing import Literal, Optional
 
 import discord
 import tweepy
+from red_commons.logging import getLogger
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_number
@@ -14,7 +14,7 @@ from .tweets_api import USER_FIELDS, TweetsAPI
 
 _ = Translator("Tweets", __file__)
 
-log = logging.getLogger("red.trusty-cogs.Tweets")
+log = getLogger("red.trusty-cogs.Tweets")
 
 
 @cog_i18n(_)

@@ -1,8 +1,8 @@
 import asyncio
-import logging
 from typing import Literal, Optional
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import Config, checks, commands
 from redbot.core.commands.converter import TimedeltaConverter
 
@@ -11,7 +11,7 @@ from .menus import BaseMenu, TwitchClipsPages, TwitchFollowersPages
 from .twitch_api import TwitchAPI
 from .twitch_models import TwitchFollower
 
-log = logging.getLogger("red.Trusty-cogs.Twitch")
+log = getLogger("red.Trusty-cogs.Twitch")
 
 BASE_URL = "https://api.twitch.tv/helix"
 

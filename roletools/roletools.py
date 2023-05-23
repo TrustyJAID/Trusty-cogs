@@ -1,9 +1,9 @@
 import asyncio
-import logging
 from abc import ABC
 from typing import Any, Dict, Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import Config, bank, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context
@@ -26,7 +26,7 @@ from .settings import RoleToolsSettings
 
 roletools = RoleToolsMixin.roletools
 
-log = logging.getLogger("red.Trusty-cogs.RoleTools")
+log = getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
 
 
@@ -44,7 +44,7 @@ def custom_cooldown(ctx: commands.Context) -> Optional[discord.app_commands.Cool
     members = []
 
     for entity in who:
-        log.debug(entity)
+        log.verbose("custom_cooldown entity: %s", entity)
         if isinstance(entity, discord.TextChannel) or isinstance(entity, discord.Role):
             members += entity.members
         elif isinstance(entity, discord.Member):
@@ -190,7 +190,7 @@ class RoleTools(
     async def cog_unload(self):
         for view in self.views:
             # Don't forget to remove persistent views when the cog is unloaded.
-            log.debug(f"Stopping view {view}")
+            log.verbose("Stopping view %s", view)
             view.stop()
 
     @roletools.group(invoke_without_command=True)

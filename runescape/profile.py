@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import logging
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -11,12 +10,13 @@ from typing import List, NamedTuple, Optional, Tuple, Union
 import aiohttp
 import discord
 import pytz
+from red_commons.logging import getLogger
 from redbot.core.utils.chat_formatting import humanize_number, pagify
 from tabulate import tabulate
 
 HEADERS = {"User-Agent": f"Red-DiscordBot Trusty-cogs Runescape Cog"}
 
-log = logging.getLogger("red.trusty-cogs.runescape")
+log = getLogger("red.trusty-cogs.runescape")
 
 
 class APIError(Exception):
@@ -643,7 +643,7 @@ class OSRSProfile:
     @classmethod
     def from_str(cls, rsn: str, data: str) -> OSRSProfile:
         data = data.replace(" ", "\n")
-        log.info(data)
+        log.verbose("OSRSProfile from_str: %s", data)
         final_data: List[Union[str, OSRSRank]] = [rsn, data]
         for line_no, ranks in enumerate(data.split("\n")):
             if line_no >= len(cls._ORDER):
@@ -705,10 +705,9 @@ class OSRSProfile:
         activities_list = []
         data = data.replace(" ", "\n")
         for line, ranks in enumerate(data.split("\n")):
-
             if line >= len(OSRSProfile._ORDER):
                 continue
-            log.info(OSRSProfile._ORDER[line])
+            log.verbose("OSRSProfile table_from_text: %s", OSRSProfile._ORDER[line])
             rank = [int(i) for i in ranks.split(",")]
             if len(rank) == 3:
                 skills_list.append(

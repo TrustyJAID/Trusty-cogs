@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from copy import copy
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
@@ -7,6 +6,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union, cast
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
@@ -28,7 +28,7 @@ from .converters import GuildConverter, MultiGuildConverter, PermissionConverter
 from .menus import AvatarPages, BaseView, GuildPages, ListPages
 
 _ = Translator("ServerStats", __file__)
-log = logging.getLogger("red.trusty-cogs.ServerStats")
+log = getLogger("red.trusty-cogs.ServerStats")
 
 
 @cog_i18n(_)
@@ -121,7 +121,7 @@ class ServerStats(commands.GroupCog):
             em.description = created_at
             await channel.send(embed=em)
         except Exception:
-            log.error(f"Error creating guild embed for new guild ID {guild.id}", exc_info=True)
+            log.error("Error creating guild embed for new guild ID %s", guild.id, exc_info=True)
 
     async def guild_embed(self, guild: discord.Guild) -> discord.Embed:
         """
@@ -338,7 +338,7 @@ class ServerStats(commands.GroupCog):
             em.description = created_at
             await channel.send(embed=em)
         except Exception:
-            log.error(f"Error creating guild embed for old guild ID {guild.id}", exc_info=True)
+            log.error("Error creating guild embed for old guild ID %s", guild.id, exc_info=True)
 
     @commands.hybrid_command()
     async def emoji(self, ctx: commands.Context, emoji: str) -> None:
@@ -766,7 +766,6 @@ class ServerStats(commands.GroupCog):
                 count += 1
                 msg_list.append(em)
             else:
-
                 if not role:
                     estimate = await ctx.guild.estimate_pruned_members(days=days)
                     role_msg = _("Discord Estimate: {estimate}").format(estimate=estimate)
@@ -1357,9 +1356,9 @@ class ServerStats(commands.GroupCog):
                 await guild.leave()
             except Exception:
                 log.error(
-                    _("I couldn't leave {guild} ({g_id}).").format(
-                        guild=guild.name, g_id=guild.id
-                    ),
+                    "I couldn't leave %s (%s).",
+                    guild.name,
+                    guild.id,
                     exc_info=True,
                 )
                 await ctx.send(_("I couldn't leave {guild}.").format(guild=guild.name))
@@ -1585,12 +1584,12 @@ class ServerStats(commands.GroupCog):
                 if not my_perms.read_message_history or not my_perms.read_messages:
                     continue
                 try:
-                    log.debug(check_after)
+                    log.verbose("get_server_stats check_after: %s", check_after)
                     async for message in channel.history(
                         limit=None, after=check_after, oldest_first=False
                     ):
                         if not set_new_last_read:
-                            log.debug(f"Setting last_checked to {message.id}")
+                            log.debug("Setting last_checked to %s", message.id)
                             to_return["channels"][str(channel.id)]["last_checked"] = message.id
                             set_new_last_read = True
                         author = message.author
@@ -1610,7 +1609,7 @@ class ServerStats(commands.GroupCog):
                     pass
             _ret = copy(to_return)
             # copy the data to prevent context manager from removing the reference
-            log.debug(_ret)
+            log.verbose("get_server_stats _ret: %s", _ret)
         return _ret
 
     async def get_channel_stats(self, channel: discord.TextChannel) -> dict:

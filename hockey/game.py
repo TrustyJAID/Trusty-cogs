@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
@@ -9,6 +8,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
@@ -27,7 +27,7 @@ from .standings import LeagueRecord, Playoffs, Standings
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.trusty-cogs.Hockey")
+log = getLogger("red.trusty-cogs.Hockey")
 
 
 class GameType(Enum):
@@ -334,7 +334,7 @@ class Game:
                     else:
                         async with session.get(BASE_URL + games["link"]) as resp:
                             data = await resp.json()
-                    # log.debug(BASE_URL + games["link"])
+                    log.verbose("get_games, url: %s%s", BASE_URL, games["link"])
                     return_games_list.append(await Game.from_json(data))
                 except Exception:
                     log.error("Error grabbing game data:", exc_info=True)
@@ -824,7 +824,6 @@ class Game:
             ) or count >= 20:
                 """Final game state checks"""
                 if home["game_state"] != self.game_state and home["game_state"] != "Null":
-
                     # Post game final data and check for next game
                     log.debug("Game Final %s @ %s", self.away_team, self.home_team)
                     await self.post_game_state(bot)
@@ -931,7 +930,6 @@ class Game:
         # can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
 
         if self.game_state == "Live":
-
             guild_notifications = guild_settings["game_state_notifications"]
             channel_notifications = channel_settings["game_state_notifications"]
             state_notifications = guild_notifications or channel_notifications

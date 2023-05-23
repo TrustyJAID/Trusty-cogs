@@ -1,12 +1,12 @@
 import asyncio
 import datetime
-import logging
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import discord
 from discord.ext import tasks
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+from red_commons.logging import getLogger
 from redbot.core import Config, commands, i18n, modlog
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import (
@@ -18,7 +18,7 @@ from redbot.core.utils.chat_formatting import (
 )
 
 _ = i18n.Translator("ExtendedModLog", __file__)
-logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")
+logger = getLogger("red.trusty-cogs.ExtendedModLog")
 
 
 class CommandPrivs(Converter):
@@ -185,7 +185,7 @@ class EventMixin:
         can_x = _("**See:** {can_see}\n**Run:** {can_run}").format(
             can_run=can_run, can_see=can_see
         )
-        logger.debug(f"{ctx.command.qualified_name}")
+        logger.verbose("on_command name: %s", ctx.command.qualified_name)
         parent = ""
         if ctx.interaction:
             parent = ctx.command.app_command.qualified_name
@@ -205,7 +205,7 @@ class EventMixin:
         except Exception:
             return
         if privs.name not in self.settings[guild.id]["commands_used"]["privs"]:
-            logger.debug(f"command not in list {privs}")
+            logger.debug("command not in list %s", privs)
             return
 
         if privs is commands.PrivilegeLevel.MOD:
@@ -343,7 +343,7 @@ class EventMixin:
             and self.settings[guild.id]["message_delete"]["embed"]
         )
         ctx = await self.bot.get_context(message)
-        logger.debug(ctx.valid)
+        logger.trace("_cached_message_delete ctx.valid: %s", ctx.valid)
         if ctx.valid and self.settings[guild.id]["message_delete"]["ignore_commands"]:
             logger.debug("Ignoring valid command messages.")
             return
@@ -1739,7 +1739,7 @@ class EventMixin:
                     a = set(after.roles)
                     before_roles = list(b - a)
                     after_roles = list(a - b)
-                    logger.debug(after_roles)
+                    logger.debug("on_member_update after_roles: %s", after_roles)
                     if before_roles:
                         for role in before_roles:
                             msg += _("{author} had the {role} role removed.").format(

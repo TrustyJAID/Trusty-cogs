@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-import logging
 from typing import Any, AsyncGenerator, Optional
 
 import discord
 from apraw.models import Submission, Subreddit
+from red_commons.logging import getLogger
+from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.vendored.discord.ext import menus
 
 from .helpers import make_embed_from_submission
 
-log = logging.getLogger("red.Trusty-cogs.reddit")
+log = getLogger("red.Trusty-cogs.reddit")
 
 _ = Translator("Reddit", __file__)
 
@@ -172,7 +173,7 @@ class BaseMenu(discord.ui.View):
         return self.message
 
     async def show_page(self, page_number):
-        log.info(page_number)
+        log.verbose("BaseMenu page_number %s", page_number)
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)

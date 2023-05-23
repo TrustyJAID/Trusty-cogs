@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import logging
-
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
@@ -13,7 +12,7 @@ from .select import SelectRoleConverter, SelectRoleView
 
 roletools = RoleToolsMixin.roletools
 
-log = logging.getLogger("red.Trusty-cogs.RoleTools")
+log = getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
 
 
@@ -240,7 +239,7 @@ class RoleToolsMessages(RoleToolsMixin):
         if not await self.check_totals(ctx, buttons=len(buttons), menus=0):
             return
         new_view = ButtonRoleView(self)
-        log.info(buttons)
+        log.verbose("send_buttons buttons: %s", buttons)
         for button in buttons:
             new_view.add_item(button)
         msg = await channel.send(content=message, view=new_view)

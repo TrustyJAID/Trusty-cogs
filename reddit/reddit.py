@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from typing import Mapping, Optional
 
 import aiohttp
@@ -7,6 +6,7 @@ import apraw
 import discord
 from apraw.models import Submission, Subreddit
 from discord.ext import tasks
+from red_commons.logging import getLogger
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import bounded_gather
@@ -14,7 +14,7 @@ from redbot.core.utils import bounded_gather
 from .helpers import SubredditConverter, make_embed_from_submission
 from .menus import BaseMenu, RedditMenu
 
-log = logging.getLogger("red.Trusty-cogs.reddit")
+log = getLogger("red.Trusty-cogs.reddit")
 _ = Translator("Reddit", __file__)
 
 
@@ -81,7 +81,7 @@ class Reddit(commands.Cog):
                 try:
                     stream.cancel()
                 except Exception:
-                    log.debug(f"Error closing stream in {name}")
+                    log.debug("Error closing stream in %s", name)
             await self.initialize()
             self.stream_loop.restart()
 
@@ -205,7 +205,7 @@ class Reddit(commands.Cog):
             try:
                 stream.cancel()
             except Exception:
-                log.debug(f"Error closing stream in {name}")
+                log.debug("Error closing stream in %s", name)
 
     @commands.group()
     async def redditset(self, ctx: commands.Context) -> None:

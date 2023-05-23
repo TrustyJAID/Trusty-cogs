@@ -1,8 +1,8 @@
-import logging
 from datetime import datetime
 from typing import Optional
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
@@ -11,7 +11,7 @@ from .abc import MixinMeta
 from .game import Game
 from .helper import StateFinder, TeamFinder, get_chn_name
 
-log = logging.getLogger("red.trusty-cogs.Hockey")
+log = getLogger("red.trusty-cogs.Hockey")
 
 _ = Translator("Hockey", __file__)
 
@@ -342,9 +342,7 @@ class GameDayThreads(MixinMeta):
         if guild.me.is_timed_out():
             return
         if not channel.permissions_for(guild.me).create_public_threads:
-            log.info(
-                f"Cannot create new GDT in {repr(guild)} due to too many missing permissions."
-            )
+            log.info("Cannot create new GDT in %r due to too many missing permissions.", guild)
             return
         # if len(category.channels) >= 50:
         #     log.info(
@@ -394,10 +392,10 @@ class GameDayThreads(MixinMeta):
         try:
             new_chn = await channel.create_thread(name=chn_name, message=preview_msg)
         except discord.Forbidden:
-            log.error(f"Error creating channel in {repr(guild)}")
+            log.error("Error creating channel in %r", guild)
             return
         except Exception:
-            log.exception(f"Error creating channels in {repr(guild)}")
+            log.exception("Error creating channels in %r", guild)
             return
         async with self.config.guild(guild).gdt() as current_gdc:
             current_gdc.append(new_chn.id)

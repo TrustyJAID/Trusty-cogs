@@ -1,16 +1,16 @@
-import logging
 import re
 from typing import Dict, List, Tuple
 
 import aiohttp
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+from red_commons.logging import getLogger
 from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import pagify
 
 SEARCH_URL = "https://api.imgflip.com/get_memes"
 CAPTION_URL = "https://api.imgflip.com/caption_image"
-log = logging.getLogger("red.trusty-cogs.ImgFlip")
+log = getLogger("red.trusty-cogs.ImgFlip")
 
 
 class Meme(Converter):
@@ -84,7 +84,7 @@ class Imgflip(commands.Cog):
     async def get_meme(
         self, meme: int, boxes: List[Dict[str, str]], username: str, password: str
     ) -> str:
-        log.debug(boxes)
+        log.verbose("Imgflip get_meme boxes: %s", boxes)
         try:
             form_data = aiohttp.FormData()
             form_data.add_field("template_id", meme)

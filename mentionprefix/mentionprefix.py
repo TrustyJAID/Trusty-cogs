@@ -1,20 +1,20 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import re
 from datetime import timedelta
 from typing import Dict, Optional, Set
 
 import discord
 from discord.ext.commands.view import StringView
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context
 from redbot.core.utils.antispam import AntiSpam
 from redbot.core.utils.chat_formatting import humanize_list
 
-log = logging.getLogger("red.Trusty-Cogs.mentionprefix")
+log = getLogger("red.Trusty-Cogs.mentionprefix")
 
 HELP_RE = re.compile(r"^.*help$", flags=re.I)
 

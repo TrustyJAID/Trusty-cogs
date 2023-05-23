@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import logging
 from datetime import datetime
 from typing import Any, List
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.vendored.discord.ext import menus
 
 from .twitch_models import TwitchFollower
 
-log = logging.getLogger("red.Trusty-cogs.twitch")
+log = getLogger("red.Trusty-cogs.twitch")
 
 _ = Translator("Twitch", __file__)
 

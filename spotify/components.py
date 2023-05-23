@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from typing import List, Optional
 
 import discord
 import tekore
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
@@ -13,7 +13,7 @@ from redbot.vendored.discord.ext import menus
 
 from .helpers import spotify_emoji_handler
 
-log = logging.getLogger("red.Trusty-cogs.spotify")
+log = getLogger("red.Trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
 
 
@@ -673,7 +673,7 @@ class StopButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         log.debug("deleting message")
         self.view.stop()
-        log.debug(interaction.message.flags)
+        log.verbose("StopButton flags: %s", interaction.message.flags)
         if interaction.message.flags.ephemeral:
             await interaction.response.edit_message(view=None)
             return

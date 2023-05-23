@@ -1,11 +1,11 @@
 import asyncio
-import logging
 import time
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.bot import Red
 from redbot.core.utils import bounded_gather
@@ -13,7 +13,7 @@ from redbot.core.utils import bounded_gather
 from .errors import TwitchError
 from .twitch_models import TwitchFollower, TwitchProfile
 
-log = logging.getLogger("red.Trusty-cogs.Twitch")
+log = getLogger("red.Trusty-cogs.Twitch")
 
 BASE_URL = "https://api.twitch.tv/helix"
 
@@ -68,7 +68,7 @@ class TwitchAPI:
                 # Calculate wait time and add 0.1s to the wait time to allow Twitch to reset
                 # their counter
                 wait_time = reset_time - current_time + 0.1
-                log.debug(wait_time)
+                log.trace("wait_for_rate_limit_reset, timer: %s", wait_time)
                 await asyncio.sleep(wait_time)
 
     async def oauth_check(self) -> None:
@@ -162,11 +162,11 @@ class TwitchAPI:
 
     async def get_all_followers(self, user_id: str) -> Tuple[list, dict]:
         # Get's first 100 users following user_id
-        url = "{}/users/follows?to_id={}&first=100".format(BASE_URL, user_id)
+        url = f"{BASE_URL}/users/follows?to_id={user_id}&first=100"
         data = await self.get_response(url)
         follows = [x["from_id"] for x in data["data"]]
         total = data["total"]
-        log.debug(f"{len(follows)} of {total}")
+        log.debug("%s of %s", len(follows), total)
         return follows, total
 
     async def get_all_streams(self):
@@ -242,8 +242,10 @@ class TwitchAPI:
                 except Exception:
                     log.exception(f"Error getting twitch profile {follow.from_id}", exc_info=True)
                 log.info(
-                    f"{profile.login} Followed! {followed.display_name} "
-                    f"has {total} followers now."
+                    "%s Followed! %s " "has %s followers now.",
+                    profile.login,
+                    followed.display_name,
+                    total,
                 )
                 em = await self.make_follow_embed(followed, profile, total)
                 for channel_id in account["channels"]:
@@ -276,7 +278,7 @@ class TwitchAPI:
             if info["view_count"] and clip["view_count"] < info["view_count"]:
                 continue
             if clip["id"] in info["clips"]:
-                log.debug("skipping clip")
+                log.verbose("send_clips_update - skipping clip")
                 continue
             if channel and channel.permissions_for(channel.guild.me).send_messages:
                 tasks.append(channel.send(msg))
@@ -290,12 +292,12 @@ class TwitchAPI:
     async def check_clips(self):
         followed = await self.config.twitch_clips()
         for user_id, clip_data in followed.items():
-            log.debug(f"Checking for new clips from {clip_data['display_name']}")
+            log.verbose("Checking for new clips from %s", clip_data["display_name"])
             try:
                 now = datetime.utcnow() + timedelta(days=-8)
                 clips = await self.get_new_clips(user_id, now)
             except Exception:
-                log.exception(f"Error getting twitch clips {user_id}", exc_info=True)
+                log.exception("Error getting twitch clips %s", user_id, exc_info=True)
                 continue
             for clip in clips:
                 await self.send_clips_update(clip, clip_data)

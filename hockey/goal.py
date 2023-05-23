@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
@@ -19,11 +19,10 @@ if TYPE_CHECKING:
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.trusty-cogs.Hockey")
+log = getLogger("red.trusty-cogs.Hockey")
 
 
 class Goal:
-
     goal_id: str
     team_name: str
     scorer_id: int
@@ -234,7 +233,7 @@ class Goal:
         try:
             guild = channel.guild
             if not channel.permissions_for(guild.me).send_messages:
-                log.debug("No permission to send messages in %s", repr(channel))
+                log.debug("No permission to send messages in %r", channel)
                 return None
 
             config = bot.get_cog("Hockey").config
@@ -266,7 +265,7 @@ class Goal:
             except Exception:
                 log.error("Error trying to find montreal goal role")
             if goal_notifications:
-                log.debug(goal_notifications)
+                log.debug("actually_post_goal goal_notifications: %s", goal_notifications)
                 allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
             else:
                 allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
@@ -501,7 +500,6 @@ class Goal:
         url = TEAMS[self.team_name]["team_url"] if self.team_name in TEAMS else "https://nhl.com"
         logo = TEAMS[self.team_name]["logo"] if self.team_name in TEAMS else "https://nhl.com"
         if not shootout:
-
             em = discord.Embed(description=f"{self.description}\n<t:{self.timestamp}:T>")
             if self.link:
                 em.description = f"[{self.description}]({self.link})\n<t:{self.timestamp}:T>"

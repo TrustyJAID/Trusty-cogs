@@ -1,7 +1,6 @@
 import asyncio
 import functools
 import json
-import logging
 import os
 import sys
 import textwrap
@@ -13,12 +12,13 @@ import aiohttp
 import discord
 import numpy as np
 from PIL import Image, ImageColor, ImageDraw, ImageFont, ImageSequence
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.data_manager import bundled_data_path
 
 from .converter import ImageFinder
 
-log = logging.getLogger("red.trusty-cogs.imagemaker")
+log = getLogger("red.trusty-cogs.imagemaker")
 
 try:
     import cv2

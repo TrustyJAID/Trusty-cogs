@@ -1,10 +1,10 @@
-import logging
 from datetime import datetime, timezone
 from io import BytesIO
 from typing import List, Literal, Optional
 from urllib.parse import quote
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, pagify
@@ -28,7 +28,7 @@ from .stats import LeaderCategories, LeaderView
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.trusty-cogs.Hockey")
+log = getLogger("red.trusty-cogs.Hockey")
 
 
 hockey_commands = MixinMeta.hockey_commands
@@ -148,8 +148,8 @@ class HockeyCommands(MixinMeta):
         Team and Date can be provided at the same time and then
         only that teams games may appear in that date range if they exist.
         """
-        log.debug(team)
-        log.debug(date)
+        log.verbose("games team: %s", team)
+        log.verbose("games date: %s", date)
         await ctx.defer()
         teams = []
         if team is not None:
@@ -389,9 +389,9 @@ class HockeyCommands(MixinMeta):
             )
         url = f"{BASE_URL}/api/v1/schedule?season={season}"
         url += "&teamId=" + ",".join([str(TEAMS[team]["id"])])
-        log.debug(team)
-        log.debug(TEAMS[team]["id"])
-        log.debug(url)
+        log.verbose("season team: %s", team)
+        log.verbose("season team id: %s", TEAMS[team]["id"])
+        log.verbose("season team url: %s", url)
         async with self.session.get(url) as resp:
             data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
@@ -428,7 +428,7 @@ class HockeyCommands(MixinMeta):
         `[season]` The season to get stats data on format can be `YYYY` or `YYYYYYYY`
         `<player>` The name of the player to search for
         """
-        log.info(player)
+        log.verbose("player %s", player)
         await ctx.defer()
         season_str = None
         if season:

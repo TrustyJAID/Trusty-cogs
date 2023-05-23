@@ -1,4 +1,3 @@
-import logging
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Literal, Optional
@@ -6,6 +5,7 @@ from typing import Dict, Literal, Optional
 import aiohttp
 import discord
 from discord.ext import tasks
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import bold, box, humanize_list, humanize_number
@@ -20,7 +20,7 @@ from .profile import (
     Profile,
 )
 
-log = logging.getLogger("red.trusty-cogs.runescape")
+log = getLogger("red.trusty-cogs.runescape")
 
 IMAGE_URL = "https://runescape.wiki/w/Special:FilePath/"
 
@@ -297,7 +297,7 @@ class Runescape(commands.Cog):
                 if not data.get("success", True):
                     await ctx.send(error_msg)
                     return
-            log.debug(data)
+            log.trace("runescape_ge data: %s", data)
             embed = discord.Embed(
                 title=f"Runescape GE Results for `{search}`", colour=await ctx.embed_colour()
             )
@@ -365,7 +365,7 @@ class Runescape(commands.Cog):
                 if not data.get("success", True):
                     await ctx.send(error_msg)
                     return
-            log.debug(data)
+            log.trace("osrs_ge data: %s", data)
             embed = discord.Embed(
                 title=f"OldSchool Runescape GE Results for `{search}`",
                 colour=await ctx.embed_colour(),

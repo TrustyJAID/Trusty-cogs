@@ -1,4 +1,3 @@
-import logging
 from copy import copy
 from io import BytesIO
 from typing import List, Literal, Optional, Tuple, Union
@@ -8,6 +7,7 @@ import discord
 import tekore
 import yaml
 from discord import app_commands
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
@@ -49,7 +49,7 @@ from .menus import (
 # from redbot.core.utils.views import SetApiView
 
 
-log = logging.getLogger("red.trusty-cogs.spotify")
+log = getLogger("red.trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
 
 ActionConverter = commands.get_dict_converter(
@@ -768,7 +768,7 @@ class SpotifyCommands(SpotifyMixin):
 
          e.g. `[p]spotify recommendations genre: edm electronic valence: 100 mode: major`
         """
-        log.info(recommendations)
+        log.verbose("spotify_recommendations recommendations: %s", recommendations)
         # user_spotify = await self.get_user_spotify(ctx)
         if not any([recommendations.genres, recommendations.artists, recommendations.tracks]):
             await ctx.send(
@@ -1235,7 +1235,7 @@ class SpotifyCommands(SpotifyMixin):
                 uri_type = match.group(2)
                 if match.group(2) == "track":
                     tracks.append(match.group(3))
-            log.debug(new_uri)
+            log.verbose("spotify_play new_uri: %s", new_uri)
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1296,7 +1296,7 @@ class SpotifyCommands(SpotifyMixin):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 for uri in tracks:
-                    log.debug(f"Queueing {uri=}")
+                    log.trace("Queueing uri=%s", uri)
                     await user_spotify.playback_queue_add(uri)
                 all_tracks = await user_spotify.tracks(tracks)
             if ctx.interaction:
@@ -1478,7 +1478,7 @@ class SpotifyCommands(SpotifyMixin):
                 now = cur.progress_ms
                 total = cur.item.duration_ms
                 emoji = spotify_emoji_handler.get_emoji("fastforward", True)
-                log.debug(seconds)
+                log.verbose("spotify_seek seconds: %s", seconds)
                 if abs_position:
                     to_seek = seconds * 1000
                 else:
@@ -1587,7 +1587,7 @@ class SpotifyCommands(SpotifyMixin):
             if device_name:
                 for d in devices:
                     if device_name.lower() in d.name.lower() or device_name == d.id:
-                        log.debug(f"Transferring playback to {d.name}")
+                        log.debug("Transferring playback to %s", d.name)
                         new_device = d
             else:
                 new_view = SpotifyDeviceView(ctx)
@@ -1658,7 +1658,7 @@ class SpotifyCommands(SpotifyMixin):
             if device_name:
                 for d in devices:
                     if device_name.lower() in d.name.lower() or device_name == d.id:
-                        log.debug(f"Transferring playback to {d.name}")
+                        log.debug("Transferring playback to %s", d.name)
                         new_device = d
             else:
                 new_view = SpotifyDeviceView(ctx)

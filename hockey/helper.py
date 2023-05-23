@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import logging
 import re
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -21,6 +20,7 @@ import discord
 import pytz
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+from red_commons.logging import getLogger
 from redbot.core.bot import Red
 from redbot.core.commands import Context
 from redbot.core.data_manager import cog_data_path
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.trusty-cogs.Hockey")
+log = getLogger("red.trusty-cogs.Hockey")
 
 DATE_RE = re.compile(
     r"((19|20)\d\d)[- \/.](0[1-9]|1[012]|[1-9])[- \/.](0[1-9]|[12][0-9]|3[01]|[1-9])"
@@ -148,16 +148,16 @@ class TeamFinder(discord.app_commands.Transformer):
                 continue
             nick = data["nickname"]
             short = data["tri_code"]
-            pattern = fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split())
+            pattern = rf"{short}\b|" + r"|".join(rf"\b{i}\b" for i in team.split())
             if nick:
-                pattern += r"|" + r"|".join(fr"\b{i}\b" for i in nick)
+                pattern += r"|" + r"|".join(rf"\b{i}\b" for i in nick)
             # log.debug(pattern)
-            reg: Pattern = re.compile(fr"\b{pattern}", flags=re.I)
+            reg: Pattern = re.compile(rf"\b{pattern}", flags=re.I)
             for pot in potential_teams:
                 find = reg.findall(pot)
                 if find:
-                    log.debug(reg)
-                    log.debug(find)
+                    log.verbose("TeamFinder reg: %s", reg)
+                    log.verbose("TeamFinder find: %s", find)
                     result.add(team)
         if include_all and "all" in argument:
             result.add("all")
@@ -195,7 +195,6 @@ class PlayerFinder(discord.app_commands.Transformer):
         path = cog_data_path(cog) / "players.json"
         await cls().check_and_download(cog)
         with path.open(encoding="utf-8", mode="r") as f:
-
             players = []
             async for player in AsyncIter(json.loads(f.read())["data"], steps=100):
                 if argument.lower() in player["fullName"].lower():
@@ -563,7 +562,7 @@ async def get_channel_obj(
         if not channel:
             # await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
             # log.info(f"{channel_id} channel was removed because it no longer exists")
-            log.info(f"{channel_id} Could not be found")
+            log.info("%s Could not be found", channel_id)
             return None
         guild = channel.guild
         await bot.get_cog("Hockey").config.channel(channel).guild_id.set(guild.id)
@@ -572,13 +571,13 @@ async def get_channel_obj(
     if not guild:
         # await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
         # log.info(f"{channel_id} channel was removed because it no longer exists")
-        log.info(f"{channel_id} Could not be found")
+        log.info("%s Could not be found", channel_id)
         return None
     channel = guild.get_channel(channel_id)
     thread = guild.get_thread(channel_id)
     if channel is None and thread is None:
         # await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
         # log.info(f"{channel_id} channel was removed because it no longer exists")
-        log.info(f"{channel_id} Could not be found")
+        log.info("%s Could not be found", channel_id)
         return None
     return channel or thread

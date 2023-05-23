@@ -29,39 +29,27 @@ insults: List[str] = [
     _(
         "You're so fat when you went to the circus the little girl asked if she could ride the elephant."
     ),
-    _(
-        "You're so fat when you go on an airplane, you have to pay baggage fees for your ass."
-    ),
+    _("You're so fat when you go on an airplane, you have to pay baggage fees for your ass."),
     _("You're so fat whenever you go to the beach the tide comes in."),
     _("You're so fat I could slap your butt and ride the waves."),
     _(
         "You're so fat I'd have to grease the door frame and hold a Twinkie on the other side just to get you through."
     ),
-    _(
-        "Yo Mama so dumb I told her Christmas was around the corner and she went looking for it."
-    ),
+    _("Yo Mama so dumb I told her Christmas was around the corner and she went looking for it."),
     _("You're so dumb it took you 2 hours to watch 60 minutes."),
     _("Yo Mama so dumb she bought tickets to Xbox Live."),
     _("You're so dumb that you thought The Exorcist was a workout video."),
-    _(
-        "You're so ugly that you went to the salon and it took 3 hours just to get an estimate."
-    ),
+    _("You're so ugly that you went to the salon and it took 3 hours just to get an estimate."),
     _("You're so ugly that even Scooby Doo couldn't solve that mystery."),
     _("What is the weighted center between Planet X and Planet Y? Oh it's YOU!"),
     _(":eggplant: :eggplant: :eggplant:"),
     _("Your birth certificate is an apology letter from the condom factory."),
     _("I wasn't born with enough middle fingers to let you know how I feel about you."),
-    _(
-        "You must have been born on a highway because that's where most accidents happen."
-    ),
+    _("You must have been born on a highway because that's where most accidents happen."),
     _("I'm jealous of all the people that haven't met you."),
     _("I bet your brain feels as good as new, seeing that you never use it."),
-    _(
-        "I'm not saying I hate you, but I would unplug your life support to charge my phone."
-    ),
-    _(
-        "You're so ugly, when your mom dropped you off at school she got a fine for littering."
-    ),
+    _("I'm not saying I hate you, but I would unplug your life support to charge my phone."),
+    _("You're so ugly, when your mom dropped you off at school she got a fine for littering."),
     _("You bring everyone a lot of joy, when you leave the room."),
     _("What's the difference between you and eggs? Eggs get laid and you don't."),
     _("You're as bright as a black hole, and twice as dense."),
@@ -77,15 +65,11 @@ insults: List[str] = [
     _("I have neither the time nor the crayons to explain this to you."),
     _("You have two brains cells, one is lost and the other is out looking for it."),
     _("How many times do I have to flush to get rid of you?"),
-    _(
-        "I don't exactly hate you, but if you were on fire and I had water, I'd drink it."
-    ),
+    _("I don't exactly hate you, but if you were on fire and I had water, I'd drink it."),
     _("You shouldn't play hide and seek, no one would look for you."),
     _("Some drink from the fountain of knowledge; you only gargled."),
     _("Roses are red violets are blue, God made me pretty, what happened to you?"),
-    _(
-        "It's better to let someone think you are an Idiot than to open your mouth and prove it."
-    ),
+    _("It's better to let someone think you are an Idiot than to open your mouth and prove it."),
     _(
         "Somewhere out there is a tree, tirelessly producing oxygen so you can breathe. I think you owe it an apology."
     ),
@@ -100,9 +84,7 @@ insults: List[str] = [
     _("What are you going to do for a face when the baboon wants his butt back?"),
     _("Well I could agree with you, but then we'd both be wrong."),
     _("You're so fat, you could sell shade."),
-    _(
-        "It looks like your face caught on fire and someone tried to put it out with a hammer."
-    ),
+    _("It looks like your face caught on fire and someone tried to put it out with a hammer."),
     _("You're not funny, but your life, now that's a joke."),
     _("You're so fat the only letters of the alphabet you know are KFC."),
     _("Oh my God, look at you. Was anyone else hurt in the accident?"),
@@ -121,9 +103,7 @@ insults: List[str] = [
     _("Your parents hated you so much your bath toys were an iron and a toaster"),
     _("Don't feel sad, don't feel blue, Frankenstein was ugly too."),
     _("You're so ugly, you scared the crap out of the toilet."),
-    _(
-        "It's kinda sad watching you attempt to fit your entire vocabulary into a sentence."
-    ),
+    _("It's kinda sad watching you attempt to fit your entire vocabulary into a sentence."),
     _("I fart to make you smell better."),
     _("You're so ugly you make blind kids cry."),
     _("You're a person of rare intelligence. It's rare when you show any."),
@@ -183,20 +163,14 @@ insults: List[str] = [
     _("I thought of you today. It reminded me to take the garbage out."),
     _("I'm sorry I didn't get that - I don't speak idiot."),
     _("Hey, your village called \u2013 they want their idiot back."),
-    _(
-        "I just stepped in something that was smarter than you\u2026 and smelled better too."
-    ),
+    _("I just stepped in something that was smarter than you\u2026 and smelled better too."),
     _("You're so fat that at the zoo the elephants started throwing you peanuts."),
     _("You're so fat every time you turn around, it's your birthday."),
-    _(
-        "You're so fat your idea of dieting is deleting the cookies from your internet cache."
-    ),
+    _("You're so fat your idea of dieting is deleting the cookies from your internet cache."),
     _("You're so fat your shadow weighs 35 pounds."),
     _("You're so fat I could tell you to haul ass and you'd have to make two trips."),
     _("You're so fat I took a picture of you at Christmas and it's still printing."),
-    _(
-        "You're so fat I tried to hang a picture of you on my wall, and my wall fell over."
-    ),
+    _("You're so fat I tried to hang a picture of you on my wall, and my wall fell over."),
     _("You're so fat Mount Everest tried to climb you."),
     _("You're so fat you can't even jump to a conclusion."),
     _("You're so fat you can't fit in any timeline."),
@@ -222,9 +196,7 @@ insults: List[str] = [
     _("If your IQ was 3 points higher, you'd be a rock."),
     _("I would insult you but nature did a better job."),
     _("Does your ass get jealous of all the shit that comes out of your mouth?"),
-    _(
-        "If I ate a bowl of alphabet soup, I could shit out a smarter sentence than any of yours."
-    ),
+    _("If I ate a bowl of alphabet soup, I could shit out a smarter sentence than any of yours."),
     _("You're not pretty enough to be this stupid."),
     _(
         "That little voice in the back of your head, telling you you'll never be good enough? It's right."
@@ -236,9 +208,7 @@ insults: List[str] = [
     _("I bite my thumb at you, sir."),
     _("I'd call you a tool, but that would imply you were useful in at least one way."),
     _("I hope you outlive your children."),
-    _(
-        "Are you and your dick having a competition to see who can disappoint me the most?"
-    ),
+    _("Are you and your dick having a competition to see who can disappoint me the most?"),
     _("Yo mamma is so ugly her portraits hang themselves."),
     _("Your birth certificate is an apology from the abortion clinic."),
     _("If you were anymore inbred you'd be a sandwich."),
@@ -248,9 +218,7 @@ insults: List[str] = [
     ),
     _("Don’t feel bad, there are many people who have no talent!"),
     _("I’d like to kick you in the teeth, but why should I improve your looks?"),
-    _(
-        "At least there’s one thing good about your body, it’s not as ugly as your face."
-    ),
+    _("At least there’s one thing good about your body, it’s not as ugly as your face."),
     _("Brains aren’t everything. In fact, in your case they’re nothing."),
     _("If I had a face like yours I’d sue my parents."),
     _("Don’t think, it might sprain your brain."),
@@ -262,9 +230,7 @@ insults: List[str] = [
     _(
         "Your psychiatrist told you you were crazy and when you wanted a second opinion. He said okay, you're ugly too."
     ),
-    _(
-        "Behind every fat person there is a beautiful person. No seriously, your in the way."
-    ),
+    _("Behind every fat person there is a beautiful person. No seriously, your in the way."),
     _("Calling you an idiot would be an insult to all the stupid people."),
     _("Some babies were dropped on their heads but you were clearly thrown at a wall."),
     _("Why don't you go play in the traffic."),
@@ -305,9 +271,7 @@ insults: List[str] = [
     _("Your IQ is actually lower than The Mariana Trench."),
     _("You're so annoying even the flies stay away from your stench."),
     _("Go away, please."),
-    _(
-        "It looks like your face caught fire and someone tried to put it out with a hammer."
-    ),
+    _("It looks like your face caught fire and someone tried to put it out with a hammer."),
     _("Your family tree must be a cactus because everyone on it is a prick."),
     _("Someday you will go far, and I hope you stay there."),
     _("The zoo called. They're wondering how you got out of your cage."),
@@ -347,9 +311,7 @@ insults: List[str] = [
     _("What language are you speaking? Cause it sounds like bullshit."),
     _("You have a room temperature IQ - if the room is in Antarctica."),
     _("I would ask you how old you are but I know you can't count that high."),
-    _(
-        "Do you want to know how I get all these insults? I use something called intelligence."
-    ),
+    _("Do you want to know how I get all these insults? I use something called intelligence."),
     _("I was going to give you a nasty look, but you already have one."),
     _("As an outsider, what do you think of the human race?"),
     _("Oh, what? Sorry. I was trying to imagine you with a personality."),
@@ -403,7 +365,6 @@ class Insult(commands.Cog):
 
         msg = " "
         if user:
-
             if user.id == self.bot.user.id:
                 user = ctx.message.author
                 bot_msg = [

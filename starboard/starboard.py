@@ -1,9 +1,9 @@
 import asyncio
-import logging
 from datetime import timedelta
 from typing import Dict, Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
@@ -14,7 +14,7 @@ from .events import StarboardEvents
 from .starboard_entry import FakePayload, StarboardEntry
 
 _ = Translator("Starboard", __file__)
-log = logging.getLogger("red.trusty-cogs.Starboard")
+log = getLogger("red.trusty-cogs.Starboard")
 
 TimeConverter = commands.converter.TimedeltaConverter(
     minimum=timedelta(days=7), allowed_units=["days", "weeks"], default_unit="days"

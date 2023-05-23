@@ -1,11 +1,11 @@
 import asyncio
-import logging
 import re
 from datetime import datetime, timezone
 from typing import Optional
 
 import discord
 from discord.ext import tasks
+from red_commons.logging import getLogger
 from redbot.core import Config, VersionInfo, checks, commands, version_info
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, pagify
@@ -56,7 +56,7 @@ default_settings = {
 IMAGE_LINKS = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png))")
 
 _ = Translator("Welcome", __file__)
-log = logging.getLogger("red.trusty-cogs.Welcome")
+log = getLogger("red.trusty-cogs.Welcome")
 
 
 @cog_i18n(_)
@@ -189,9 +189,7 @@ class Welcome(Events, commands.Cog):
     @welcomeset_greeting.command()
     @checks.mod_or_permissions(mention_everyone=True)
     @checks.bot_has_permissions(mention_everyone=True)
-    async def allowedmentions(
-        self, ctx: commands.Context, set_to: bool, *allowed
-    ) -> None:
+    async def allowedmentions(self, ctx: commands.Context, set_to: bool, *allowed) -> None:
         """
         Determine the bots allowed mentions for welcomes
 
@@ -201,14 +199,10 @@ class Welcome(Events, commands.Cog):
         Note: This will only function on Red 3.4.0 or higher.
         """
         if not allowed:
-            return await ctx.send(
-                _("You must provide either `users`, `roles` or `everyone`.")
-            )
+            return await ctx.send(_("You must provide either `users`, `roles` or `everyone`."))
         for i in set(allowed):
             if i not in ["everyone", "users", "roles"]:
-                return await ctx.send(
-                    _("You must provide either `users`, `roles` or `everyone`.")
-                )
+                return await ctx.send(_("You must provide either `users`, `roles` or `everyone`."))
         if (
             "everyone" in set(allowed)
             or "roles" in set(allowed)
@@ -229,9 +223,7 @@ class Welcome(Events, commands.Cog):
         )
 
     @welcomeset_greeting.command(name="grouped")
-    async def welcomeset_greeting_grouped(
-        self, ctx: commands.Context, grouped: bool
-    ) -> None:
+    async def welcomeset_greeting_grouped(self, ctx: commands.Context, grouped: bool) -> None:
         """Set whether to group welcome messages"""
         await self.config.guild(ctx.guild).GROUPED.set(grouped)
         if grouped:
@@ -240,9 +232,7 @@ class Welcome(Events, commands.Cog):
             await ctx.send(_("I will no longer group welcomes."))
 
     @welcomeset_greeting.command(name="add")
-    async def welcomeset_greeting_add(
-        self, ctx: commands.Context, *, format_msg: str
-    ) -> None:
+    async def welcomeset_greeting_add(self, ctx: commands.Context, *, format_msg: str) -> None:
         """
         Adds a welcome message format for the guild to be chosen at random
 
@@ -325,15 +315,11 @@ class Welcome(Events, commands.Cog):
         guild_settings = not guild_settings
         if guild_settings:
             await ctx.send(
-                _(
-                    "I will now delete the previous welcome message when a new user joins."
-                )
+                _("I will now delete the previous welcome message when a new user joins.")
             )
         else:
             await ctx.send(
-                _(
-                    "I will stop deleting the previous welcome message when a new user joins."
-                )
+                _("I will stop deleting the previous welcome message when a new user joins.")
             )
         await self.config.guild(guild).DELETE_PREVIOUS_GREETING.set(guild_settings)
 
@@ -348,19 +334,13 @@ class Welcome(Events, commands.Cog):
         guild_settings = await self.config.guild(guild).JOINED_TODAY()
         guild_settings = not guild_settings
         if guild_settings:
-            await ctx.send(
-                _("I will now show how many people join the server each day.")
-            )
+            await ctx.send(_("I will now show how many people join the server each day."))
         else:
-            await ctx.send(
-                _("I will stop showing how many people join the server each day.")
-            )
+            await ctx.send(_("I will stop showing how many people join the server each day."))
         await self.config.guild(guild).JOINED_TODAY.set(guild_settings)
 
     @welcomeset_greeting.command(name="minimumage", aliases=["age"])
-    async def welcomeset_greeting_minimum_days(
-        self, ctx: commands.Context, days: int
-    ) -> None:
+    async def welcomeset_greeting_minimum_days(self, ctx: commands.Context, days: int) -> None:
         """
         Set the minimum number of days a user account must be to show up in the welcome message
 
@@ -371,9 +351,7 @@ class Welcome(Events, commands.Cog):
             days = 0
         await self.config.guild(guild).MINIMUM_DAYS.set(days)
         await ctx.send(
-            _("I will now show users joining who are {days} days old.").format(
-                days=days
-            )
+            _("I will now show users joining who are {days} days old.").format(days=days)
         )
 
     @welcomeset_greeting.command(name="filter")
@@ -406,9 +384,7 @@ class Welcome(Events, commands.Cog):
                 )
         else:
             await ctx.send(
-                _(
-                    "I will not post welcome messages for usernames that match cores filter."
-                )
+                _("I will not post welcome messages for usernames that match cores filter.")
             )
             if not has_filter:
                 await ctx.send(
@@ -458,9 +434,7 @@ class Welcome(Events, commands.Cog):
             return
         guild_settings = channel.id
         await self.config.guild(guild).CHANNEL.set(guild_settings)
-        msg = _("I will now send welcome messages to {channel}").format(
-            channel=channel.mention
-        )
+        msg = _("I will now send welcome messages to {channel}").format(channel=channel.mention)
         await ctx.send(msg)
 
     @welcomeset_greeting.command()
@@ -477,9 +451,7 @@ class Welcome(Events, commands.Cog):
 
     @welcomeset_goodbye.command(name="allowedmentions")
     @checks.mod_or_permissions(mention_everyone=True)
-    async def goodbye_allowedmentions(
-        self, ctx: commands.Context, set_to: bool, *allowed
-    ) -> None:
+    async def goodbye_allowedmentions(self, ctx: commands.Context, set_to: bool, *allowed) -> None:
         """
         Determine the bots allowed mentions for welcomes
 
@@ -489,14 +461,10 @@ class Welcome(Events, commands.Cog):
         Note: This will only function on Red 3.4.0 or higher.
         """
         if not allowed:
-            return await ctx.send(
-                _("You must provide either `users`, `roles` or `everyone`.")
-            )
+            return await ctx.send(_("You must provide either `users`, `roles` or `everyone`."))
         for i in set(allowed):
             if i not in ["everyone", "users", "roles"]:
-                return await ctx.send(
-                    _("You must provide either `users`, `roles` or `everyone`.")
-                )
+                return await ctx.send(_("You must provide either `users`, `roles` or `everyone`."))
         if (
             "everyone" in set(allowed)
             or "roles" in set(allowed)
@@ -517,9 +485,7 @@ class Welcome(Events, commands.Cog):
         )
 
     @welcomeset_goodbye.command(name="add")
-    async def welcomeset_goodbye_add(
-        self, ctx: commands.Context, *, format_msg: str
-    ) -> None:
+    async def welcomeset_goodbye_add(self, ctx: commands.Context, *, format_msg: str) -> None:
         """
         Adds a goodbye message format for the guild to be chosen at random
 
@@ -590,9 +556,7 @@ class Welcome(Events, commands.Cog):
         if guild_settings:
             await ctx.send(_("I will now say goodbye when a member leaves the server."))
         else:
-            await ctx.send(
-                _("I will no longer say goodbye to members leaving the server.")
-            )
+            await ctx.send(_("I will no longer say goodbye to members leaving the server."))
         await self.config.guild(guild).LEAVE_ON.set(guild_settings)
 
     @welcomeset_goodbye.command(name="channel")
@@ -610,9 +574,7 @@ class Welcome(Events, commands.Cog):
             await ctx.send(msg)
             return
         await self.config.guild(guild).LEAVE_CHANNEL.set(channel.id)
-        msg = _("I will now send goodbye messages to {channel}").format(
-            channel=channel.mention
-        )
+        msg = _("I will now send goodbye messages to {channel}").format(channel=channel.mention)
         await ctx.send(msg)
 
     @welcomeset_goodbye.command(name="deleteprevious")
@@ -624,14 +586,10 @@ class Welcome(Events, commands.Cog):
         guild_settings = await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE()
         guild_settings = not guild_settings
         if guild_settings:
-            await ctx.send(
-                _("I will now delete the previous goodbye message when user leaves.")
-            )
+            await ctx.send(_("I will now delete the previous goodbye message when user leaves."))
         else:
             await ctx.send(
-                _(
-                    "I will stop deleting the previous goodbye message when a user leaves."
-                )
+                _("I will stop deleting the previous goodbye message when a user leaves.")
             )
         await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE.set(guild_settings)
 
@@ -711,9 +669,7 @@ class Welcome(Events, commands.Cog):
         await ctx.send(msg)
 
     @welcomeset.command()
-    async def whisper(
-        self, ctx: commands.Context, choice: Optional[str] = None
-    ) -> None:
+    async def whisper(self, ctx: commands.Context, choice: Optional[str] = None) -> None:
         """Sets whether or not a DM is sent to the new user
 
         Options:
@@ -803,9 +759,7 @@ class Welcome(Events, commands.Cog):
         await ctx.tick()
 
     @_embed.command()
-    async def thumbnail(
-        self, ctx: commands.Context, link: Optional[str] = None
-    ) -> None:
+    async def thumbnail(self, ctx: commands.Context, link: Optional[str] = None) -> None:
         """
         Set the embed thumbnail image
 
@@ -819,9 +773,7 @@ class Welcome(Events, commands.Cog):
         if link is not None:
             link_search = IMAGE_LINKS.search(link)
             if link_search:
-                await self.config.guild(ctx.guild).EMBED_DATA.thumbnail.set(
-                    link_search.group(0)
-                )
+                await self.config.guild(ctx.guild).EMBED_DATA.thumbnail.set(link_search.group(0))
                 await ctx.tick()
             elif link in ["member", "user", "avatar"]:
                 await self.config.guild(ctx.guild).EMBED_DATA.thumbnail.set("avatar")
@@ -834,9 +786,7 @@ class Welcome(Events, commands.Cog):
                 await ctx.tick()
             else:
                 await ctx.send(
-                    _(
-                        "That's not a valid option. You must provide a link, `avatar` or `server`."
-                    )
+                    _("That's not a valid option. You must provide a link, `avatar` or `server`.")
                 )
         else:
             await self.config.guild(ctx.guild).EMBED_DATA.thumbnail.set(None)
@@ -857,9 +807,7 @@ class Welcome(Events, commands.Cog):
         if link is not None:
             link_search = IMAGE_LINKS.search(link)
             if link_search:
-                await self.config.guild(ctx.guild).EMBED_DATA.icon_url.set(
-                    link_search.group(0)
-                )
+                await self.config.guild(ctx.guild).EMBED_DATA.icon_url.set(link_search.group(0))
                 await ctx.tick()
             elif link in ["author", "avatar"]:
                 await self.config.guild(ctx.guild).EMBED_DATA.icon_url.set("avatar")
@@ -872,9 +820,7 @@ class Welcome(Events, commands.Cog):
                 await ctx.tick()
             else:
                 await ctx.send(
-                    _(
-                        "That's not a valid option. You must provide a link, `avatar` or `server`."
-                    )
+                    _("That's not a valid option. You must provide a link, `avatar` or `server`.")
                 )
         else:
             await self.config.guild(ctx.guild).EMBED_DATA.icon_url.set(None)
@@ -888,9 +834,7 @@ class Welcome(Events, commands.Cog):
         pass
 
     @_image.command(name="greeting")
-    async def image_greeting(
-        self, ctx: commands.Context, link: Optional[str] = None
-    ) -> None:
+    async def image_greeting(self, ctx: commands.Context, link: Optional[str] = None) -> None:
         """
         Set the embed image link for greetings
 
@@ -904,9 +848,7 @@ class Welcome(Events, commands.Cog):
         if link is not None:
             link_search = IMAGE_LINKS.search(link)
             if link_search:
-                await self.config.guild(ctx.guild).EMBED_DATA.image.set(
-                    link_search.group(0)
-                )
+                await self.config.guild(ctx.guild).EMBED_DATA.image.set(link_search.group(0))
                 await ctx.tick()
             elif link in ["author", "avatar"]:
                 await self.config.guild(ctx.guild).EMBED_DATA.image.set("avatar")
@@ -919,18 +861,14 @@ class Welcome(Events, commands.Cog):
                 await ctx.tick()
             else:
                 await ctx.send(
-                    _(
-                        "That's not a valid option. You must provide a link, `avatar` or `server`."
-                    )
+                    _("That's not a valid option. You must provide a link, `avatar` or `server`.")
                 )
         else:
             await self.config.guild(ctx.guild).EMBED_DATA.image.set(None)
             await ctx.send(_("Greeting image cleared."))
 
     @_image.command(name="goodbye")
-    async def image_goodbye(
-        self, ctx: commands.Context, link: Optional[str] = None
-    ) -> None:
+    async def image_goodbye(self, ctx: commands.Context, link: Optional[str] = None) -> None:
         """
         Set the embed image link for goodbyes
 
@@ -949,23 +887,17 @@ class Welcome(Events, commands.Cog):
                 )
                 await ctx.tick()
             elif link in ["author", "avatar"]:
-                await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set(
-                    "avatar"
-                )
+                await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set("avatar")
                 await ctx.tick()
             elif link in ["server", "guild"]:
                 await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set("guild")
                 await ctx.tick()
             elif link == "splash":
-                await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set(
-                    "splash"
-                )
+                await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set("splash")
                 await ctx.tick()
             else:
                 await ctx.send(
-                    _(
-                        "That's not a valid option. You must provide a link, `avatar` or `server`."
-                    )
+                    _("That's not a valid option. You must provide a link, `avatar` or `server`.")
                 )
         else:
             await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set(None)

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -10,6 +9,7 @@ from typing import TYPE_CHECKING, Dict, List, Literal, NamedTuple, Optional, Uni
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 from redbot.vendored.discord.ext import menus
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.trusty-cogs.Hockey")
+log = getLogger("red.trusty-cogs.Hockey")
 
 
 class StreakType(Enum):
@@ -532,9 +532,8 @@ class Standings:
             guild = bot.get_guild(guild_id)
             if guild is None:
                 continue
-            log.debug(guild.name)
+            log.verbose("post_automatic_standings, guild name: ", guild.name)
             if data["post_standings"]:
-
                 search = data["standings_type"]
                 if search is None:
                     continue

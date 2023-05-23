@@ -1,13 +1,13 @@
-import logging
 from typing import Dict, Optional, Set
 
 import discord
+from red_commons.logging import getLogger
 from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import humanize_list
 
-log = logging.getLogger("red.trusty-cogs.Fenrir")
+log = getLogger("red.trusty-cogs.Fenrir")
 
 
 class Fenrir(commands.Cog):

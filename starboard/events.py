@@ -1,10 +1,10 @@
 import asyncio
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Literal, Union, cast
 
 import discord
 from discord.utils import snowflake_time
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
@@ -14,7 +14,7 @@ from redbot.core.utils.chat_formatting import humanize_timedelta
 from .starboard_entry import FakePayload, StarboardEntry, StarboardMessage
 
 _ = Translator("Starboard", __file__)
-log = logging.getLogger("red.trusty-cogs.Starboard")
+log = getLogger("red.trusty-cogs.Starboard")
 
 
 @cog_i18n(_)
@@ -364,23 +364,29 @@ class StarboardEvents:
                                     if snowflake_time(message.original_message) < to_purge:
                                         to_rem.append(message_ids)
                             for m in to_rem:
-                                log.debug(f"Removing {m}")
+                                log.verbose("Removing %s", m)
                                 del starboard.messages[m]
                                 total_pruned += 1
                             for m in to_rem_index:
                                 del starboard.starboarded_messages[m]
                             if len(to_rem) > 0:
                                 log.info(
-                                    f"Starboard pruned {len(to_rem)} messages that are "
-                                    f"{humanize_timedelta(timedelta=purge)} old from "
-                                    f"{guild.name} ({guild.id})"
+                                    "Starboard pruned %s messages that are "
+                                    "%s old from "
+                                    "%s (%s)",
+                                    len(to_rem),
+                                    humanize_timedelta(timedelta=purge),
+                                    guild.name,
+                                    guild.id,
                                 )
                         except Exception:
                             log.exception("Error trying to clenaup old starboard messages.")
                 await self._save_starboards(guild)
             if total_pruned:
                 log.info(
-                    f"Starboard has pruned {total_pruned} messages and ignored {guilds_ignored} guilds."
+                    "Starboard has pruned %s messages and ignored %s guilds.",
+                    total_pruned,
+                    guilds_ignored,
                 )
             # Sleep 1 day but also run on cog reload
             await asyncio.sleep(60 * 60 * 24)
@@ -441,18 +447,18 @@ class StarboardEvents:
         if getattr(payload, "event_type", None) == "REACTION_ADD":
             if (user_id := getattr(payload, "user_id", 0)) not in starboard_msg.reactions:
                 starboard_msg.reactions.append(user_id)
-                log.debug("Adding user in _loop_messages")
+                log.verbose("Adding user (%s) in _loop_messages", user_id)
                 starboard.stars_added += 1
         else:
             if (user_id := getattr(payload, "user_id", 0)) in starboard_msg.reactions:
                 starboard_msg.reactions.remove(user_id)
-                log.debug("Removing user in _loop_messages")
+                log.verbose("Removing user (%s) in _loop_messages", user_id)
                 starboard.stars_added -= 1
 
         if not starboard_msg.new_message or not starboard_msg.new_channel:
             return starboard_msg
         count = len(starboard_msg.reactions)
-        log.debug(f"Existing {count=} {starboard.threshold=}")
+        log.debug("Existing count=%s starboard.threshold=%s", count, starboard.threshold)
         if count < starboard.threshold:
             try:
                 index_key = f"{starboard_msg.new_channel}-{starboard_msg.new_message}"

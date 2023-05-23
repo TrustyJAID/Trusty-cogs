@@ -1,10 +1,9 @@
-import logging
-
 from dashboard.rpc.utils import rpccheck
+from red_commons.logging import getLogger
 from redbot.core.bot import Red
 from redbot.core.commands import commands
 
-log = logging.getLogger("red.trusty-cogs.spotify")
+log = getLogger("red.trusty-cogs.spotify")
 
 
 class DashboardRPC_Spotify:
@@ -29,7 +28,7 @@ class DashboardRPC_Spotify:
             return {"status": 0, "message": "Unknown user."}
         if not self.cog._credentials:
             return {"status": 0, "message": "Bot owner has not set credentials."}
-        log.debug(user)
+        log.verbose("DashboardRPC_Spotify user: %s", user)
         try:
             auth = self.cog.temp_cache[userobj.id]
         except KeyError:

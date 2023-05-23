@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
@@ -16,7 +16,7 @@ from .menus import BaseMenu, SelectMenuPages, SelectOptionPages
 
 roletools = RoleToolsMixin.roletools
 
-log = logging.getLogger("red.Trusty-cogs.RoleTools")
+log = getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
 
 
@@ -319,7 +319,7 @@ class RoleToolsSelect(RoleToolsMixin):
     async def initialize_select(self) -> None:
         for guild_id, settings in self.settings.items():
             for select_name, select_data in settings["select_menus"].items():
-                log.debug(f"Adding Option {select_name}")
+                log.verbose("Adding Option %s", select_name)
                 options = []
                 disabled = []
                 for option_name in select_data["options"]:

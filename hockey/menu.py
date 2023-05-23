@@ -1,8 +1,8 @@
-import logging
 from datetime import datetime
 from typing import Any, List, Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
@@ -28,7 +28,7 @@ from .player import Player, SimplePlayer
 from .schedule import Schedule, ScheduleList
 
 _ = Translator("Hockey", __file__)
-log = logging.getLogger("red.trusty-cogs.hockey")
+log = getLogger("red.trusty-cogs.hockey")
 
 
 class GamesMenu(discord.ui.View):
@@ -225,7 +225,7 @@ class PlayerPages(menus.ListPageSource):
 
     async def format_page(self, view: discord.ui.View, player: SimplePlayer) -> discord.Embed:
         # player = await Player.from_id(page, session=view.cog.session)
-        log.debug(player)
+        log.trace("PlayerPages player: %s", player)
         player = await player.get_full_stats(self.season, session=view.cog.session)
         em = player.get_embed()
         em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")

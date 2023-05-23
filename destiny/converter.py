@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import re
 from datetime import datetime
 from enum import Enum, EnumMeta
@@ -9,13 +8,14 @@ from typing import List, Optional, Union
 import discord
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
 _ = Translator("Destiny", __file__)
 
-log = logging.getLogger("red.trusty-cogs.Destiny")
+log = getLogger("red.trusty-cogs.Destiny")
 
 STRING_VAR_RE = re.compile(r"{var:(?P<hash>\d+)}")
 
@@ -580,7 +580,6 @@ class SearchInfo(Converter):
     """
 
     async def convert(self, ctx: commands.Context, argument: str) -> Optional[bool]:
-
         possible_results = {
             "lore": {"code": False, "alt": ["lore"]},
             "details": {

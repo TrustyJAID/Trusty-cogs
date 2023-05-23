@@ -1,8 +1,8 @@
 import asyncio
-import logging
 from typing import Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import Config, checks, commands, modlog
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
@@ -11,7 +11,7 @@ from .eventmixin import CommandPrivs, EventChooser, EventMixin
 from .settings import inv_settings
 
 _ = Translator("ExtendedModLog", __file__)
-logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")
+logger = getLogger("red.trusty-cogs.ExtendedModLog")
 
 
 @cog_i18n(_)
@@ -57,7 +57,6 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 if entry not in data:
                     all_data[guild_id][entry] = inv_settings[entry]
                 if type(default) == dict:
-
                     for key, _default in inv_settings[entry].items():
                         if not isinstance(all_data[guild_id][entry], dict):
                             all_data[guild_id][entry] = default

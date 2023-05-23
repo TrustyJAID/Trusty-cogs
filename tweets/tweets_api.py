@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import logging
 import re
 from datetime import datetime
 from typing import Dict, List, Optional, Union
@@ -8,6 +7,7 @@ from typing import Dict, List, Optional, Union
 import aiohttp
 import discord
 import tweepy
+from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
@@ -18,7 +18,7 @@ from .tweet_entry import TweetEntry
 
 _ = Translator("Tweets", __file__)
 
-log = logging.getLogger("red.trusty-cogs.Tweets")
+log = getLogger("red.trusty-cogs.Tweets")
 
 USER_FIELDS = [
     "created_at",
@@ -130,7 +130,7 @@ class TweetListener(AsyncStreamingClient):
 
     async def on_connection_error(self, error: Exception = None):
         if error is not None:
-            log.error(f"Error on Tweet stream connection attempt - {error}")
+            log.error("Error on Tweet stream connection attempt - %s", error)
 
     async def on_keep_alive(self):
         if "Keep-Alive" not in self.error_counts:
@@ -183,9 +183,9 @@ class TweetListener(AsyncStreamingClient):
                     error_title=error_title, error_details=error_details, link_info=error_type
                 )
                 if error_title == "operational-disconnect":
-                    log.info(error_msg)
+                    log.warning(error_msg)
                 else:
-                    log.error(error_msg)
+                    log.warning(error_msg)
                     full_msg += error_msg
                 if full_msg:
                     self.bot.dispatch("tweet_error", full_msg)
@@ -198,9 +198,9 @@ class TweetListener(AsyncStreamingClient):
                 error_title=error_title, error_details=error_details, link_info=error_type
             )
             if error_title == "operational-disconnect":
-                log.info(error_msg)
+                log.warning(error_msg)
             else:
-                log.error(error_msg)
+                log.warning(error_msg)
                 self.bot.dispatch("tweet_error", error_msg)
 
     async def on_closed(self, resp: aiohttp.ClientResponse):
@@ -219,7 +219,7 @@ class TweetListener(AsyncStreamingClient):
 
     async def on_disconnect(self) -> None:
         # self.last_disconnect = datetime.now().timestamp()
-        log.info(_("The Tweet stream has disconnected."))
+        log.info("The Tweet stream has disconnected.")
 
 
 class TweetsAPI:
@@ -260,7 +260,7 @@ class TweetsAPI:
                     log.info("Tweets stream done or cancelled, restarting")
                     self.mystream.disconnect()
                     self.mystream.start()
-            log.debug(f"tweets waiting {base_sleep * count} seconds.")
+            log.debug("tweets waiting %s seconds.", base_sleep * count)
             await asyncio.sleep(base_sleep * count)
 
     async def refresh_token(self, user: discord.abc.User) -> dict:
@@ -553,7 +553,7 @@ class TweetsAPI:
                 if channel is None:
                     continue
                 if nsfw and not channel.is_nsfw():
-                    log.info(f"Ignoring tweet from {user} because it is labeled as NSFW.")
+                    log.info("Ignoring tweet from %s because it is labeled as NSFW.", user)
                     continue
                 if str(user.id) in data.get("followed_accounts", {}):
                     tasks.append(

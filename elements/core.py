@@ -1,14 +1,14 @@
-import logging
 from typing import Any, List, NamedTuple, Optional, Union
 
 import discord
 import mendeleev
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.vendored.discord.ext import menus
 
 from .data import IMAGES, LATTICES, UNITS
 
-log = logging.getLogger("red.trusty-cogs.elements")
+log = getLogger("red.trusty-cogs.elements")
 
 
 class ElementConverter(discord.app_commands.Transformer):
@@ -61,7 +61,7 @@ class MeasurementConverter(discord.app_commands.Transformer):
 
     @classmethod
     async def convert(cls, ctx: commands.Context, argument: str) -> Optional[Measurements]:
-        log.debug("this converter is being hit")
+        log.trace("MeasurementConverter is being hit")
         result = None
         if argument.lower() in UNITS:
             value = argument.lower()
@@ -103,25 +103,25 @@ class MeasurementConverter(discord.app_commands.Transformer):
 def get_xray_wavelength(element: mendeleev.models.Element) -> str:
     try:
         ka = 1239.84 / (
-            13.6057 * ((element.atomic_number - 1) ** 2) * ((1 / 1 ** 2) - (1 / 2 ** 2))
+            13.6057 * ((element.atomic_number - 1) ** 2) * ((1 / 1**2) - (1 / 2**2))
         )
     except Exception:
         ka = ""
     try:
         kb = 1239.84 / (
-            13.6057 * ((element.atomic_number - 1) ** 2) * ((1 / 1 ** 2) - (1 / 3 ** 2))
+            13.6057 * ((element.atomic_number - 1) ** 2) * ((1 / 1**2) - (1 / 3**2))
         )
     except Exception:
         kb = ""
     try:
         la = 1239.84 / (
-            13.6057 * ((element.atomic_number - 7.4) ** 2) * ((1 / 1 ** 2) - (1 / 2 ** 3))
+            13.6057 * ((element.atomic_number - 7.4) ** 2) * ((1 / 1**2) - (1 / 2**3))
         )
     except Exception:
         la = ""
     try:
         lb = 1239.84 / (
-            13.6057 * ((element.atomic_number - 7.4) ** 2) * ((1 / 1 ** 2) - (1 / 2 ** 4))
+            13.6057 * ((element.atomic_number - 7.4) ** 2) * ((1 / 1**2) - (1 / 2**4))
         )
     except Exception:
         lb = ""

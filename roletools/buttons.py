@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
@@ -15,7 +15,7 @@ from .menus import BaseMenu, ButtonRolePages
 
 roletools = RoleToolsMixin.roletools
 
-log = logging.getLogger("red.Trusty-cogs.RoleTools")
+log = getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
 
 
@@ -189,8 +189,7 @@ class RoleToolsButtons(RoleToolsMixin):
     async def initialize_buttons(self):
         for guild_id, settings in self.settings.items():
             for button_name, button_data in settings["buttons"].items():
-                log.debug(f"Adding Button {button_name}")
-
+                log.verbose("Adding Button %s", button_name)
                 role_id = button_data["role_id"]
                 emoji = button_data["emoji"]
                 if emoji is not None:

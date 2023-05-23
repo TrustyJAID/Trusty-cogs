@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import logging
 import multiprocessing as mp
 import os
 import random
@@ -12,6 +11,7 @@ from typing import Any, Dict, List, Literal, Optional, Pattern, Tuple, cast
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands, modlog
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
@@ -43,7 +43,7 @@ except ImportError:
     import re
 
 
-log = logging.getLogger("red.trusty-cogs.ReTrigger")
+log = getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
 
 RE_CTX: Pattern = re.compile(r"{([^}]+)\}")
@@ -237,7 +237,7 @@ class TriggerHandler(ReTriggerMixin):
         if await self.bot.cog_disabled_in_guild(self, message.guild):
             return
         if getattr(message, "retrigger", False):
-            log.debug("A ReTrigger dispatched message, ignoring.")
+            log.trace("A ReTrigger dispatched message, ignoring.")
             return
         await self.check_triggers(message, False)
 
@@ -264,7 +264,7 @@ class TriggerHandler(ReTriggerMixin):
             message = await channel.fetch_message(int(payload.data["id"]))
         except (discord.errors.Forbidden, discord.errors.NotFound):
             log.debug(
-                _("I don't have permission to read channel history or cannot find the message.")
+                "I don't have permission to read channel history or cannot find the message."
             )
             return
         except Exception:
@@ -440,25 +440,43 @@ class TriggerHandler(ReTriggerMixin):
         except mp.TimeoutError:
             error_msg = (
                 "ReTrigger: regex process took too long. Removing from memory "
-                f"{guild.name} ({guild.id}) Author {trigger.author} "
-                f"Offending regex `{trigger.regex.pattern}` Name: {trigger.name}"
+                "%s (%s) Author %s "
+                "Offending regex `%s` Name: %s"
             )
-            log.warning(error_msg)
+            log.warning(
+                error_msg,
+                guild.name,
+                guild.id,
+                trigger.author,
+                trigger.regex.pattern,
+                trigger.name,
+            )
             return (False, [])
             # we certainly don't want to be performing multiple triggers if this happens
         except asyncio.TimeoutError:
             error_msg = (
                 "ReTrigger: regex asyncio timed out."
-                f"{guild.name} ({guild.id}) Author {trigger.author} "
-                f"Offending regex `{trigger.regex.pattern}` Name: {trigger.name}"
+                "%s (%s) Author %s "
+                "Offending regex `%s` Name: %s"
             )
-            log.warning(error_msg)
+            log.warning(
+                error_msg,
+                guild.name,
+                guild.id,
+                trigger.author,
+                trigger.regex.pattern,
+                trigger.name,
+            )
             return (False, [])
         except ValueError:
             return (False, [])
         except Exception:
             log.error(
-                f"ReTrigger encountered an error {trigger.name} {trigger.regex} in {guild.name} {guild.id}",
+                "ReTrigger encountered an error %s %s in %s %s",
+                trigger.name,
+                trigger.regex,
+                guild.name,
+                guild.id,
                 exc_info=True,
             )
             return (True, [])
@@ -810,9 +828,9 @@ class TriggerHandler(ReTriggerMixin):
                     if await self.config.guild(guild).ban_logs():
                         await self.modlog_action(message, trigger, find, _("Banned"))
                 except discord.errors.Forbidden:
-                    log.debug(error_in, exc_info=True)
+                    log.debug("Discord forbidden error when banning %s", author, exc_info=True)
                 except Exception:
-                    log.error(error_in, exc_info=True)
+                    log.error("Exception when banning %s", author, exc_info=True)
 
         if TriggerResponse.command in trigger.response_type:
             if trigger.multi_payload:
@@ -1031,19 +1049,17 @@ class TriggerHandler(ReTriggerMixin):
                                 try:
                                     os.remove(path)
                                 except Exception:
-                                    msg = _("Error deleting saved image in {guild}").format(
-                                        guild=guild_id
+                                    log.error(
+                                        "Error deleting saved image in %s", guild_id, exc_info=True
                                     )
-                                    log.error(msg, exc_info=True)
                         else:
                             path = str(cog_data_path(self)) + f"/{guild_id}/{image}"
                             try:
                                 os.remove(path)
                             except Exception:
-                                msg = _("Error deleting saved image in {guild}").format(
-                                    guild=guild_id
+                                log.error(
+                                    "Error deleting saved image in %s", guild_id, exc_info=True
                                 )
-                                log.error(msg, exc_info=True)
                     del trigger_list[triggers]
                     del self.triggers[guild_id][trigger_name]
                     return True

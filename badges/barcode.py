@@ -6,11 +6,11 @@ Which is itself a port of python-barcode which is no longer available
 """
 
 import gzip
-import logging
 import os
 import string
 import xml.dom
 
+from red_commons.logging import getLogger
 from redbot.core.data_manager import bundled_data_path
 
 try:
@@ -31,7 +31,7 @@ try:
 except NameError:
     _strbase = str
 
-log = logging.getLogger("red.Trusty-cogs.badges")
+log = getLogger("red.Trusty-cogs.badges")
 
 
 def mm2px(mm, dpi=300):
@@ -424,7 +424,6 @@ else:
 
 
 class Barcode(object):
-
     name = ""
 
     raw = None

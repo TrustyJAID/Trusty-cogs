@@ -1,11 +1,11 @@
-import logging
 from typing import Optional
 
+from red_commons.logging import getLogger
 from redbot.core import Config, checks, commands
 
 from .api import Client, HueError
 
-log = logging.getLogger("red.trusty-cogs.hue")
+log = getLogger("red.trusty-cogs.hue")
 
 
 class Hue(commands.Cog):

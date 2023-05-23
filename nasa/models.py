@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -10,6 +9,7 @@ from typing import Dict, List, NamedTuple, Optional, Union
 import aiohttp
 import discord
 import skyfield
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
@@ -18,7 +18,7 @@ from skyfield.toposlib import wgs84
 
 _ = Translator("NASA", __file__)
 
-log = logging.getLogger("red.trusty-cogs.NASACog")
+log = getLogger("red.trusty-cogs.NASACog")
 
 HEADERS = {"User-Agent": "Trusty-cogs NASA cog for Red-DiscordBot"}
 
@@ -790,8 +790,8 @@ class Event:
         lon = self.geometry[-1].coordinates[0]
         lat = self.geometry[-1].coordinates[1]
         date = self.geometry[-1].date
-        row = int((90 - lat) * (2 ** 3) / 288)
-        col = int((180 + lon) * (2 ** 3) / 288)
+        row = int((90 - lat) * (2**3) / 288)
+        col = int((180 + lon) * (2**3) / 288)
         date_str = date.strftime("%Y-%m-%d")
         return f"https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/{date_str}/250m/3/{row}/{col}.jpg"
 
@@ -840,7 +840,7 @@ class XYZPoint(NamedTuple):
 
     @property
     def distance(self):
-        return sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
+        return sqrt(self.x**2 + self.y**2 + self.z**2)
 
 
 class Quaternion(NamedTuple):

@@ -1,15 +1,15 @@
 import asyncio
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import bank, commands
 from redbot.core.i18n import Translator
 
 from .abc import RoleToolsMixin
 
-log = logging.getLogger("red.Trusty-cogs.RoleTools")
+log = getLogger("red.Trusty-cogs.RoleTools")
 
 _ = Translator("Roletools", __file__)
 
@@ -59,11 +59,11 @@ class RoleToolsEvents(RoleToolsMixin):
             if member.bot:
                 return
             if await self.check_guild_verification(member, guild):
-                log.debug("Ignoring user due to verification check.")
+                log.debug("Ignoring user (%s) due to verification check.", member.id)
                 return
             if getattr(member, "pending", False):
                 return
-            log.debug(f"Adding role to {member.name} in {member.guild}")
+            log.debug("Adding role to %s in %s", member.name, member.guild)
             await self.give_roles(member, [role], _("Reaction Role"))
 
     @commands.Cog.listener()
@@ -93,7 +93,7 @@ class RoleToolsEvents(RoleToolsMixin):
                 return
             if member.bot:
                 return
-            log.debug(f"Removing role from {member.name} in {member.guild}")
+            log.debug("Removing role from %s in %s", member.name, member.guild)
             await self.remove_roles(member, [role], _("Reaction Role"))
 
     @commands.Cog.listener()
@@ -148,17 +148,17 @@ class RoleToolsEvents(RoleToolsMixin):
             else timedelta(minutes=10)
         )
         if guild.verification_level.value >= 2 and allowed_discord <= timedelta(minutes=5):
-            log.debug(f"Waiting 5 minutes for {member.name} in {guild}")
+            log.debug("Waiting 5 minutes for %s in %s", member.name, guild)
             return 300 - int(allowed_discord.total_seconds())
         elif guild.verification_level.value >= 3 and allowed_server <= timedelta(minutes=10):
-            log.debug(f"Waiting 10 minutes for {member.name} in {guild}")
+            log.debug("Waiting 10 minutes for %s in %s", member.name, guild)
             return 600 - int(allowed_server.total_seconds())
         return False
 
     async def wait_for_verification(self, member: discord.Member, guild: discord.Guild) -> None:
         wait = await self.check_guild_verification(member, guild)
         if wait:
-            log.debug(f"Waiting {wait} seconds before allowing the user to have a role")
+            log.debug("Waiting %s seconds before allowing the user to have a role", wait)
             await asyncio.sleep(int(wait))
 
     async def check_atomicity(self, guild: discord.Guild) -> bool:
@@ -330,7 +330,9 @@ class RoleToolsEvents(RoleToolsMixin):
                         await bank.withdraw_credits(member, cost)
                     except Exception:
                         log.info(
-                            f"Could not assign {role} to {member} as they don't have enough credits."
+                            "Could not assign %s to %s as they don't have enough credits.",
+                            role,
+                            member,
                         )
                         ret.append(
                             RoleChangeResponse(role, _("You do not have enough credits."), False)
@@ -338,7 +340,9 @@ class RoleToolsEvents(RoleToolsMixin):
                         continue
                 else:
                     log.info(
-                        f"Could not assign {role} to {member} as they don't have enough credits."
+                        "Could not assign %s to %s as they don't have enough credits.",
+                        role,
+                        member,
                     )
                     ret.append(
                         RoleChangeResponse(role, _("You do not have enough credits."), False)
@@ -347,7 +351,7 @@ class RoleToolsEvents(RoleToolsMixin):
             if (inclusive := await self.config.role(role).inclusive_with()) and check_inclusive:
                 inclusive_roles = []
                 for role_id in inclusive:
-                    log.debug(role_id)
+                    log.verbose("role_id: %s", role_id)
                     r = guild.get_role(role_id)
                     if r is None:
                         async with self.config.role(role).inclusive_with() as inclusive_with:
@@ -391,12 +395,12 @@ class RoleToolsEvents(RoleToolsMixin):
                 if atomic:
                     await member.remove_roles(*exclusive_roles, reason=_("Exclusive Roles"))
             to_add.add(role)
-        log.debug(f"Adding {to_add} to {member.name}")
+        log.debug("Adding %s to %s", to_add, member.name)
         if atomic:
-            log.debug("Atomic is true")
+            log.verbose("Atomic is true")
             await member.add_roles(*list(to_add), reason=reason)
         else:
-            log.debug("Atomic is false")
+            log.verbose("Atomic is false")
             await member.edit(roles=list(to_add), reason=reason)
         return ret
 
@@ -486,7 +490,7 @@ class RoleToolsEvents(RoleToolsMixin):
                 to_rem.add(role)
             else:
                 to_rem.remove(role)
-        log.debug(f"{to_rem}")
+        log.verbose("remove_roles  to_rem: %s", to_rem)
         if atomic:
             await member.remove_roles(*list(to_rem), reason=reason)
         else:

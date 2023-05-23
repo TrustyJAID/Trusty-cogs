@@ -1,16 +1,16 @@
 import datetime
-import logging
 from typing import Dict, List, Optional, Union
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.bot import Red
 
 from .coin import Coin, CoinBase
 from .errors import CoinMarketCapError
 
-log = logging.getLogger("red.Trusty-cogs.Conversions")
+log = getLogger("red.Trusty-cogs.Conversions")
 
 
 class Conversions(commands.Cog):

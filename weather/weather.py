@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import logging
 from typing import Literal, Optional
 
 import aiohttp
 import discord
+from red_commons.logging import getLogger
 from redbot.core import Config, checks, commands, i18n
 from redbot.core.utils.views import SetApiView
 
@@ -13,7 +13,7 @@ from .menus import BaseMenu, WeatherPages
 
 _ = i18n.Translator("Weather", __file__)
 
-log = logging.getLogger("red.Trusty-cogs.weather")
+log = getLogger("red.Trusty-cogs.weather")
 
 
 @i18n.cog_i18n(_)

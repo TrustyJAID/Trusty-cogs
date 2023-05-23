@@ -1,11 +1,11 @@
-import logging
 from typing import Optional
 
+from red_commons.logging import getLogger
 from redbot import version_info
 from redbot.core import Config, checks, commands, i18n
 from redbot.core.dev_commands import Dev
 
-log = logging.getLogger("red.trusty-cogs.loaddev")
+log = getLogger("red.trusty-cogs.loaddev")
 
 _ = i18n.Translator("LoadDev", __file__)
 
@@ -114,7 +114,7 @@ class LoadDev(commands.Cog):
                     del dev.all_commands[str(command)]
                     command.name = replace_mock
                     dev.all_commands[replace_mock] = command
-                    log.debug(command.name)
+                    log.verbose("load_dev loading command: %s", command.name)
         await self.bot.remove_cog("Dev")
         # remove currently existing dev cog if it's loaded
         await self.bot.add_cog(dev)

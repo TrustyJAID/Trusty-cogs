@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
 import discord
+from red_commons.logging import getLogger
 
 # from discord.ext.commands.errors import BadArgument
 from redbot.core.commands import commands
@@ -17,7 +17,7 @@ from .errors import Destiny2APIError
 BASE_URL = "https://bungie.net"
 
 
-log = logging.getLogger("red.Trusty-cogs.destiny")
+log = getLogger("red.Trusty-cogs.destiny")
 _ = Translator("Destiny", __file__)
 
 
@@ -428,7 +428,7 @@ class PostmasterPages(menus.ListPageSource):
                 pass
 
     async def format_page(self, menu: menus.MenuPages, page: int):
-        log.info(page)
+        log.trace("PostmasterPages %s", page)
         self.current_char = page
         self.current_select = PostmasterSelect(self.postmasters[page])
         msg = ""

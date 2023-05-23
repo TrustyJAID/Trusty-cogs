@@ -1,15 +1,15 @@
-import logging
 import re
 from typing import Pattern, Union
 
 import discord
 from discord.ext.commands.converter import IDConverter, InviteConverter
 from discord.ext.commands.errors import BadArgument
+from red_commons.logging import getLogger
 from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 
-log = logging.getLogger("red.trusty-cogs.inviteblocklist")
+log = getLogger("red.trusty-cogs.inviteblocklist")
 
 _ = Translator("ExtendedModLog", __file__)
 
@@ -77,7 +77,6 @@ class ChannelUserRole(IDConverter):
 
 
 class InviteBlocklist(commands.Cog):
-
     __author__ = ["TrustyJAID"]
     __version__ = "1.1.3"
 
@@ -175,10 +174,9 @@ class InviteBlocklist(commands.Cog):
                 await message.delete()
             except discord.errors.Forbidden:
                 log.error(
-                    _(
-                        "I tried to delete an invite link posted in {guild} "
-                        "but lacked the permission to do so"
-                    ).format(guild=guild.name)
+                    "I tried to delete an invite link posted in %s "
+                    "but lacked the permission to do so",
+                    guild.name,
                 )
             return
         if whitelist := await self.config.guild(message.guild).whitelist():
@@ -191,10 +189,9 @@ class InviteBlocklist(commands.Cog):
                         await message.delete()
                     except discord.errors.Forbidden:
                         log.error(
-                            _(
-                                "I tried to delete an invite link posted in {guild} "
-                                "but lacked the permission to do so"
-                            ).format(guild=guild.name)
+                            "I tried to delete an invite link posted in %s "
+                            "but lacked the permission to do so",
+                            guild.name,
                         )
                     return
             return
@@ -208,10 +205,9 @@ class InviteBlocklist(commands.Cog):
                         await message.delete()
                     except discord.errors.Forbidden:
                         log.error(
-                            _(
-                                "I tried to delete an invite link posted in {guild} "
-                                "but lacked the permission to do so"
-                            ).format(guild=guild.name)
+                            "I tried to delete an invite link posted in %s "
+                            "but lacked the permission to do so",
+                            guild.name,
                         )
                     return
             return

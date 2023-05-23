@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import logging
 from typing import Any, List, Optional
 
 import discord
+from red_commons.logging import getLogger
 
 # from discord.ext.commands.errors import BadArgument
 from redbot.core.commands import commands
@@ -25,7 +25,7 @@ from .models import (
     TLEMember,
 )
 
-log = logging.getLogger("red.Trusty-cogs.NASACog")
+log = getLogger("red.Trusty-cogs.NASACog")
 _ = Translator("NASA", __file__)
 
 
