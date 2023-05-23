@@ -61,7 +61,7 @@ class MeasurementConverter(discord.app_commands.Transformer):
 
     @classmethod
     async def convert(cls, ctx: commands.Context, argument: str) -> Optional[Measurements]:
-        log.verbose("MeasurementConverter is being hit")
+        log.trace("MeasurementConverter is being hit")
         result = None
         if argument.lower() in UNITS:
             value = argument.lower()

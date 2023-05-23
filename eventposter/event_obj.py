@@ -372,7 +372,7 @@ class Event(discord.ui.View):
         self.add_item(self.maybe_button)
         self.add_item(self.leave_button)
         self.select_view = None
-        log.verbose("Event select_options: %s", self.select_options)
+        log.trace("Event select_options: %s", self.select_options)
         if self.select_options:
             self.select_view = PlayerClassSelect(
                 custom_id=f"playerclass-{self.hoster}",
@@ -388,7 +388,7 @@ class Event(discord.ui.View):
         if self.max_slots and len(self.members) >= self.max_slots:
             self.join_button.disabled = True
             self.select_view.disabled = True
-            log.debug("Setting Join Button to %s", self.join_button.disabled)
+            log.trace("Setting Join Button to %s", self.join_button.disabled)
         if self.max_slots and len(self.members) < self.max_slots:
             self.join_button.disabled = False
             self.select_view.disabled = False

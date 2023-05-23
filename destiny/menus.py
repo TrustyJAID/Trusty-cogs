@@ -428,7 +428,7 @@ class PostmasterPages(menus.ListPageSource):
                 pass
 
     async def format_page(self, menu: menus.MenuPages, page: int):
-        log.verbose("PostmasterPages %s", page)
+        log.trace("PostmasterPages %s", page)
         self.current_char = page
         self.current_select = PostmasterSelect(self.postmasters[page])
         msg = ""

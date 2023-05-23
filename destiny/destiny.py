@@ -1038,7 +1038,7 @@ class Destiny(DestinyAPI, commands.Cog):
             name = data["displayProperties"]["name"]
             if current.lower() in name.lower():
                 choices.append(app_commands.Choice(name=name, value=name))
-        log.verbose("parse_search_lore choices: %s", len(choices))
+        log.trace("parse_search_lore choices: %s", len(choices))
         return choices[:25]
 
     @destiny.command(aliases=["whereisxûr"])
@@ -1877,7 +1877,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 if not any(i in v.get("parentNodeHashes", []) for i in weapon_slots):
                     continue
                 presentation_node_hashes.add(int(k))
-            log.debug("Presentation Node %s", presentation_node_hashes)
+            log.trace("Presentation Node %s", presentation_node_hashes)
             msg = ""
             for r_hash, i in weapon_info.items():
                 if not any(h in i.get("parentNodeHashes", []) for h in presentation_node_hashes):

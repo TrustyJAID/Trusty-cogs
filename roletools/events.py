@@ -265,7 +265,7 @@ class RoleToolsEvents(RoleToolsMixin):
         else:
             to_add = set(member.roles)
 
-        log.verbose("Atomic role assignment %s", atomic)
+        log.debug("Atomic role assignment %s", atomic)
 
         for role in roles:
             if role is None or role >= guild.me.top_role:

@@ -343,7 +343,7 @@ class EventMixin:
             and self.settings[guild.id]["message_delete"]["embed"]
         )
         ctx = await self.bot.get_context(message)
-        logger.verbose("_cached_message_delete ctx.valid: %s", ctx.valid)
+        logger.trace("_cached_message_delete ctx.valid: %s", ctx.valid)
         if ctx.valid and self.settings[guild.id]["message_delete"]["ignore_commands"]:
             logger.debug("Ignoring valid command messages.")
             return

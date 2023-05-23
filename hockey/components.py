@@ -250,7 +250,7 @@ class TeamModal(discord.ui.Modal):
         for page in self.view.pages:
             if teams[0].lower() in page.author.name.lower():
                 page_num = self.view.pages.index(page)
-        log.verbose("Setting page number %s %s", page_num, teams[0])
+        log.trace("Setting page number %s %s", page_num, teams[0])
         await self.view.show_page(page_num, interaction=interaction)
 
 

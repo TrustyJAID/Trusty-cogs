@@ -350,7 +350,7 @@ class Hockey(
                     if data["game"] is not None and data["game"].game_start - timedelta(
                         hours=1
                     ) >= datetime.now(timezone.utc):
-                        log.verbose(
+                        log.trace(
                             "Skipping %s @ %s checks until closer to game start.",
                             data["game"].away_team,
                             data["game"].home_team,
@@ -381,7 +381,7 @@ class Hockey(
                         await self.disable_pickems_buttons(game)
                         self.current_games[link]["disabled_buttons"] = True
 
-                    log.verbose(
+                    log.trace(
                         "%s @ %s %s %s - %s",
                         game.away_team,
                         game.home_team,

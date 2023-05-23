@@ -480,7 +480,7 @@ class Bingo(commands.Cog):
                 font=font,
             )
             letter_count += 1
-        log.verbose("_create_bingo_card name: %s", name)
+        log.trace("_create_bingo_card name: %s", name)
         draw.text(
             (350, 200),
             name,

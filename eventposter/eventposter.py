@@ -829,7 +829,7 @@ class EventPoster(commands.Cog):
                 default_slots=data["default_max"]
             )
         if data["cleanup_seconds"] is not None:
-            log.verbose("show_event_settings cleanup_seconds: %s", data["cleanup_seconds"])
+            log.trace("show_event_settings cleanup_seconds: %s", data["cleanup_seconds"])
             msg += _("__Events End After:__ **{time}**\n").format(
                 time=humanize_timedelta(seconds=data["cleanup_seconds"])
             )

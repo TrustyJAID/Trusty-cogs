@@ -297,7 +297,7 @@ class Runescape(commands.Cog):
                 if not data.get("success", True):
                     await ctx.send(error_msg)
                     return
-            log.verbose("runescape_ge data: %s", data)
+            log.trace("runescape_ge data: %s", data)
             embed = discord.Embed(
                 title=f"Runescape GE Results for `{search}`", colour=await ctx.embed_colour()
             )
@@ -365,7 +365,7 @@ class Runescape(commands.Cog):
                 if not data.get("success", True):
                     await ctx.send(error_msg)
                     return
-            log.verbose("osrs_ge data: %s", data)
+            log.trace("osrs_ge data: %s", data)
             embed = discord.Embed(
                 title=f"OldSchool Runescape GE Results for `{search}`",
                 colour=await ctx.embed_colour(),

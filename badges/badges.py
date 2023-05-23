@@ -112,7 +112,7 @@ class Badges(commands.Cog):
         if str(status) == "dnd":
             status = _("MIA")
         barcode = BytesIO()
-        log.verbose("Badges make_template barcode: %s", type(barcode))
+        log.trace("Badges make_template barcode: %s", type(barcode))
         generate("code39", str(user.id), writer=ImageWriter(self), output=barcode)
         barcode = Image.open(barcode)
         barcode = self.remove_white_barcode(barcode)

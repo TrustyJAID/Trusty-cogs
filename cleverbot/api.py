@@ -288,7 +288,7 @@ class CleverbotAPI:
                 is_reply = reference.author.id == self.bot.user.id and ctx.me in message.mentions
         if is_mention:
             text = text[len(ctx.me.display_name) + 2 :]
-            log.verbose("CleverbotAPI text: %s", text)
+            log.trace("CleverbotAPI text: %s", text)
         if not text:
             log.debug("No text to send to cleverbot.")
             return
