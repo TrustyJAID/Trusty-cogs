@@ -132,8 +132,23 @@ class RoleTools(
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
-    async def cog_load(self) -> None:
+    async def load_views(self):
+        self.settings = await self.config.all_guilds()
         await self.bot.wait_until_red_ready()
+        try:
+            await self.initialize_select()
+        except Exception:
+            log.exception("Error initializing Select")
+        try:
+            await self.initialize_buttons()
+        except Exception:
+            log.exception("Error initializing Buttons")
+        for view in self.views.values():
+            self.bot.add_view(view)
+        self._ready.set()
+
+    async def cog_load(self) -> None:
+
         if await self.config.version() < "1.0.1":
             sticky_role_config = Config.get_conf(
                 None, identifier=1358454876, cog_name="StickyRoles"
@@ -169,19 +184,8 @@ class RoleTools(
                             if role.id not in auto_roles:
                                 auto_roles.append(role.id)
             await self.config.version.set("1.0.1")
-
-        self.settings = await self.config.all_guilds()
-        try:
-            await self.initialize_select()
-        except Exception:
-            log.exception("Error initializing Select")
-        try:
-            await self.initialize_buttons()
-        except Exception:
-            log.exception("Error initializing Buttons")
-        for view in self.views.values():
-            self.bot.add_view(view)
-        self._ready.set()
+        loop = asyncio.get_running_loop()
+        loop.create_task(self.load_views())
 
     async def cog_unload(self):
         for view in self.views:
