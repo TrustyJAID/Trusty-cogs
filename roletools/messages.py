@@ -72,9 +72,10 @@ class RoleToolsMessages(RoleToolsMixin):
             new_view.add_item(select)
         for button in buttons:
             new_view.add_item(button)
-        self.views.append(new_view)
+
         msg = await channel.send(content=message, view=new_view)
         message_key = f"{msg.channel.id}-{msg.id}"
+        self.views[message_key] = new_view
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
             for select in menus:
                 select_menus[select.name.lower()]["messages"].append(message_key)
@@ -122,9 +123,9 @@ class RoleToolsMessages(RoleToolsMixin):
             view.add_item(select_menu)
         for button in buttons:
             view.add_item(button)
-        self.views.append(view)
         await message.edit(view=view)
         message_key = f"{message.channel.id}-{message.id}"
+        self.views[message_key] = new_view
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
             for select in menus:
                 if message_key not in select_menus[select.name.lower()]["messages"]:
@@ -169,9 +170,9 @@ class RoleToolsMessages(RoleToolsMixin):
             return
         for select in menus:
             new_view.add_item(select)
-        self.views.append(new_view)
         msg = await channel.send(content=message, view=new_view)
         message_key = f"{msg.channel.id}-{msg.id}"
+        self.views[message_key] = new_view
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
             for select in menus:
                 select_menus[select.name.lower()]["messages"].append(message_key)
@@ -206,9 +207,9 @@ class RoleToolsMessages(RoleToolsMixin):
         view = SelectRoleView(self)
         for select_menu in menus:
             view.add_item(select_menu)
-        self.views.append(view)
         await message.edit(view=view)
         message_key = f"{message.channel.id}-{message.id}"
+        self.views[message_key] = new_view
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
             for select in menus:
                 if message_key not in select_menus[select.name.lower()]["messages"]:
@@ -242,8 +243,8 @@ class RoleToolsMessages(RoleToolsMixin):
         for button in buttons:
             new_view.add_item(button)
         msg = await channel.send(content=message, view=new_view)
-        self.views.append(new_view)
         message_key = f"{msg.channel.id}-{msg.id}"
+        self.views[message_key] = new_view
         async with self.config.guild(ctx.guild).buttons() as saved_buttons:
             for button in buttons:
                 saved_buttons[button.name.lower()]["messages"].append(message_key)
@@ -274,9 +275,9 @@ class RoleToolsMessages(RoleToolsMixin):
         view = ButtonRoleView(self)
         for button in buttons:
             view.add_item(button)
-        self.views.append(view)
         await message.edit(view=view)
         message_key = f"{message.channel.id}-{message.id}"
+        self.views[message_key] = new_view
         async with self.config.guild(ctx.guild).buttons() as saved_buttons:
             for button in buttons:
                 saved_buttons[button.name.lower()]["messages"].append(message_key)

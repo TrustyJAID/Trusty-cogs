@@ -320,7 +320,6 @@ class RoleToolsSelect(RoleToolsMixin):
         for guild_id, settings in self.settings.items():
             for select_name, select_data in settings["select_menus"].items():
                 log.verbose("Adding Option %s", select_name)
-                view = SelectRoleView(self)
                 options = []
                 disabled = []
                 for option_name in select_data["options"]:
@@ -360,9 +359,10 @@ class RoleToolsSelect(RoleToolsMixin):
                 guild = self.bot.get_guild(guild_id)
                 if guild is not None:
                     select.update_options(guild)
-                view.add_item(select)
-                self.bot.add_view(view)
-                self.views.append(view)
+                for message_id in select_data.get("messages", []):
+                    if message_id not in self.views:
+                        self.views[message_id] = SelectRoleView(self)
+                    self.views[message_id].add_item(select)
 
     @roletools.group(name="select", aliases=["selects"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
@@ -451,11 +451,12 @@ class RoleToolsSelect(RoleToolsMixin):
         select_menus.update_options(ctx.guild)
         view = SelectRoleView(self)
         view.add_item(select_menus)
-        self.views.append(view)
+
         msg_str = _("Here is how your select menu will look.")
         msg = await ctx.send(msg_str, view=view)
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
             select_menus[name.lower()]["messages"].append(f"{msg.channel.id}-{msg.id}")
+        self.views[f"{msg.channel.id}-{msg.id}"] = view
 
     @select.command(name="delete", aliases=["del", "remove"])
     async def delete_select_menu(self, ctx: Context, *, name: str) -> None:
@@ -466,7 +467,7 @@ class RoleToolsSelect(RoleToolsMixin):
         """
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
             if name.lower() in select_menus:
-                for view in self.views:
+                for view in self.views.values():
                     children_names = [i.name for i in view.children]
                     if all(
                         i in children_names for i in select_menus[name.lower()].get("options", [])
@@ -581,7 +582,7 @@ class RoleToolsSelect(RoleToolsMixin):
             if name in select_options:
                 role_id = select_options[name]["role_id"]
                 custom_id = f"RTSelect-{name.lower()}-{role_id}"
-                for view in self.views:
+                for view in self.views.values():
                     for child in view.children:
                         if not isinstance(child, SelectRole):
                             continue
