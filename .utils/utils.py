@@ -11,7 +11,6 @@ from typing import List, Mapping, Optional
 import click
 import tabulate
 from babel.lists import format_list as babel_list
-from red_commons.logging import getLogger
 
 DEFAULT_INFO = {
     "author": [],
@@ -26,7 +25,7 @@ DEFAULT_INFO = {
 }
 
 logging.basicConfig(filename="scripts.log", level=logging.INFO)
-log = getLogger(__file__)
+log = logging.getLogger(__file__)
 handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter(
     "[{asctime}] [{levelname}] {name}: {message}",
@@ -329,7 +328,7 @@ def make(
         min_python_version,
         end_user_data_statement,
     )
-    log.verbose("make data_obj: %s", data_obj)
+    log.debug("make data_obj: %s", data_obj)
     save_json(f"{ROOT}/{name}/info.json", data_obj.__dict__)
 
 
@@ -340,7 +339,7 @@ def countlines(include_hidden: bool = False, include_disabled: bool = False):
     """Count the number of lines of .py files in all folders"""
     total = 0
     totals = []
-    log.verbose("countlines root: %s", ROOT)
+    log.debug("countlines root: %s", ROOT)
     for folder in os.listdir(ROOT):
         cog_path = ROOT / folder
         cog = 0
@@ -369,7 +368,7 @@ def countlines(include_hidden: bool = False, include_disabled: bool = False):
                 try:
                     with open(file_path, "r") as infile:
                         lines = len(infile.readlines())
-                        log.verbose("%s has %s lines of code", file_path, lines)
+                        log.debug("%s has %s lines of code", file_path, lines)
                     cog += lines
                     total += lines
                 except Exception:
