@@ -1729,7 +1729,9 @@ class ServerStats(commands.GroupCog):
                     + _("\nMost posts by {}\n".format(maybe_guild))
                 )
             em = discord.Embed(colour=await self.bot.get_embed_colour(ctx))
-            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)
+            em.set_author(
+                name=ctx.guild.name, icon_url=ctx.guild.icon.url if ctx.guild.icon else None
+            )
             em.description = f"{new_msg}{''.join(i for i in channel_messages)}"
 
             em.add_field(name=_("Top Members"), value="".join(i for i in member_messages))

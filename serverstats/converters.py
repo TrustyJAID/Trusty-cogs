@@ -141,34 +141,12 @@ class PermissionConverter(IDConverter):
     """
 
     async def convert(self, ctx: commands.Context, argument: str) -> str:
-        valid_perms = [
-            "add_reactions",
-            "attach_files",
-            "connect",
-            "create_instant_invite",
-            "deafen_members",
-            "embed_links",
-            "external_emojis",
-            "manage_messages",
-            "manage_permissions",
-            "manage_roles",
-            "manage_webhooks",
-            "move_members",
-            "mute_members",
-            "priority_speaker",
-            "read_message_history",
-            "read_messages",
-            "send_messages",
-            "send_tts_messages",
-            "speak",
-            "stream",
-            "use_external_emojis",
-            "use_slash_commands",
-            "use_voice_activation",
-            "view_channel",
-        ]
-        match = re.match(r"|".join(i for i in valid_perms), argument, flags=re.I)
-
+        valid_perms = dict(discord.Permissions.all_channel())
+        match = re.match(
+            r"|".join(i for i, allowed in valid_perms.items() if allowed), argument, flags=re.I
+        )
+        if not match:
+            raise BadArgument(f"Permission `{argument}` not found")
         result = match.group(0)
 
         if not result:
