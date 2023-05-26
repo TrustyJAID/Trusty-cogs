@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Pattern, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Pattern, Tuple, Union
 
 import discord
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
@@ -9,8 +9,6 @@ from discord.ext.commands.errors import BadArgument
 from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.predicates import ReactionPredicate
 
 log = getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
@@ -19,6 +17,9 @@ try:
     import regex as re
 except ImportError:
     import re
+
+if TYPE_CHECKING:
+    from .abc import ReTriggerMixin
 
 
 class ConfirmView(discord.ui.View):
@@ -169,19 +170,16 @@ class MultiResponse(Converter):
         if result[0] == "react" and not my_perms.add_reactions:
             raise BadArgument(_('I require "Add Reactions" permission to use that.'))
         if result[0] == "mock":
+            view = ConfirmView(ctx, default=False)
             msg = await ctx.send(
                 _(
                     "Mock commands can allow any user to run a command "
                     "as if you did, are you sure you want to add this?"
-                )
+                ),
+                view=view,
             )
-            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-            pred = ReactionPredicate.yes_or_no(msg, ctx.author)
-            try:
-                await ctx.bot.wait_for("reaction_add", check=pred, timeout=15)
-            except asyncio.TimeoutError:
-                raise BadArgument(_("Not creating trigger."))
-            if not pred.result:
+            await view.wait()
+            if not view.result:
                 raise BadArgument(_("Not creating trigger."))
 
         def author_perms(ctx: commands.Context, role: discord.Role) -> bool:
@@ -208,7 +206,7 @@ class MultiResponse(Converter):
             for r in result[1:]:
                 try:
                     emoji = await ValidEmoji().convert(ctx, r)
-                    good_emojis.append(emoji)
+                    good_emojis.append(str(emoji))
                 except BadArgument:
                     log.error("Emoji `%s` not found.", r)
             log.verbose("MultiResponse good_emojis: %s", good_emojis)
@@ -272,6 +270,9 @@ class Trigger:
         "nsfw",
         "_created_at",
         "thread",
+        "remove_roles",
+        "add_roles",
+        "reactions",
     )
 
     def __init__(
@@ -292,7 +293,7 @@ class Trigger:
         self.enabled: bool = kwargs.get("enabled", True)
         self.count: int = kwargs.get("count", 0)
         self.image: Union[List[Union[int, str]], str, None] = kwargs.get("image", None)
-        self.text: Union[List[Union[int, str]], str, None] = kwargs.get("text", None)
+        self.text: Optional[str] = kwargs.get("text", None)
         self.whitelist: List[int] = kwargs.get("whitelist", [])
         self.blacklist: List[int] = kwargs.get("blacklist", [])
         self.cooldown: Dict[str, int] = kwargs.get("cooldown", {})
@@ -313,6 +314,9 @@ class Trigger:
         self.everyone_mention: bool = kwargs.get("everyone_mention", False)
         self.nsfw: bool = kwargs.get("nsfw", False)
         self.thread: TriggerThread = kwargs.get("thread", TriggerThread())
+        self.remove_roles: List[int] = kwargs.get("remove_roles", [])
+        self.add_roles: List[int] = kwargs.get("add_roles", [])
+        self.reactions: List[discord.PartialEmoji] = kwargs.get("reactions", [])
 
     def enable(self):
         """Explicitly enable this trigger"""
@@ -464,6 +468,9 @@ class Trigger:
             "role_mention": self.role_mention,
             "nsfw": self.nsfw,
             "thread": self.thread.to_json(),
+            "remove_roles": self.remove_roles,
+            "add_roles": self.add_roles,
+            "reactions": [str(e) for e in self.reactions],
         }
 
     @classmethod
@@ -490,21 +497,59 @@ class Trigger:
         thread = TriggerThread()
         if "thread" in data:
             thread = TriggerThread(**data.pop("thread"))
-        return cls(name, regex, response_type, author, thread=thread, **data)
+        remove_roles = data.pop("remove_roles", [])
+        add_roles = data.pop("add_roles", [])
+        reactions = data.pop("reactions", [])
+        if TriggerResponse.remove_role in response_type and not remove_roles:
+            if data["multi_payload"]:
+                remove_roles = [
+                    r for t in data["multi_payload"] for r in t[1:] if t[0] == "remove_role"
+                ]
+            else:
+                remove_roles = data.get("text", [])
+                data["text"] = None
+        if TriggerResponse.add_role in response_type and not add_roles:
+            if data["multi_payload"]:
+                add_roles = [r for t in data["multi_payload"] for r in t[1:] if t[0] == "add_role"]
+            else:
+                add_roles = data.get("text")
+                data["text"] = None
+        if TriggerResponse.react in response_type and not reactions:
+            if data["multi_payload"]:
+                reactions = [r for t in data["multi_payload"] for r in t[1:] if t[0] == "react"]
+            else:
+                reactions = data.get("text", [])
+                data["text"] = None
+
+        reactions = [discord.PartialEmoji.from_str(e) for e in reactions]
+
+        return cls(
+            name,
+            regex,
+            response_type,
+            author,
+            add_roles=add_roles,
+            remove_roles=remove_roles,
+            reactions=reactions,
+            thread=thread,
+            **data,
+        )
 
 
-class TriggerExists(Converter):
-    async def convert(self, ctx: commands.Context, argument: str) -> Union[Trigger, str]:
+class TriggerExists(Converter[Trigger]):
+    async def convert(self, ctx: commands.Context, argument: str) -> Trigger:
         guild = ctx.guild
-        result = None
-        cog = ctx.bot.get_cog("ReTrigger")
-        if ctx.guild.id not in cog.triggers:
+        if guild is None:
+            raise BadArgument()
+        cog: ReTriggerMixin = ctx.bot.get_cog("ReTrigger")
+        if guild.id not in cog.triggers:
             raise BadArgument(_("There are no triggers setup on this server."))
         if argument in cog.triggers[guild.id]:
             return cog.triggers[guild.id][argument]
         else:
-            result = argument
-        return result
+            raise BadArgument(
+                _("Trigger with name `{name}` does not exist.").format(name=argument)
+            )
 
 
 class ValidRegex(Converter):
@@ -541,7 +586,7 @@ class ValidEmoji(IDConverter):
     https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py
     """
 
-    async def convert(self, ctx: commands.Context, argument: str) -> Union[discord.Emoji, str]:
+    async def convert(self, ctx: commands.Context, argument: str) -> discord.PartialEmoji:
         match = self._get_id_match(argument) or re.match(
             r"<a?:[a-zA-Z0-9\_]+:([0-9]+)>$|(:[a-zA-z0-9\_]+:$)", argument
         )
@@ -572,13 +617,13 @@ class ValidEmoji(IDConverter):
 
             if result is None:
                 result = discord.utils.get(bot.emojis, name=emoji_name)
-        if type(result) is discord.Emoji:
-            result = str(result)[1:-1]
+        if isinstance(result, discord.Emoji):
+            result = discord.PartialEmoji.from_str(str(result))
 
         if result is None:
             try:
                 await ctx.message.add_reaction(argument)
-                result = argument
+                result = discord.PartialEmoji.from_str(argument)
             except Exception:
                 raise BadArgument(_("`{}` is not an emoji I can use.").format(argument))
 

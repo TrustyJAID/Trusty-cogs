@@ -22,14 +22,14 @@ from .converters import Trigger, TriggerResponse
 from .message import ReTriggerMessage
 
 try:
+    import pytesseract
+
+    ALLOW_OCR = True
+except ImportError:
+    ALLOW_OCR = False
+
+try:
     from PIL import Image, ImageSequence
-
-    try:
-        import pytesseract
-
-        ALLOW_OCR = True
-    except ImportError:
-        ALLOW_OCR = False
 
     ALLOW_RESIZE = True
 except ImportError:
@@ -214,7 +214,7 @@ class TriggerHandler(ReTriggerMixin):
 
     async def check_is_command(self, message: discord.Message) -> bool:
         """Checks if the message is a bot command"""
-        prefix_list = await self.bot.command_prefix(self.bot, message)
+        prefix_list = await self.bot.get_valid_prefixes(message.guild)
         msg = message.content
         is_command = False
         for prefix in prefix_list:
@@ -732,13 +732,7 @@ class TriggerHandler(ReTriggerMixin):
                 )
 
         if TriggerResponse.react in trigger.response_type and own_permissions.add_reactions:
-            if trigger.multi_payload:
-                react_response = [
-                    r for t in trigger.multi_payload for r in t[1:] if t[0] == "react"
-                ]
-            else:
-                react_response = trigger.text
-            for emoji in react_response:
+            for emoji in trigger.reactions:
                 try:
                     await message.add_reaction(emoji)
                 except (discord.errors.Forbidden, discord.errors.NotFound):
@@ -751,13 +745,7 @@ class TriggerHandler(ReTriggerMixin):
                     )
 
         if TriggerResponse.add_role in trigger.response_type and own_permissions.manage_roles:
-            if trigger.multi_payload:
-                add_response = [
-                    r for t in trigger.multi_payload for r in t[1:] if t[0] == "add_role"
-                ]
-            else:
-                add_response = trigger.text
-            for roles in add_response:
+            for roles in trigger.add_roles:
                 add_role: discord.Role = cast(discord.Role, guild.get_role(roles))
                 if not add_role:
                     continue
@@ -775,13 +763,7 @@ class TriggerHandler(ReTriggerMixin):
                     )
 
         if TriggerResponse.remove_role in trigger.response_type and own_permissions.manage_roles:
-            if trigger.multi_payload:
-                rem_response = [
-                    r for t in trigger.multi_payload for r in t[1:] if t[0] == "remove_role"
-                ]
-            else:
-                rem_response = trigger.text
-            for roles in rem_response:
+            for roles in trigger.remove_roles:
                 rem_role: discord.Role = cast(discord.Role, guild.get_role(roles))
                 if not rem_role:
                     continue
@@ -838,14 +820,14 @@ class TriggerHandler(ReTriggerMixin):
                 for command in command_response:
                     command = await self.convert_parms(message, command, trigger, find)
                     msg = copy(message)
-                    prefix_list = await self.bot.command_prefix(self.bot, message)
+                    prefix_list = await self.bot.get_valid_prefixes(message.guild)
                     msg.content = prefix_list[0] + command
                     msg = ReTriggerMessage(message=msg)
                     self.bot.dispatch("message", msg)
             else:
                 msg = copy(message)
                 command = await self.convert_parms(message, str(trigger.text), trigger, find)
-                prefix_list = await self.bot.command_prefix(self.bot, message)
+                prefix_list = await self.bot.get_valid_prefixes(message.guild)
                 msg.content = prefix_list[0] + command
                 msg = ReTriggerMessage(message=msg)
                 self.bot.dispatch("message", msg)
@@ -859,7 +841,7 @@ class TriggerHandler(ReTriggerMixin):
                     if not mocker:
                         return
                     msg.author = mocker
-                    prefix_list = await self.bot.command_prefix(self.bot, message)
+                    prefix_list = await self.bot.get_valid_prefixes(message.guild)
                     msg.content = prefix_list[0] + command
                     msg = ReTriggerMessage(message=msg)
                     self.bot.dispatch("message", msg)
@@ -870,7 +852,7 @@ class TriggerHandler(ReTriggerMixin):
                 if not mocker:
                     return  # We'll exit early if the author isn't on the server anymore
                 msg.author = mocker
-                prefix_list = await self.bot.command_prefix(self.bot, message)
+                prefix_list = await self.bot.get_valid_prefixes(message.guild)
                 msg.content = prefix_list[0] + command
                 msg = ReTriggerMessage(message=msg)
                 self.bot.dispatch("message", msg)

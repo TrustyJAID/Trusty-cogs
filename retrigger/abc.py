@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
 
 import discord
 
 if TYPE_CHECKING:
     from redbot.core import Config, commands
     from redbot.core.bot import Red
+    from redbot.core.commands import TimedeltaConverter
 
     from .converters import (
         ChannelUserRole,
         MultiResponse,
-        TimedeltaConverter,
         Trigger,
         TriggerExists,
         ValidEmoji,
@@ -26,6 +26,116 @@ class ReTriggerMixin(ABC):
         self.config: Config
         self.bot: Red
         self.triggers: Dict[int, Dict[str, Trigger]]
+
+    #############################################################################
+    # triggerhandler.py                                                         #
+    #############################################################################
+
+    @abstractmethod
+    async def remove_trigger_from_cache(self, guild_id: int, trigger: Trigger) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def can_edit(self, author: discord.Member, trigger: Trigger) -> bool:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def is_mod_or_admin(self, member: discord.Member) -> bool:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def make_guild_folder(self, directory) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def save_image_location(self, image_url: str, guild: discord.Guild) -> Optional[str]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def wait_for_image(self, ctx: commands.Context) -> Optional[discord.Message]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def wait_for_multiple_images(self, ctx: commands.Context) -> List[str]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def wait_for_multiple_responses(self, ctx: commands.Context) -> List[discord.Message]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def resize_image(self, size: int, image: str) -> discord.File:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def resize_gif(self, size: int, image: str) -> discord.File:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def check_is_command(self, message: discord.Message) -> bool:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def on_message(self, message: discord.Message) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def check_triggers(self, message: discord.Message, edit: bool) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def get_image_text(self, message: discord.Message) -> str:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def safe_regex_search(
+        self, guild: discord.Guild, trigger: Trigger, content: str
+    ) -> Tuple[bool, list]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def perform_trigger(
+        self, message: discord.Message, trigger: Trigger, find: List[str]
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def convert_parms(
+        self, message: discord.Message, raw_response: str, trigger: Trigger, find: List[str]
+    ) -> str:
+        raise NotImplementedError()
+
+    @staticmethod
+    @abstractmethod
+    async def transform_parameter(result: str, message: discord.Message) -> str:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def modlog_action(
+        self, message: discord.Message, trigger: Trigger, find: List[str], action: str
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def red_delete_data_for_user(
+        self,
+        *,
+        requester: Literal["discord_deleted_user", "owner", "user", "user_strict"],
+        user_id: int,
+    ):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def remove_trigger(self, guild_id: int, trigger_name: str) -> bool:
+        raise NotImplementedError()
+
+    #############################################################################
+    # retrigger.py                                                              #
+    #############################################################################
 
     @abstractmethod
     async def _not_authorized(self, ctx: Union[commands.Context, discord.Interaction]):
