@@ -270,6 +270,7 @@ class Trigger:
         "role_mention",
         "everyone_mention",
         "nsfw",
+        "embeds",
         "_created_at",
         "thread",
     )
@@ -312,6 +313,7 @@ class Trigger:
         self.role_mention: bool = kwargs.get("role_mention", False)
         self.everyone_mention: bool = kwargs.get("everyone_mention", False)
         self.nsfw: bool = kwargs.get("nsfw", False)
+        self.embeds: bool = kwargs.get("embeds", False)
         self.thread: TriggerThread = kwargs.get("thread", TriggerThread())
 
     def enable(self):
@@ -463,6 +465,7 @@ class Trigger:
             "everyone_mention": self.everyone_mention,
             "role_mention": self.role_mention,
             "nsfw": self.nsfw,
+            "embeds": self.embeds,
             "thread": self.thread.to_json(),
         }
 

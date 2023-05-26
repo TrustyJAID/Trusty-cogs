@@ -254,7 +254,7 @@ class TriggerHandler(ReTriggerMixin):
             return
         if await self.bot.cog_disabled_in_guild(self, guild):
             return
-        if not any(t.check_edits for t in self.triggers[guild.id].values()):
+        if not any(t.check_edits and not t.embeds for t in self.triggers[guild.id].values()):
             # log.debug(f"No triggers in {guild=} have check_edits enabled")
             return
         if "bot" in payload.data["author"]:
@@ -275,6 +275,34 @@ class TriggerHandler(ReTriggerMixin):
             # somehow we got a bot through the previous check :thonk:
             return
         await self.check_triggers(message, True)
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before_message: discord.Message, after_message: discord.Message) -> None:
+        guild = self.bot.get_guild(int(after_message.guild.id))
+        if not guild:
+            return
+        if guild.id not in self.triggers:
+            return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if not any(t.embeds and t.check_edits for t in self.triggers[guild.id].values()):
+            # log.debug(f"No triggers in {guild=} have check_edits enabled")
+            return
+        if after_message.author.bot:
+            return
+        channel = guild.get_channel(int(after_message.channel.id))
+        try:
+            message = await channel.fetch_message(int(after_message.id))
+        except (discord.errors.Forbidden, discord.errors.NotFound):
+            log.debug(
+                "I don't have permission to read channel history or cannot find the message."
+            )
+            return
+        except Exception:
+            log.info("Could not find channel or message")
+            # If we can't find the channel ignore it
+            return
+        await self.check_triggers(after_message, True)
 
     async def check_triggers(self, message: discord.Message, edit: bool) -> None:
         """
@@ -367,6 +395,9 @@ class TriggerHandler(ReTriggerMixin):
 
             if trigger.ocr_search and ALLOW_OCR:
                 content += await self.get_image_text(message)
+
+            if trigger.embeds and len(message.embeds) > 0:
+                content += " " + " ".join(str(embed.to_dict()) for embed in message.embeds)
 
             search = await self.safe_regex_search(guild, trigger, content)
             if not search[0]:

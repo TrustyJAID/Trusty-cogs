@@ -138,6 +138,10 @@ class ReTriggerMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def toggle_embeds(self, ctx: commands.Context, trigger: TriggerExists) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
     async def toggle_filename_search(self, ctx: commands.Context, trigger: TriggerExists) -> None:
         raise NotImplementedError()
 

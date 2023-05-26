@@ -221,6 +221,8 @@ class ReTriggerPages(menus.ListPageSource):
             info += _("__TTS__: **Enabled**\n")
         if trigger.chance:
             info += _("__Chance__: **1 in {number}**\n").format(number=trigger.chance)
+        if trigger.embeds:
+            info += _("__Embeds__: **Enabled**\n")
         if embeds:
             # info += _("__Regex__: ") + box(trigger.regex.pattern, lang="bf")
             em = discord.Embed(
