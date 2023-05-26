@@ -246,6 +246,7 @@ class Trigger:
     __slots__ = (
         "name",
         "regex",
+        "_raw_regex",
         "response_type",
         "author",
         "enabled",
@@ -284,10 +285,12 @@ class Trigger:
         **kwargs,
     ):
         self.name: str = name
+        self._raw_regex = regex
         try:
-            self.regex: Pattern = re.compile(regex)
+            self.regex: Pattern = re.compile(self._raw_regex)
         except Exception:
-            raise
+            self.regex: Optional[Pattern] = None
+            pass
         self.response_type: List[TriggerResponse] = response_type
         self.author: int = author
         self.enabled: bool = kwargs.get("enabled", True)
@@ -329,6 +332,9 @@ class Trigger:
     def toggle(self):
         """Toggle whether or not this trigger is enabled."""
         self.enabled = not self.enabled
+
+    def compile(self):
+        self.regex: Pattern = re.compile(self._raw_regex)
 
     async def check_cooldown(self, message: discord.Message) -> bool:
         now = message.created_at.timestamp()
@@ -418,7 +424,7 @@ class Trigger:
         )
 
     def __repr__(self):
-        return "<ReTrigger name={0.name} author={0.author} response={0.response_type} pattern={0.regex.pattern}>".format(
+        return "<ReTrigger name={0.name} author={0.author} response={0.response_type} pattern={0._raw_regex}>".format(
             self
         )
 
@@ -443,7 +449,7 @@ class Trigger:
     async def to_json(self) -> dict:
         return {
             "name": self.name,
-            "regex": self.regex.pattern,
+            "regex": self.regex.pattern if self.regex else self._raw_regex,
             "response_type": [t.value for t in self.response_type],
             "author": self.author,
             "enabled": self.enabled,

@@ -61,7 +61,7 @@ class ReTrigger(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.23.1"
+    __version__ = "2.23.2"
 
     def __init__(self, bot):
         super().__init__()
@@ -141,11 +141,12 @@ class ReTrigger(
         for guild, settings in data.items():
             self.triggers[guild] = {}
             for trigger in settings["trigger_list"].values():
+                new_trigger = await Trigger.from_json(trigger)
                 try:
-                    new_trigger = await Trigger.from_json(trigger)
+                    new_trigger.compile()
                 except Exception:
-                    log.exception("Error trying to compile regex pattern.")
-                    continue
+                    log.exception("Error trying to compile regex pattern in guild %s.", guild)
+                    new_trigger.disable()
                     # I might move this to DM the author of the trigger
                     # before this becomes actually breaking
                 self.triggers[guild][new_trigger.name] = new_trigger
@@ -697,7 +698,8 @@ class ReTrigger(
             return await self._no_trigger(ctx, trigger)
         if not await self.can_edit(ctx.author, trigger):
             return await self._not_authorized(ctx)
-        trigger.regex = re.compile(regex)
+        trigger._raw_regex = regex
+        trigger.compile()
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
         # await self.remove_trigger_from_cache(ctx.guild.id, trigger)

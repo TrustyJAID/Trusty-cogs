@@ -367,7 +367,13 @@ class TriggerHandler(ReTriggerMixin):
 
             if trigger.ocr_search and ALLOW_OCR:
                 content += await self.get_image_text(message)
-
+            if trigger.regex is None:
+                log.debug(
+                    "ReTrigger: Trigger %r must have invalid regex.",
+                    trigger,
+                )
+                trigger.disable()
+                continue
             search = await self.safe_regex_search(guild, trigger, content)
             if not search[0]:
                 trigger.enabled = False

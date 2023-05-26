@@ -200,6 +200,17 @@ class ReTriggerPages(menus.ListPageSource):
             info += _("- Everyone: **{everyone_mention}**\n").format(
                 everyone_mention=trigger.everyone_mention
             )
+        if trigger.regex:
+            pattern_error = ""
+            pattern = trigger.regex.pattern
+        else:
+            try:
+                trigger.compile()
+                pattern = trigger.regex.pattern
+                pattern_error = ""
+            except Exception as e:
+                pattern_error = str(e)
+                pattern = trigger._raw_regex
         if embeds:
             # info += _("__Regex__: ") + box(trigger.regex.pattern, lang="bf")
             em = discord.Embed(
@@ -231,11 +242,13 @@ class ReTriggerPages(menus.ListPageSource):
                         )
                     else:
                         em.add_field(name=_("__Text__"), value=page)
-            for page in pagify(trigger.regex.pattern, page_length=1000):
+            for page in pagify(pattern, page_length=1000):
                 em.add_field(name=_("__Regex__"), value=box(page, lang="re"))
+            if pattern_error:
+                em.add_field(name=_("__Error__"), value=pattern_error)
             msg_list.append(em)
         else:
-            info += _("Regex: ") + box(trigger.regex.pattern[: 2000 - len(info)], lang="re")
+            info += _("Regex: ") + box(pattern[: 2000 - len(info)], lang="re")
         if embeds:
             return em
         else:
@@ -375,7 +388,7 @@ class ReTriggerEditModal(discord.ui.Modal):
             style=discord.TextStyle.paragraph, label="Response", default=trigger.text
         )
         self.regex = discord.ui.TextInput(
-            style=discord.TextStyle.paragraph, label="Regex", default=trigger.regex.pattern
+            style=discord.TextStyle.paragraph, label="Regex", default=trigger._raw_regex
         )
         self.add_item(self.regex)
         reply_options = [
@@ -405,14 +418,17 @@ class ReTriggerEditModal(discord.ui.Modal):
             self.trigger.text = self.text.value
             edited_text = True
             msg += _("Text: `{text}`\n").format(text=self.text.value)
-        if self.trigger.regex.pattern != self.regex.value:
+        if self.trigger._raw_regex != self.regex.value:
             try:
-                self.trigger.regex = re.compile(self.regex.value)
+                re.compile(self.regex.value)
             except Exception as e:
                 await interaction.response.send_message(
                     _("The provided regex pattern is not valid: {e}").format(e=e), ephemeral=True
                 )
                 return
+            self.trigger._raw_regex = self.regex.value
+            self.trigger.compile()
+            # we've already checked if the regex was valid
             edited_regex = True
             msg += _("Regex: `{regex}`\n").format(regex=self.regex.value)
         if self.replies.values:
