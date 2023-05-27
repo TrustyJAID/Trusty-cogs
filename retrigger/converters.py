@@ -514,18 +514,24 @@ class Trigger:
             else:
                 remove_roles = data.get("text", [])
                 data["text"] = None
+            if remove_roles is None:
+                remove_roles = []
         if TriggerResponse.add_role in response_type and not add_roles:
             if data["multi_payload"]:
                 add_roles = [r for t in data["multi_payload"] for r in t[1:] if t[0] == "add_role"]
             else:
-                add_roles = data.get("text")
+                add_roles = data.get("text", [])
                 data["text"] = None
+            if add_roles is None:
+                add_roles = []
         if TriggerResponse.react in response_type and not reactions:
             if data["multi_payload"]:
                 reactions = [r for t in data["multi_payload"] for r in t[1:] if t[0] == "react"]
             else:
                 reactions = data.get("text", [])
                 data["text"] = None
+            if reactions is None:
+                reactions = []
 
         reactions = [discord.PartialEmoji.from_str(e) for e in reactions]
 
