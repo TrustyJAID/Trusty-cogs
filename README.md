@@ -48,4 +48,25 @@ TrustyJAID's Cogs for  [Red-DiscordBot](https://github.com/Cog-Creators/Red-Disc
 
 Any questions you can find [TrustyBot](https://discordapp.com/api/oauth2/authorize?client_id=268562382173765643&permissions=2146958583&scope=bot) and myself over on [my server](https://discord.gg/wVVrqej) or on the [Redbot Cog Support server](https://discord.gg/GET4DVk).
 ## Credits
-Thank you to everyone who has pushed me to think about new ideas and implement them.
+Thank you to everyone who has pushed me to think about new ideas and implement them. Including but not limited to:
+- Airen
+- Appu
+- Aziz
+- Bruno Lemos (isnowillegal.com)
+- Cards Against Humanity®
+- DankMemer Team
+- Draper
+- Ivan Seidel (isnowillegal.com)
+- JennJenn
+- João Pedro (isnowillegal.com)
+- NeuroAssassin
+- NotSoSuper
+- Preda
+- RePulsR
+- Sinbad
+- Soulrift
+- Twentysix
+- crhallberg
+- irdumb
+- palmtree5
+- thisisjvgrace
