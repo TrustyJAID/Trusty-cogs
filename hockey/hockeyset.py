@@ -595,23 +595,22 @@ class HockeySetCommands(MixinMeta):
             await ctx.send(_("You must provide a valid current team."))
             return
         # team_data = await self.get_team(team)
-        if channel is None:
-            channel = ctx.channel
-        cur_teams = await self.config.channel(channel).team()
-        cur_teams = [] if cur_teams is None else cur_teams
-        if team in cur_teams:
-            # await self.config.channel(channel).team.set([team])
-            msg = _("{team} is already posting updates in {channel}").format(
-                team=team, channel=channel.mention
-            )
-            await ctx.send(msg)
-            return
-        else:
-            cur_teams.append(team)
-            await self.config.channel(channel).team.set(cur_teams)
-        msg = _("{team} goals will be posted in {channel}").format(
-            team=team, channel=channel.mention
-        )
+        async with ctx.typing():
+            if channel is None:
+                channel = ctx.channel
+            cur_teams = await self.config.channel(channel).team()
+            cur_teams = [] if cur_teams is None else cur_teams
+            if team in cur_teams:
+                # await self.config.channel(channel).team.set([team])
+                msg = _("{team} is already posting updates in {channel}").format(
+                    team=team, channel=channel.mention
+                )
+            else:
+                cur_teams.append(team)
+                await self.config.channel(channel).team.set(cur_teams)
+                msg = _("{team} goals will be posted in {channel}").format(
+                    team=team, channel=channel.mention
+                )
         await ctx.send(msg)
 
     @hockeyset_commands.command(name="remove", aliases=["del", "rem", "delete"])
@@ -626,35 +625,32 @@ class HockeySetCommands(MixinMeta):
         Removes a teams goal updates from a channel
         defaults to the current channel
         """
-        await ctx.defer()
-        if channel is None:
-            channel = ctx.channel
-        cur_teams = await self.config.channel(channel).team()
-        if not cur_teams:
-            msg = _("No teams are currently being posted in {channel}.").format(
-                channel=channel.mention
-            )
-            await ctx.send(msg)
-            return
-        if team is None:
-            await self.config.channel(channel).clear()
-            msg = _("No game updates will be posted in {channel}.").format(channel=channel.mention)
-            await ctx.send(msg)
-            return
+        async with ctx.typing():
+            if channel is None:
+                channel = ctx.channel
+            cur_teams = await self.config.channel(channel).team()
+            if not cur_teams:
+                msg = _("No teams are currently being posted in {channel}.").format(
+                    channel=channel.mention
+                )
+            if team is None:
+                await self.config.channel(channel).clear()
+                msg = _("No game updates will be posted in {channel}.").format(
+                    channel=channel.mention
+                )
 
-        if team is not None:
-            # guild = ctx.message.guild
-            if team in cur_teams:
-                cur_teams.remove(team)
-                if cur_teams == []:
-                    await self.config.channel(channel).clear()
-                    msg = _("No game updates will be posted in {channel}.").format(
-                        channel=channel.mention
-                    )
-                    await ctx.send(msg)
-                else:
-                    await self.config.channel(channel).team.set(cur_teams)
-                    msg = _("{team} goal updates removed from {channel}.").format(
-                        team=team, channel=channel.mention
-                    )
-                    await ctx.send(msg)
+            if team is not None:
+                # guild = ctx.message.guild
+                if team in cur_teams:
+                    cur_teams.remove(team)
+                    if cur_teams == []:
+                        await self.config.channel(channel).clear()
+                        msg = _("No game updates will be posted in {channel}.").format(
+                            channel=channel.mention
+                        )
+                    else:
+                        await self.config.channel(channel).team.set(cur_teams)
+                        msg = _("{team} goal updates removed from {channel}.").format(
+                            team=team, channel=channel.mention
+                        )
+        await ctx.send(msg)
