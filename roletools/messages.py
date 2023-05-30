@@ -120,9 +120,9 @@ class RoleToolsMessages(RoleToolsMixin):
             return
         new_view = SelectRoleView(self)
         for select_menu in menus:
-            view.add_item(select_menu)
+            new_view.add_item(select_menu)
         for button in buttons:
-            view.add_item(button)
+            new_view.add_item(button)
         await message.edit(view=new_view)
         message_key = f"{message.channel.id}-{message.id}"
         self.views[message_key] = new_view
