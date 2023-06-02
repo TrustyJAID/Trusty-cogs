@@ -211,8 +211,8 @@ class ReTriggerPages(menus.ListPageSource):
             except Exception as e:
                 pattern_error = str(e)
                 pattern = trigger._raw_regex
-        if trigger.embeds:
-            info += _("__Embeds__: **Enabled**\n")
+        if trigger.read_embeds:
+            info += _("__Read Embeds__: **Enabled**\n")
         if embeds:
             # info += _("__Regex__: ") + box(trigger.regex.pattern, lang="bf")
             em = discord.Embed(

@@ -49,3 +49,4 @@ __pycache__/
 audiotest/
 trusty-cogs.sublime-workspace
 *.sublime-workspace
+.idea/

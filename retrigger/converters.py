@@ -269,7 +269,7 @@ class Trigger:
         "role_mention",
         "everyone_mention",
         "nsfw",
-        "embeds",
+        "read_embeds",
         "_created_at",
         "thread",
         "remove_roles",
@@ -317,7 +317,7 @@ class Trigger:
         self.role_mention: bool = kwargs.get("role_mention", False)
         self.everyone_mention: bool = kwargs.get("everyone_mention", False)
         self.nsfw: bool = kwargs.get("nsfw", False)
-        self.embeds: bool = kwargs.get("embeds", False)
+        self.read_embeds: bool = kwargs.get("embeds", False)
         self.thread: TriggerThread = kwargs.get("thread", TriggerThread())
         self.remove_roles: List[int] = kwargs.get("remove_roles", [])
         self.add_roles: List[int] = kwargs.get("add_roles", [])
@@ -475,7 +475,7 @@ class Trigger:
             "everyone_mention": self.everyone_mention,
             "role_mention": self.role_mention,
             "nsfw": self.nsfw,
-            "embeds": self.embeds,
+            "read_embeds": self.read_embeds,
             "thread": self.thread.to_json(),
             "remove_roles": self.remove_roles,
             "add_roles": self.add_roles,

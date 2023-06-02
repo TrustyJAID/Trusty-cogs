@@ -243,7 +243,7 @@ class TriggerHandler(ReTriggerMixin):
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
-        if "content" not in payload.data:
+        if "content" not in payload.data and "embeds" not in payload.data:
             return
         if "guild_id" not in payload.data:
             return
@@ -254,10 +254,10 @@ class TriggerHandler(ReTriggerMixin):
             return
         if await self.bot.cog_disabled_in_guild(self, guild):
             return
-        if not any(t.check_edits and not t.embeds for t in self.triggers[guild.id].values()):
+        if not any(t.check_edits for t in self.triggers[guild.id].values()):
             # log.debug(f"No triggers in {guild=} have check_edits enabled")
             return
-        if "bot" in payload.data["author"]:
+        if "bot" in payload.data.get("author", []):
             return
         channel = guild.get_channel(int(payload.data["channel_id"]))
         try:
@@ -275,34 +275,6 @@ class TriggerHandler(ReTriggerMixin):
             # somehow we got a bot through the previous check :thonk:
             return
         await self.check_triggers(message, True)
-
-    @commands.Cog.listener()
-    async def on_message_edit(self, before_message: discord.Message, after_message: discord.Message) -> None:
-        guild = self.bot.get_guild(int(after_message.guild.id))
-        if not guild:
-            return
-        if guild.id not in self.triggers:
-            return
-        if await self.bot.cog_disabled_in_guild(self, guild):
-            return
-        if not any(t.embeds and t.check_edits for t in self.triggers[guild.id].values()):
-            # log.debug(f"No triggers in {guild=} have check_edits enabled")
-            return
-        if after_message.author.bot:
-            return
-        channel = guild.get_channel(int(after_message.channel.id))
-        try:
-            message = await channel.fetch_message(int(after_message.id))
-        except (discord.errors.Forbidden, discord.errors.NotFound):
-            log.debug(
-                "I don't have permission to read channel history or cannot find the message."
-            )
-            return
-        except Exception:
-            log.info("Could not find channel or message")
-            # If we can't find the channel ignore it
-            return
-        await self.check_triggers(after_message, True)
 
     async def check_triggers(self, message: discord.Message, edit: bool) -> None:
         """
@@ -395,8 +367,9 @@ class TriggerHandler(ReTriggerMixin):
 
             if trigger.ocr_search and ALLOW_OCR:
                 content += await self.get_image_text(message)
-            if trigger.embeds and len(message.embeds) > 0:
-                content += " " + " ".join(str(embed.to_dict()) for embed in message.embeds)
+            if trigger.read_embeds and len(message.embeds) > 0:
+                content += "\n".join(self.convert_embed_to_string(embed) for embed in message.embeds)
+                print(content)
             if trigger.regex is None:
                 log.debug(
                     "ReTrigger: Trigger %r must have invalid regex.",
@@ -415,6 +388,21 @@ class TriggerHandler(ReTriggerMixin):
                 log.debug("ReTrigger: message from %r triggered %r", author, trigger)
                 await self.perform_trigger(message, trigger, search[1])
                 return
+
+    def convert_embed_to_string(self, embed: discord.Embed) -> str:
+        embed_dict = embed.to_dict()
+        flattened_embed_dict = {}
+        field_blacklist = ["type", "timestamp", "color", "proxy_url", "height", "width", "proxy_icon_url", "inline"]
+        for field, value in {k: v for k, v in embed_dict.items() if k not in field_blacklist}.items():
+            if type(value) is dict:
+                for subfield in {k for k in value if k not in field_blacklist}:
+                    flattened_embed_dict[field.capitalize() + subfield.capitalize()] = value[subfield]
+            else:
+                flattened_embed_dict[field.capitalize()] = value
+        embed_string = ''
+        for field, value in flattened_embed_dict.items():
+            embed_string += f"\n{field}: {value}"
+        return embed_string
 
     async def get_image_text(self, message: discord.Message) -> str:
         """

@@ -758,9 +758,9 @@ class ReTrigger(
         msg = _("Trigger {name} NSFW set to: {nsfw}").format(name=trigger.name, nsfw=trigger.nsfw)
         await ctx.send(msg)
 
-    @_edit.command(name="embeds")
+    @_edit.command(name="readembeds")
     @checks.mod_or_permissions(manage_messages=True)
-    async def toggle_embeds(self, ctx: commands.Context, trigger: TriggerExists) -> None:
+    async def toggle_read_embeds(self, ctx: commands.Context, trigger: TriggerExists) -> None:
         """
         Toggle whether a trigger will check embeds.
         This will allow the additional searching of Embed content.
@@ -774,7 +774,7 @@ class ReTrigger(
             return await self._no_trigger(ctx, trigger)
         if not await self.can_edit(ctx.author, trigger):
             return await self._not_authorized(ctx)
-        trigger.embeds = not trigger.embeds
+        trigger.read_embeds = not trigger.read_embeds
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
         # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
