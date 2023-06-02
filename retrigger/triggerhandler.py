@@ -391,11 +391,14 @@ class TriggerHandler(ReTriggerMixin):
     def convert_embed_to_string(self, embed: discord.Embed) -> str:
         embed_dict = embed.to_dict()
         flattened_embed_dict = {}
-        field_blacklist = ["type", "timestamp", "color", "proxy_url", "height", "width", "proxy_icon_url", "inline"]
+        field_blacklist = ["type", "timestamp", "color", "proxy_url", "height", "width", "proxy_icon_url"]
         for field, value in {k: v for k, v in embed_dict.items() if k not in field_blacklist}.items():
             if type(value) is dict:
                 for subfield in {k for k in value if k not in field_blacklist}:
                     flattened_embed_dict[field.capitalize() + subfield.capitalize()] = value[subfield]
+            elif type(value) is list:
+                for embedfields in value:
+                    flattened_embed_dict[field.capitalize() + embedfields["name"].capitalize()] = embedfields["value"]
             else:
                 flattened_embed_dict[field.capitalize()] = value
         embed_string = ''
