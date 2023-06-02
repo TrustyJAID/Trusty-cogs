@@ -22,7 +22,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.11.1"
+    __version__ = "2.11.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -502,46 +502,6 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await self.config.guild(ctx.guild).set(self.settings[ctx.guild.id])
         await self.modlog_settings(ctx)
 
-    @_modlog.command(name="botedits", aliases=["botedit"])
-    async def _edit_toggle_bots(self, ctx: commands.Context) -> None:
-        """
-        Toggle message edit notifications for bot users
-        """
-        if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
-        guild = ctx.message.guild
-        msg = _("Bots edited messages ")
-        if not await self.config.guild(guild).message_edit.bots():
-            await self.config.guild(guild).message_edit.bots.set(True)
-            self.settings[guild.id]["message_edit"]["bots"] = True
-            verb = _("enabled")
-        else:
-            await self.config.guild(guild).message_edit.bots.set(False)
-            self.settings[guild.id]["message_edit"]["bots"] = False
-            verb = _("disabled")
-        await ctx.send(msg + verb)
-
-    @_modlog.command(name="botdeletes", aliases=["botdelete"])
-    async def _delete_bots(self, ctx: commands.Context) -> None:
-        """
-        Toggle message delete notifications for bot users
-
-        This will not affect delete notifications for messages that aren't in bot's cache.
-        """
-        if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
-        guild = ctx.message.guild
-        msg = _("Bot delete logs ")
-        if not await self.config.guild(guild).message_delete.bots():
-            await self.config.guild(guild).message_delete.bots.set(True)
-            self.settings[ctx.guild.id]["message_delete"]["bots"] = True
-            verb = _("enabled")
-        else:
-            await self.config.guild(guild).message_delete.bots.set(False)
-            self.settings[ctx.guild.id]["message_delete"]["bots"] = False
-            verb = _("disabled")
-        await ctx.send(msg + verb)
-
     @_modlog.group(name="delete")
     async def _delete(self, ctx: commands.Context) -> None:
         """
@@ -557,7 +517,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         guild = ctx.message.guild
-        msg = _("Bulk message delete logs ")
+        msg = _("Bulk message delete logs {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_delete.bulk_enabled():
             await self.config.guild(guild).message_delete.bulk_enabled.set(True)
             self.settings[ctx.guild.id]["message_delete"]["bulk_enabled"] = True
@@ -566,7 +526,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             await self.config.guild(guild).message_delete.bulk_enabled.set(False)
             self.settings[ctx.guild.id]["message_delete"]["bulk_enabled"] = False
             verb = _("disabled")
-        await ctx.send(msg + verb)
+        await ctx.send(msg.format(enabled_or_disabled=verb))
 
     @_delete.command(name="individual")
     async def _delete_bulk_individual(self, ctx: commands.Context) -> None:
@@ -576,7 +536,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         guild = ctx.message.guild
-        msg = _("Individual message delete logs for bulk message delete ")
+        msg = _("Individual message delete logs for bulk message delete {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_delete.bulk_individual():
             await self.config.guild(guild).message_delete.bulk_individual.set(True)
             self.settings[ctx.guild.id]["message_delete"]["bulk_individual"] = True
@@ -585,7 +545,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             await self.config.guild(guild).message_delete.bulk_individual.set(False)
             self.settings[ctx.guild.id]["message_delete"]["bulk_individual"] = False
             verb = _("disabled")
-        await ctx.send(msg + verb)
+        await ctx.send(msg.format(enabled_or_disabled=verb))
 
     @_delete.command(name="cachedonly")
     async def _delete_cachedonly(self, ctx: commands.Context) -> None:
@@ -598,7 +558,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         guild = ctx.message.guild
-        msg = _("Delete logs for non-cached messages ")
+        msg = _("Delete logs for non-cached messages {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_delete.cached_only():
             await self.config.guild(guild).message_delete.cached_only.set(True)
             self.settings[ctx.guild.id]["message_delete"]["cached_only"] = True
@@ -607,7 +567,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             await self.config.guild(guild).message_delete.cached_only.set(False)
             self.settings[ctx.guild.id]["message_delete"]["cached_only"] = False
             verb = _("enabled")
-        await ctx.send(msg + verb)
+        await ctx.send(msg.format(enabled_or_disabled=verb))
 
     @_delete.command(name="ignorecommands")
     async def _delete_ignore_commands(self, ctx: commands.Context) -> None:
@@ -617,7 +577,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         guild = ctx.message.guild
-        msg = _("Ignore deleted command messages: ")
+        msg = _("Ignore deleted command messages {enabled_or_disalbled}.")
         if not await self.config.guild(guild).message_delete.cached_only():
             await self.config.guild(guild).message_delete.cached_only.set(False)
             self.settings[ctx.guild.id]["message_delete"]["ignore_commands"] = False
@@ -626,39 +586,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             await self.config.guild(guild).message_delete.cached_only.set(True)
             self.settings[ctx.guild.id]["message_delete"]["ignore_commands"] = True
             verb = _("enabled")
-        await ctx.send(msg + verb)
-
-    @_modlog.command(name="botchange")
-    async def _user_bot_logging(self, ctx: commands.Context) -> None:
-        """
-        Toggle bots from being logged in user updates
-
-        This includes roles and nickname.
-        """
-        if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
-        setting = self.settings[ctx.guild.id]["user_change"]["bots"]
-        self.settings[ctx.guild.id]["user_change"]["bots"] = not setting
-        await self.config.guild(ctx.guild).user_change.bots.set(not setting)
-        if setting:
-            await ctx.send(_("Bots will no longer be tracked in user change logs."))
-        else:
-            await ctx.send(_("Bots will be tracked in user change logs."))
-
-    @_modlog.command(name="botvoice")
-    async def _user_bot_voice_logging(self, ctx: commands.Context) -> None:
-        """
-        Toggle bots from being logged in voice state updates
-        """
-        if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
-        setting = self.settings[ctx.guild.id]["voice_change"]["bots"]
-        self.settings[ctx.guild.id]["voice_change"]["bots"] = not setting
-        await self.config.guild(ctx.guild).voice_change.bots.set(not setting)
-        if setting:
-            await ctx.send(_("Bots will no longer be tracked in voice update logs."))
-        else:
-            await ctx.send(_("Bots will be tracked in voice update logs."))
+        await ctx.send(msg.format(enabled_or_disabled=verb))
 
     @_modlog.command(name="nickname", aliases=["nicknames"])
     async def _user_nickname_logging(self, ctx: commands.Context) -> None:
@@ -718,9 +646,11 @@ class ExtendedModLog(EventMixin, commands.Cog):
             cur_ignored.append(channel.id)
             await self.config.guild(guild).ignored_channels.set(cur_ignored)
             self.settings[guild.id]["ignored_channels"] = cur_ignored
-            await ctx.send(_(" Now ignoring events in ") + channel.mention)
+            await ctx.send(_("Now ignoring events in {channel}.").format(channel=channel.mention))
         else:
-            await ctx.send(channel.mention + _(" is already being ignored."))
+            await ctx.send(
+                _("{channel} is already being ignored.").format(channel=channel.mention)
+            )
 
     @_modlog.command()
     async def unignore(
@@ -743,6 +673,82 @@ class ExtendedModLog(EventMixin, commands.Cog):
             cur_ignored.remove(channel.id)
             await self.config.guild(guild).ignored_channels.set(cur_ignored)
             self.settings[guild.id]["ignored_channels"] = cur_ignored
-            await ctx.send(_(" Now tracking events in ") + channel.mention)
+            await ctx.send(_("Now tracking events in {channel}.").format(channel=channel.mention))
         else:
-            await ctx.send(channel.mention + _(" is not being ignored."))
+            await ctx.send(_("{channel} is not being ignored.").format(channel=channel.mention))
+
+    @_modlog.group(name="bot", aliases=["bots"])
+    async def _modlog_bot(self, ctx: commands.Context) -> None:
+        """Bot filter settings"""
+
+    @_modlog_bot.command(name="edits", aliases=["edit"])
+    async def _edit_toggle_bots(self, ctx: commands.Context) -> None:
+        """
+        Toggle message edit notifications for bot users
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        guild = ctx.message.guild
+        msg = _("Bots edited messages {enabled_or_disabled}.")
+        if not await self.config.guild(guild).message_edit.bots():
+            await self.config.guild(guild).message_edit.bots.set(True)
+            self.settings[guild.id]["message_edit"]["bots"] = True
+            verb = _("enabled")
+        else:
+            await self.config.guild(guild).message_edit.bots.set(False)
+            self.settings[guild.id]["message_edit"]["bots"] = False
+            verb = _("disabled")
+        await ctx.send(msg.format(enabled_or_disabled=verb))
+
+    @_modlog_bot.command(name="deletes", aliases=["delete"])
+    async def _delete_bots(self, ctx: commands.Context) -> None:
+        """
+        Toggle message delete notifications for bot users
+
+        This will not affect delete notifications for messages that aren't in bot's cache.
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        guild = ctx.message.guild
+        msg = _("Bot delete logs {enabled_or_disabled}.")
+        if not await self.config.guild(guild).message_delete.bots():
+            await self.config.guild(guild).message_delete.bots.set(True)
+            self.settings[ctx.guild.id]["message_delete"]["bots"] = True
+            verb = _("enabled")
+        else:
+            await self.config.guild(guild).message_delete.bots.set(False)
+            self.settings[ctx.guild.id]["message_delete"]["bots"] = False
+            verb = _("disabled")
+        await ctx.send(msg.format(enabled_or_disabled=verb))
+
+    @_modlog_bot.command(name="change")
+    async def _user_bot_logging(self, ctx: commands.Context) -> None:
+        """
+        Toggle bots from being logged in user updates
+
+        This includes roles and nickname.
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        setting = self.settings[ctx.guild.id]["user_change"]["bots"]
+        self.settings[ctx.guild.id]["user_change"]["bots"] = not setting
+        await self.config.guild(ctx.guild).user_change.bots.set(not setting)
+        if setting:
+            await ctx.send(_("Bots will no longer be tracked in user change logs."))
+        else:
+            await ctx.send(_("Bots will be tracked in user change logs."))
+
+    @_modlog_bot.command(name="voice")
+    async def _user_bot_voice_logging(self, ctx: commands.Context) -> None:
+        """
+        Toggle bots from being logged in voice state updates
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        setting = self.settings[ctx.guild.id]["voice_change"]["bots"]
+        self.settings[ctx.guild.id]["voice_change"]["bots"] = not setting
+        await self.config.guild(ctx.guild).voice_change.bots.set(not setting)
+        if setting:
+            await ctx.send(_("Bots will no longer be tracked in voice update logs."))
+        else:
+            await ctx.send(_("Bots will be tracked in voice update logs."))

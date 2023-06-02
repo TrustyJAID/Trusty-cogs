@@ -118,12 +118,12 @@ class RoleToolsMessages(RoleToolsMixin):
             msg = _("You need to specify at least one menu setup previously.")
             await ctx.send(msg)
             return
-        view = SelectRoleView(self)
+        new_view = SelectRoleView(self)
         for select_menu in menus:
-            view.add_item(select_menu)
+            new_view.add_item(select_menu)
         for button in buttons:
-            view.add_item(button)
-        await message.edit(view=view)
+            new_view.add_item(button)
+        await message.edit(view=new_view)
         message_key = f"{message.channel.id}-{message.id}"
         self.views[message_key] = new_view
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
@@ -204,10 +204,10 @@ class RoleToolsMessages(RoleToolsMixin):
             msg = _("You need to specify at least one menu setup previously.")
             await ctx.send(msg)
             return
-        view = SelectRoleView(self)
+        new_view = SelectRoleView(self)
         for select_menu in menus:
-            view.add_item(select_menu)
-        await message.edit(view=view)
+            new_view.add_item(select_menu)
+        await message.edit(view=new_view)
         message_key = f"{message.channel.id}-{message.id}"
         self.views[message_key] = new_view
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
@@ -272,10 +272,10 @@ class RoleToolsMessages(RoleToolsMixin):
             msg = _("I cannot edit someone elses message to include buttons.")
             await ctx.send(msg)
             return
-        view = ButtonRoleView(self)
+        new_view = ButtonRoleView(self)
         for button in buttons:
-            view.add_item(button)
-        await message.edit(view=view)
+            new_view.add_item(button)
+        await message.edit(view=new_view)
         message_key = f"{message.channel.id}-{message.id}"
         self.views[message_key] = new_view
         async with self.config.guild(ctx.guild).buttons() as saved_buttons:

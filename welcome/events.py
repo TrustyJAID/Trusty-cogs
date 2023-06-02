@@ -118,9 +118,9 @@ class Events:
         if EMBED_DATA["thumbnail"]:
             url = EMBED_DATA["thumbnail"]
             if url == "guild":
-                url = str(guild.icon.url)
+                url = str(guild.icon.url) if guild.icon else ""
             elif url == "splash":
-                url = str(guild.splash_url)
+                url = str(guild.splash) if guild.splash else ""
             elif url == "avatar":
                 url = str(member.display_avatar) if isinstance(member, discord.Member) else ""
             em.set_thumbnail(url=url)
@@ -131,18 +131,18 @@ class Events:
             if EMBED_DATA["image_goodbye"] and not is_welcome:
                 url = EMBED_DATA["image_goodbye"]
             if url == "guild":
-                url = str(guild.icon.url)
+                url = str(guild.icon.url) if guild.icon else ""
             elif url == "splash":
-                url = str(guild.splash_url)
+                url = str(guild.splash) if guild.splash else ""
             elif url == "avatar":
                 url = str(member.display_avatar) if isinstance(member, discord.Member) else ""
             em.set_image(url=url)
         if EMBED_DATA["icon_url"]:
             url = EMBED_DATA["icon_url"]
             if url == "guild":
-                url = str(guild.icon.url)
+                url = str(guild.icon.url) if guild.icon else ""
             elif url == "splash":
-                url = str(guild.splash_url)
+                url = str(guild.splash) if guild.splash else ""
             elif url == "avatar":
                 url = str(member.display_avatar) if isinstance(member, discord.Member) else ""
             em.set_author(name=username, icon_url=url)
@@ -424,7 +424,7 @@ class Events:
         default_greeting = "Welcome {0.name} to {1.name}!"
         default_goodbye = "See you later {0.name}!"
         default_bot_msg = "Hello {0.name}, fellow bot!"
-        guild = ctx.message.guild
+        guild = cast(discord.Guild, ctx.message.guild)
         guild_settings = await self.config.guild(guild).get_raw()
         # log.info(guild_settings)
         if version_info >= VersionInfo.from_str("3.4.0"):
@@ -448,7 +448,8 @@ class Events:
             rand_msg = default_goodbye
         is_welcome = not leave
         is_embed = guild_settings["EMBED"]
-        member = ctx.message.author
+        member = cast(discord.Member, ctx.message.author)
+        members = cast(List[discord.Member], [ctx.author, ctx.me])
         whisper_settings = guild_settings["WHISPER"]
         if channel is None and whisper_settings not in ["BOTH", True]:
             msg = _("I can't find the specified channel. It might have been deleted.")
@@ -475,11 +476,14 @@ class Events:
         if bot or whisper_settings is not True:
             if not channel:
                 return
-            if guild_settings["GROUPED"]:
-                member = ctx.author
-                members = cast(List[discord.Member], [ctx.author, ctx.me])
+
             if is_embed and channel.permissions_for(guild.me).embed_links:
-                em = await self.make_embed(members, guild, rand_msg, is_welcome)
+                if guild_settings["GROUPED"]:
+                    em = await self.make_embed(members, guild, rand_msg, is_welcome)
+                    # only pass the list of members to simulate a grouped welcome
+                else:
+                    em = await self.make_embed(member, guild, rand_msg, is_welcome)
+
                 if await self.config.guild(guild).EMBED_DATA.mention():
                     if guild_settings["GROUPED"]:
                         await channel.send(

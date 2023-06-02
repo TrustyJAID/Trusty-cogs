@@ -13,8 +13,6 @@ from redbot.core.i18n import Translator, cog_i18n
 
 # from redbot.core.utils import menus
 from redbot.core.utils.chat_formatting import humanize_list, pagify
-from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.predicates import ReactionPredicate
 
 from .converters import (
     ChannelUserRole,
@@ -28,25 +26,11 @@ from .converters import (
 )
 from .menus import BaseMenu, ExplainReTriggerPages, ReTriggerMenu, ReTriggerPages
 from .slash import ReTriggerSlash
-from .triggerhandler import TriggerHandler
+from .triggerhandler import ALLOW_OCR, ALLOW_RESIZE, TriggerHandler
 
 log = getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
 
-try:
-    from PIL import Image, ImageSequence
-
-    try:
-        import pytesseract
-
-        ALLOW_OCR = True
-    except ImportError:
-        ALLOW_OCR = False
-
-    ALLOW_RESIZE = True
-except ImportError:
-    ALLOW_RESIZE = False
-    ALLOW_OCR = False
 
 try:
     import regex as re
@@ -77,7 +61,7 @@ class ReTrigger(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.23.0"
+    __version__ = "2.23.2"
 
     def __init__(self, bot):
         super().__init__()
@@ -145,6 +129,7 @@ class ReTrigger(
 
     @save_loop.before_loop
     async def before_save_loop(self):
+        await self.bot.wait_until_red_ready()
         if 218773382617890828 in self.bot.owner_ids:
             # This doesn't work on bot startup but that's fine
             try:
@@ -156,11 +141,12 @@ class ReTrigger(
         for guild, settings in data.items():
             self.triggers[guild] = {}
             for trigger in settings["trigger_list"].values():
+                new_trigger = await Trigger.from_json(trigger)
                 try:
-                    new_trigger = await Trigger.from_json(trigger)
+                    new_trigger.compile()
                 except Exception:
-                    log.exception("Error trying to compile regex pattern.")
-                    continue
+                    log.exception("Error trying to compile regex pattern in guild %s.", guild)
+                    new_trigger.disable()
                     # I might move this to DM the author of the trigger
                     # before this becomes actually breaking
                 self.triggers[guild][new_trigger.name] = new_trigger
@@ -712,7 +698,8 @@ class ReTrigger(
             return await self._no_trigger(ctx, trigger)
         if not await self.can_edit(ctx.author, trigger):
             return await self._not_authorized(ctx)
-        trigger.regex = re.compile(regex)
+        trigger._raw_regex = regex
+        trigger.compile()
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
         # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
@@ -1252,7 +1239,13 @@ class ReTrigger(
             return await self._not_authorized(ctx)
         if trigger.multi_payload:
             return await self._no_multi(ctx)
-        if not any([t for t in trigger.response_type if t in ["add_role", "remove_role"]]):
+        if not any(
+            [
+                t
+                for t in trigger.response_type
+                if t in [TriggerResponse.add_role, TriggerResponse.remove_role]
+            ]
+        ):
             return await self._no_edit(ctx)
         for role in roles:
             if role >= ctx.me.top_role:
@@ -1266,10 +1259,16 @@ class ReTrigger(
                 await ctx.send(msg)
                 return
         for role in roles:
-            if role.id in trigger.text:
-                trigger.text.remove(role.id)
-            else:
-                trigger.text.append(role.id)
+            if TriggerResponse.add_role in trigger.response_type:
+                if role.id in trigger.add_roles:
+                    trigger.add_roles.remove(role.id)
+                else:
+                    trigger.add_roles.append(role.id)
+            elif TriggerResponse.remove_role in trigger.response_type:
+                if role.id in trigger.remove_roles:
+                    trigger.remove_roles.remove(role.id)
+                else:
+                    trigger.remove_roles.append(role.id)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
         # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
@@ -1302,17 +1301,16 @@ class ReTrigger(
         if "react" not in trigger.response_type:
             return await self._no_edit(ctx)
         for emoji in emojis:
-            if emoji in trigger.text:
-                trigger.text.remove(emoji)
+            if emoji in trigger.reactions:
+                trigger.reactions.remove(emoji)
             else:
-                trigger.text.append(emoji)
+                trigger.reactions.append(emoji)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
         # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         # self.triggers[ctx.guild.id].append(trigger)
-        emoji_s = [f"<{e}>" for e in emojis if len(e) > 5] + [e for e in emojis if len(e) < 5]
         msg = _("Trigger {name} reactions changed to {emojis}").format(
-            name=trigger.name, emojis=humanize_list(emoji_s)
+            name=trigger.name, emojis=humanize_list([str(e) for e in trigger.reactions])
         )
         await ctx.send(msg)
 
@@ -1373,21 +1371,17 @@ class ReTrigger(
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if timeout > 1:
-            msg = await ctx.send(
+            view = ConfirmView(ctx, default=False)
+            await ctx.send(
                 _(
                     "Increasing this could cause the bot to become unstable or allow "
                     "bad regex patterns to continue to exist causing slow downs and "
                     "even fatal crashes on the bot. Do you wish to continue?"
-                )
+                ),
+                view=view,
             )
-            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-            pred = ReactionPredicate.yes_or_no(msg, user=ctx.author)
-            try:
-                await ctx.bot.wait_for("reaction_add", check=pred, timeout=30)
-            except asyncio.TimeoutError:
-                await ctx.send(_("Not changing regex timeout time."))
-                return
-            if pred.result:
+            await view.wait()
+            if view.result:
                 await self.config.trigger_timeout.set(timeout)
                 self.trigger_timeout = timeout
                 await ctx.tick()
@@ -1423,21 +1417,17 @@ class ReTrigger(
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if bypass:
-            msg = await ctx.send(
+            view = ConfirmView(ctx, default=False)
+            await ctx.send(
                 _(
                     "Bypassing this could cause the bot to become unstable or allow "
                     "bad regex patterns to continue to exist causing slow downs and "
                     "even fatal crashes on the bot. Do you wish to continue?"
-                )
+                ),
+                view=view,
             )
-            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-            pred = ReactionPredicate.yes_or_no(msg, user=ctx.author)
-            try:
-                await ctx.bot.wait_for("reaction_add", check=pred, timeout=30)
-            except asyncio.TimeoutError:
-                await ctx.send(_("Not bypassing safe Regex search."))
-                return
-            if pred.result:
+            await view.wait()
+            if view.result:
                 await self.config.guild(ctx.guild).bypass.set(bypass)
                 await ctx.tick()
             else:
@@ -1449,7 +1439,10 @@ class ReTrigger(
     @retrigger.command(usage="[trigger]")
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def list(
-        self, ctx: commands.Context, guild_id: Optional[int] = None, trigger: TriggerExists = None
+        self,
+        ctx: commands.Context,
+        guild_id: Optional[int] = None,
+        trigger: Optional[TriggerExists] = None,
     ) -> None:
         """
         List information about triggers.
@@ -1490,8 +1483,6 @@ class ReTrigger(
                 triggers=list(self.triggers[guild.id].values()),
                 guild=guild,
             ),
-            delete_message_after=False,
-            clear_reactions_after=True,
             timeout=60,
             cog=self,
             page_start=index,
@@ -1596,9 +1587,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command(aliases=["randomtext", "rtext"])
@@ -1633,9 +1623,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -1667,9 +1656,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -1703,9 +1691,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -1740,9 +1727,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -1797,9 +1783,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command(aliases=["randimage", "randimg", "rimage", "rimg"])
@@ -1833,9 +1818,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -1894,9 +1878,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -1953,9 +1936,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -1989,9 +1971,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -2025,9 +2006,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -2060,15 +2040,14 @@ class ReTrigger(
             regex,
             [TriggerResponse.react],
             author,
-            text=emojis,
+            reactions=list(emojis),
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -2099,9 +2078,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command(aliases=["cmd"])
@@ -2140,9 +2118,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command(aliases=["cmdmock"], hidden=True)
@@ -2163,20 +2140,16 @@ class ReTrigger(
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
+        view = ConfirmView(ctx, default=False)
         msg = await ctx.send(
             _(
                 "Mock commands can allow any user to run a command "
                 "as if you did, are you sure you want to add this?"
-            )
+            ),
+            view=view,
         )
-        start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-        pred = ReactionPredicate.yes_or_no(msg, ctx.author)
-        try:
-            await ctx.bot.wait_for("reaction_add", check=pred, timeout=15)
-        except asyncio.TimeoutError:
-            await ctx.send(_("Not creating trigger."))
-            return
-        if not pred.result:
+        await view.wait()
+        if not view.result:
             await ctx.send(_("Not creating trigger."))
             return
         if ctx.guild.id in self.triggers and name in self.triggers[ctx.guild.id]:
@@ -2199,9 +2172,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command(aliases=["deletemsg"])
@@ -2241,9 +2213,8 @@ class ReTrigger(
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -2286,15 +2257,14 @@ class ReTrigger(
             regex,
             [TriggerResponse.add_role],
             author,
-            text=role_ids,
+            add_roles=role_ids,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -2337,15 +2307,14 @@ class ReTrigger(
             regex,
             [TriggerResponse.remove_role],
             author,
-            text=role_ids,
+            remove_roles=role_ids,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)
 
     @retrigger.command()
@@ -2399,18 +2368,29 @@ class ReTrigger(
         if not [i[0] for i in multi_response]:
             await ctx.send(_("You have no actions provided for this trigger."))
             return
+        remove_roles = [r for t in multi_response for r in t[1:] if t[0] == "remove_role"]
+        add_roles = [r for t in multi_response for r in t[1:] if t[0] == "add_role"]
+        reactions = [
+            discord.PartialEmoji.from_str(r)
+            for t in multi_response
+            for r in t[1:]
+            if t[0] == "react"
+        ]
+        log.debug(multi_response)
         new_trigger = Trigger(
             name,
             regex,
             [TriggerResponse(i[0]) for i in multi_response],
             author,
             multi_payload=multi_response,
+            remove_roles=remove_roles,
+            add_roles=add_roles,
+            reactions=reactions,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
-        trigger_list = await self.config.guild(guild).trigger_list()
-        trigger_list[name] = await new_trigger.to_json()
-        await self.config.guild(guild).trigger_list.set(trigger_list)
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            trigger_list[name] = await new_trigger.to_json()
         await self._trigger_set(ctx, name)

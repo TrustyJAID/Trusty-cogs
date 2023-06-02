@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 import discord
 from discord.ext.commands.errors import BadArgument
 from red_commons.logging import getLogger
-from redbot.core.commands import commands
+from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 from redbot.vendored.discord.ext import menus
 
+from .abc import ReTriggerMixin
 from .converters import ChannelUserRole, Trigger, TriggerResponse
 
 try:
@@ -47,17 +48,19 @@ class ReTriggerPages(menus.ListPageSource):
     def __init__(self, triggers: List[Trigger], guild: discord.Guild):
         super().__init__(triggers, per_page=1)
         self.active_triggers = triggers
-        self.selection = None
+        self.selection: Trigger
         self.guild = guild
         self.enabled = False
         self.select_options = []
         for count, trigger in enumerate(triggers):
-            self.select_options.append(discord.SelectOption(label=trigger.name[:25], value=count))
+            self.select_options.append(
+                discord.SelectOption(label=trigger.name[:25], value=str(count))
+            )
 
     def is_paginating(self):
         return True
 
-    async def format_page(self, view: discord.ui.View, trigger: Trigger):
+    async def format_page(self, view: ReTriggerMenu, trigger: Trigger):
         self.selection = trigger
         msg_list = []
         embeds = view.ctx.channel.permissions_for(view.ctx.guild.me).embed_links
@@ -73,29 +76,23 @@ class ReTriggerPages(menus.ListPageSource):
                 author = discord.Object(id=trigger.author)
                 author.name = _("Unknown or Deleted User")
                 author.mention = _("Unknown or Deleted User")
-                author.avatar_url = "https://cdn.discordapp.com/embed/avatars/1.png"
+                author.display_avatar = "https://cdn.discordapp.com/embed/avatars/1.png"
         blacklist = []
         for y in trigger.blacklist:
             try:
                 blacklist.append(await ChannelUserRole().convert(view.ctx, str(y)))
             except BadArgument:
                 continue
-        if embeds:
-            blacklist_s = ", ".join(x.mention for x in blacklist)
-        else:
-            blacklist_s = ", ".join(x.name for x in blacklist)
+        blacklist_s = ", ".join(x.mention for x in blacklist)
         whitelist = []
         for y in trigger.whitelist:
             try:
                 whitelist.append(await ChannelUserRole().convert(view.ctx, str(y)))
             except BadArgument:
                 continue
-        if embeds:
-            whitelist_s = ", ".join(x.mention for x in whitelist)
-        else:
-            whitelist_s = ", ".join(x.name for x in whitelist)
+        whitelist_s = ", ".join(x.mention for x in whitelist)
         if trigger.response_type:
-            responses = humanize_list([t.name for t in trigger.response_type])
+            responses = humanize_list(list({t.name for t in trigger.response_type}))
         else:
             responses = _("This trigger has no actions and should be removed.")
 
@@ -119,7 +116,7 @@ class ReTriggerPages(menus.ListPageSource):
             nsfw=trigger.nsfw,
             thread=trigger.thread.format_str(),
         )
-        text_response = ""
+        text_response: str = ""
         if trigger.ignore_commands:
             info += _("__Ignore commands__: **{ignore}**\n").format(ignore=trigger.ignore_commands)
         if TriggerResponse.text in trigger.response_type:
@@ -145,6 +142,12 @@ class ReTriggerPages(menus.ListPageSource):
             else:
                 response = trigger.text
             info += _("__DM__: ") + "**{response}**\n".format(response=response)
+        if TriggerResponse.dmme in trigger.response_type:
+            if trigger.multi_payload:
+                response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dmme")
+            else:
+                response = trigger.text
+            info += _("__Self DM__: ") + "**{response}**\n".format(response=response)
         if TriggerResponse.command in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "command")
@@ -152,43 +155,18 @@ class ReTriggerPages(menus.ListPageSource):
                 response = trigger.text
             info += _("__Command__: ") + "**{response}**\n".format(response=response)
         if TriggerResponse.react in trigger.response_type:
-            if trigger.multi_payload:
-                emoji_response = [
-                    r for t in trigger.multi_payload for r in t[1:] if t[0] == "react"
-                ]
-            else:
-                emoji_response = trigger.text
-            server_emojis = "".join(f"<{e}>" for e in emoji_response if len(e) > 5)
-            unicode_emojis = "".join(e for e in emoji_response if len(e) < 5)
-            info += _("__Emojis__: ") + server_emojis + unicode_emojis + "\n"
+            server_emojis = "".join(str(e) for e in trigger.reactions)
+            info += _("__Emojis__: ") + server_emojis + "\n"
         if TriggerResponse.add_role in trigger.response_type:
-            if trigger.multi_payload:
-                role_response = [
-                    r for t in trigger.multi_payload for r in t[1:] if t[0] == "add_role"
-                ]
-            else:
-                role_response = trigger.text
-            roles = [view.ctx.guild.get_role(r) for r in role_response]
-            if embeds:
-                roles_list = [r.mention for r in roles if r is not None]
-            else:
-                roles_list = [r.name for r in roles if r is not None]
+            roles = [view.ctx.guild.get_role(r) for r in trigger.add_roles]
+            roles_list = [r.mention for r in roles if r is not None]
             if roles_list:
                 info += _("__Roles Added__: ") + humanize_list(roles_list) + "\n"
             else:
                 info += _("Roles Added: Deleted Roles\n")
         if TriggerResponse.remove_role in trigger.response_type:
-            if trigger.multi_payload:
-                role_response = [
-                    r for t in trigger.multi_payload for r in t[1:] if t[0] == "remove_role"
-                ]
-            else:
-                role_response = trigger.text
-            roles = [view.ctx.guild.get_role(r) for r in role_response]
-            if embeds:
-                roles_list = [r.mention for r in roles if r is not None]
-            else:
-                roles_list = [r.name for r in roles if r is not None]
+            roles = [view.ctx.guild.get_role(r) for r in trigger.remove_roles]
+            roles_list = [r.mention for r in roles if r is not None]
             if roles_list:
                 info += _("__Roles Removed__: ") + humanize_list(roles_list) + "\n"
             else:
@@ -211,16 +189,28 @@ class ReTriggerPages(menus.ListPageSource):
             )
         if trigger.read_filenames:
             info += _("__Read filenames__: **Enabled**\n")
-        if trigger.user_mention:
-            info += _("__User Mentions__: **Enabled**\n")
-        if trigger.everyone_mention:
-            info += _("__Everyone Mentions__: **Enabled**\n")
-        if trigger.role_mention:
-            info += _("__Role Mentions__: **Enabled**\n")
         if trigger.tts:
             info += _("__TTS__: **Enabled**\n")
         if trigger.chance:
             info += _("__Chance__: **1 in {number}**\n").format(number=trigger.chance)
+        if TriggerResponse.text in trigger.response_type:
+            info += _("__Mentions__:\n")
+            info += _("- Users: **{user_mention}**\n").format(user_mention=trigger.user_mention)
+            info += _("- Roles: **{role_mention}**\n").format(role_mention=trigger.role_mention)
+            info += _("- Everyone: **{everyone_mention}**\n").format(
+                everyone_mention=trigger.everyone_mention
+            )
+        if trigger.regex:
+            pattern_error = ""
+            pattern = trigger.regex.pattern
+        else:
+            try:
+                trigger.compile()
+                pattern = trigger.regex.pattern
+                pattern_error = ""
+            except Exception as e:
+                pattern_error = str(e)
+                pattern = trigger._raw_regex
         if trigger.embeds:
             info += _("__Embeds__: **Enabled**\n")
         if embeds:
@@ -229,7 +219,7 @@ class ReTriggerPages(menus.ListPageSource):
                 colour=await view.cog.bot.get_embed_colour(view.ctx.channel),
                 title=_("Triggers for {guild}").format(guild=self.guild.name),
             )
-            em.set_author(name=author, icon_url=author.avatar.url)
+            em.set_author(name=author, icon_url=author.display_avatar)
             if trigger.created_at == 0:
                 em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
             else:
@@ -254,11 +244,13 @@ class ReTriggerPages(menus.ListPageSource):
                         )
                     else:
                         em.add_field(name=_("__Text__"), value=page)
-            for page in pagify(trigger.regex.pattern, page_length=1000):
-                em.add_field(name=_("__Regex__"), value=box(page, lang="bf"))
+            for page in pagify(pattern, page_length=1000):
+                em.add_field(name=_("__Regex__"), value=box(page, lang="re"))
+            if pattern_error:
+                em.add_field(name=_("__Error__"), value=pattern_error)
             msg_list.append(em)
         else:
-            info += _("Regex: ") + box(trigger.regex.pattern[: 2000 - len(info)], lang="bf")
+            info += _("Regex: ") + box(pattern[: 2000 - len(info)], lang="re")
         if embeds:
             return em
         else:
@@ -268,6 +260,7 @@ class ReTriggerPages(menus.ListPageSource):
 
 class ReTriggerSelectOption(discord.ui.Select):
     def __init__(self, options: List[discord.SelectOption], placeholder: str):
+        self.view: ReTriggerMenu
         super().__init__(min_values=1, max_values=1, options=options, placeholder=placeholder)
 
     async def callback(self, interaction: discord.Interaction):
@@ -281,6 +274,7 @@ class StopButton(discord.ui.Button):
         style: discord.ButtonStyle,
         row: Optional[int],
     ):
+        self.view: Union[ReTriggerMenu, BaseMenu]
         super().__init__(style=style, row=row)
         self.style = style
         self.emoji = "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}"
@@ -296,6 +290,7 @@ class ForwardButton(discord.ui.Button):
         style: discord.ButtonStyle,
         row: Optional[int],
     ):
+        self.view: Union[ReTriggerMenu, BaseMenu]
         super().__init__(style=style, row=row)
         self.style = style
         self.emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
@@ -310,6 +305,7 @@ class BackButton(discord.ui.Button):
         style: discord.ButtonStyle,
         row: Optional[int],
     ):
+        self.view: Union[ReTriggerMenu, BaseMenu]
         super().__init__(style=style, row=row)
         self.style = style
         self.emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
@@ -324,6 +320,7 @@ class LastItemButton(discord.ui.Button):
         style: discord.ButtonStyle,
         row: Optional[int],
     ):
+        self.view: Union[ReTriggerMenu, BaseMenu]
         super().__init__(style=style, row=row)
         self.style = style
         self.emoji = (
@@ -340,6 +337,7 @@ class FirstItemButton(discord.ui.Button):
         style: discord.ButtonStyle,
         row: Optional[int],
     ):
+        self.view: Union[ReTriggerMenu, BaseMenu]
         super().__init__(style=style, row=row)
         self.style = style
         self.emoji = (
@@ -356,6 +354,7 @@ class ToggleTriggerButton(discord.ui.Button):
         style: discord.ButtonStyle,
         row: Optional[int],
     ):
+        self.view: ReTriggerMenu
         super().__init__(style=style, row=row)
         self.style = discord.ButtonStyle.red
         self.emoji = "\N{NEGATIVE SQUARED CROSS MARK}"
@@ -391,7 +390,7 @@ class ReTriggerEditModal(discord.ui.Modal):
             style=discord.TextStyle.paragraph, label="Response", default=trigger.text
         )
         self.regex = discord.ui.TextInput(
-            style=discord.TextStyle.paragraph, label="Regex", default=trigger.regex.pattern
+            style=discord.TextStyle.paragraph, label="Regex", default=trigger._raw_regex
         )
         self.add_item(self.regex)
         reply_options = [
@@ -421,14 +420,17 @@ class ReTriggerEditModal(discord.ui.Modal):
             self.trigger.text = self.text.value
             edited_text = True
             msg += _("Text: `{text}`\n").format(text=self.text.value)
-        if self.trigger.regex.pattern != self.regex.value:
+        if self.trigger._raw_regex != self.regex.value:
             try:
-                self.trigger.regex = re.compile(self.regex.value)
+                re.compile(self.regex.value)
             except Exception as e:
                 await interaction.response.send_message(
                     _("The provided regex pattern is not valid: {e}").format(e=e), ephemeral=True
                 )
                 return
+            self.trigger._raw_regex = self.regex.value
+            self.trigger.compile()
+            # we've already checked if the regex was valid
             edited_regex = True
             msg += _("Regex: `{regex}`\n").format(regex=self.regex.value)
         if self.replies.values:
@@ -469,6 +471,7 @@ class ReTriggerEditButton(discord.ui.Button):
         style: discord.ButtonStyle,
         row: Optional[int],
     ):
+        self.view: ReTriggerMenu
         super().__init__(style=style, row=row)
         self.style = style
         self.emoji = "\N{GEAR}\N{VARIATION SELECTOR-16}"
@@ -485,6 +488,7 @@ class DeleteTriggerButton(discord.ui.Button):
         style: discord.ButtonStyle,
         row: Optional[int],
     ):
+        self.view: ReTriggerMenu
         super().__init__(style=style, row=row, label=_("Delete Trigger"))
         self.style = style
         self.emoji = "\N{PUT LITTER IN ITS PLACE SYMBOL}"
@@ -505,6 +509,7 @@ class DeleteTriggerButton(discord.ui.Button):
             await interaction.response.edit_message(
                 content=_("This trigger has been deleted."), view=None
             )
+            await self.view.show_page(self.view.current_page, interaction=None)
 
     async def callback(self, interaction: discord.Interaction):
         """Enables and disables triggers"""
@@ -531,14 +536,10 @@ class DeleteTriggerButton(discord.ui.Button):
 class ReTriggerMenu(discord.ui.View):
     def __init__(
         self,
-        source: menus.PageSource,
-        cog: Optional[commands.Cog] = None,
+        source: ReTriggerPages,
+        cog: ReTriggerMixin,
         page_start: int = 0,
-        clear_reactions_after: bool = True,
-        delete_message_after: bool = False,
         timeout: int = 180,
-        message: discord.Message = None,
-        **kwargs: Any,
     ) -> None:
         super().__init__(
             timeout=timeout,
@@ -565,11 +566,11 @@ class ReTriggerMenu(discord.ui.View):
         self.add_item(self.delete_button)
         self.add_item(self.edit_button)
         self.current_page = page_start
-        self.select_view: Optional[ReTriggerSelectOption] = None
+        self.select_view: ReTriggerSelectOption
         self.author = None
 
     @property
-    def source(self):
+    def source(self) -> ReTriggerPages:
         return self._source
 
     async def on_timeout(self):
@@ -612,8 +613,21 @@ class ReTriggerMenu(discord.ui.View):
         )
         return self.message
 
+    async def _update_buttons(self):
+        trigger = self.source.selection
+        guild = self.source.guild
+        if trigger.name not in self.cog.triggers[guild.id]:
+            self.delete_button.disabled = True
+            self.edit_button.disabled = True
+            self.toggle_button.disabled = True
+        else:
+            self.delete_button.disabled = False
+            self.edit_button.disabled = False
+            self.toggle_button.disabled = False
+
     async def _get_kwargs_from_page(self, page: int):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
+        await self._update_buttons()
         if isinstance(value, dict):
             return value
         elif isinstance(value, str):
@@ -621,7 +635,7 @@ class ReTriggerMenu(discord.ui.View):
         elif isinstance(value, discord.Embed):
             return {"embeds": [value], "content": None}
 
-    async def show_page(self, page_number: int, interaction: discord.Interaction):
+    async def show_page(self, page_number: int, interaction: Optional[discord.Interaction]):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
@@ -641,6 +655,9 @@ class ReTriggerMenu(discord.ui.View):
             )
             self.add_item(self.select_view)
         # await self.message.edit(**kwargs, view=self)
+        if interaction is None:
+            await self.message.edit(**kwargs, view=self)
+            return
         if interaction.response.is_done() and self.message is not None:
             await interaction.followup.edit_message(self.message.id, **kwargs, view=self)
         else:

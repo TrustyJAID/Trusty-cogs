@@ -426,7 +426,7 @@ class Tweets(TweetsAPI, commands.Cog):
             "1. Visit https://apps.twitter.com and apply for a developer account.\n"
             "2. Once your account is approved Create a Project\n"
             "3. Add an app to the project and copy the **Bearer Token** "
-            "(Optionally) Copy the **Client ID** and **Client Secret**"
+            "(Optionally) Copy the **Client ID** and **Client Secret**\n"
             "4. Under User authentication settings enable OAuth 2.0, customize the settings "
             "however you want the bot to work, and remember or set the redirect uri.\n\n"
             "5. Do `[p]set api twitter "

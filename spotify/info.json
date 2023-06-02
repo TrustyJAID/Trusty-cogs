@@ -20,7 +20,8 @@
     "required_cogs": {},
     "requirements": [
         "tekore",
-        "tabulate"
+        "tabulate",
+        "httpx>=0.15,<0.25"
     ],
     "short": "Control Spotify through Discord!",
     "tags": [

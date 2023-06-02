@@ -55,7 +55,7 @@ HEADER = (
     "{body}\n\n"
     "Any questions you can find [TrustyBot](https://discordapp.com/api/oauth2/authorize?client_id=268562382173765643&permissions=2146958583&scope=bot) and myself over on [my server](https://discord.gg/wVVrqej) or on the [Redbot Cog Support server](https://discord.gg/GET4DVk).\n"
     "## Credits\n"
-    "Thank you to everyone who has pushed me to think about new ideas and implement them.\n"
+    "Thank you to everyone who has pushed me to think about new ideas and implement them. Including but not limited to:\n{credits}\n"
 )
 
 
@@ -425,6 +425,7 @@ def countchars(include_hidden: bool = False, include_disabled: bool = False):
 def makereadme():
     """Generate README.md from info about all cogs"""
     table_data = []
+    authors = set()
     for folder in os.listdir(ROOT):
         if folder.startswith(".") or folder.startswith("_"):
             continue
@@ -452,6 +453,9 @@ def makereadme():
             to_append.append(description)
             to_append.append(babel_list(info.author, style="standard", locale="en"))
             table_data.append(to_append)
+        if info:
+            for author in info.author:
+                authors.add(author)
 
     body = tabulate.tabulate(
         table_data,
@@ -463,8 +467,10 @@ def makereadme():
         ],
         tablefmt="github",
     )
+    authors.remove("TrustyJAID")
+    credits = "\n".join(f"- {i}" for i in sorted(authors))
     with open(f"{ROOT}/README.md", "w") as outfile:
-        outfile.write(HEADER.format(body=body))
+        outfile.write(HEADER.format(body=body, credits=credits))
 
 
 @cli.command()
