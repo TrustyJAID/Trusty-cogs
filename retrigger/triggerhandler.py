@@ -369,7 +369,6 @@ class TriggerHandler(ReTriggerMixin):
                 content += await self.get_image_text(message)
             if trigger.read_embeds and len(message.embeds) > 0:
                 content += "\n".join(self.convert_embed_to_string(embed) for embed in message.embeds)
-                print(content)
             if trigger.regex is None:
                 log.debug(
                     "ReTrigger: Trigger %r must have invalid regex.",
