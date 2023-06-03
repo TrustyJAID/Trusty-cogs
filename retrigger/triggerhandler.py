@@ -368,7 +368,7 @@ class TriggerHandler(ReTriggerMixin):
             if trigger.ocr_search and ALLOW_OCR:
                 content += await self.get_image_text(message)
             if trigger.read_embeds and len(message.embeds) > 0:
-                content += "\n".join(self.convert_embed_to_string(embed) for embed in message.embeds)
+                content += "\n".join(self.convert_embed_to_string(embed, index) for index, embed in enumerate(message.embeds))
             if trigger.regex is None:
                 log.debug(
                     "ReTrigger: Trigger %r must have invalid regex.",
@@ -388,23 +388,26 @@ class TriggerHandler(ReTriggerMixin):
                 await self.perform_trigger(message, trigger, search[1])
                 return
 
-    def convert_embed_to_string(self, embed: discord.Embed) -> str:
+    @staticmethod
+    def convert_embed_to_string(embed: discord.Embed, embed_index: int = 0) -> str:
         embed_dict = embed.to_dict()
         flattened_embed_dict = {}
-        field_blacklist = ["type", "timestamp", "color", "proxy_url", "height", "width", "proxy_icon_url"]
-        for field, value in {k: v for k, v in embed_dict.items() if k not in field_blacklist}.items():
-            if type(value) is dict:
-                for subfield in {k for k in value if k not in field_blacklist}:
-                    flattened_embed_dict[field.capitalize() + subfield.capitalize()] = value[subfield]
-            elif type(value) is list:
-                for embedfields in value:
-                    flattened_embed_dict[field.capitalize() + embedfields["name"].capitalize()] = embedfields["value"]
+        field_blacklist = ["type", "color", "proxy_url", "height", "width", "proxy_icon_url"]
+        for field, value in embed_dict.items():
+            if field in field_blacklist:
+                continue
+            if isinstance(value, dict):
+                for subfield in value:
+                    if subfield in field_blacklist:
+                        continue
+                    flattened_embed_dict[f"{field.lower()}-{subfield.lower()}"] = value[subfield]
+            elif isinstance(value, list):
+                for field_index, embedfields in enumerate(value):
+                    emfield_name = embedfields["name"].lower()
+                    flattened_embed_dict[f"{field.lower()}-{field_index}-{emfield_name}"] = embedfields["value"]
             else:
-                flattened_embed_dict[field.capitalize()] = value
-        embed_string = ''
-        for field, value in flattened_embed_dict.items():
-            embed_string += f"\n{field}: {value}"
-        return embed_string
+                flattened_embed_dict[field.lower()] = value
+        return "\n".join(f"embed-{embed_index}-{field}: {value}" for field, value in flattened_embed_dict.items())
 
     async def get_image_text(self, message: discord.Message) -> str:
         """
