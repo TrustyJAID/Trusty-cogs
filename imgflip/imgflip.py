@@ -144,7 +144,6 @@ class Memes(discord.app_commands.Transformer):
     async def autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> List[discord.app_commands.Choice]:
-
         if not self.meme_list:
             cog: Optional[Imgflip] = interaction.client.get_cog("Imgflip")
             if cog is None:

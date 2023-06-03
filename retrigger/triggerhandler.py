@@ -368,7 +368,10 @@ class TriggerHandler(ReTriggerMixin):
             if trigger.ocr_search and ALLOW_OCR:
                 content += await self.get_image_text(message)
             if trigger.read_embeds and len(message.embeds) > 0:
-                content += "\n".join(self.convert_embed_to_string(embed, index) for index, embed in enumerate(message.embeds))
+                content += "\n".join(
+                    self.convert_embed_to_string(embed, index)
+                    for index, embed in enumerate(message.embeds)
+                )
             if trigger.regex is None:
                 log.debug(
                     "ReTrigger: Trigger %r must have invalid regex.",
@@ -404,10 +407,15 @@ class TriggerHandler(ReTriggerMixin):
             elif isinstance(value, list):
                 for field_index, embedfields in enumerate(value):
                     emfield_name = embedfields["name"].lower()
-                    flattened_embed_dict[f"{field.lower()}-{field_index}-{emfield_name}"] = embedfields["value"]
+                    flattened_embed_dict[
+                        f"{field.lower()}-{field_index}-{emfield_name}"
+                    ] = embedfields["value"]
             else:
                 flattened_embed_dict[field.lower()] = value
-        return "\n".join(f"embed-{embed_index}-{field}: {value}" for field, value in flattened_embed_dict.items())
+        return "\n".join(
+            f"embed-{embed_index}-{field}: {value}"
+            for field, value in flattened_embed_dict.items()
+        )
 
     async def get_image_text(self, message: discord.Message) -> str:
         """

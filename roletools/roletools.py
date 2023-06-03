@@ -148,7 +148,6 @@ class RoleTools(
         self._ready.set()
 
     async def cog_load(self) -> None:
-
         if await self.config.version() < "1.0.1":
             sticky_role_config = Config.get_conf(
                 None, identifier=1358454876, cog_name="StickyRoles"

@@ -269,9 +269,9 @@ class ReTriggerSlash(ReTriggerMixin):
     @edit_slash.command(name="readembeds")
     @app_commands.checks.has_permissions(manage_messages=True)
     async def toggle_read_embeds_slash(
-            self,
-            interaction: discord.Interaction,
-            trigger: app_commands.Transform[Trigger, TriggerTransformer],
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[Trigger, TriggerTransformer],
     ):
         """Toggle whether to include embed contents in searched text."""
         ctx = await interaction.client.get_context(interaction)

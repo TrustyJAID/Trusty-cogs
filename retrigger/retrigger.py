@@ -779,7 +779,9 @@ class ReTrigger(
             trigger_list[trigger.name] = await trigger.to_json()
         # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         # self.triggers[ctx.guild.id].append(trigger)
-        msg = _("Trigger {name} embeds set to: {embeds}").format(name=trigger.name, embeds=trigger.read_embeds)
+        msg = _("Trigger {name} embeds set to: {embeds}").format(
+            name=trigger.name, embeds=trigger.read_embeds
+        )
         await ctx.send(msg)
 
     @_edit.command(name="readfilenames", aliases=["filenames"])
