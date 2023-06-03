@@ -243,7 +243,7 @@ class TriggerHandler(ReTriggerMixin):
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
-        if "content" not in payload.data:
+        if "content" not in payload.data and "embeds" not in payload.data:
             return
         if "guild_id" not in payload.data:
             return
@@ -257,7 +257,7 @@ class TriggerHandler(ReTriggerMixin):
         if not any(t.check_edits for t in self.triggers[guild.id].values()):
             # log.debug(f"No triggers in {guild=} have check_edits enabled")
             return
-        if "bot" in payload.data["author"]:
+        if "bot" in payload.data.get("author", []):
             return
         channel = guild.get_channel(int(payload.data["channel_id"]))
         try:
@@ -367,6 +367,11 @@ class TriggerHandler(ReTriggerMixin):
 
             if trigger.ocr_search and ALLOW_OCR:
                 content += await self.get_image_text(message)
+            if trigger.read_embeds and len(message.embeds) > 0:
+                content += "\n".join(
+                    self.convert_embed_to_string(embed, index)
+                    for index, embed in enumerate(message.embeds)
+                )
             if trigger.regex is None:
                 log.debug(
                     "ReTrigger: Trigger %r must have invalid regex.",
@@ -385,6 +390,32 @@ class TriggerHandler(ReTriggerMixin):
                 log.debug("ReTrigger: message from %r triggered %r", author, trigger)
                 await self.perform_trigger(message, trigger, search[1])
                 return
+
+    @staticmethod
+    def convert_embed_to_string(embed: discord.Embed, embed_index: int = 0) -> str:
+        embed_dict = embed.to_dict()
+        flattened_embed_dict = {}
+        field_blacklist = ["type", "color", "proxy_url", "height", "width", "proxy_icon_url"]
+        for field, value in embed_dict.items():
+            if field in field_blacklist:
+                continue
+            if isinstance(value, dict):
+                for subfield in value:
+                    if subfield in field_blacklist:
+                        continue
+                    flattened_embed_dict[f"{field.lower()}-{subfield.lower()}"] = value[subfield]
+            elif isinstance(value, list):
+                for field_index, embedfields in enumerate(value):
+                    emfield_name = embedfields["name"].lower()
+                    flattened_embed_dict[
+                        f"{field.lower()}-{field_index}-{emfield_name}"
+                    ] = embedfields["value"]
+            else:
+                flattened_embed_dict[field.lower()] = value
+        return "\n".join(
+            f"embed-{embed_index}-{field}: {value}"
+            for field, value in flattened_embed_dict.items()
+        )
 
     async def get_image_text(self, message: discord.Message) -> str:
         """

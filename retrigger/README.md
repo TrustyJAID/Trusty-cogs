@@ -242,6 +242,7 @@ Edit various settings in a set trigger.
  - **readfilenames** Edit whether or not a trigger will append filenames of attachments to the search.
  - **deleteafter** Text triggers can have an optional delete_after time set, this can be used to edit it.
  - **chance** Triggers can be setup with a chance to occur in form of `1 in chance`.
+ - **readembeds** Toggle whether the bot will search the contents of embeds. **Requires `edited` also be enabled.**
 
 ### **modlog**
 Set which events to record in the modlog. ReTrigger has a built in modlog setup which can be used to track when and how ReTrigger is performing automated moderation actions.

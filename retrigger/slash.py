@@ -266,6 +266,17 @@ class ReTriggerSlash(ReTriggerMixin):
         ctx = await interaction.client.get_context(interaction)
         await self.toggle_nsfw(ctx, trigger)
 
+    @edit_slash.command(name="readembeds")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    async def toggle_read_embeds_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[Trigger, TriggerTransformer],
+    ):
+        """Toggle whether to include embed contents in searched text."""
+        ctx = await interaction.client.get_context(interaction)
+        await self.toggle_read_embeds(ctx, trigger)
+
     @edit_slash.command(name="readfilenames")
     @app_commands.checks.has_permissions(manage_messages=True)
     async def toggle_filename_search_slash(

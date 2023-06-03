@@ -758,6 +758,32 @@ class ReTrigger(
         msg = _("Trigger {name} NSFW set to: {nsfw}").format(name=trigger.name, nsfw=trigger.nsfw)
         await ctx.send(msg)
 
+    @_edit.command(name="readembeds")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def toggle_read_embeds(self, ctx: commands.Context, trigger: TriggerExists) -> None:
+        """
+        Toggle whether a trigger will check embeds.
+        This will allow the additional searching of Embed content.
+        `<trigger>` is the name of the trigger.
+
+        See https://regex101.com/ for help building a regex pattern.
+        See `[p]retrigger explain` or click the link below for more details.
+        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await self._no_trigger(ctx, trigger)
+        if not await self.can_edit(ctx.author, trigger):
+            return await self._not_authorized(ctx)
+        trigger.read_embeds = not trigger.read_embeds
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
+        # self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} embeds set to: {embeds}").format(
+            name=trigger.name, embeds=trigger.read_embeds
+        )
+        await ctx.send(msg)
+
     @_edit.command(name="readfilenames", aliases=["filenames"])
     @checks.mod_or_permissions(manage_messages=True)
     async def toggle_filename_search(self, ctx: commands.Context, trigger: TriggerExists) -> None:
