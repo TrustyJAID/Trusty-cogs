@@ -6,7 +6,7 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
-from .abc import MixinMeta
+from .abc import HockeyMixin
 from .constants import TEAMS
 from .helper import StandingsFinder, StateFinder, TeamFinder
 from .standings import Conferences, Divisions, Standings
@@ -15,10 +15,10 @@ _ = Translator("Hockey", __file__)
 
 log = getLogger("red.trusty-cogs.Hockey")
 
-hockeyset_commands = MixinMeta.hockeyset_commands
+hockeyset_commands = HockeyMixin.hockeyset_commands
 
 
-class HockeySetCommands(MixinMeta):
+class HockeySetCommands(HockeyMixin):
     """
     All the commands grouped under `[p]hockeyset`
     """

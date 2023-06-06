@@ -315,6 +315,8 @@ class TimezoneFinder(Converter):
 
 
 class LeaderboardType(Enum):
+    worst_playoffs = -2
+    worst_preseason = -1
     worst = 0
     preseason = 1
     preseason_weekly = 2
@@ -326,10 +328,73 @@ class LeaderboardType(Enum):
     last_week = 8
     playoffs_last_week = 9
 
+    @classmethod
+    def from_str(cls, name: str) -> LeaderboardType:
+        leaderboard_type = name.replace(" ", "_").lower()
+        if leaderboard_type in ("seasonal", "season"):
+            return LeaderboardType(3)
+        elif leaderboard_type in ("weekly", "week"):
+            return LeaderboardType(4)
+        elif leaderboard_type in ("playoffs", "playoff"):
+            return LeaderboardType(5)
+        elif leaderboard_type in ("playoffs_weekly", "playoff_weekly"):
+            return LeaderboardType(6)
+        elif leaderboard_type in ("pre-season", "preseason"):
+            return LeaderboardType(1)
+        elif leaderboard_type in ("pre-season_weekly", "preseason_weekly"):
+            return LeaderboardType(2)
+        elif leaderboard_type in ("worst",):
+            return LeaderboardType(0)
+        elif leaderboard_type in ("worst_playoffs",):
+            return LeaderboardType(-2)
+        elif leaderboard_type in ("worst_preseason", "worst_pre-season"):
+            return LeaderboardType(-1)
+        elif leaderboard_type in ("last_week",):
+            return LeaderboardType(8)
+        elif leaderboard_type in ("playoffs_last_week",):
+            return LeaderboardType(9)
+        elif leaderboard_type in ("pre-season_last_week", "preseason_last_week"):
+            return LeaderboardType(7)
+        else:
+            raise TypeError(_("`{name}` is not a valid leaderboard type.").format(name=name))
+
+    def is_standard(self):
+        return self in (
+            LeaderboardType.preseason,
+            LeaderboardType.season,
+            LeaderboardType.playoffs,
+        )
+
+    def is_last_week(self):
+        return self in (
+            LeaderboardType.preseason_last_week,
+            LeaderboardType.last_week,
+            LeaderboardType.playoffs_last_week,
+        )
+
+    def is_weekly(self):
+        return self in (
+            LeaderboardType.preseason_weekly,
+            LeaderboardType.weekly,
+            LeaderboardType.playoffs_weekly,
+            LeaderboardType.preseason_last_week,
+            LeaderboardType.last_week,
+            LeaderboardType.playoffs_last_week,
+        )
+
+    def is_worst(self):
+        return self.value <= 0
+
     def as_str(self) -> str:
         return self.name.replace("_", " ").replace("preseason", "pre-season")
 
     def key(self):
+        if self.value <= 0:
+            return {
+                LeaderboardType.worst: "season",
+                LeaderboardType.worst_preseason: "preseason",
+                LeaderboardType.worst_playoffs: "playoffs",
+            }.get(self, "season")
         if self.value < 7:
             return self.name.replace("preseason", "pre-season")
         elif self.value == 7:
@@ -339,33 +404,26 @@ class LeaderboardType(Enum):
         else:
             return "playoffs_weekly"
 
+    def total_key(self) -> str:
+        return {
+            LeaderboardType.season: "total",
+            LeaderboardType.playoffs: "playoffs_total",
+            LeaderboardType.preseason: "pre-season_total",
+            LeaderboardType.worst: "total",
+            LeaderboardType.worst_playoffs: "playoffs_total",
+            LeaderboardType.worst_preseason: "pre-season_total",
+        }.get(self, "total")
+
 
 class LeaderboardFinder(discord.app_commands.Transformer):
     @classmethod
     async def convert(self, ctx: Context, argument: str) -> LeaderboardType:
         if argument.isdigit():
             return LeaderboardType(int(argument))
-        leaderboard_type = argument.replace(" ", "_").lower()
-        if leaderboard_type in ["seasonal", "season"]:
-            return LeaderboardType(3)
-        if leaderboard_type in ["weekly", "week"]:
-            return LeaderboardType(4)
-        if leaderboard_type in ["playoffs", "playoff"]:
-            return LeaderboardType(5)
-        if leaderboard_type in ["playoffs_weekly", "playoff_weekly"]:
-            return LeaderboardType(6)
-        if leaderboard_type in ["pre-season", "preseason"]:
-            return LeaderboardType(1)
-        if leaderboard_type in ["pre-season_weekly", "preseason_weekly"]:
-            return LeaderboardType(2)
-        if leaderboard_type in ["worst"]:
-            return LeaderboardType(0)
-        if leaderboard_type in ["last_week"]:
-            return LeaderboardType(8)
-        if leaderboard_type in ["playoffs_last_week"]:
-            return LeaderboardType(9)
-        if leaderboard_type in ["pre-season_last_week", "preseason_last_week"]:
-            return LeaderboardType(7)
+        try:
+            return LeaderboardType.from_str(argument)
+        except TypeError:
+            pass
         return LeaderboardType(4)
 
     async def transform(self, interaction: discord.Interaction, argument: str) -> LeaderboardType:
@@ -375,19 +433,11 @@ class LeaderboardFinder(discord.app_commands.Transformer):
     async def autocomplete(
         self, interaction: discord.Interaction, argument: str
     ) -> List[discord.app_commands.Choice[str]]:
-        choices = [
-            discord.app_commands.Choice(name="Seasonal", value="season"),
-            discord.app_commands.Choice(name="Worst", value="worst"),
-            discord.app_commands.Choice(name="Playoffs", value="playoffs"),
-            discord.app_commands.Choice(name="Playoffs Weekly", value="playoffs_weekly"),
-            discord.app_commands.Choice(name="Pre-Season", value="pre-season"),
-            discord.app_commands.Choice(name="Pre-Season Weekly", value="pre-season_weekly"),
-            discord.app_commands.Choice(name="Weekly", value="weekly"),
-            discord.app_commands.Choice(name="Last Week", value="last_week"),
-            discord.app_commands.Choice(name="Playoffs Last Week", value="playoffs_last_week"),
-            discord.app_commands.Choice(name="Pre-season Last Week", value="pre-season_last_week"),
+        return [
+            discord.app_commands.Choice(name=i.as_str().title(), value=str(i.value))
+            for i in LeaderboardType
+            if argument.lower() in i.as_str().lower()
         ]
-        return choices
 
 
 class HockeyStates(Enum):

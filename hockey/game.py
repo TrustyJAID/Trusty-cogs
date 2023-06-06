@@ -243,7 +243,7 @@ class Game:
         self.third_star = kwargs.get("third_star")
         self.away_roster = kwargs.get("away_roster")
         self.home_roster = kwargs.get("home_roster")
-        self.game_type = kwargs.get("game_type")
+        self.game_type: str = kwargs.get("game_type", "")
         self.link = kwargs.get("link")
         self.season = kwargs.get("season")
         self._recap_url: Optional[str] = kwargs.get("recap_url", None)
@@ -278,7 +278,7 @@ class Game:
         game_types = {"PR": _("Pre Season"), "R": _("Regular Season"), "P": _("Post Season")}
         return game_types.get(self.game_type, _("Unknown"))
 
-    def to_json(self) -> Dict[str, Union[str, int]]:
+    def to_json(self) -> dict:
         return {
             "game_state": self.game_state,
             "home_team": self.home_team,

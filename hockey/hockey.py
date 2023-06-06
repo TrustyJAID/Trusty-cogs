@@ -56,7 +56,7 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "3.3.1"
+    __version__ = "3.4.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -130,6 +130,7 @@ class Hockey(
             base_credits=0,
             top_credits=0,
             top_amount=0,
+            show_count=True,
         )
         self.pickems_config.register_global(
             base_credits=0,
@@ -168,13 +169,7 @@ class Hockey(
             self.loop.cancel()
         await self.session.close()
         self.pickems_loop.cancel()
-        count = 0
-        while self.pickems_loop.is_being_cancelled():
-            if count > 10:
-                log.error("Pickems took more than 10 seconds to finish closing its loop.")
-                break
-            await asyncio.sleep(1)
-            count += 1
+        await self.after_pickems_loop()
 
     async def red_delete_data_for_user(
         self,
@@ -190,12 +185,16 @@ class Hockey(
                     data["leaderboard"]
                 )
 
-    async def cog_load(self) -> None:
+    async def add_cog_to_dev_env(self):
+        await self.bot.wait_until_red_ready()
         if 218773382617890828 in self.bot.owner_ids:
             try:
                 self.bot.add_dev_env_value("hockey", lambda x: self)
             except Exception:
                 pass
+
+    async def cog_load(self) -> None:
+        asyncio.create_task(self.add_cog_to_dev_env())
         self.loop = asyncio.create_task(self.game_check_loop())
         await self.migrate_settings()
 

@@ -7,7 +7,7 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
-from .abc import MixinMeta
+from .abc import HockeyMixin
 from .game import Game
 from .helper import StateFinder, TeamFinder, get_chn_name
 
@@ -15,10 +15,10 @@ log = getLogger("red.trusty-cogs.Hockey")
 
 _ = Translator("Hockey", __file__)
 
-hockey_commands = MixinMeta.hockey_commands
+hockey_commands = HockeyMixin.hockey_commands
 
 
-class GameDayChannels(MixinMeta):
+class GameDayChannels(HockeyMixin):
     """
     All the commands grouped under `[p]gdc`
     """

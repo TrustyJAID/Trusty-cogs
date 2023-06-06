@@ -22,7 +22,7 @@ from .pickems import Pickems
 from .stats import LeaderCategories
 
 
-class MixinMeta(ABC):
+class HockeyMixin(ABC):
     """
     Base class for well behaved type hint detection with composite class.
 

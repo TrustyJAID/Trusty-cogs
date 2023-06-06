@@ -12,14 +12,14 @@ from redbot.core.utils.chat_formatting import pagify
 
 from hockey.helper import utc_to_local
 
-from .abc import MixinMeta
+from .abc import HockeyMixin
 from .game import Game
 from .pickems import Pickems
 
 _ = Translator("Hockey", __file__)
 log = getLogger("red.trusty-cogs.Hockey")
 
-hockey_commands = MixinMeta.hockey_commands
+hockey_commands = HockeyMixin.hockey_commands
 # defined in abc.py allowing this to be inherited by multiple files
 
 PICKEMS_MESSAGE = _(
@@ -32,7 +32,7 @@ PICKEMS_MESSAGE = _(
 )
 
 
-class HockeyPickems(MixinMeta):
+class HockeyPickems(HockeyMixin):
     """
     Hockey Pickems Logic
     """
@@ -106,20 +106,20 @@ class HockeyPickems(MixinMeta):
                 except KeyError:
                     pass
 
-    @pickems_loop.after_loop
     async def after_pickems_loop(self) -> None:
-        log.debug("Cancelling loop")
-        if self.pickems_loop.is_being_cancelled():
-            await self.save_pickems_data()
-            for guild_id, pickems in self.all_pickems.items():
-                for game, pickem in pickems.items():
-                    # Don't forget to remove persistent views when the cog is unloaded.
-                    log.verbose("Stopping %s", pickem.name)
-                    pickem.stop()
+        log.verbose("Saving pickems data and stopping views")
+        await self.save_pickems_data()
+        for guild_id, pickems in self.all_pickems.items():
+            for game, pickem in pickems.items():
+                # Don't forget to remove persistent views when the cog is unloaded.
+                log.trace("Stopping %s", pickem.name)
+                pickem.stop()
 
     @pickems_loop.before_loop
     async def before_pickems_loop(self) -> None:
+        log.trace("Waiting for Red to be ready")
         await self.bot.wait_until_ready()
+        log.trace("Waiting for the cog to finish migrating")
         await self._ready.wait()
         # wait until migration if necessary
         all_data = await self.pickems_config.all_guilds()
@@ -279,6 +279,7 @@ class HockeyPickems(MixinMeta):
                 winner=None,
                 link=game.link,
                 game_type=game.game_type,
+                should_edit=await self.pickems_config.guild(guild).show_count(),
             )
 
             self.all_pickems[str(guild.id)][str(game.game_id)] = pickem
@@ -1081,6 +1082,19 @@ class HockeyPickems(MixinMeta):
             await self.pickems_config.guild(ctx.guild).pickems_channels.clear()
         await self.create_weekly_pickems_pages([ctx.guild])
         msg = _("I will now automatically create pickems pages every day.")
+        await ctx.send(msg)
+
+    @pickems_commands.command(name="showcount")
+    @commands.is_owner()
+    async def set_pickems_edits(self, ctx: commands.Context, enabled: bool) -> None:
+        """
+        Enable pickems buttons to be edited showing the number of votes for each team
+        """
+        await self.pickems_config.guild(ctx.guild).show_count.set(enabled)
+        if enabled:
+            msg = _("Pickems will attempt to edit the buttons showing the number of votes.")
+        else:
+            msg = _("Pickems will not edit the buttons.")
         await ctx.send(msg)
 
     @pickems_commands.command(name="clear")

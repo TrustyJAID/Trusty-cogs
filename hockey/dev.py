@@ -9,7 +9,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import pagify
 
-from .abc import MixinMeta
+from .abc import HockeyMixin
 from .constants import TEAMS
 from .errors import InvalidFileError
 from .game import Game
@@ -31,7 +31,7 @@ _ = Translator("Hockey", __file__)
 log = getLogger("red.trusty-cogs.hockey")
 
 
-class HockeyDev(MixinMeta):
+class HockeyDev(HockeyMixin):
     """
     All the commands grouped under `[p]hockeydev`
     """
