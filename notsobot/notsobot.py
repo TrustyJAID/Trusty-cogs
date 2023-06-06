@@ -594,7 +594,7 @@ class NotSoBot(commands.Cog):
         async with ctx.typing():
             img, mime = await self.bytes_download(str(avatar))
             img_path = cog_data_path(self) / "triggered.jpg"
-            if not os.path.isfile(img_path) or os.path.getsize(img_path):
+            if not os.path.isfile(img_path) or os.path.getsize(img_path) == 0:
                 url = "https://i.imgur.com/zDAY2yo.jpg"
                 trig, mime = await self.bytes_download(url)
                 if trig is not False:
@@ -826,7 +826,7 @@ class NotSoBot(commands.Cog):
             name = ctx.message.mentions[0].name
         # b, mime = await self.bytes_download()
         img_path = cog_data_path(self) / "rip.jpg"
-        if not os.path.isfile(img_path) or os.path.getsize(img_path):
+        if not os.path.isfile(img_path) or os.path.getsize(img_path) == 0:
             url = "https://i.imgur.com/xNWxZHn.jpg"
             img, mime = await self.bytes_download(url)
             if img is not False:
@@ -1066,7 +1066,7 @@ class NotSoBot(commands.Cog):
     async def minecraftachievement(self, ctx, *, txt: str):
         """Generate a Minecraft Achievement"""
         img_path = cog_data_path(self) / "achievement.png"
-        if not os.path.isfile(img_path) or os.path.getsize(img_path):
+        if not os.path.isfile(img_path) or os.path.getsize(img_path) == 0:
             url = "https://i.imgur.com/JtNJFZy.png"
             img, mime = await self.bytes_download(url)
             if img is not False:
@@ -1155,7 +1155,7 @@ class NotSoBot(commands.Cog):
                 return await ctx.send("That is not a valid image.")
             if mark == "brazzers" or mark is None:
                 img_path = cog_data_path(self) / "brazzers.png"
-                if not os.path.isfile(img_path) or os.path.getsize(img_path):
+                if not os.path.isfile(img_path) or os.path.getsize(img_path) == 0:
                     url = "https://i.imgur.com/YAb1RMZ.png"
                     img, mime = await self.bytes_download(url)
                     if img is not False:
