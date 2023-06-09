@@ -85,7 +85,7 @@ class RoleTools(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.5.5"
+    __version__ = "1.5.6"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -120,7 +120,7 @@ class RoleTools(
         self.config.register_member(sticky_roles=[])
         self.settings: Dict[int, Any] = {}
         self._ready: asyncio.Event = asyncio.Event()
-        self.views = {}
+        self.views: Dict[int, Dict[str, discord.ui.View]] = {}
 
     def cog_check(self, ctx: commands.Context) -> bool:
         return self._ready.is_set()
@@ -143,8 +143,9 @@ class RoleTools(
             await self.initialize_buttons()
         except Exception:
             log.exception("Error initializing Buttons")
-        for view in self.views.values():
-            self.bot.add_view(view)
+        for guild_views in self.views.values():
+            for view in guild_views.values():
+                self.bot.add_view(view)
         self._ready.set()
 
     async def cog_load(self) -> None:
@@ -187,10 +188,11 @@ class RoleTools(
         loop.create_task(self.load_views())
 
     async def cog_unload(self):
-        for view in self.views:
-            # Don't forget to remove persistent views when the cog is unloaded.
-            log.verbose("Stopping view %s", view)
-            view.stop()
+        for views in self.views.values():
+            for view in views.values():
+                # Don't forget to remove persistent views when the cog is unloaded.
+                log.verbose("Stopping view %s", view)
+                view.stop()
 
     @roletools.group(invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)

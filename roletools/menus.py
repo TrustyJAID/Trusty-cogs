@@ -283,6 +283,7 @@ class RolePages(menus.ListPageSource):
             [perm.replace("_", " ").title() for perm, value in role.permissions if value]
         )
         buttons = humanize_list(role_settings["buttons"])
+        select_options = humanize_list(role_settings["select_options"])
         require_any = role_settings["require_any"]
         settings = _(
             "{role}\n```md\n"
@@ -328,6 +329,10 @@ class RolePages(menus.ListPageSource):
             )
         if buttons:
             settings += _("**Buttons:** {button_names}\n").format(button_names=buttons)
+        if select_options:
+            settings += _("**Select Options:** {select_names}\n").format(
+                select_names=select_options
+            )
         if permissions:
             settings += _("**Permissions:** {permissions}\n").format(permissions=permissions)
         if role.managed:

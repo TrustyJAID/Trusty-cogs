@@ -20,8 +20,8 @@ from .converter import (
 )
 
 if TYPE_CHECKING:
-    from .buttons import ButtonRoleConverter
-    from .select import SelectOptionRoleConverter, SelectRoleConverter
+    from .buttons import ButtonRole, ButtonRoleConverter
+    from .select import SelectOptionRoleConverter, SelectRole, SelectRoleConverter
 
 
 log = getLogger("red.trusty-cogs.ReTrigger")
@@ -41,7 +41,7 @@ class RoleToolsMixin(ABC):
         self.bot: Red
         self.settings: Dict[Any, Any]
         self._ready: asyncio.Event
-        self.views: Dict[str, discord.ui.View]
+        self.views: Dict[int, Dict[str, discord.ui.View]]
 
     @commands.group()
     @commands.guild_only()
@@ -472,6 +472,17 @@ class RoleToolsMixin(ABC):
     #######################################################################
 
     @abstractmethod
+    async def save_settings(
+        self,
+        guild: discord.Guild,
+        message_key: str,
+        *,
+        buttons: List[ButtonRole] = [],
+        select_menus: List[SelectRole] = [],
+    ):
+        raise NotImplementedError()
+
+    @abstractmethod
     async def send_message(
         self,
         ctx: Context,
@@ -481,6 +492,10 @@ class RoleToolsMixin(ABC):
         *,
         message: str,
     ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def check_and_replace_existing(self, guild_id: int, message_key: str):
         raise NotImplementedError()
 
     @abstractmethod
