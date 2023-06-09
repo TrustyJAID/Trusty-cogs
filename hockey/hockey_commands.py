@@ -640,7 +640,7 @@ class HockeyCommands(HockeyMixin):
             await ctx.send(_("There is no current leaderboard for this server!"))
             return
 
-        if leaderboard_type.is_worst():
+        if not leaderboard_type.is_worst():
             leaderboard = sorted(
                 leaderboard.items(), key=lambda i: i[1][leaderboard_type.key()], reverse=True
             )
