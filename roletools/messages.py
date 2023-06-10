@@ -9,8 +9,9 @@ from redbot.core.commands import Context
 from redbot.core.i18n import Translator
 
 from .abc import RoleToolsMixin
-from .buttons import ButtonRole, ButtonRoleConverter, ButtonRoleView
-from .select import SelectRole, SelectRoleConverter, SelectRoleView
+from .buttons import ButtonRole, ButtonRoleConverter
+from .converter import RoleToolsView
+from .select import SelectRole, SelectRoleConverter
 
 roletools = RoleToolsMixin.roletools
 
@@ -61,7 +62,7 @@ class RoleToolsMessages(RoleToolsMixin):
         """
         if not await self.check_totals(ctx, buttons=len(buttons), menus=len(menus)):
             return
-        new_view = SelectRoleView(self)
+        new_view = RoleToolsView(self)
         # for button in s:
         # new_view.add_item(button)
         # log.debug(options)
@@ -154,7 +155,7 @@ class RoleToolsMessages(RoleToolsMixin):
             msg = _("You need to specify at least one menu setup previously.")
             await ctx.send(msg)
             return
-        new_view = SelectRoleView(self)
+        new_view = RoleToolsView(self)
         for select_menu in menus:
             new_view.add_item(select_menu)
         for button in buttons:
@@ -187,7 +188,7 @@ class RoleToolsMessages(RoleToolsMixin):
             return
         if ctx.guild.id not in self.views:
             self.views[ctx.guild.id] = {}
-        new_view = SelectRoleView(self)
+        new_view = RoleToolsView(self)
         # for button in s:
         # new_view.add_item(button)
         # log.debug(options)
@@ -229,7 +230,7 @@ class RoleToolsMessages(RoleToolsMixin):
             msg = _("You need to specify at least one menu setup previously.")
             await ctx.send(msg)
             return
-        new_view = SelectRoleView(self)
+        new_view = RoleToolsView(self)
         for select_menu in menus:
             new_view.add_item(select_menu)
         await message.edit(view=new_view)
@@ -261,7 +262,7 @@ class RoleToolsMessages(RoleToolsMixin):
             return
         if ctx.guild.id not in self.views:
             self.views[ctx.guild.id] = {}
-        new_view = ButtonRoleView(self)
+        new_view = RoleToolsView(self)
         log.verbose("send_buttons buttons: %s", buttons)
         for button in buttons:
             new_view.add_item(button)
@@ -293,7 +294,7 @@ class RoleToolsMessages(RoleToolsMixin):
             msg = _("I cannot edit someone elses message to include buttons.")
             await ctx.send(msg)
             return
-        new_view = ButtonRoleView(self)
+        new_view = RoleToolsView(self)
         for button in buttons:
             new_view.add_item(button)
         await message.edit(view=new_view)

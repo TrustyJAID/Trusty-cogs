@@ -1,17 +1,55 @@
+from __future__ import annotations
+
 import re
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple, Union
 
 import discord
 from discord.ext.commands import BadArgument, Converter
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
+if TYPE_CHECKING:
+    from .abc import RoleToolsMixin
+    from .buttons import ButtonRole
+    from .select import SelectRole
+
+log = getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
 
 
 _id_regex = re.compile(r"([0-9]{15,21})$")
 _mention_regex = re.compile(r"<@!?([0-9]{15,21})>$")
+
+
+class RoleToolsView(discord.ui.View):
+    def __init__(self, cog: RoleToolsMixin):
+        self.cog = cog
+        super().__init__(timeout=None)
+        self.buttons = set()
+        self.selects = set()
+
+    async def on_error(
+        self,
+        interaction: discord.Interaction,
+        error: Exception,
+        item: Union[SelectRole, ButtonRole],
+    ):
+        await interaction.response.send_message(
+            _("An error occured trying to apply a role to you."), ephemeral=True
+        )
+
+    def add_item(self, item: Union[SelectRole, ButtonRole]):
+
+        rt_type = getattr(item, "_rt_type", None)
+        if rt_type == "select":
+            self.selects.add(item.name)
+        elif rt_type == "button":
+            self.buttons.add(item.name)
+        else:
+            raise TypeError("This view can only contain `SelectRole` or `ButtonRole` items.")
+        super().add_item(item)
 
 
 class RawUserIds(Converter):

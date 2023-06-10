@@ -85,7 +85,7 @@ class RoleTools(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.5.6"
+    __version__ = "1.5.7"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -132,6 +132,14 @@ class RoleTools(
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
+    async def add_cog_to_dev_env(self):
+        await self.bot.wait_until_red_ready()
+        if self.bot.owner_ids and 218773382617890828 in self.bot.owner_ids:
+            try:
+                self.bot.add_dev_env_value("roletools", lambda x: self)
+            except Exception:
+                pass
+
     async def load_views(self):
         self.settings = await self.config.all_guilds()
         await self.bot.wait_until_red_ready()
@@ -143,9 +151,13 @@ class RoleTools(
             await self.initialize_buttons()
         except Exception:
             log.exception("Error initializing Buttons")
-        for guild_views in self.views.values():
-            for view in guild_views.values():
-                self.bot.add_view(view)
+        for guild_id, guild_views in self.views.items():
+            for msg_ids, view in guild_views.items():
+                log.trace("Adding view %r to %s", view, guild_id)
+                channel_id, message_id = msg_ids.split("-")
+                self.bot.add_view(view, message_id=int(message_id))
+                # These should be unique messages containing views
+                # and we should track them seperately
         self._ready.set()
 
     async def cog_load(self) -> None:
@@ -186,6 +198,7 @@ class RoleTools(
             await self.config.version.set("1.0.1")
         loop = asyncio.get_running_loop()
         loop.create_task(self.load_views())
+        loop.create_task(self.add_cog_to_dev_env())
 
     async def cog_unload(self):
         for views in self.views.values():
@@ -193,6 +206,10 @@ class RoleTools(
                 # Don't forget to remove persistent views when the cog is unloaded.
                 log.verbose("Stopping view %s", view)
                 view.stop()
+        try:
+            self.bot.remove_dev_env_value("roletools")
+        except Exception:
+            pass
 
     @roletools.group(invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)
