@@ -91,18 +91,18 @@ class RoleToolsMessages(RoleToolsMixin):
         buttons: List[ButtonRole] = [],
         select_menus: List[SelectRole] = [],
     ):
-        async with self.config.guild(guild).select_menus() as select_menus:
-            for select_name in select_menus:
-                messages = set(select_menus[select_name]["messages"])
+        async with self.config.guild(guild).select_menus() as saved_select_menus:
+            for select in select_menus:
+                messages = set(saved_select_menus[select.name]["messages"])
                 messages.add(message_key)
-                select_menus[select_name]["messages"] = list(messages)
-                self.settings[guild.id]["select_menus"][select_name]["messages"] = list(messages)
+                saved_select_menus[select.name]["messages"] = list(messages)
+                self.settings[guild.id]["select_menus"][select.name]["messages"] = list(messages)
         async with self.config.guild(guild).buttons() as saved_buttons:
-            for button_name in buttons:
-                messages = set(saved_buttons[button_name]["messages"])
+            for button in buttons:
+                messages = set(saved_buttons[button.name]["messages"])
                 messages.add(message_key)
-                saved_buttons[button_name]["messages"] = list(messages)
-                self.settings[guild.id]["buttons"][button_name]["messages"] = list(messages)
+                saved_buttons[button.name]["messages"] = list(messages)
+                self.settings[guild.id]["buttons"][button.name]["messages"] = list(messages)
 
     async def check_and_replace_existing(self, guild_id: int, message_key: str):
         if guild_id not in self.views:
