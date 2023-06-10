@@ -183,7 +183,7 @@ class JoinGuildButton(discord.ui.Button):
         else:
             await interaction.response.send_message(
                 _("I cannot find or create an invite for `{guild}`").format(
-                    guild=self.source.guild.name
+                    guild=self.view.source.guild.name
                 )
             )
         if not interaction.response.is_done():
