@@ -61,7 +61,7 @@ class ReTrigger(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.23.2"
+    __version__ = "2.24.0"
 
     def __init__(self, bot):
         super().__init__()
@@ -335,7 +335,14 @@ class ReTrigger(
             }
             msg = ""
             for log, name in variables.items():
-                msg += f"__**{name}**__: {guild_data[log]}\n"
+                if log == "modlog":
+                    channel = ctx.guild.get_channel(guild_data[log])
+                    channel_name = guild_data[log]
+                    if channel is not None:
+                        channel_name = channel.mention
+                    msg += f"__**{name}**__: {channel_name}\n"
+                else:
+                    msg += f"__**{name}**__: {guild_data[log]}\n"
         await ctx.maybe_send_embed(msg)
 
     @_modlog.command(name="bans", aliases=["ban"])
@@ -779,8 +786,40 @@ class ReTrigger(
             trigger_list[trigger.name] = await trigger.to_json()
         # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         # self.triggers[ctx.guild.id].append(trigger)
-        msg = _("Trigger {name} embeds set to: {embeds}").format(
+        msg = _("Trigger {name} read embeds set to: {embeds}").format(
             name=trigger.name, embeds=trigger.read_embeds
+        )
+        await ctx.send(msg)
+
+    @_edit.command(name="readthreads", aliases=["readthread"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def toggle_read_threads(self, ctx: commands.Context, trigger: TriggerExists) -> None:
+        """
+        Toggle whether a filter trigger will check thread titles.
+        `<trigger>` is the name of the trigger.
+
+        This will toggle whether filter triggers are allowed to delete
+        threads that are matched based on the thread title. This is enabled by default
+        so if you only want filter triggers to work on messages disable this.
+
+        # Note: This also requires the bot to have `manage_threads` permission
+        in the channel that the threads are created to work.
+
+        See https://regex101.com/ for help building a regex pattern.
+        See `[p]retrigger explain` or click the link below for more details.
+        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await self._no_trigger(ctx, trigger)
+        if not await self.can_edit(ctx.author, trigger):
+            return await self._not_authorized(ctx)
+        trigger.read_thread_title = not trigger.read_thread_title
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
+        # self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} read thread titles: {read_threads}").format(
+            name=trigger.name, read_threads=trigger.read_thread_title
         )
         await ctx.send(msg)
 

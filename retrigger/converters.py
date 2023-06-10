@@ -270,6 +270,7 @@ class Trigger:
         "everyone_mention",
         "nsfw",
         "read_embeds",
+        "read_thread_title",
         "_created_at",
         "thread",
         "remove_roles",
@@ -318,6 +319,7 @@ class Trigger:
         self.everyone_mention: bool = kwargs.get("everyone_mention", False)
         self.nsfw: bool = kwargs.get("nsfw", False)
         self.read_embeds: bool = kwargs.get("embeds", False)
+        self.read_thread_title: bool = kwargs.get("read_thread_title", True)
         self.thread: TriggerThread = kwargs.get("thread", TriggerThread())
         self.remove_roles: List[int] = kwargs.get("remove_roles", [])
         self.add_roles: List[int] = kwargs.get("add_roles", [])
@@ -369,10 +371,12 @@ class Trigger:
                                 return True
         return False
 
-    async def check_bw_list(self, message: discord.Message) -> bool:
+    async def check_bw_list(
+        self, author: Optional[discord.Member], channel: discord.abc.GuildChannel
+    ) -> bool:
         can_run = True
-        author: discord.Member = message.author
-        channel: discord.abc.GuildChannel = message.channel
+        # author: discord.Member = message.author
+        # channel: discord.abc.GuildChannel = message.channel
         if self.whitelist:
             can_run = False
             if channel.id in self.whitelist:
@@ -383,13 +387,14 @@ class Trigger:
                 if channel.parent.id in self.whitelist:
                     # this is a thread
                     can_run = True
-            if message.author.id in self.whitelist:
-                can_run = True
-            for role in author.roles:
-                if role.is_default():
-                    continue
-                if role.id in self.whitelist:
+            if author is not None:
+                if author.id in self.whitelist:
                     can_run = True
+                for role in author.roles:
+                    if role.is_default():
+                        continue
+                    if role.id in self.whitelist:
+                        can_run = True
             return can_run
         else:
             if channel.id in self.blacklist:
@@ -400,13 +405,14 @@ class Trigger:
                 if channel.parent.id in self.blacklist:
                     # this is a thread
                     can_run = False
-            if message.author.id in self.blacklist:
-                can_run = False
-            for role in author.roles:
-                if role.is_default():
-                    continue
-                if role.id in self.blacklist:
+            if author is not None:
+                if author.id in self.blacklist:
                     can_run = False
+                for role in author.roles:
+                    if role.is_default():
+                        continue
+                    if role.id in self.blacklist:
+                        can_run = False
         return can_run
 
     @property
@@ -476,6 +482,7 @@ class Trigger:
             "role_mention": self.role_mention,
             "nsfw": self.nsfw,
             "read_embeds": self.read_embeds,
+            "read_thread_title": self.read_thread_title,
             "thread": self.thread.to_json(),
             "remove_roles": self.remove_roles,
             "add_roles": self.add_roles,
