@@ -92,34 +92,34 @@ class RoleToolsMessages(RoleToolsMixin):
         select_menus: List[SelectRole] = [],
     ):
         async with self.config.guild(guild).select_menus() as select_menus:
-            for select in select_menus:
-                messages = set(select_menus[select.name.lower()]["messages"])
+            for select_name in select_menus:
+                messages = set(select_menus[select_name]["messages"])
                 messages.add(message_key)
-                select_menus[select.name.lower()]["messages"] = list(messages)
-                self.settings[guild.id]["select_menus"][select.name.lower()] = list(messages)
+                select_menus[select_name]["messages"] = list(messages)
+                self.settings[guild.id]["select_menus"][select_name]["messages"] = list(messages)
         async with self.config.guild(guild).buttons() as saved_buttons:
-            for button in buttons:
-                messages = set(saved_buttons[button.name.lower()]["messages"])
+            for button_name in buttons:
+                messages = set(saved_buttons[button_name]["messages"])
                 messages.add(message_key)
-                saved_buttons[button.name.lower()]["messages"] = list(messages)
-                self.settings[guild.id]["buttons"][button.name.lower()]["messages"] = list(
+                saved_buttons[button_name]["messages"] = list(messages)
+                self.settings[guild.id]["buttons"][button_name]["messages"] = list(
                     messages
                 )
 
     async def check_and_replace_existing(self, guild_id: int, message_key: str):
         if guild_id not in self.views:
             return
-        if message_key not in self.view[guild_id]:
+        if message_key not in self.views[guild_id]:
             return
         for c in self.views[guild_id][message_key].children:
             if isinstance(c, SelectRole):
                 existing = self.settings[guild_id]["select_menus"].get(c.name, {})
                 if message_key in existing.get("messages", []):
-                    self.settings[guild_id]["select_menus"][c.name].remove(message_key)
+                    self.settings[guild_id]["select_menus"][c.name]["messages"].remove(message_key)
             elif isinstance(c, ButtonRole):
                 existing = self.settings[guild_id]["buttons"].get(c.name, {})
                 if message_key in existing.get("messages", []):
-                    self.settings[guild_id]["select_menus"][c.name].remove(message_key)
+                    self.settings[guild_id]["select_menus"][c.name]["messages"].remove(message_key)
         await self.config.guild_from_id(guild_id).buttons.set(self.settings[guild_id]["buttons"])
         await self.config.guild_from_id(guild_id).select_menus.set(
             self.settings[guild_id]["select_menus"]
