@@ -102,9 +102,7 @@ class RoleToolsMessages(RoleToolsMixin):
                 messages = set(saved_buttons[button_name]["messages"])
                 messages.add(message_key)
                 saved_buttons[button_name]["messages"] = list(messages)
-                self.settings[guild.id]["buttons"][button_name]["messages"] = list(
-                    messages
-                )
+                self.settings[guild.id]["buttons"][button_name]["messages"] = list(messages)
 
     async def check_and_replace_existing(self, guild_id: int, message_key: str):
         if guild_id not in self.views:
