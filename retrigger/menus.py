@@ -189,6 +189,8 @@ class ReTriggerPages(menus.ListPageSource):
             )
         if trigger.read_filenames:
             info += _("__Read filenames__: **Enabled**\n")
+        if trigger.read_thread_title:
+            info += _("__Read Thread Titles__: **Enabled**\n")
         if trigger.tts:
             info += _("__TTS__: **Enabled**\n")
         if trigger.chance:

@@ -285,9 +285,21 @@ class TriggerHandler(ReTriggerMixin):
         try:
             await self.check_triggers_thread(thread)
         except Exception:
-            log.exception("Error checking thread message")
+            log.exception("Error checking thread title")
 
-    async def check_triggers_thread(self, thread: discord.Thread):
+    @commands.Cog.listener()
+    async def on_thread_update(self, before: discord.Thread, after: discord.Thread):
+        if await self.bot.cog_disabled_in_guild(self, before.guild):
+            return
+        if not before.permissions_for(before.guild.me).manage_threads:
+            return
+        if before.name != after.name:
+            try:
+                await self.check_triggers_thread(after, edit=True)
+            except Exception:
+                log.exception("Error checking thread title change")
+
+    async def check_triggers_thread(self, thread: discord.Thread, *, edit: bool = False):
         guild = thread.guild
         for trigger in self.triggers[guild.id].values():
             if not trigger.enabled:
@@ -295,6 +307,8 @@ class TriggerHandler(ReTriggerMixin):
             if TriggerResponse.delete not in trigger.response_type:
                 continue
             if not trigger.read_thread_title:
+                continue
+            if edit and not trigger.check_edits:
                 continue
             allowed_trigger = await trigger.check_bw_list(author=thread.owner, channel=thread)
             is_auto_mod = any(r.is_automod for r in trigger.response_type)
