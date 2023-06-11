@@ -588,7 +588,7 @@ class RoleToolsSelect(RoleToolsMixin):
             max_values=1,
             options=[option],
         )
-        view = RoleToolsView(self)
+        view = discord.ui.View()  # RoleToolsView(self)
         view.add_item(select_menus)
         msg = _("Here is how your select option will look.")
         await ctx.send(msg, view=view)
