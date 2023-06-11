@@ -219,7 +219,18 @@ class RoleToolsButtons(RoleToolsMixin):
                     if message_id not in self.views[guild_id]:
                         log.trace("Creating view for button %s", button_name)
                         self.views[guild_id][message_id] = RoleToolsView(self)
-                    self.views[guild_id][message_id].add_item(button)
+                    if button.custom_id not in {
+                        c.custom_id for c in self.views[guild_id][message_id].children
+                    }:
+                        try:
+                            self.views[guild_id][message_id].add_item(button)
+                        except ValueError:
+                            log.error(
+                                "There was an error adding button %s on message https://discord.com/channels/%s/%s",
+                                button.name,
+                                guild_id,
+                                message_id.replace("-", "/"),
+                            )
 
     @roletools.group(name="buttons", aliases=["button"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)

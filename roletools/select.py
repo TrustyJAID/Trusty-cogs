@@ -368,8 +368,18 @@ class RoleToolsSelect(RoleToolsMixin):
                     if message_id not in self.views[guild_id]:
                         log.trace("Creating view for select %s", select_name)
                         self.views[guild_id][message_id] = RoleToolsView(self)
-                    self.views[guild_id][message_id].add_item(select)
-                    # log.debug("Adding select to %s on message %s", select.name, message_id)
+                    if select.custom_id not in {
+                        c.custom_id for c in self.views[guild_id][message_id].children
+                    }:
+                        try:
+                            self.views[guild_id][message_id].add_item(select)
+                        except ValueError:
+                            log.error(
+                                "There was an error adding select %s on message https://discord.com/channels/%s/%s",
+                                select.name,
+                                guild_id,
+                                message_id.replace("-", "/"),
+                            )
 
     @roletools.group(name="select", aliases=["selects"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
