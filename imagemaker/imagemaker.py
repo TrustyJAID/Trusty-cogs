@@ -2,19 +2,18 @@ import asyncio
 import functools
 import json
 import os
-import sys
 import textwrap
-from copy import copy
 from io import BytesIO
-from typing import Optional, Tuple, Union, cast
+from typing import List, Optional, Tuple, Union, cast
 
 import aiohttp
 import discord
 import numpy as np
 from PIL import Image, ImageColor, ImageDraw, ImageFont, ImageSequence
+from PIL import features as pil_features
 from red_commons.logging import getLogger
 from redbot.core import commands
-from redbot.core.data_manager import bundled_data_path
+from redbot.core.data_manager import bundled_data_path, cog_data_path
 
 from .converter import ImageFinder
 
@@ -27,12 +26,11 @@ try:
 except ImportError:
     TRUMP = False
 
-try:
-    import imageio
 
-    BANNER = True
-except ImportError:
-    BANNER = False
+WEBP_OR_GIF = "webp" if pil_features.check("webp_anim") else "gif"
+WEBP_OR_PNG = "webp" if pil_features.check("webp") else "png"
+# Thanks Fixator
+# https://github.com/fixator10/Fixator10-Cogs/blob/b147a0660b87ffc1b3a622083a562b11a47fad26/leveler/image_generators.py#L37
 
 
 class ImageMaker(commands.Cog):
@@ -46,7 +44,7 @@ class ImageMaker(commands.Cog):
         "Bruno Lemos (isnowillegal.com)",
         "Jo\u00e3o Pedro (isnowillegal.com)",
     ]
-    __version__ = "1.5.2"
+    __version__ = "1.6.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -68,13 +66,11 @@ class ImageMaker(commands.Cog):
         self, ctx: commands.Context, text: Optional[str], file: discord.File, file_size: int
     ):
         if not ctx.channel.permissions_for(ctx.me).send_messages:
-            file.close()
             return
         if not ctx.channel.permissions_for(ctx.me).attach_files:
             await ctx.send("I don't have permission to attach files.")
-            file.close()
             return
-        BASE_FILESIZE_LIMIT = 8 * 1024 * 1024
+        BASE_FILESIZE_LIMIT = 25 * 1024 * 1024
         if ctx.guild and file_size < ctx.guild.filesize_limit:
             await ctx.send(content=text, file=file)
         elif not ctx.guild and file_size < BASE_FILESIZE_LIMIT:
@@ -86,7 +82,7 @@ class ImageMaker(commands.Cog):
     async def dl_image(
         self, url: Union[discord.Asset, discord.Attachment, str]
     ) -> Optional[BytesIO]:
-        if isinstance(url, discord.Asset) or isinstance(url, discord.Attachment):
+        if isinstance(url, (discord.Asset, discord.PartialEmoji, discord.Attachment)):
             try:
                 b = BytesIO()
                 await url.save(b)
@@ -101,20 +97,87 @@ class ImageMaker(commands.Cog):
                 else:
                     return None
 
+    def make_outline_image(self, img):
+        # https://medium.com/nerd-for-tech/cartoonize-images-with-python-10e2a466b5fb
+        # Apply some Gaussian blur on the image
+        img_gb = cv2.GaussianBlur(img, (7, 7), 0)
+        # Apply some Median blur on the image
+        img_mb = cv2.medianBlur(img_gb, 5)
+        # Apply a bilateral filer on the image
+        img_bf = cv2.bilateralFilter(img_mb, 5, 80, 80)
+        # Use the laplace filter to detect edges
+        img_lp_im = cv2.Laplacian(img, cv2.CV_8U, ksize=5)
+        img_lp_gb = cv2.Laplacian(img_gb, cv2.CV_8U, ksize=5)
+        img_lp_mb = cv2.Laplacian(img_mb, cv2.CV_8U, ksize=5)
+        img_lp_al = cv2.Laplacian(img_bf, cv2.CV_8U, ksize=5)
+        # Convert the image to greyscale (1D)
+        img_lp_im_grey = cv2.cvtColor(img_lp_im, cv2.COLOR_BGR2GRAY)
+        img_lp_gb_grey = cv2.cvtColor(img_lp_gb, cv2.COLOR_BGR2GRAY)
+        img_lp_mb_grey = cv2.cvtColor(img_lp_mb, cv2.COLOR_BGR2GRAY)
+        img_lp_al_grey = cv2.cvtColor(img_lp_al, cv2.COLOR_BGR2GRAY)
+        # Manual image thresholding
+        _, EdgeImage = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
+        # Remove some additional noise
+        blur_im = cv2.GaussianBlur(img_lp_im_grey, (5, 5), 0)
+        blur_gb = cv2.GaussianBlur(img_lp_gb_grey, (5, 5), 0)
+        blur_mb = cv2.GaussianBlur(img_lp_mb_grey, (5, 5), 0)
+        blur_al = cv2.GaussianBlur(img_lp_al_grey, (5, 5), 0)
+        # Apply a threshold (Otsu)
+        _, tresh_im = cv2.threshold(blur_im, 245, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        _, tresh_gb = cv2.threshold(blur_gb, 245, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        _, tresh_mb = cv2.threshold(blur_mb, 245, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        _, tresh_al = cv2.threshold(blur_al, 245, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        # Invert the black and the white
+        inverted_original = cv2.subtract(255, tresh_im)
+        inverted_GaussianBlur = cv2.subtract(255, tresh_gb)
+        inverted_MedianBlur = cv2.subtract(255, tresh_mb)
+        inverted_Bilateral = cv2.subtract(255, tresh_al)
+        template = self.cvImageToPillow(inverted_original)
+        temp = BytesIO()
+        template.save(temp, format=WEBP_OR_PNG)
+        temp.name = f"outline.{WEBP_OR_PNG}"
+        temp.seek(0)
+        return temp
+
+    # @commands.command()
+    # @commands.bot_has_permissions(attach_files=True)
+    async def scrybe(self, ctx: commands.Context, user: Optional[discord.User] = None):
+        """
+        Scrybe your own card
+
+         WIP not done
+        """
+        if user is None:
+            user = ctx.author
+        avatar = await self.dl_image(user.display_avatar.replace(format="png"))
+        avatar.seek(0)
+        file_bytes = np.frombuffer(avatar.read(), dtype=np.uint8)
+        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        new_img = self.make_outline_image(img)
+        await ctx.send(file=discord.File(new_img, filename="outline.png"))
+
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
     async def wheeze(
-        self, ctx: commands.Context, *, text: Union[discord.Member, str] = None
+        self,
+        ctx: commands.Context,
+        *,
+        text: Optional[Union[discord.Member, discord.User, str]] = None,
     ) -> None:
         """
-        Generate a wheeze image with text or a user avatar
+        Generate a wheeze image with text or a user avatar.
 
-        `text` the text or user avatar who will be placed in the bottom pane
+        `<text>` the text or user avatar who will be placed in the bottom pane.
         """
         if text is None:
             text = ctx.message.author
         async with ctx.channel.typing():
-            file, file_size = await self.make_wheeze(text)
+            try:
+                file, file_size = await self.make_wheeze(text)
+            except RuntimeError as e:
+                log.error(e)
+                await ctx.send("There was an issue getting the template file.")
+                return
             if file is None:
                 await ctx.send("sorry something went wrong!")
                 return
@@ -123,9 +186,13 @@ class ImageMaker(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
-    async def facemerge(self, ctx: commands.Context, *, urls: ImageFinder) -> None:
+    async def facemerge(self, ctx: commands.Context, *, urls: ImageFinder):
         """
-        Generate a gif of two images fading into eachother
+        Generate a gif of two images fading into eachother.
+
+        - `<urls>` The urls you want to fade merge together.
+         - This can be 2 users and will use their display avatar or
+           emojis to combine 2 discord emojis.
         """
         if len(urls) < 2:
             urls = await ImageFinder().search_for_images(ctx)
@@ -140,15 +207,21 @@ class ImageMaker(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
-    @commands.check(lambda ctx: BANNER)
     async def scrollbanner(
-        self, ctx: commands.Context, colour: Optional[discord.Colour] = (255, 0, 0), *, text: str
+        self,
+        ctx: commands.Context,
+        colour: discord.Colour = discord.Colour.from_rgb(255, 0, 0),
+        *,
+        text: str,
     ) -> None:
         """
-        Generate a scrolling text gif banner
+        Generate a scrolling text gif banner.
+
+        - `[colour=#ff0000]` The colour of the banner wheel.
+         - defaults to red or `#ff0000`.
+         - named colours can be found [here.](https://discordpy.readthedocs.io/en/latest/api.html#colour)
+        - `<text>` The text that will be scrolled on the banner.
         """
-        if isinstance(colour, discord.Colour):
-            colour = colour.to_rgb() + (0,)
         async with ctx.channel.typing():
             task = functools.partial(self.make_banner, text=text, colour=colour)
             loop = asyncio.get_running_loop()
@@ -156,15 +229,18 @@ class ImageMaker(commands.Cog):
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
-                return await ctx.send("I could not create the banner you requested.")
+                await ctx.send("I could not create the banner you requested.")
+                return
         await self.safe_send(ctx, None, file, file_size)
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
-    async def obama(self, ctx: commands.Context, *, text: str) -> None:
+    async def obama(self, ctx: commands.Context, *, text: str):
         """
-        Synthesize video clips of Obama
+        Synthesize video clips of Obama.
+
+        - `<text>` The message you want Obama to say. Max 280 characters.
         """
         text = ctx.message.clean_content[len(f"{ctx.prefix}{ctx.invoked_with}") :]
         if len(text) > 280:
@@ -203,17 +279,24 @@ class ImageMaker(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
-    async def gwheeze(self, ctx: commands.Context, member: discord.Member = None) -> None:
+    async def gwheeze(
+        self, ctx: commands.Context, member: Optional[Union[discord.Member, discord.User]] = None
+    ) -> None:
         """
-        Generate a gif wheeze image if user has a gif avatar
+        Generate a gif wheeze image if user has a gif avatar.
 
-        `member` the member whos avatar will be pasted on the image
-        defaults to author
+        - `[member]` the member whos avatar will be pasted on the image.
+         - defaults to the author.
         """
         if member is None:
             member = ctx.message.author
         async with ctx.channel.typing():
-            file, file_size = await self.make_wheeze(member, True)
+            try:
+                file, file_size = await self.make_wheeze(member, True)
+            except RuntimeError as e:
+                log.error(e)
+                await ctx.send("There was an issue getting the template file.")
+                return
             if file is None:
                 await ctx.send("sorry something went wrong!")
                 return
@@ -222,18 +305,26 @@ class ImageMaker(commands.Cog):
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
     async def beautiful(
-        self, ctx: commands.Context, user: discord.Member = None, is_gif=False
+        self,
+        ctx: commands.Context,
+        user: Optional[Union[discord.Member, discord.User]] = None,
+        is_gif: bool = False,
     ) -> None:
         """
-        Generate a beautiful image using users avatar
+        Generate a beautiful image using users avatar.
 
-        `user` the user whos avatar will be places on the image
-        `is_gif` True/False to create a gif if the user has a gif avatar
+        - `[user]` the user whos avatar will be places on the image.
+        - `[is_gif=False]` True/False to create a gif if the user has a gif avatar.
         """
         if user is None:
             user = ctx.message.author
         async with ctx.channel.typing():
-            file, file_size = await self.make_beautiful(user, is_gif)
+            try:
+                file, file_size = await self.make_beautiful(user, is_gif)
+            except RuntimeError as e:
+                log.error(e)
+                await ctx.send("There was an issue getting the template file.")
+                return
             if file is None:
                 await ctx.send("sorry something went wrong!")
                 return
@@ -242,18 +333,26 @@ class ImageMaker(commands.Cog):
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
     async def feels(
-        self, ctx: commands.Context, user: discord.Member = None, is_gif=False
+        self,
+        ctx: commands.Context,
+        user: Optional[Union[discord.Member, discord.User]] = None,
+        is_gif: bool = False,
     ) -> None:
         """
-        Generate a feels image using users avatar and role colour
+        Generate a feels image using users avatar and role colour.
 
-        `user` the user whos avatar will be places on the image
-        `is_gif` True/False to create a gif if the user has a gif avatar
+        - `[user]` the user whos avatar will be places on the image.
+        - `[is_gif=False]` True/False to create a gif if the user has a gif avatar.
         """
         if user is None:
             user = ctx.message.author
         async with ctx.channel.typing():
-            file, file_size = await self.make_feels(user, is_gif)
+            try:
+                file, file_size = await self.make_feels(user, is_gif)
+            except RuntimeError as e:
+                log.error(e)
+                await ctx.send("There was an issue getting the template file.")
+                return
             if file is None:
                 await ctx.send("sorry something went wrong!")
                 return
@@ -264,9 +363,9 @@ class ImageMaker(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     async def trump(self, ctx: commands.Context, *, message) -> None:
         """
-        Generate isnowillegal gif image
+        Generate isnowillegal gif image.
 
-        `message` will be what is pasted on the gif
+        - `<message>` will be what is pasted on the gif.
         """
         if not TRUMP:
             msg = (
@@ -284,68 +383,53 @@ class ImageMaker(commands.Cog):
                 return
         await self.safe_send(ctx, None, file, file_size)
 
-    @commands.command()
-    @commands.bot_has_permissions(attach_files=True)
-    async def redpill(self, ctx: commands.Context) -> None:
-        """Generate a Red Pill"""
-        await ctx.invoke(self.pill, "#FF0000")
+    async def make_colour(self, colour: discord.Colour):
+        image_path = cog_data_path(self) / "pill.png"
+        if not os.path.isfile(image_path) or os.path.getsize(image_path) == 0:
+            url = "https://i.imgur.com/n6r04O8.png"
+            data = await self.dl_image(url)
+            if data is not None:
+                with image_path.open("wb") as outfile:
+                    outfile.write(data.read())
+            else:
+                raise RuntimeError(
+                    "A required template file is missing. "
+                    f"Please visit {url} and save it to `{image_path}`"
+                )
 
-    @commands.command()
-    @commands.bot_has_permissions(attach_files=True)
-    async def bluepill(self, ctx: commands.Context) -> None:
-        """Generate a Blue Pill"""
-        await ctx.invoke(self.pill, "#0000FF")
-
-    @commands.command()
-    @commands.bot_has_permissions(attach_files=True)
-    async def blackpill(self, ctx: commands.Context) -> None:
-        """Generate a Black Pill"""
-        await ctx.invoke(self.pill, "#000000")
-
-    @commands.command()
-    @commands.bot_has_permissions(attach_files=True)
-    async def purplepill(self, ctx: commands.Context) -> None:
-        """Generate a Purple Pill"""
-        await ctx.invoke(self.pill, "#800080")
-
-    @commands.command()
-    @commands.bot_has_permissions(attach_files=True)
-    async def yellowpill(self, ctx: commands.Context) -> None:
-        """Generate a Yellow Pill"""
-        await ctx.invoke(self.pill, "#FFFF00")
-
-    @commands.command()
-    @commands.bot_has_permissions(attach_files=True)
-    async def greenpill(self, ctx: commands.Context) -> None:
-        """Generate a Green Pill"""
-        await ctx.invoke(self.pill, "#008000")
-
-    async def make_colour(self, colour):
-        template_str = "https://i.imgur.com/n6r04O8.png"
-        template = Image.open(await self.dl_image(template_str))
+        template = Image.open(image_path)
         task = functools.partial(self.colour_convert, template=template, colour=colour)
         loop = asyncio.get_running_loop()
         task = loop.run_in_executor(None, task)
         try:
             image = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
-            return
+            return None, None
         image.seek(0)
         template.close()
-        file = discord.File(image, filename="pill.png")
+        file = discord.File(image, filename=f"pill.{WEBP_OR_PNG}")
         file_size = image.tell()
         return file, file_size
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
-    async def pill(self, ctx: commands.Context, colour="#FF0000") -> None:
+    async def pill(
+        self, ctx: commands.Context, colour: discord.Colour = discord.Colour.from_str("#FF0000")
+    ) -> None:
         """
-        Generate a pill image to any colour with hex codes
+        Generate a pill image to any colour with hex codes.
 
-        `colour` is a hexcode colour
+        - `[colour=#ff0000]` is a hexcode colour or named colour.
+         - defaults to red or `#ff0000`.
+         - named colours can be found [here.](https://discordpy.readthedocs.io/en/latest/api.html#colour)
         """
         async with ctx.channel.typing():
-            file, file_size = await self.make_colour(colour)
+            try:
+                file, file_size = await self.make_colour(colour)
+            except RuntimeError as e:
+                log.error(e)
+                await ctx.send("There was an issue getting the template file.")
+                return
             if file is None:
                 await ctx.send("Something went wrong sorry!")
                 return
@@ -354,10 +438,22 @@ class ImageMaker(commands.Cog):
     # Below are all the task handlers so the code is not blocking
 
     async def make_beautiful(
-        self, user: discord.User, is_gif: bool
+        self, user: Union[discord.Member, discord.User], is_gif: bool
     ) -> Tuple[Optional[discord.File], int]:
-        template_str = "https://i.imgur.com/kzE9XBE.png"
-        template = Image.open(await self.dl_image(template_str))
+        image_path = cog_data_path(self) / "beautiful.png"
+        if not os.path.isfile(image_path) or os.path.getsize(image_path) == 0:
+            url = "https://i.imgur.com/kzE9XBE.png"
+            data = await self.dl_image(url)
+            if data is not None:
+                with image_path.open("wb") as outfile:
+                    outfile.write(data.read())
+            else:
+                raise RuntimeError(
+                    "A required template file is missing. "
+                    f"Please visit {url} and save it to `{image_path}`"
+                )
+
+        template = Image.open(image_path)
         if user.display_avatar.is_animated() and is_gif:
             asset = BytesIO(await user.display_avatar.replace(format="gif", size=128).read())
             avatar = Image.open(asset)
@@ -372,23 +468,32 @@ class ImageMaker(commands.Cog):
         try:
             temp: BytesIO = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
-            avatar.close()
             template.close()
             return None, 0
-        avatar.close()
         template.close()
         temp.seek(0)
         filename = "beautiful.gif" if is_gif else "beautiful.png"
         file = discord.File(temp, filename=filename)
         file_size = temp.tell()
-        temp.close()
         return file, file_size
 
     async def make_feels(
         self, user: discord.User, is_gif: bool
     ) -> Tuple[Optional[discord.File], int]:
-        template_str = "https://i.imgur.com/4xr6cdw.png"
-        template = Image.open(await self.dl_image(template_str))
+        image_path = cog_data_path(self) / "feels.png"
+        if not os.path.isfile(image_path) or os.path.getsize(image_path) == 0:
+            url = "https://i.imgur.com/4xr6cdw.png"
+            data = await self.dl_image(url)
+            if data is not None:
+                with image_path.open("wb") as outfile:
+                    outfile.write(data.read())
+            else:
+                raise RuntimeError(
+                    "A required template file is missing. "
+                    f"Please visit {url} and save it to `{image_path}`"
+                )
+
+        template = Image.open(image_path)
         colour = user.colour.to_rgb()
         if user.display_avatar.is_animated() and is_gif:
             asset = BytesIO(await user.display_avatar.replace(format="gif", size=64).read())
@@ -397,7 +502,7 @@ class ImageMaker(commands.Cog):
                 self.make_feels_gif, template=template, colour=colour, avatar=avatar
             )
         else:
-            asset = BytesIO(await user.display_avatar.replace(format="png", size=64).read())
+            asset = BytesIO(await user.display_avatar.replace(format=WEBP_OR_PNG, size=64).read())
             avatar = Image.open(asset)
             task = functools.partial(
                 self.make_feels_img, template=template, colour=colour, avatar=avatar
@@ -407,23 +512,32 @@ class ImageMaker(commands.Cog):
         try:
             temp: BytesIO = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
-            avatar.close()
             template.close()
             return None, 0
-        avatar.close()
         template.close()
         temp.seek(0)
-        filename = "feels.gif" if is_gif else "feels.png"
+        filename = "feels.gif" if is_gif else f"feels.{WEBP_OR_PNG}"
         file = discord.File(temp, filename=filename)
         file_size = temp.tell()
-        temp.close()
         return file, file_size
 
     async def make_wheeze(
-        self, text: Union[discord.Member, str], is_gif=False
+        self, text: Union[discord.Member, discord.User, str], is_gif=False
     ) -> Tuple[Optional[discord.File], int]:
-        template_path = "https://i.imgur.com/c5uoDcd.jpg"
-        template = Image.open(await self.dl_image(template_path))
+        image_path = cog_data_path(self) / "wheeze.jpg"
+        if not os.path.isfile(image_path) or os.path.getsize(image_path) == 0:
+            url = "https://i.imgur.com/c5uoDcd.jpg"
+            data = await self.dl_image(url)
+            if data is not None:
+                with image_path.open("wb") as outfile:
+                    outfile.write(data.read())
+            else:
+                raise RuntimeError(
+                    "A required template file is missing. "
+                    f"Please visit {url} and save it to `{image_path}`"
+                )
+
+        template = Image.open(image_path)
         avatar = None
         if type(text) == discord.Member:
             user = cast(discord.User, text)
@@ -434,7 +548,9 @@ class ImageMaker(commands.Cog):
                 task = functools.partial(self.make_wheeze_gif, template=template, avatar=avatar)
 
             else:
-                asset = BytesIO(await user.display_avatar.replace(format="png", size=64).read())
+                asset = BytesIO(
+                    await user.display_avatar.replace(format=WEBP_OR_PNG, size=64).read()
+                )
                 avatar = Image.open(asset)
                 task = functools.partial(self.make_wheeze_img, template=template, avatar=avatar)
             loop = asyncio.get_running_loop()
@@ -442,7 +558,6 @@ class ImageMaker(commands.Cog):
             try:
                 temp: BytesIO = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
-                avatar.close()
                 template.close()
                 return None, 0
         else:
@@ -454,18 +569,23 @@ class ImageMaker(commands.Cog):
             except asyncio.TimeoutError:
                 template.close()
                 return None, 0
-        if avatar:
-            avatar.close()
         template.close()
         file_size = temp.tell()
         temp.seek(0)
-        filename = "wheeze.gif" if is_gif else "wheeze.gif"
+        filename = "wheeze.gif" if is_gif else f"wheeze.{WEBP_OR_PNG}"
         file = discord.File(temp, filename=filename)
-        temp.close()
         return file, file_size
 
     async def face_merge(self, urls: list) -> Tuple[Optional[discord.File], int]:
-        images = [await self.dl_image(u) for u in urls]
+        images = []
+        for u in urls:
+            try:
+                img_b = await self.dl_image(u)
+                if img_b is None:
+                    continue
+                images.append(img_b)
+            except Exception:
+                raise
         task = functools.partial(self.face_transition, images=images)
         loop = asyncio.get_running_loop()
         task = loop.run_in_executor(None, task)
@@ -476,41 +596,39 @@ class ImageMaker(commands.Cog):
         temp.seek(0)
         file = discord.File(temp, filename="facemerge.gif")
         file_size = temp.tell()
-        temp.close()
         return file, file_size
 
     # Below are all the blocking code
 
-    def make_beautiful_gif(self, template: Image, avatar: Image) -> BytesIO:
+    def make_beautiful_gif(self, template: Image.Image, avatar: Image.Image) -> BytesIO:
         gif_list = [frame.copy() for frame in ImageSequence.Iterator(avatar)]
         img_list = []
         num = 0
-        temp = None
+        temp = BytesIO()
         for frame in gif_list:
             template = template.convert("RGBA")
             frame = frame.convert("RGBA")
             # frame = frame.rotate(-30, expand=True)
-            # frame = frame.resize((60, 60), Image.ANTIALIAS)
+            # frame = frame.resize((60, 60), Image.Resampling.LANCZOS)
             template.paste(frame, (370, 45), frame)
             template.paste(frame, (370, 330), frame)
-            # temp2.thumbnail((320, 320), Image.ANTIALIAS)
+            # temp2.thumbnail((320, 320), Image.Resampling.LANCZOS)
             img_list.append(template)
             num += 1
-            temp = BytesIO()
+            # temp = BytesIO()
             template.save(
                 temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0
             )
             temp.name = "beautiful.gif"
-            if sys.getsizeof(temp) < 8000000 and sys.getsizeof(temp) > 7000000:
-                break
+
         return temp
 
-    def face_transition(self, images: list) -> BytesIO:
+    def face_transition(self, images: List[BytesIO]) -> BytesIO:
         img_list = []
-        # base = Image.open(images[-1])
+        base = Image.new("RGBA", (256, 256))
         for image in images[:-1]:
             overlay = Image.open(image)
-            overlay = overlay.resize((256, 256), Image.ANTIALIAS)
+            overlay = overlay.resize((256, 256), Image.Resampling.LANCZOS)
             overlay = overlay.convert("RGBA")
             if len(overlay.split()) != 4:
                 alpha = Image.new("L", overlay.size, 255)
@@ -520,61 +638,84 @@ class ImageMaker(commands.Cog):
             for i in range(0, 50):
                 base_img = Image.open(images[-1])
                 base_img = base_img.convert("RGBA")
-                base_img = base_img.resize((256, 256), Image.ANTIALIAS)
+                base_img = base_img.resize((256, 256), Image.Resampling.LANCZOS)
                 paste_mask = overlay.split()[3].point(lambda x: x * i / 50)
                 base_img.paste(overlay, (0, 0), paste_mask)
-                img_list.append(np.array(base_img))
+                # img_list.append(np.array(base_img))
+                img_list.append(base_img)
             for i in range(49, -1, -1):
                 base_img = Image.open(images[-1])
                 base_img = base_img.convert("RGBA")
-                base_img = base_img.resize((256, 256), Image.ANTIALIAS)
+                base_img = base_img.resize((256, 256), Image.Resampling.LANCZOS)
                 paste_mask = overlay.split()[3].point(lambda x: x * i / 50)
                 base_img.paste(overlay, (0, 0), paste_mask)
-                img_list.append(np.array(base_img))
+                # img_list.append(np.array(base_img))
+                img_list.append(base_img)
         # print(len(img_list))
         temp = BytesIO()
         temp.name = "merge.gif"
-        imageio.mimwrite(temp, img_list, "gif", duration=0.02)
-        overlay.close()
-        base_img.close()
+        base.save(
+            temp,
+            format="GIF",
+            save_all=True,
+            append_images=img_list,
+            loop=0,
+            duration=20,
+            disposal=0,
+            optimize=True,
+        )
         return temp
 
-    def make_banner(self, text: str, colour: str) -> Tuple[discord.File, int]:
-        im = Image.new("RGBA", (300, 100), (0, 0, 0, 0))
+    def make_banner(self, text: str, colour: discord.Colour) -> Tuple[discord.File, int]:
+        # W, H = (300, 100)
+        # im = Image.new("RGBA", (W, H), colour.to_rgb())
         font = ImageFont.truetype(str(bundled_data_path(self) / "impact.ttf"), 18)
-        draw = ImageDraw.Draw(im)
-        size_w, size_h = draw.textsize(text, font=font)
+        # draw = ImageDraw.Draw(im)
+        top, left, bottom, right = font.getbbox(text=text)
+        size_w, size_h = (bottom - top, right - left)
+        # old = draw.textsize(text, font=font)
+        # log.debug("old %s new %s %s", old, size_w, size_h)
         W, H = (size_w + 25, 100)
+        im = Image.new("RGBA", (W, H), colour.to_rgb())
+        draw = ImageDraw.Draw(im)
 
         images = []
         for i in range(0, W):
-            im = Image.new("RGBA", (W, H), colour)
-            draw = ImageDraw.Draw(im)
-            draw.text((((W - size_w) / 2) - i, (100 - size_h) / 2), text, font=font, fill="white")
+            new_im = Image.new("RGBA", (W, H), colour.to_rgb())
+            draw = ImageDraw.Draw(new_im)
+            draw.text((((W - size_w) / 4) - i, (100 - size_h) / 2), text, font=font, fill="white")
             draw.text((10 + W - i, (100 - size_h) / 2), text, font=font, fill="white")
-            images.append(np.array(im))
+            images.append(new_im)
 
         temp = BytesIO()
         temp.name = "temp.gif"
-        imageio.mimwrite(temp, images, "gif", duration=0.02)
+        im.save(
+            temp,
+            format="GIF",
+            save_all=True,
+            optimize=True,
+            append_images=images,
+            duration=20,
+            loop=0,
+            disposal=0,
+        )
         temp.seek(0)
-        im.close()
         file = discord.File(temp)
         file_size = temp.tell()
         return file, file_size
 
-    def make_beautiful_img(self, template: Image, avatar: Image) -> BytesIO:
+    def make_beautiful_img(self, template: Image.Image, avatar: Image.Image) -> BytesIO:
         # print(template.info)
         template = template.convert("RGBA")
         avatar = avatar.convert("RGBA")
         template.paste(avatar, (370, 45), avatar)
         template.paste(avatar, (370, 330), avatar)
         temp = BytesIO()
-        template.save(temp, format="PNG")
-        temp.name = "beautiful.png"
+        template.save(temp, format=WEBP_OR_PNG)
+        temp.name = f"beautiful.{WEBP_OR_PNG}"
         return temp
 
-    def make_wheeze_gif(self, template: Image, avatar: Image) -> BytesIO:
+    def make_wheeze_gif(self, template: Image.Image, avatar: Image.Image) -> BytesIO:
         gif_list = [frame.copy() for frame in ImageSequence.Iterator(avatar)]
         img_list = []
         num = 0
@@ -590,11 +731,9 @@ class ImageMaker(commands.Cog):
                 temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0
             )
             temp.name = "beautiful.gif"
-            if sys.getsizeof(temp) < 8000000 and sys.getsizeof(temp) > 7000000:
-                break
         return temp
 
-    def make_wheeze_img(self, template: Image, avatar: Image):
+    def make_wheeze_img(self, template: Image.Image, avatar: Image.Image):
         # print(template.info)
         template = template.convert("RGBA")
 
@@ -616,11 +755,11 @@ class ImageMaker(commands.Cog):
                 draw.text((margin, offset), f"{line}", fill=(0, 0, 0), font=font1)
                 offset += font1.getsize(line)[1]
         temp = BytesIO()
-        template.save(temp, format="PNG")
-        temp.name = "wheeze.png"
+        template.save(temp, format=WEBP_OR_PNG)
+        temp.name = f"wheeze.{WEBP_OR_PNG}"
         return temp
 
-    def make_feels_gif(self, template: Image, colour: str, avatar: Image) -> BytesIO:
+    def make_feels_gif(self, template: Image.Image, colour: str, avatar: Image.Image) -> BytesIO:
         gif_list = [frame.copy() for frame in ImageSequence.Iterator(avatar)]
         img_list = []
         num = 0
@@ -635,9 +774,9 @@ class ImageMaker(commands.Cog):
             temp2 = Image.fromarray(data)
             frame = frame.convert("RGBA")
             frame = frame.rotate(-30, expand=True)
-            frame = frame.resize((60, 60), Image.ANTIALIAS)
+            frame = frame.resize((60, 60), Image.Resampling.LANCZOS)
             temp2.paste(frame, (40, 25), frame)
-            # temp2.thumbnail((320, 320), Image.ANTIALIAS)
+            # temp2.thumbnail((320, 320), Image.Resampling.LANCZOS)
             img_list.append(temp2)
             num += 1
             temp = BytesIO()
@@ -651,11 +790,9 @@ class ImageMaker(commands.Cog):
                 transparency=0,
             )
             temp.name = "feels.gif"
-            if sys.getsizeof(temp) < 8000000 and sys.getsizeof(temp) > 7000000:
-                break
         return temp
 
-    def make_feels_img(self, template: Image, colour: str, avatar: Image) -> BytesIO:
+    def make_feels_img(self, template: Image.Image, colour: str, avatar: Image.Image) -> BytesIO:
         # print(template.info)
         template = template.convert("RGBA")
 
@@ -669,26 +806,25 @@ class ImageMaker(commands.Cog):
         temp2 = temp2.convert("RGBA")
         avatar = avatar.convert("RGBA")
         avatar = avatar.rotate(-30, expand=True)
-        avatar = avatar.resize((60, 60), Image.ANTIALIAS)
+        avatar = avatar.resize((60, 60), Image.Resampling.LANCZOS)
         temp2.paste(avatar, (40, 25), avatar)
         temp = BytesIO()
-        temp2.save(temp, format="PNG")
-        temp.name = "feels.png"
+        temp2.save(temp, format=WEBP_OR_PNG)
+        temp.name = f"feels.{WEBP_OR_PNG}"
         temp2.close()
         return temp
 
-    def colour_convert(self, template: Image, colour: Optional[str] = "#FF0000") -> BytesIO:
+    def colour_convert(self, template: Image.Image, colour: discord.Colour) -> BytesIO:
         template = template.convert("RGBA")
-        colour = ImageColor.getrgb(colour)
+        colour = ImageColor.getrgb(str(colour))
         data = np.array(template)
         red, green, blue, alpha = data.T
         white_areas = (red == 0) & (blue == 0) & (green == 0) & (alpha == 255)
         data[..., :-1][white_areas.T] = colour
         im2 = Image.fromarray(data)
         temp = BytesIO()
-        im2.save(temp, format="PNG")
-        temp.name = "pill.png"
-        im2.close()
+        im2.save(temp, format=WEBP_OR_PNG)
+        temp.name = f"pill.{WEBP_OR_PNG}"
         return temp
 
     """Code is from http://isnowillegal.com/ and made to work on redbot"""

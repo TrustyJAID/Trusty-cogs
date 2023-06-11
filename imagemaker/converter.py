@@ -35,26 +35,26 @@ class ImageFinder(Converter):
                 urls.append(match.group(1))
         if emojis:
             for emoji in emojis:
-                ext = "gif" if emoji.group(2) else "png"
-                url = "https://cdn.discordapp.com/emojis/{id}.{ext}?v=1".format(
-                    id=emoji.group(3), ext=ext
-                )
-                urls.append(url)
+                p_emoji = discord.PartialEmoji.from_str(emoji.group(1))
+                urls.append(p_emoji)
         if mentions:
             for mention in mentions:
                 user = ctx.guild.get_member(int(mention.group(1)))
-                if user.is_avatar_animated():
-                    urls.append(user.avatar_url_as(format="gif"))
+                if user is None:
+                    continue
+                if user.display_avatar.is_animated():
+                    urls.append(user.display_avatar.replace(format="gif", size=1024))
                 else:
-                    urls.append(user.avatar_url_as(format="png"))
+                    urls.append(user.display_avatar.replace(format="png", size=1024))
         if not urls and ids:
             for possible_id in ids:
                 user = ctx.guild.get_member(int(possible_id.group(0)))
-                if user:
-                    if user.is_avatar_animated():
-                        urls.append(user.avatar_url_as(format="gif"))
-                    else:
-                        urls.append(user.avatar_url_as(format="png"))
+                if user is None:
+                    continue
+                if user.display_avatar.is_animated():
+                    urls.append(user.display_avatar.replace(format="gif", size=1024))
+                else:
+                    urls.append(user.display_avatar.replace(format="png", size=1024))
         if attachments:
             for attachment in attachments:
                 urls.append(attachment.url)
@@ -64,10 +64,10 @@ class ImageFinder(Converter):
                     # display_name so we can get the nick of the user first
                     # without being NoneType and then check username if that matches
                     # what we're expecting
-                    urls.append(m.avatar_url_as(format="png"))
+                    urls.append(m.display_avatar.replace(format="png", size=1024))
                     continue
                 if argument.lower() in unidecode.unidecode(m.name.lower()):
-                    urls.append(m.avatar_url_as(format="png"))
+                    urls.append(m.display_avatar.replace(format="png", size=1024))
                     continue
 
         if not urls:
