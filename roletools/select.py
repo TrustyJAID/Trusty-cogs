@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 import discord
 from red_commons.logging import getLogger
@@ -11,308 +10,14 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import RoleToolsMixin
-from .converter import RoleHierarchyConverter, RoleToolsView
+from .components import RoleToolsView, SelectRole, SelectRoleOption
+from .converter import RoleHierarchyConverter, SelectOptionRoleConverter
 from .menus import BaseMenu, SelectMenuPages, SelectOptionPages
 
 roletools = RoleToolsMixin.roletools
 
 log = getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
-
-
-class SelectRoleOption(discord.SelectOption):
-    def __init__(
-        self,
-        name: str,
-        label: Optional[str],
-        value: str,
-        role_id: int,
-        description: Optional[str],
-        emoji: Optional[Union[discord.PartialEmoji, str]],
-    ):
-        super().__init__(label=label, emoji=emoji, description=description, value=value)
-        self.role_id = role_id
-        self.name = name
-        self.disabled: bool = False
-
-
-class SelectRole(discord.ui.Select):
-    def __init__(
-        self,
-        name: str,
-        custom_id: str,
-        min_values: int,
-        max_values: int,
-        placeholder: Optional[str],
-        options: List[SelectRoleOption],
-        disabled: List[str] = [],
-    ):
-        super().__init__(
-            options=options,
-            min_values=min_values,
-            max_values=max_values,
-            placeholder=placeholder,
-            custom_id=custom_id,
-        )
-        self._original_labels: Dict[str, Dict[str, Optional[str]]] = {
-            o.value: {"label": o.label, "description": o.description} for o in options
-        }
-        self.name = name
-        self.disabled_options: List[str] = disabled
-        self.view: RoleToolsView
-        self._rt_type = "select"  # to prevent circular import
-
-    def update_options(self, guild: discord.Guild):
-        for option in self.options:
-            role_id = option.value.split("-")[-1]
-            role = guild.get_role(int(role_id))
-            original = self._original_labels[option.value]
-            if role is not None:
-                if original["label"]:
-                    option.label = original["label"].replace("{count}", str(len(role.members)))
-                if original["description"]:
-                    option.description = original["description"].replace(
-                        "{count}", str(len(role.members))
-                    )
-
-    async def callback(self, interaction: discord.Interaction):
-        no_selection = self.values == []
-        role_ids = []
-        disabled_role = False
-        for option in self.values:
-            if option.split("-")[1] in self.disabled_options:
-                disabled_role = True
-                continue
-            role_ids.append(int(option.split("-")[-1]))
-
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        msg = ""
-        if disabled_role:
-            msg += _("One or more of the selected roles are no longer available.\n")
-        elif self.disabled:
-            await interaction.response.send_message(
-                _("This selection has been disabled from giving roles."), ephemeral=True
-            )
-            await interaction.message.edit()
-            return
-        guild = interaction.guild
-        added_roles = []
-        removed_roles = []
-        missing_role = False
-        pending = False
-        wait = None
-        for role_id in role_ids:
-            role = guild.get_role(role_id)
-            if role is None:
-                missing_role = True
-                continue
-            if interaction.user.bot:
-                # how? This is what happens when you copy/paste code lol
-                # # even if it's your own code
-                # ## Especially if it's your own code
-                continue
-            config = self.view.cog.config
-            if role not in interaction.user.roles:
-                if not await config.role(role).selfassignable():
-                    msg += _(
-                        "{role} Could not be assigned because it is not self assignable."
-                    ).format(role=role.mention)
-                    continue
-
-                if wait_time := await self.view.cog.check_guild_verification(
-                    interaction.user, guild
-                ):
-                    # log.debug("Ignoring %s due to verification check.", interaction.user.name)
-                    if wait_time:
-                        wait = datetime.now(timezone.utc) + timedelta(seconds=wait_time)
-                    continue
-                if getattr(interaction.user, "pending", False):
-                    pending = True
-                    continue
-                # log.debug("Adding role to %s in %s", interaction.user.name, guild)
-                response = await self.view.cog.give_roles(
-                    interaction.user, [role], _("Role Selection")
-                )
-                if response:
-                    continue
-                added_roles.append(role)
-            elif role in interaction.user.roles:
-                if not await config.role(role).selfremovable():
-                    msg += _(
-                        "{role} Could not be removed because it is not self assignable."
-                    ).format(role=role.mention)
-                    continue
-                # log.debug("Removing role from %s in %s", interaction.user.name, guild)
-                await self.view.cog.remove_roles(interaction.user, [role], _("Role Selection"))
-                removed_roles.append(role)
-        if wait is not None:
-            msg += _(
-                "I cannot assign roles to you until you have spent more time in this server. Try again {time}."
-            ).format(time=discord.utils.format_dt(wait))
-        if pending:
-            msg += _("You need to finish your member verification before I can assign you a role.")
-        if missing_role:
-            msg += _("One or more of the selected roles no longer exists.\n")
-        if added_roles:
-            msg += _("I have given you the following roles: {roles}\n").format(
-                roles=humanize_list([i.mention for i in added_roles])
-            )
-        if removed_roles:
-            msg += _("I have removed the following roles from you: {roles}\n").format(
-                roles=humanize_list([i.mention for i in removed_roles])
-            )
-        if msg:
-            await interaction.followup.send(msg, ephemeral=True)
-        else:
-            msg = _("I have not made any role changes to you.\n")
-            if no_selection:
-                msg += _("You have made no selections; try again to change your roles.")
-            await interaction.followup.send(msg, ephemeral=True)
-        self.update_options(guild)
-        await self.edit_message(interaction)
-
-    async def edit_message(self, interaction: discord.Interaction):
-        # I dislike this but I have no clue why this particular view
-        # doesn't have the reference to the main one for some items
-        view = self.view.cog.views[interaction.guild.id].get(
-            f"{interaction.message.channel.id}-{interaction.message.id}"
-        )
-        c_ids = {c.custom_id for c in self.view.children}
-        if view is not None:
-            for x in view.children:
-                if x.custom_id not in c_ids:
-                    self.view.add_item(x)
-        await interaction.message.edit(view=self.view)
-
-
-class SelectOptionRoleConverter(discord.app_commands.Transformer):
-    @classmethod
-    async def convert(cls, ctx: commands.Context, argument: str) -> SelectRoleOption:
-        async with ctx.cog.config.guild(ctx.guild).select_options() as select_options:
-            if argument.lower() in select_options:
-                select_data = select_options[argument.lower()]
-                role_id = select_data["role_id"]
-                emoji = select_data["emoji"]
-                if emoji and len(emoji) > 20:
-                    emoji = discord.PartialEmoji.from_str(emoji)
-                label = select_data["label"]
-                description = select_data["description"]
-                select_role = SelectRoleOption(
-                    name=argument.lower(),
-                    label=label,
-                    value=f"RTSelect-{argument.lower()}-{role_id}",
-                    role_id=role_id,
-                    description=description,
-                    emoji=emoji,
-                )
-                return select_role
-            else:
-                raise commands.BadArgument(
-                    _("Select Option with name `{name}` does not seem to exist.").format(
-                        name=argument.lower()
-                    )
-                )
-
-    async def autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> List[discord.app_commands.Choice]:
-        guild = interaction.guild
-        select_options = await self.config.guild(guild).select_options()
-        supplied_options = ""
-        new_option = ""
-        for sup in current.split(" "):
-            if sup in list(select_options.keys()):
-                supplied_options += f"{sup} "
-            else:
-                new_option = sup
-
-        ret = [
-            discord.app_commands.Choice(
-                name=f"{supplied_options} {g}", value=f"{supplied_options} {g}"
-            )
-            for g in list(select_options.keys())
-            if new_option in g
-        ]
-        if supplied_options:
-            ret.insert(
-                0, discord.app_commands.Choice(name=supplied_options, value=supplied_options)
-            )
-        return ret
-
-
-class SelectRoleConverter(discord.app_commands.Transformer):
-    @classmethod
-    async def convert(cls, ctx: commands.Context, argument: str) -> SelectRole:
-        async with ctx.cog.config.guild(ctx.guild).select_menus() as select_menus:
-            # log.debug(argument)
-            if argument.lower() in select_menus:
-                select_data = select_menus[argument.lower()]
-                options = []
-                all_option_data = await ctx.cog.config.guild(ctx.guild).select_options()
-                for option_name in select_data["options"]:
-                    try:
-                        option_data = all_option_data[option_name]
-                        role_id = option_data["role_id"]
-                        description = option_data["description"]
-                        emoji = option_data["emoji"]
-                        if emoji is not None:
-                            emoji = discord.PartialEmoji.from_str(emoji)
-                        label = option_data["label"]
-                        option = SelectRoleOption(
-                            name=option_name,
-                            label=label,
-                            value=f"RTSelect-{option_name}-{role_id}",
-                            role_id=role_id,
-                            description=description,
-                            emoji=emoji,
-                        )
-                        options.append(option)
-                    except KeyError:
-                        log.exception("Somehow this errored")
-                        continue
-                sr = SelectRole(
-                    name=argument.lower(),
-                    custom_id=f"RTSelect-{argument.lower()}-{ctx.guild.id}",
-                    min_values=select_data["min_values"],
-                    max_values=select_data["max_values"],
-                    placeholder=select_data["placeholder"],
-                    options=options,
-                )
-                sr.update_options(ctx.guild)
-                return sr
-            else:
-                raise commands.BadArgument(
-                    _("Select Option with name `{name}` does not seem to exist.").format(
-                        name=argument.lower()
-                    )
-                )
-
-    async def autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> List[discord.app_commands.Choice]:
-        guild = interaction.guild
-        cog = interaction.client.get_cog("RoleTools")
-        select_options = await cog.config.guild(guild).select_menus()
-        supplied_options = ""
-        new_option = ""
-        for sup in current.split(" "):
-            if sup in list(select_options.keys()):
-                supplied_options += f"{sup} "
-            else:
-                new_option = sup
-
-        ret = [
-            discord.app_commands.Choice(
-                name=f"{supplied_options} {g}", value=f"{supplied_options} {g}"
-            )
-            for g in list(select_options.keys())
-            if new_option in g
-        ]
-        if supplied_options:
-            ret.insert(
-                0, discord.app_commands.Choice(name=supplied_options, value=supplied_options)
-            )
-        return ret
 
 
 class RoleToolsSelect(RoleToolsMixin):
@@ -352,19 +57,20 @@ class RoleToolsSelect(RoleToolsMixin):
                         )
                         disabled.append(option_name)
 
-                select = SelectRole(
-                    name=select_name,
-                    custom_id=f"RTSelect-{select_name}-{guild_id}",
-                    min_values=select_data["min_values"],
-                    max_values=select_data["max_values"],
-                    placeholder=select_data["placeholder"],
-                    options=options,
-                    disabled=disabled,
-                )
                 guild = self.bot.get_guild(guild_id)
-                if guild is not None:
-                    select.update_options(guild)
                 for message_id in set(select_data.get("messages", [])):
+                    # we need a new instance of this object per message
+                    select = SelectRole(
+                        name=select_name,
+                        custom_id=f"RTSelect-{select_name}-{guild_id}",
+                        min_values=select_data["min_values"],
+                        max_values=select_data["max_values"],
+                        placeholder=select_data["placeholder"],
+                        options=options,
+                        disabled=disabled,
+                    )
+                    if guild is not None:
+                        select.update_options(guild)
                     if message_id not in self.views[guild_id]:
                         log.trace("Creating view for select %s", select_name)
                         self.views[guild_id][message_id] = RoleToolsView(self)
@@ -435,48 +141,48 @@ class RoleToolsSelect(RoleToolsMixin):
             min_values = 1
         if max_values is None:
             max_values = len(options)
+        messages = []
+        custom_id = f"RTSelect-{name.lower()}-{ctx.guild.id}"
+        select_menu_settings = {
+            "options": [o.name for o in options],
+            "min_values": max(min(25, min_values), 0),
+            "max_values": max(min(25, max_values), 0),
+            "placeholder": placeholder,
+            "name": name.lower(),
+            "messages": messages,
+        }
 
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
-            messages = []
             if name.lower() in select_menus:
-                messages = select_menus[name.lower()]["messages"]
-            select_menus[name.lower()] = {
-                "options": [o.name for o in options],
-                "min_values": max(min(25, min_values), 0),
-                "max_values": max(min(25, max_values), 0),
-                "placeholder": placeholder,
-                "name": name.lower(),
-                "messages": messages,
-            }
-            if ctx.guild.id not in self.settings:
-                self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
-            self.settings[ctx.guild.id]["select_menus"][name.lower()] = {
-                "options": [o.name for o in options],
-                "min_values": max(min(25, min_values), 0),
-                "max_values": max(min(25, max_values), 0),
-                "placeholder": placeholder,
-                "name": name.lower(),
-                "messages": messages,
-            }
+                select_menu_settings["messages"] = select_menus[name.lower()]["messages"]
+            select_menus[name.lower()] = select_menu_settings
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
+        self.settings[ctx.guild.id]["select_menus"][name.lower()] = select_menu_settings
         select_menus = SelectRole(
             name=name,
-            custom_id=f"RTSelect-{name.lower()}-{ctx.guild.id}",
+            custom_id=custom_id,
             min_values=min_values,
             max_values=max_values,
             options=options,
             placeholder=placeholder,
         )
+        for message_id in select_menu_settings["messages"]:
+            # fix old menus with the new one when interacted with
+            replacement_view = self.views.get(ctx.guild.id, {}).get(message_id, None)
+            if replacement_view is None:
+                continue
+            for item in replacement_view.children:
+                if item.custom_id == custom_id:
+                    replacement_view.remove_item(item)
+            replacement_view.add_item(select_menus)
+
         select_menus.update_options(ctx.guild)
-        view = RoleToolsView(self)
+        view = RoleToolsView(self, timeout=180.0)
         view.add_item(select_menus)
 
         msg_str = _("Here is how your select menu will look.")
         msg = await ctx.send(msg_str, view=view)
-        async with self.config.guild(ctx.guild).select_menus() as select_menus:
-            x = set(select_menus[name.lower()]["messages"])
-            x.add(f"{msg.channel.id}-{msg.id}")
-            select_menus[name.lower()]["messages"] = list(x)
-        self.views[ctx.guild.id][f"{msg.channel.id}-{msg.id}"] = view
 
     @select.command(name="delete", aliases=["del", "remove"])
     async def delete_select_menu(self, ctx: Context, *, name: str) -> None:
@@ -554,24 +260,19 @@ class RoleToolsSelect(RoleToolsMixin):
 
         if label:
             label = label[:100]
+        option_settings = {
+            "role_id": role.id,
+            "label": label,
+            "emoji": emoji_id,
+            "description": description[:100] if description else None,
+            "name": name.lower(),
+        }
 
         async with self.config.guild(ctx.guild).select_options() as select_options:
-            select_options[name.lower()] = {
-                "role_id": role.id,
-                "label": label,
-                "emoji": emoji_id,
-                "description": description[:100] if description else None,
-                "name": name.lower(),
-            }
-            if ctx.guild.id not in self.settings:
-                self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
-            self.settings[ctx.guild.id]["select_options"][name.lower()] = {
-                "role_id": role.id,
-                "label": label,
-                "emoji": emoji_id,
-                "description": description[:100] if description else None,
-                "name": name.lower(),
-            }
+            select_options[name.lower()] = option_settings
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
+        self.settings[ctx.guild.id]["select_options"][name.lower()] = option_settings
         async with self.config.role(role).select_options() as role_select:
             if name.lower() not in role_select:
                 role_select.append(name.lower())
@@ -730,3 +431,52 @@ class RoleToolsSelect(RoleToolsMixin):
             cog=self,
             page_start=0,
         ).start(ctx=ctx)
+
+    @select.command(name="cleanup")
+    @commands.admin_or_permissions(manage_roles=True)
+    @commands.bot_has_permissions(read_message_history=True)
+    async def select_cleanup(self, ctx: commands.Context):
+        """
+        Check each select menu that has registered a message still exists and remove buttons with
+        missing messages.
+
+        # Note: This will also potentially cause problems if the button exists in a thread
+        it will not be found if the thread is archived and subsequently removed.
+        """
+        guild = ctx.guild
+        async with ctx.typing():
+            async with self.config.guild(guild).select_menus() as select_menus:
+                for name, select_menu_settings in (
+                    self.settings[guild.id].get("select_menus", {}).items()
+                ):
+                    messages = set(select_menu_settings["messages"])
+                    for message_ids in select_menu_settings["messages"]:
+                        try:
+                            channel_id, message_id = message_ids.split("-")
+                            channel = guild.get_channel_or_thread(int(channel_id))
+                            # threads shouldn't be used and this will break if the thread
+                            # in question is archived
+                            if channel is None:
+                                messages.remove(message_ids)
+                                continue
+                            await channel.fetch_message(int(message_id))
+                        except discord.Forbidden:
+                            # We can't confirm the message doesn't exist with this
+                            continue
+                        except (discord.NotFound, discord.HTTPException):
+                            messages.remove(message_ids)
+                            log.info(
+                                "Removing %s message reference on %s select menu %s since it can't be found.",
+                                message_ids,
+                                name,
+                                guild.id,
+                            )
+                        except Exception:
+                            log.exception(
+                                "Error attempting to remove a message reference on select menu %s",
+                                name,
+                            )
+                            continue
+                    select_menus[name]["messages"] = list(messages)
+                    self.settings[guild.id]["select_menus"][name]["messages"] = list(messages)
+        await ctx.send(_("I am finished deleting old select menu message references."))

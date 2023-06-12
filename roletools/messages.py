@@ -9,9 +9,8 @@ from redbot.core.commands import Context
 from redbot.core.i18n import Translator
 
 from .abc import RoleToolsMixin
-from .buttons import ButtonRole, ButtonRoleConverter
-from .converter import RoleToolsView
-from .select import SelectRole, SelectRoleConverter
+from .components import ButtonRole, RoleToolsView, SelectRole
+from .converter import ButtonRoleConverter, SelectRoleConverter
 
 roletools = RoleToolsMixin.roletools
 
@@ -62,24 +61,22 @@ class RoleToolsMessages(RoleToolsMixin):
         """
         if not await self.check_totals(ctx, buttons=len(buttons), menus=len(menus)):
             return
-        new_view = RoleToolsView(self)
-        # for button in s:
-        # new_view.add_item(button)
-        # log.debug(options)
-
         if not menus:
             msg = _("You need to specify at least one menu setup previously.")
             await ctx.send(msg)
             return
+        new_view = RoleToolsView(self)
         for select in menus:
             new_view.add_item(select)
         for button in buttons:
             new_view.add_item(button)
 
-        msg = await channel.send(content=message, view=new_view)
+        msg = await channel.send(content=message[:2000], view=new_view)
         message_key = f"{msg.channel.id}-{msg.id}"
 
         await self.save_settings(ctx.guild, message_key, buttons=buttons, select_menus=menus)
+        if ctx.guild.id not in self.views:
+            self.views[ctx.guild.id] = {}
         self.views[ctx.guild.id][message_key] = new_view
         await ctx.send(_("Message sent."))
 
