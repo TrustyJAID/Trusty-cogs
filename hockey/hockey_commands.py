@@ -1,11 +1,12 @@
+import os
 from datetime import datetime, timezone
-from io import BytesIO
 from typing import List, Literal, Optional
 from urllib.parse import quote
 
 import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
+from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 
@@ -921,21 +922,11 @@ class HockeyCommands(HockeyMixin):
             )
             eastern_conference = "https://i.imgur.com/CtXvcCs.png"
             western_conference = "https://i.imgur.com/UFYJTDF.png"
-            async with self.session.get(eastern_conference) as resp:
-                data = await resp.read()
-            logo = BytesIO()
-            logo.write(data)
-            logo.seek(0)
-            image = discord.File(logo, filename="eastern_logo.png")
+            image = await self.get_image("eastern_logo.png", eastern_conference)
             await ctx.send(msg1, file=image)
             for division in team_list:
                 if division == "Central":
-                    async with self.session.get(western_conference) as resp:
-                        data = await resp.read()
-                    logo = BytesIO()
-                    logo.write(data)
-                    logo.seek(0)
-                    image = discord.File(logo, filename="western_logo.png")
+                    image = await self.get_image("western_logo.png", western_conference)
                     await ctx.send(file=image)
                 div_emoji = "<:" + TEAMS["Team {}".format(division)]["emoji"] + ">"
                 msg = "{0} __**{1} DIVISION**__ {0}".format(div_emoji, division.upper())
@@ -945,3 +936,12 @@ class HockeyCommands(HockeyMixin):
                     team_link = TEAMS[team]["invite"]
                     msg = "{0} {1} {0}".format(team_emoji, team_link)
                     await ctx.channel.send(msg)
+
+    async def get_image(self, file_name: str, url: str) -> discord.File:
+        path = cog_data_path(self) / file_name
+        if not os.path.exists(path):
+            async with self.session.get(url) as resp:
+                data = await resp.read()
+            with path.open("wb") as outfile:
+                outfile.write(data)
+        return discord.File(path, filename=file_name)

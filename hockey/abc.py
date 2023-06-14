@@ -188,6 +188,10 @@ class HockeyMixin(ABC):
     async def otherdiscords(self, ctx: commands.Context, team: TeamFinder) -> None:
         raise NotImplementedError()
 
+    @abstractmethod
+    async def get_image(self, file_name: str, url: str) -> discord.File:
+        raise NotImplementedError()
+
     #######################################################################
     # gamedaychannels.py                                                  #
     #######################################################################
