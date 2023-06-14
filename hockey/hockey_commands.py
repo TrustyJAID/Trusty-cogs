@@ -917,7 +917,7 @@ class HockeyCommands(HockeyMixin):
                 "appropriate punishments ranging from a warning "
                 "to a ban. ```\n\nhttps://discord.gg/reddithockey\n"
                 "https://discord.gg/rishockey\n"
-                "https://discord.gg/sdpn\nhttps://discord.gg/thehockeyguy"
+                "https://discord.gg/c3Q7Fq4T\nhttps://discord.gg/thehockeyguy"
             )
             eastern_conference = "https://i.imgur.com/CtXvcCs.png"
             western_conference = "https://i.imgur.com/UFYJTDF.png"
