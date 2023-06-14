@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional, Union
+from datetime import datetime, timezone
+from typing import Any, List, Optional, Tuple, Union
 
 import discord
 from red_commons.logging import getLogger
@@ -17,9 +18,6 @@ class AvatarPages(menus.ListPageSource):
     def __init__(self, members: List[discord.abc.User]):
         super().__init__(members, per_page=1)
         self.use_display_avatar: bool = True
-
-    def is_paginating(self):
-        return True
 
     async def format_page(
         self, menu: BaseView, member: Union[discord.Member, discord.User]
@@ -63,9 +61,6 @@ class GuildPages(menus.ListPageSource):
         super().__init__(guilds, per_page=1)
         self.guild: Optional[discord.Guild] = None
 
-    def is_paginating(self):
-        return True
-
     async def format_page(self, menu: menus.MenuPages, guild: discord.Guild):
         self.guild = guild
         em = await menu.cog.guild_embed(guild)
@@ -73,12 +68,35 @@ class GuildPages(menus.ListPageSource):
         return em
 
 
+class TopMemberPages(menus.ListPageSource):
+    def __init__(self, pages: List[discord.Member], include_bots: Optional[bool]):
+        super().__init__(pages, per_page=10)
+        self.members = pages
+        self.include_bots = include_bots
+
+    async def format_page(self, menu: BaseView, page: discord.Member):
+        msg = ""
+        guild = page[0].guild
+        for member in page:
+            joined_dt = getattr(member, "joined_at", None) or datetime.now(timezone.utc)
+            joined_at = discord.utils.format_dt(joined_dt)
+            msg += f"{self.members.index(member) + 1}. {member.mention} - {joined_at}\n"
+        if menu.ctx and await menu.ctx.embed_requested():
+            em = discord.Embed(description=msg)
+            title = _("{guild} top members").format(guild=guild.name)
+            if self.include_bots is False:
+                title += _(" not including bots")
+            if self.include_bots is True:
+                title = _("{guild} top bots").format(guild=guild.name)
+            em.set_author(name=title, icon_url=guild.icon)
+            em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+            return em
+        return msg
+
+
 class ListPages(menus.ListPageSource):
     def __init__(self, pages: List[Union[discord.Embed, str]]):
         super().__init__(pages, per_page=1)
-
-    def is_paginating(self):
-        return True
 
     async def format_page(self, menu: menus.MenuPages, page: Union[discord.Embed, str]):
         return page
@@ -244,6 +262,18 @@ class BaseView(discord.ui.View):
     async def start(self, ctx: commands.Context):
         await self.send_initial_message(ctx)
 
+    def disable_navigation(self):
+        self.first_item.disabled = True
+        self.back_button.disabled = True
+        self.forward_button.disabled = True
+        self.last_item.disabled = True
+
+    def enable_navigation(self):
+        self.first_item.disabled = False
+        self.back_button.disabled = False
+        self.forward_button.disabled = False
+        self.last_item.disabled = False
+
     async def send_initial_message(self, ctx: commands.Context):
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
@@ -251,6 +281,8 @@ class BaseView(discord.ui.View):
         This implementation shows the first page of the source.
         """
         self.ctx = ctx
+        if not self.source.is_paginating():
+            self.disable_navigation()
         page = await self._source.get_page(self.page_start)
         kwargs = await self._get_kwargs_from_page(page)
         self.message = await ctx.send(**kwargs, view=self)
@@ -266,6 +298,10 @@ class BaseView(discord.ui.View):
             return {"embed": value, "content": None}
 
     async def show_page(self, page_number: int, interaction: discord.Interaction):
+        if not self.source.is_paginating():
+            self.disable_navigation()
+        else:
+            self.enable_navigation()
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
