@@ -61,7 +61,7 @@ class ReTrigger(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.24.0"
+    __version__ = "2.24.1"
 
     def __init__(self, bot):
         super().__init__()

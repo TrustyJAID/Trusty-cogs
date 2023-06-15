@@ -403,19 +403,92 @@ class ReTriggerEditModal(discord.ui.Modal):
         self.replies = discord.ui.Select(
             max_values=1, min_values=0, placeholder="Replies", options=reply_options
         )
-        for response_type in trigger.response_type:
-            if response_type.value in ["text", "dm", "dmme", "command", "mock"]:
-                self.add_item(self.text)
-                break
+        self.multi_inputs = {}
+        text_inputs = ["text", "dm", "dmme", "command", "mock"]
+        if not trigger.multi_payload:
+            for response_type in trigger.response_type:
+                if response_type.value in text_inputs:
+                    self.add_item(self.text)
+                    break
+        else:
+            for response_type in trigger.response_type:
+                if response_type.name not in text_inputs:
+                    continue
+                self.multi_inputs[response_type] = discord.ui.TextInput(
+                    style=discord.TextStyle.short,
+                    label=response_type.name,
+                    default="".join(
+                        i[1] for i in trigger.multi_payload if i[0] == response_type.name
+                    ),
+                )
+            for ti in self.multi_inputs.values():
+                try:
+                    self.add_item(ti)
+                except ValueError:
+                    # I really hope there aren't any triggers with this many text responses
+                    log.error(
+                        "ReTrigger attempted to send a modal edit with more text inputs than expected."
+                    )
+                    pass
+
         # if TriggerResponse.text in trigger.response_type:
         # self.add_item(self.replies)
         self.og_button = button
         self.trigger = trigger
 
+    async def handle_multi(self, interaction: discord.Interaction):
+        log.debug(self.multi_inputs)
+        msg = _("Editing Trigger {trigger}:\n").format(trigger=self.trigger.name)
+        guild = interaction.guild
+        any_edits = False
+        if self.trigger._raw_regex != self.regex.value:
+            try:
+                re.compile(self.regex.value)
+            except Exception as e:
+                await interaction.response.send_message(
+                    _("The provided regex pattern is not valid: {e}").format(e=e), ephemeral=True
+                )
+                return
+            self.trigger._raw_regex = self.regex.value
+            self.trigger.compile()
+            # we've already checked if the regex was valid
+            any_edits = True
+            msg += _("- Regex\n")
+        for response_type, ti in self.multi_inputs.items():
+            old = [i for i in self.trigger.multi_payload if i[0] == response_type.name]
+            old_str = "".join(i[1] for i in old)
+            if ti.value is None:
+                continue
+            if old_str != ti.value:
+                any_edits = True
+                log.debug(
+                    "Modifying %s on trigger %r old_str=%s new_str=%s",
+                    response_type.name,
+                    self.trigger,
+                    old_str,
+                    ti.value,
+                )
+                for old_payload in old:
+                    try:
+                        self.trigger.multi_payload.remove(old_payload)
+                    except IndexError:
+                        log.error("Error removing multi payload option.")
+                self.trigger.multi_payload.append([response_type.name, ti.value])
+                msg += _("- {response_type}").format(response_type=response_type.name)
+        if any_edits:
+            await interaction.response.send_message(msg)
+            async with self.og_button.view.cog.config.guild(guild).trigger_list() as trigger_list:
+                trigger_list[self.trigger.name] = await self.trigger.to_json()
+        else:
+            await interaction.response.send_message(_("None of the values have changed."))
+        await self.og_button.view.show_checked_page(self.og_button.view.current_page, interaction)
+
     async def on_submit(self, interaction: discord.Interaction):
         edited_text = False
         edited_regex = False
         edited_replies = False
+        if self.trigger.multi_payload:
+            return await self.handle_multi(interaction)
         msg = _("Editing Trigger {trigger}:\n").format(trigger=self.trigger.name)
         guild = interaction.guild
         if self.trigger.text != self.text.value:
