@@ -1,4 +1,3 @@
-import asyncio
 from typing import Union
 
 import discord
@@ -7,11 +6,52 @@ from redbot.core import Config, checks, commands, modlog
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
 
-from .eventmixin import CommandPrivs, EventChooser, EventMixin
+from .eventmixin import CommandPrivs, EventChooser, EventMixin, MemberUpdateEnum
 from .settings import inv_settings
 
 _ = Translator("ExtendedModLog", __file__)
 logger = getLogger("red.trusty-cogs.ExtendedModLog")
+
+
+def wrapped_additional_help():
+    """
+    This wrapper lets me add a common string to multiple commands via a decorator.
+
+    Note: This must be the last decorator on the function for it to work.
+    """
+    added_doc = _(
+        """
+    - `[events...]` must be any of the following options (more than one event can be provided at once):
+     - `channel_change` - Updates to channel name, etc.
+     - `channel_create`
+     - `channel_delete`
+     - `commands_used`  - Bot command usage
+     - `emoji_change`   - Emojis added or deleted
+     - `guild_change`   - Server settings changed
+     - `message_edit`
+     - `message_delete`
+     - `member_change`  - Member changes like roles added/removed, nicknames, etc.
+     - `role_change`    - Role updates permissions, name, etc.
+     - `role_create`
+     - `role_delete`
+     - `voice_change`   - Voice channel join/leave
+     - `member_join`
+     - `member_left`
+     - `invite_created`
+     - `invite_deleted`
+     - `thread_create`
+     - `thread_delete`
+     - `thread_change`
+     - `stickers_change`
+    """
+    )
+
+    def decorator(func):
+        old = func.__doc__ or ""
+        setattr(func, "__doc__", old + added_doc)
+        return func
+
+    return decorator
 
 
 @cog_i18n(_)
@@ -22,7 +62,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.11.2"
+    __version__ = "2.12.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -32,6 +72,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         self.settings = {}
         self._ban_cache = {}
         self.invite_links_loop.start()
+        self.allowed_mentions = discord.AllowedMentions(users=False, roles=False, everyone=False)
 
     def format_help_for_context(self, ctx: commands.Context):
         """
@@ -49,7 +90,12 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         return
 
-    async def initialize(self) -> None:
+    async def cog_load(self) -> None:
+        if await self.config.version() < "2.8.5":
+            await self.migrate_2_8_5_settings()
+        self.settings = await self.config.all_guilds()
+
+    async def migrate_2_8_5_settings(self):
         all_data = await self.config.all_guilds()
         for guild_id, data in all_data.items():
             guild = discord.Object(id=guild_id)
@@ -67,12 +113,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
                             # del all_data[guild_id][entry]
                             logger.error("Somehow your dict was invalid.")
                             continue
-            if await self.config.version() < "2.8.5":
-                logger.info("Saving all guild data to new version type")
-                await self.config.guild(guild).set(all_data[guild_id])
-                await self.config.version.set("2.8.5")
-
-        self.settings = all_data
+            logger.info("Saving guild %s data to new version type", guild_id)
+            await self.config.guild(guild).set(all_data[guild_id])
+        await self.config.version.set("2.8.5")
 
     async def modlog_settings(self, ctx: commands.Context) -> None:
         guild = ctx.message.guild
@@ -171,38 +214,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await self.modlog_settings(ctx)
 
     @_modlog.command(name="colour", aliases=["color"])
+    @wrapped_additional_help()
     async def _set_event_colours(
         self, ctx: commands.Context, colour: discord.Colour, *events: EventChooser
     ):
         """
         Set custom colours for modlog events
 
-        `colour` must be a hex code or a [built colour.](https://discordpy.readthedocs.io/en/latest/api.html#colour)
-
-        `[events...]` must be any of the following options (more than one event can be provided at once):
-            `channel_change` - Updates to channel name, etc.
-            `channel_create`
-            `channel_delete`
-            `commands_used`  - Bot command usage
-            `emoji_change`   - Emojis added or deleted
-            `guild_change`   - Server settings changed
-            `message_edit`
-            `message_delete`
-            `member_change`  - Member changes like roles added/removed and nicknames
-            `role_change`    - Role updates like permissions
-            `role_create`
-            `role_delete`
-            `voice_change`   - Voice channel join/leave
-            `member_join`
-            `member_left`
-            `invite_created`
-            `invite_deleted`
-
-            **Requires Red 3.5+ and discord.py 2.0+**
-            `thread_create`
-            `thread_delete`
-            `thread_change`
-            `stickers_change`
+        - `<colour>` must be a hex code or a [built colour.](https://discordpy.readthedocs.io/en/latest/api.html#colour)
         """
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
@@ -225,38 +244,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
         )
 
     @_modlog.command(name="embeds", aliases=["embed"])
+    @wrapped_additional_help()
     async def _set_embds(
         self, ctx: commands.Context, true_or_false: bool, *events: EventChooser
     ) -> None:
         """
         Set modlog events to use embeds or text
 
-        `<true_or_false>` The desired embed setting either on or off.
-
-        `[events...]` must be any of the following options (more than one event can be provided at once):
-            `channel_change` - Updates to channel name, etc.
-            `channel_create`
-            `channel_delete`
-            `commands_used`  - Bot command usage
-            `emoji_change`   - Emojis added or deleted
-            `guild_change`   - Server settings changed
-            `message_edit`
-            `message_delete`
-            `member_change`  - Member changes like roles added/removed and nicknames
-            `role_change`    - Role updates like permissions
-            `role_create`
-            `role_delete`
-            `voice_change`   - Voice channel join/leave
-            `member_join`
-            `member_left`
-            `invite_created`
-            `invite_deleted`
-
-            **Requires Red 3.5+ and discord.py 2.0+**
-            `thread_create`
-            `thread_delete`
-            `thread_change`
-            `stickers_change`
+        - `<true_or_false>` The desired embed setting either on or off.
         """
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
@@ -276,6 +271,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
 
     @_modlog.command(name="emojiset", send_help=True)
     @commands.bot_has_permissions(add_reactions=True)
+    @wrapped_additional_help()
     async def _set_event_emoji(
         self,
         ctx: commands.Context,
@@ -285,32 +281,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         Set the emoji used in text modlogs.
 
-        `<new_emoji>` can be any discord emoji or unicode emoji the bot has access to use.
-
-        `[events...]` must be any of the following options (more than one event can be provided at once):
-            `channel_change` - Updates to channel name, etc.
-            `channel_create`
-            `channel_delete`
-            `commands_used`  - Bot command usage
-            `emoji_change`   - Emojis added or deleted
-            `guild_change`   - Server settings changed
-            `message_edit`
-            `message_delete`
-            `member_change`  - Member changes like roles added/removed and nicknames
-            `role_change`    - Role updates like permissions
-            `role_create`
-            `role_delete`
-            `voice_change`   - Voice channel join/leave
-            `member_join`
-            `member_left`
-            `invite_created`
-            `invite_deleted`
-
-            **Requires Red 3.5+ and discord.py 2.0+**
-            `thread_create`
-            `thread_delete`
-            `thread_change`
-            `stickers_change`
+        - `<new_emoji>` can be any discord emoji or unicode emoji the bot has access to use.
         """
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
@@ -335,6 +306,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         )
 
     @_modlog.command(name="toggle")
+    @wrapped_additional_help()
     async def _set_event_on_or_off(
         self,
         ctx: commands.Context,
@@ -344,32 +316,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         Turn on and off specific modlog actions
 
-        `<true_or_false>` Either on or off.
-
-        `[events...]` must be any of the following options (more than one event can be provided at once):
-            `channel_change` - Updates to channel name, etc.
-            `channel_create`
-            `channel_delete`
-            `commands_used`  - Bot command usage
-            `emoji_change`   - Emojis added or deleted
-            `guild_change`   - Server settings changed
-            `message_edit`
-            `message_delete`
-            `member_change`  - Member changes like roles added/removed and nicknames
-            `role_change`    - Role updates like permissions
-            `role_create`
-            `role_delete`
-            `voice_change`   - Voice channel join/leave
-            `member_join`
-            `member_left`
-            `invite_created`
-            `invite_deleted`
-
-            **Requires Red 3.5+ and discord.py 2.0+**
-            `thread_create`
-            `thread_delete`
-            `thread_change`
-            `stickers_change`
+        - `<true_or_false>` Either on or off.
         """
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
@@ -388,6 +335,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         )
 
     @_modlog.command(name="channel")
+    @wrapped_additional_help()
     async def _set_event_channel(
         self,
         ctx: commands.Context,
@@ -397,32 +345,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         Set the channel for modlogs.
 
-        `<channel>` The text channel to send the events to.
-
-        `[events...]` must be any of the following options (more than one event can be provided at once):
-            `channel_change` - Updates to channel name, etc.
-            `channel_create`
-            `channel_delete`
-            `commands_used`  - Bot command usage
-            `emoji_change`   - Emojis added or deleted
-            `guild_change`   - Server settings changed
-            `message_edit`
-            `message_delete`
-            `member_change`  - Member changes like roles added/removed and nicknames
-            `role_change`    - Role updates like permissions
-            `role_create`
-            `role_delete`
-            `voice_change`   - Voice channel join/leave
-            `member_join`
-            `member_left`
-            `invite_created`
-            `invite_deleted`
-
-            **Requires Red 3.5+ and discord.py 2.0+**
-            `thread_create`
-            `thread_delete`
-            `thread_change`
-            `stickers_change`
+        - `<channel>` The text channel to send the events to.
         """
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
@@ -441,6 +364,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         )
 
     @_modlog.command(name="resetchannel")
+    @wrapped_additional_help()
     async def _reset_event_channel(
         self,
         ctx: commands.Context,
@@ -448,31 +372,6 @@ class ExtendedModLog(EventMixin, commands.Cog):
     ) -> None:
         """
         Reset the modlog event to the default modlog channel.
-
-        `[events...]` must be any of the following options (more than one event can be provided at once):
-            `channel_change` - Updates to channel name, etc.
-            `channel_create`
-            `channel_delete`
-            `commands_used`  - Bot command usage
-            `emoji_change`   - Emojis added or deleted
-            `guild_change`   - Server settings changed
-            `message_edit`
-            `message_delete`
-            `member_change`  - Member changes like roles added/removed and nicknames
-            `role_change`    - Role updates like permissions
-            `role_create`
-            `role_delete`
-            `voice_change`   - Voice channel join/leave
-            `member_join`
-            `member_left`
-            `invite_created`
-            `invite_deleted`
-
-            **Requires Red 3.5+ and discord.py 2.0+**
-            `thread_create`
-            `thread_delete`
-            `thread_change`
-            `stickers_change`
         """
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
@@ -490,9 +389,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
     @_modlog.command(name="all", aliaes=["all_settings", "toggle_all"])
     async def _toggle_all_logs(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
-        Turn all logging options on or off
+        Turn all logging options on or off.
 
-        `<true_or_false>` what to set all logging settings to must be `true`, `false`, `yes`, `no`.
+        - `<true_or_false>` True of False, what to set all loggable settings to.
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -505,14 +404,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
     @_modlog.group(name="delete")
     async def _delete(self, ctx: commands.Context) -> None:
         """
-        Delete logging settings
+        Delete logging settings.
         """
         pass
 
     @_delete.command(name="bulkdelete")
     async def _delete_bulk_toggle(self, ctx: commands.Context) -> None:
         """
-        Toggle bulk message delete notifications
+        Toggle bulk message delete notifications.
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -531,7 +430,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     @_delete.command(name="individual")
     async def _delete_bulk_individual(self, ctx: commands.Context) -> None:
         """
-        Toggle individual message delete notifications for bulk message delete
+        Toggle individual message delete notifications for bulk message delete.
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -550,7 +449,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     @_delete.command(name="cachedonly")
     async def _delete_cachedonly(self, ctx: commands.Context) -> None:
         """
-        Toggle message delete notifications for non-cached messages
+        Toggle message delete notifications for non-cached messages.
 
         Delete notifications for non-cached messages
         will only show channel info without content of deleted message or its author.
@@ -572,7 +471,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     @_delete.command(name="ignorecommands")
     async def _delete_ignore_commands(self, ctx: commands.Context) -> None:
         """
-        Toggle message delete notifications for valid bot command messages
+        Toggle message delete notifications for valid bot command messages.
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -588,10 +487,36 @@ class ExtendedModLog(EventMixin, commands.Cog):
             verb = _("enabled")
         await ctx.send(msg.format(enabled_or_disabled=verb))
 
-    @_modlog.command(name="nickname", aliases=["nicknames"])
+    @_modlog.group(name="member", aliases=["members", "memberchanges"])
+    async def _members(self, ctx: commands.Context) -> None:
+        """
+        Toggle individual member update settings.
+        """
+
+    @_members.command(name="settings")
+    async def _members_show_settings(self, ctx: commands.Context) -> None:
+        """
+        Show the current settings on member updates.
+        """
+        await self._members_settings(ctx)
+
+    async def _members_settings(self, ctx: commands.Context, msg: str = ""):
+        guild = ctx.guild
+        msg += _("\n### Member logging Settings for {guild}\n").format(guild=guild.name)
+        if guild.id not in self.settings:
+            self.settings[guild.id] = inv_settings
+
+        data = self.settings[guild.id]["user_change"]
+        for update_type in MemberUpdateEnum:
+            msg += f"{update_type.get_name()}: **{data[update_type.name]}**\n"
+        await self.config.guild(ctx.guild).set(data)
+        # save the data back to config incase we had some deleted channels
+        await ctx.maybe_send_embed(msg)
+
+    @_members.command(name="nickname", aliases=["nicknames"])
     async def _user_nickname_logging(self, ctx: commands.Context) -> None:
         """
-        Toggle nickname updates for user changes
+        Toggle nickname updates for member changes.
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -599,17 +524,142 @@ class ExtendedModLog(EventMixin, commands.Cog):
         self.settings[ctx.guild.id]["user_change"]["nicknames"] = not setting
         await self.config.guild(ctx.guild).user_change.nicknames.set(not setting)
         if setting:
-            await ctx.send(_("Nicknames will no longer be tracked in user change logs."))
+            await self._members_settings(
+                ctx, _("Nicknames will no longer be tracked in member change logs.")
+            )
         else:
-            await ctx.send(_("Nicknames will be tracked in user change logs."))
+            await self._members_settings(
+                ctx, _("Nicknames will be tracked in member change logs.")
+            )
+
+    @_members.command(name="avatar")
+    async def _user_avatar_logging(self, ctx: commands.Context) -> None:
+        """
+        Toggle avatar updates for member changes.
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        setting = self.settings[ctx.guild.id]["user_change"]["avatar"]
+        self.settings[ctx.guild.id]["user_change"]["avatar"] = not setting
+        await self.config.guild(ctx.guild).user_change.avatar.set(not setting)
+        if setting:
+            await self._members_settings(
+                ctx, _("Avatars will no longer be tracked in member change logs.")
+            )
+        else:
+            await self._members_settings(ctx, _("Avatars will be tracked in member change logs."))
+
+    @_members.command(name="roles", aliases=["role"])
+    async def _user_role_logging(self, ctx: commands.Context) -> None:
+        """
+        Toggle role updates for members.
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        setting = self.settings[ctx.guild.id]["user_change"]["roles"]
+        self.settings[ctx.guild.id]["user_change"]["roles"] = not setting
+        await self.config.guild(ctx.guild).user_change.roles.set(not setting)
+        if setting:
+            await self._members_settings(
+                ctx, _("Roles will no longer be tracked in member change logs.")
+            )
+        else:
+            await self._members_settings(ctx, _("Roles will be tracked in member change logs."))
+
+    @_members.command(name="pending")
+    async def _user_pending_logging(self, ctx: commands.Context) -> None:
+        """
+        Toggle pending updates for members.
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        setting = self.settings[ctx.guild.id]["user_change"]["pending"]
+        self.settings[ctx.guild.id]["user_change"]["pending"] = not setting
+        await self.config.guild(ctx.guild).user_change.pending.set(not setting)
+        if setting:
+            await self._members_settings(
+                ctx, _("Pending will no longer be tracked in member change logs.")
+            )
+        else:
+            await self._members_settings(ctx, _("Pending will be tracked in member change logs."))
+
+    @_members.command(name="timeout")
+    async def _user_timeout_logging(self, ctx: commands.Context) -> None:
+        """
+        Toggle timeout updates for members.
+
+        Note: Due to a discord limitation this will not update when a members
+        timeout has expired and may display a before timeout in the past.
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        setting = self.settings[ctx.guild.id]["user_change"]["timeout"]
+        self.settings[ctx.guild.id]["user_change"]["timeout"] = not setting
+        await self.config.guild(ctx.guild).user_change.timeout.set(not setting)
+        if setting:
+            await self._members_settings(
+                ctx, _("Timeout will no longer be tracked in member change logs.")
+            )
+        else:
+            await self._members_settings(ctx, _("Timeout will be tracked in member change logs."))
+
+    @_members.command(name="flags")
+    async def _user_flags_logging(self, ctx: commands.Context) -> None:
+        """
+        Toggle flags updates for members.
+
+        This includes things like:
+        - `did_rejoin`
+        - `completed_onboarding`
+        - `bypasses_verification`
+        - `started_onboarding`
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        setting = self.settings[ctx.guild.id]["user_change"]["flags"]
+        self.settings[ctx.guild.id]["user_change"]["flags"] = not setting
+        await self.config.guild(ctx.guild).user_change.flags.set(not setting)
+        if setting:
+            await self._members_settings(
+                ctx, _("Member flags will no longer be tracked in member change logs.")
+            )
+        else:
+            await self._members_settings(
+                ctx, _("Member flags will be tracked in member change logs.")
+            )
+
+    # For whatever reason trying to toggle all these settings causes all of the guilds
+    # config to reset and I have no clue why so this will be unsupported for now
+    #  @_members.command(name="all")
+    async def _user_all_logging(self, ctx: commands.Context, set_to: bool) -> None:
+        """
+        Set all member update settings.
+
+        - `<set_to>` True or False what to set all the member update settings to.
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+            logger.debug("Adding %s to cache", ctx.guild.id)
+        # async with self.config.guild(ctx.guild).user_change() as user_change:
+        for update_type in MemberUpdateEnum:
+            self.settings[ctx.guild.id]["user_change"][update_type.name] = set_to
+        await self.config.guild(ctx.guild).user_change.set_raw(
+            "user_change", value=self.settings[ctx.guild.id]["user_change"]
+        )
+        # user_change[update_type.name] = set_to
+        await self._members_settings(ctx)
 
     @_modlog.command(name="commandlevel", aliases=["commandslevel"])
     async def _command_level(self, ctx: commands.Context, *level: CommandPrivs) -> None:
         """
-        Set the level of commands to be logged
+        Set the level of commands to be logged.
 
-        `[level...]` must include all levels you want from:
-        MOD, ADMIN, BOT_OWNER, GUILD_OWNER, and NONE
+        - `[level...]` must include all levels you want from:
+         - `NONE`
+         - `MOD`
+         - `ADMIN`
+         - `GUILD_OWNER`
+         - `BOT_OWNER`
 
         These are the basic levels commands check for in permissions.
         `NONE` is a command anyone has permission to use, where as `MOD`
@@ -629,12 +679,17 @@ class ExtendedModLog(EventMixin, commands.Cog):
     async def ignore(
         self,
         ctx: commands.Context,
-        channel: Union[discord.TextChannel, discord.CategoryChannel, discord.VoiceChannel],
+        channel: Union[
+            discord.TextChannel,
+            discord.ForumChannel,
+            discord.CategoryChannel,
+            discord.VoiceChannel,
+        ],
     ) -> None:
         """
-        Ignore a channel from message delete/edit events and bot commands
+        Ignore a channel from message delete/edit events and bot commands.
 
-        `channel` the channel or category to ignore events in
+        - `<channel>` the channel or category to ignore events in
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -656,12 +711,17 @@ class ExtendedModLog(EventMixin, commands.Cog):
     async def unignore(
         self,
         ctx: commands.Context,
-        channel: Union[discord.TextChannel, discord.CategoryChannel, discord.VoiceChannel],
+        channel: Union[
+            discord.TextChannel,
+            discord.ForumChannel,
+            discord.CategoryChannel,
+            discord.VoiceChannel,
+        ],
     ) -> None:
         """
-        Unignore a channel from message delete/edit events and bot commands
+        Unignore a channel from message delete/edit events and bot commands.
 
-        `channel` the channel to unignore message delete/edit events
+        - `<channel>` the channel to unignore message delete/edit events.
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -679,12 +739,12 @@ class ExtendedModLog(EventMixin, commands.Cog):
 
     @_modlog.group(name="bot", aliases=["bots"])
     async def _modlog_bot(self, ctx: commands.Context) -> None:
-        """Bot filter settings"""
+        """Bot filter settings."""
 
     @_modlog_bot.command(name="edits", aliases=["edit"])
     async def _edit_toggle_bots(self, ctx: commands.Context) -> None:
         """
-        Toggle message edit notifications for bot users
+        Toggle message edit notifications for bot users.
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -703,7 +763,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     @_modlog_bot.command(name="deletes", aliases=["delete"])
     async def _delete_bots(self, ctx: commands.Context) -> None:
         """
-        Toggle message delete notifications for bot users
+        Toggle message delete notifications for bot users.
 
         This will not affect delete notifications for messages that aren't in bot's cache.
         """
@@ -724,7 +784,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     @_modlog_bot.command(name="change")
     async def _user_bot_logging(self, ctx: commands.Context) -> None:
         """
-        Toggle bots from being logged in user updates
+        Toggle bots from being logged in user updates.
 
         This includes roles and nickname.
         """
@@ -734,14 +794,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
         self.settings[ctx.guild.id]["user_change"]["bots"] = not setting
         await self.config.guild(ctx.guild).user_change.bots.set(not setting)
         if setting:
-            await ctx.send(_("Bots will no longer be tracked in user change logs."))
+            await ctx.send(_("Bots will no longer be tracked in member change logs."))
         else:
-            await ctx.send(_("Bots will be tracked in user change logs."))
+            await ctx.send(_("Bots will be tracked in member change logs."))
 
     @_modlog_bot.command(name="voice")
     async def _user_bot_voice_logging(self, ctx: commands.Context) -> None:
         """
-        Toggle bots from being logged in voice state updates
+        Toggle bots from being logged in voice state updates.
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
