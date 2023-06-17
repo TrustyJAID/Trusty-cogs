@@ -38,7 +38,7 @@ class ServerStats(commands.GroupCog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.7.1"
+    __version__ = "1.7.2"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -79,7 +79,9 @@ class ServerStats(commands.GroupCog):
 
     @commands.hybrid_command()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
-    async def avatar(self, ctx: commands.Context, *, member: Optional[discord.Member]):
+    async def avatar(
+        self, ctx: commands.Context, *, member: Optional[Union[discord.Member, discord.User]]
+    ):
         """
         Display a users avatar in chat
         """
@@ -396,14 +398,14 @@ class ServerStats(commands.GroupCog):
             if ctx.guild:
                 em.set_author(
                     name=f"{ctx.me} {f'~ {ctx.me.nick}' if ctx.me.nick else ''}",
-                    icon_url=ctx.me.avatar.url,
+                    icon_url=ctx.me.avatar,
                 )
             else:
                 em.set_author(
                     name=f"{ctx.me}",
-                    icon_url=ctx.me.avatar.url,
+                    icon_url=ctx.me.avatar,
                 )
-            em.set_thumbnail(url=ctx.me.avatar.url)
+            em.set_thumbnail(url=ctx.me.avatar)
         if ctx.channel.permissions_for(ctx.me).embed_links:
             await ctx.send(embed=em)
         else:
@@ -1492,11 +1494,11 @@ class ServerStats(commands.GroupCog):
         if not guild:
             guild = ctx.guild
         msg = ""
-        for role in sorted(guild.roles, reverse=True):
+        for role in sorted(guild.roles, key=lambda r: r.position, reverse=True):
             if ctx.channel.permissions_for(ctx.me).embed_links and guild is ctx.guild:
-                msg += f"{role.mention} ({role.id}): {len(role.members)}\n"
+                msg += f"- {role.position}\\. `{role.id}` {role.mention}: {len(role.members)}\n"
             else:
-                msg += f"{role.name} ({role.id}): {len(role.members)}\n"
+                msg += f"- {role.position}\\. `{role.id}` {role.name}: {len(role.members)}\n"
         msg_list = []
         for page in pagify(msg, ["\n"]):
             if ctx.channel.permissions_for(ctx.me).embed_links:

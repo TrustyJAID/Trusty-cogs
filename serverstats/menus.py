@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from enum import Enum
 from typing import Any, List, Optional, Tuple, Union
 
 import discord
@@ -14,43 +15,84 @@ log = getLogger("red.Trusty-cogs.serverstats")
 _ = Translator("serverstats", __file__)
 
 
+class AvatarDisplay(Enum):
+    default = 0
+    _global = 1
+    guild = 2
+
+    def get_name(self):
+        return {
+            AvatarDisplay.default: _("Default Avatar"),
+            AvatarDisplay._global: _("Global Avatar"),
+            AvatarDisplay.guild: _("Server Avatar"),
+        }.get(self, _("Global Avatar"))
+
+    def get_asset(self, member: Union[discord.Member, discord.User]) -> Optional[discord.Asset]:
+        if self is AvatarDisplay.default:
+            return member.default_avatar
+        elif self is AvatarDisplay.guild:
+            return getattr(member, "guild_avatar", None)
+        return member.avatar
+
+
 class AvatarPages(menus.ListPageSource):
     def __init__(self, members: List[discord.abc.User]):
         super().__init__(members, per_page=1)
         self.use_display_avatar: bool = True
+        self.avatar_display: AvatarDisplay = None
+
+    def adjust_buttons(self, menu: BaseView, member: Union[discord.Member, discord.User]):
+        for style in AvatarDisplay:
+            if style is self.avatar_display or style.get_asset(member) is None:
+                menu.avatar_swap[style.value].disabled = True
+            else:
+                menu.avatar_swap[style.value].disabled = False
 
     async def format_page(
         self, menu: BaseView, member: Union[discord.Member, discord.User]
     ) -> discord.Embed:
-        em = discord.Embed(title=_("**Avatar**"), colour=member.colour)
-        if self.use_display_avatar:
-            url = str(member.display_avatar)
-            menu.avatar_swap.label = _("Show global avatar")
-        else:
-            url = str(member.avatar)
-            menu.avatar_swap.label = _("Show server avatar")
-        if not getattr(member, "guild_avatar", None):
-            menu.avatar_swap.disabled = True
-        else:
-            menu.avatar_swap.disabled = False
+        if self.avatar_display is None:
+            for style in AvatarDisplay:
+                if style.get_asset(member):
+                    self.avatar_display = style
+                    # iterate upwards and replace until we find the
+                    # highest level which is the guild specific avatar
+        em = discord.Embed(title=self.avatar_display.get_name(), colour=member.colour)
+        url = self.avatar_display.get_asset(member)
+        assert isinstance(url, discord.Asset)
+        self.adjust_buttons(menu, member)
+        formats = ["jpg", "png", "webp"]
+        if url.is_animated():
+            formats.append("gif")
+        if url != member.default_avatar:
+            description = (
+                " | ".join(f"[{a.upper()}]({url.replace(size=4096, format=a)})" for a in formats)
+                + "\n"
+            )
+            description += " | ".join(
+                f"[{a}]({url.replace(size=a)})" for a in [32, 64, 128, 256, 512, 1024, 2048, 4096]
+            )
+            em.description = description
         if isinstance(member, discord.Member):
             name = f"{member} {f'~ {member.nick}' if member.nick else ''}"
         else:
             name = str(member)
-        em.set_image(url=url)
+        em.set_image(url=url.replace(size=4096))
         em.set_author(name=name, icon_url=url, url=url)
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
 class SwapAvatarButton(discord.ui.Button):
-    def __init__(self):
-        super().__init__(style=discord.ButtonStyle.grey, label=_("Show global avatar"))
+    def __init__(self, avatar_display: AvatarDisplay):
+        super().__init__(style=discord.ButtonStyle.grey, label=avatar_display.get_name())
         self.view: BaseView
+        self.avatar_display = avatar_display
 
     async def callback(self, interaction: discord.Interaction):
         source: AvatarPages = self.view.source
         source.use_display_avatar = not source.use_display_avatar
+        source.avatar_display = self.avatar_display
         await self.view.show_checked_page(self.view.current_page, interaction)
         if not interaction.response.is_done():
             await interaction.response.defer()
@@ -249,8 +291,11 @@ class BaseView(discord.ui.View):
             self.add_item(self.leave_guild_button)
             self.add_item(self.join_guild_button)
         if isinstance(source, AvatarPages):
-            self.avatar_swap = SwapAvatarButton()
-            self.add_item(self.avatar_swap)
+            self.avatar_swap = {}
+            for style in AvatarDisplay:
+                button = SwapAvatarButton(style)
+                self.avatar_swap[style.value] = button
+                self.add_item(button)
 
     @property
     def source(self):
