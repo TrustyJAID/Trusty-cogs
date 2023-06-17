@@ -62,7 +62,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.12.0"
+    __version__ = "2.12.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -93,7 +93,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
     async def cog_load(self) -> None:
         if await self.config.version() < "2.8.5":
             await self.migrate_2_8_5_settings()
-        self.settings = await self.config.all_guilds()
+        for guild_id in await self.config.all_guilds():
+            self.settings[guild_id] = await self.config.guild_from_id(guild_id).all()
 
     async def migrate_2_8_5_settings(self):
         all_data = await self.config.all_guilds()
@@ -208,9 +209,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Show the servers current ExtendedModlog settings
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
-        if await self.config.guild(ctx.message.guild).all() == {}:
-            await self.config.guild(ctx.message.guild).set(inv_settings)
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         await self.modlog_settings(ctx)
 
     @_modlog.command(name="colour", aliases=["color"])
@@ -226,7 +225,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         if colour:
             new_colour = colour.value
         else:
@@ -256,7 +255,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         for event in events:
             self.settings[ctx.guild.id][event]["embed"] = true_or_false
             await self.config.guild(ctx.guild).set_raw(
@@ -286,7 +285,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         if isinstance(emoji, str):
             try:
                 await ctx.message.add_reaction(emoji)
@@ -321,7 +320,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         for event in events:
             self.settings[ctx.guild.id][event]["enabled"] = true_or_false
             await self.config.guild(ctx.guild).set_raw(
@@ -350,7 +349,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         for event in events:
             self.settings[ctx.guild.id][event]["channel"] = channel.id
             await self.config.guild(ctx.guild).set_raw(
@@ -376,7 +375,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if len(events) == 0:
             return await ctx.send(_("You must provide which events should be included."))
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         for event in events:
             self.settings[ctx.guild.id][event]["channel"] = None
             await self.config.guild(ctx.guild).set_raw(
@@ -394,7 +393,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         - `<true_or_false>` True of False, what to set all loggable settings to.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         for setting in inv_settings.keys():
             if "enabled" in self.settings[ctx.guild.id][setting]:
                 self.settings[ctx.guild.id][setting]["enabled"] = true_or_false
@@ -414,7 +413,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Toggle bulk message delete notifications.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         guild = ctx.message.guild
         msg = _("Bulk message delete logs {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_delete.bulk_enabled():
@@ -433,7 +432,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Toggle individual message delete notifications for bulk message delete.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         guild = ctx.message.guild
         msg = _("Individual message delete logs for bulk message delete {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_delete.bulk_individual():
@@ -455,7 +454,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         will only show channel info without content of deleted message or its author.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         guild = ctx.message.guild
         msg = _("Delete logs for non-cached messages {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_delete.cached_only():
@@ -474,7 +473,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Toggle message delete notifications for valid bot command messages.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         guild = ctx.message.guild
         msg = _("Ignore deleted command messages {enabled_or_disalbled}.")
         if not await self.config.guild(guild).message_delete.cached_only():
@@ -519,7 +518,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Toggle nickname updates for member changes.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["nicknames"]
         self.settings[ctx.guild.id]["user_change"]["nicknames"] = not setting
         await self.config.guild(ctx.guild).user_change.nicknames.set(not setting)
@@ -538,7 +537,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Toggle avatar updates for member changes.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["avatar"]
         self.settings[ctx.guild.id]["user_change"]["avatar"] = not setting
         await self.config.guild(ctx.guild).user_change.avatar.set(not setting)
@@ -555,7 +554,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Toggle role updates for members.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["roles"]
         self.settings[ctx.guild.id]["user_change"]["roles"] = not setting
         await self.config.guild(ctx.guild).user_change.roles.set(not setting)
@@ -572,7 +571,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Toggle pending updates for members.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["pending"]
         self.settings[ctx.guild.id]["user_change"]["pending"] = not setting
         await self.config.guild(ctx.guild).user_change.pending.set(not setting)
@@ -592,7 +591,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         timeout has expired and may display a before timeout in the past.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["timeout"]
         self.settings[ctx.guild.id]["user_change"]["timeout"] = not setting
         await self.config.guild(ctx.guild).user_change.timeout.set(not setting)
@@ -615,7 +614,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         - `started_onboarding`
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["flags"]
         self.settings[ctx.guild.id]["user_change"]["flags"] = not setting
         await self.config.guild(ctx.guild).user_change.flags.set(not setting)
@@ -638,7 +637,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         - `<set_to>` True or False what to set all the member update settings to.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
             logger.debug("Adding %s to cache", ctx.guild.id)
         # async with self.config.guild(ctx.guild).user_change() as user_change:
         for update_type in MemberUpdateEnum:
@@ -666,7 +665,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         can be `mod or permissions`
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         if len(level) == 0:
             return await ctx.send_help()
         guild = ctx.message.guild
@@ -692,7 +691,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         - `<channel>` the channel or category to ignore events in
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         guild = ctx.message.guild
         if channel is None:
             channel = ctx.channel
@@ -724,7 +723,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         - `<channel>` the channel to unignore message delete/edit events.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         guild = ctx.message.guild
         if channel is None:
             channel = ctx.channel
@@ -747,7 +746,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Toggle message edit notifications for bot users.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         guild = ctx.message.guild
         msg = _("Bots edited messages {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_edit.bots():
@@ -768,7 +767,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         This will not affect delete notifications for messages that aren't in bot's cache.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         guild = ctx.message.guild
         msg = _("Bot delete logs {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_delete.bots():
@@ -789,7 +788,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         This includes roles and nickname.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["bots"]
         self.settings[ctx.guild.id]["user_change"]["bots"] = not setting
         await self.config.guild(ctx.guild).user_change.bots.set(not setting)
@@ -804,7 +803,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Toggle bots from being logged in voice state updates.
         """
         if ctx.guild.id not in self.settings:
-            self.settings[ctx.guild.id] = inv_settings
+            self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["voice_change"]["bots"]
         self.settings[ctx.guild.id]["voice_change"]["bots"] = not setting
         await self.config.guild(ctx.guild).voice_change.bots.set(not setting)
