@@ -40,6 +40,10 @@ class ReTriggerMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def can_enable_or_disable(self, author: discord.Member, trigger: Trigger) -> bool:
+        raise NotImplementedError()
+
+    @abstractmethod
     async def is_mod_or_admin(self, member: discord.Member) -> bool:
         raise NotImplementedError()
 
@@ -89,6 +93,11 @@ class ReTriggerMixin(ABC):
 
     @abstractmethod
     async def get_image_text(self, message: discord.Message) -> str:
+        raise NotImplementedError()
+
+    @staticmethod
+    @abstractmethod
+    def convert_embed_to_string(embed: discord.Embed, embed_index: int = 0) -> str:
         raise NotImplementedError()
 
     @abstractmethod

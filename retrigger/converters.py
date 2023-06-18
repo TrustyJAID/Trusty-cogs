@@ -1,7 +1,6 @@
-import asyncio
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional, Pattern, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Pattern, Tuple, Union
 
 import discord
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
@@ -83,6 +82,29 @@ class TriggerResponse(Enum):
             TriggerResponse.add_role,
             TriggerResponse.remove_role,
         }
+
+    @property
+    def permissions(self) -> discord.Permissions:
+        """
+        Map Response Types to specific discord permissions.
+
+        This is a lazy approach but generally speaking all triggers
+        require the manage messages permission as a default. Other
+        response types require elevated permissions.
+
+        These are also based on actual required permissions for the action.
+        e.g. reaction management requires manage_messages permission not
+        add_reactions permission. So this is to enable more loose editing
+        allowing mods to disable specific triggers.
+        """
+        return {
+            TriggerResponse.remove_role: discord.Permissions(manage_roles=True),
+            TriggerResponse.add_role: discord.Permissions(manage_roles=True),
+            TriggerResponse.ban: discord.Permissions(ban_members=True),
+            TriggerResponse.kick: discord.Permissions(kick_members=True),
+            TriggerResponse.rename: discord.Permissions(manage_nicknames=True),
+            TriggerResponse.create_thread: discord.Permissions(manage_threads=True),
+        }.get(self, discord.Permissions(manage_messages=True))
 
     @property
     def is_role_change(self) -> bool:
@@ -276,6 +298,9 @@ class Trigger:
         "remove_roles",
         "add_roles",
         "reactions",
+        "_last_modified_by",
+        "_last_modified_at",
+        "_last_modified",
     )
 
     def __init__(
@@ -309,7 +334,7 @@ class Trigger:
         self.ignore_commands: bool = kwargs.get("ignore_commands", False)
         self.check_edits: bool = kwargs.get("check_edits", False)
         self.ocr_search: bool = kwargs.get("ocr_search", False)
-        self.delete_after: int = kwargs.get("delete_after", None)
+        self.delete_after: Optional[int] = kwargs.get("delete_after", None)
         self.read_filenames: bool = kwargs.get("read_filenames", False)
         self.chance: int = kwargs.get("chance", 0)
         self.reply: Optional[bool] = kwargs.get("reply", None)
@@ -318,12 +343,15 @@ class Trigger:
         self.role_mention: bool = kwargs.get("role_mention", False)
         self.everyone_mention: bool = kwargs.get("everyone_mention", False)
         self.nsfw: bool = kwargs.get("nsfw", False)
-        self.read_embeds: bool = kwargs.get("embeds", False)
+        self.read_embeds: bool = kwargs.get("read_embeds", False)
         self.read_thread_title: bool = kwargs.get("read_thread_title", True)
         self.thread: TriggerThread = kwargs.get("thread", TriggerThread())
         self.remove_roles: List[int] = kwargs.get("remove_roles", [])
         self.add_roles: List[int] = kwargs.get("add_roles", [])
         self.reactions: List[discord.PartialEmoji] = kwargs.get("reactions", [])
+        self._last_modified_by: Optional[int] = kwargs.get("_last_modified_by", None)
+        self._last_modified_at: Optional[int] = kwargs.get("_last_modified_at", None)
+        self._last_modified: Optional[str] = kwargs.get("_last_modified", None)
 
     def enable(self):
         """Explicitly enable this trigger"""
@@ -339,6 +367,52 @@ class Trigger:
 
     def compile(self):
         self.regex: Pattern = re.compile(self._raw_regex)
+
+    def get_permissions(self):
+        perms = discord.Permissions()
+        for resp in self.response_type:
+            perms |= resp.permissions
+        return perms
+
+    @property
+    def last_modified_by(self):
+        return self._last_modified_by
+
+    @property
+    def last_modified_at(self):
+        if self._last_modified_at is None:
+            return None
+        return discord.utils.snowflake_time(self._last_modified_at)
+
+    @property
+    def last_modified(self):
+        return self._last_modified
+
+    def last_modified_str(self, ctx: commands.Context) -> str:
+        msg = ""
+        if not any([self.last_modified_by, self.last_modified_at, self.last_modified]):
+            return msg
+        msg = _("__Last Modified__:\n")
+        if self.last_modified_by:
+            user = ctx.guild.get_member(self.last_modified_by)
+            if user is None:
+                user_str = _("Unknown user (`{user_id}`)\n").format(user_id=self.last_modified_by)
+            else:
+                user_str = user.mention
+            msg += _("- By: {user}\n").format(user=user_str)
+        if self.last_modified_at:
+            msg += "- " + discord.utils.format_dt(self.last_modified_at, "R") + "\n"
+        if self.last_modified:
+            msg += _("- Changes: {changes}\n").format(changes=self.last_modified)
+        return msg
+
+    def modify(
+        self, attr: str, value: Any, author: Union[discord.Member, discord.User], message_id: int
+    ):
+        setattr(self, attr, value)
+        self._last_modified_by = author.id
+        self._last_modified_at = message_id
+        self._last_modified = _("{attr} set to {value}.").format(attr=attr, value=value)
 
     async def check_cooldown(self, message: discord.Message) -> bool:
         now = message.created_at.timestamp()
@@ -487,6 +561,9 @@ class Trigger:
             "remove_roles": self.remove_roles,
             "add_roles": self.add_roles,
             "reactions": [str(e) for e in self.reactions],
+            "_last_modified_by": self._last_modified_by,
+            "_last_modified_at": self._last_modified_at,
+            "_last_modified": self._last_modified,
         }
 
     @classmethod
@@ -567,7 +644,36 @@ class TriggerExists(Converter[Trigger]):
         if guild.id not in cog.triggers:
             raise BadArgument(_("There are no triggers setup on this server."))
         if argument in cog.triggers[guild.id]:
-            return cog.triggers[guild.id][argument]
+            ret = cog.triggers[guild.id][argument]
+            if ctx.command in [cog.disable_trigger, cog.enable_trigger]:
+                # This allows anyone to enable or disable triggers
+                # while allowing only the author guild owner and bot owner to
+                # edit individual parts of a trigger.
+                if await cog.can_enable_or_disable(ctx.author, ret):
+                    return ret
+            if ctx.command in [cog.remove]:
+                return ret
+            if not await cog.can_edit(ctx.author, ret):
+                raise BadArgument(_("You are not authorized to edit this trigger."))
+            return ret
+        else:
+            raise BadArgument(
+                _("Trigger with name `{name}` does not exist.").format(name=argument)
+            )
+
+
+class TriggerStarExists(Converter[Trigger]):
+    async def convert(self, ctx: commands.Context, argument: str) -> List[Trigger]:
+        guild = ctx.guild
+        if guild is None:
+            raise BadArgument()
+        cog: ReTriggerMixin = ctx.bot.get_cog("ReTrigger")
+        if guild.id not in cog.triggers:
+            raise BadArgument(_("There are no triggers setup on this server."))
+        if argument in cog.triggers[guild.id]:
+            return [cog.triggers[guild.id][argument]]
+        elif argument == "*":
+            return [t for t in cog.triggers[guild.id].values()]
         else:
             raise BadArgument(
                 _("Trigger with name `{name}` does not exist.").format(name=argument)

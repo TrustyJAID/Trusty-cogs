@@ -202,6 +202,8 @@ class ReTriggerPages(menus.ListPageSource):
             info += _("- Everyone: **{everyone_mention}**\n").format(
                 everyone_mention=trigger.everyone_mention
             )
+        if last_modified_str := trigger.last_modified_str(view.ctx):
+            info += last_modified_str
         if trigger.regex:
             pattern_error = ""
             pattern = trigger.regex.pattern
@@ -378,11 +380,18 @@ class ToggleTriggerButton(discord.ui.Button):
         member = interaction.user
         trigger = self.view.source.selection
         guild = self.view.source.guild
-        if await self.view.cog.can_edit(member, self.view.source.selection):
+        if await self.view.cog.can_enable_or_disable(member, self.view.source.selection):
             trigger.toggle()
+            trigger._last_modified_by = member.id
+            trigger._last_modified_at = interaction.id
+            trigger._last_modified = _("enabled") if trigger.enabled else _("disabled")
             async with self.view.cog.config.guild(guild).trigger_list() as trigger_list:
                 trigger_list[trigger.name] = await trigger.to_json()
             await self.view.show_checked_page(self.view.current_page, interaction)
+        else:
+            await interaction.response.send_message(
+                _("You are not authorized to enable or disable this trigger."), ephemeral=True
+            )
 
 
 class ReTriggerEditModal(discord.ui.Modal):
@@ -441,6 +450,7 @@ class ReTriggerEditModal(discord.ui.Modal):
         msg = _("Editing Trigger {trigger}:\n").format(trigger=self.trigger.name)
         guild = interaction.guild
         any_edits = False
+        changed_values = []
         if self.trigger._raw_regex != self.regex.value:
             try:
                 re.compile(self.regex.value)
@@ -454,6 +464,7 @@ class ReTriggerEditModal(discord.ui.Modal):
             # we've already checked if the regex was valid
             any_edits = True
             msg += _("- Regex\n")
+            changed_values.append("regex")
         for response_type, ti in self.multi_inputs.items():
             old = [i for i in self.trigger.multi_payload if i[0] == response_type.name]
             old_str = "".join(i[1] for i in old)
@@ -474,9 +485,13 @@ class ReTriggerEditModal(discord.ui.Modal):
                     except IndexError:
                         log.error("Error removing multi payload option.")
                 self.trigger.multi_payload.append([response_type.name, ti.value])
+                changed_values.append(response_type.name)
                 msg += _("- {response_type}").format(response_type=response_type.name)
         if any_edits:
             await interaction.response.send_message(msg)
+            self.trigger._last_modified_by = interaction.user.id
+            self.trigger._last_modified_at = interaction.id
+            self.trigger._last_modified = humanize_list(changed_values)
             async with self.og_button.view.cog.config.guild(guild).trigger_list() as trigger_list:
                 trigger_list[self.trigger.name] = await self.trigger.to_json()
         else:
@@ -491,9 +506,11 @@ class ReTriggerEditModal(discord.ui.Modal):
             return await self.handle_multi(interaction)
         msg = _("Editing Trigger {trigger}:\n").format(trigger=self.trigger.name)
         guild = interaction.guild
+        changed_values = []
         if self.trigger.text != self.text.value:
             self.trigger.text = self.text.value
             edited_text = True
+            changed_values.append("text")
             msg += _("Text: `{text}`\n").format(text=self.text.value)
         if self.trigger._raw_regex != self.regex.value:
             try:
@@ -507,6 +524,7 @@ class ReTriggerEditModal(discord.ui.Modal):
             self.trigger.compile()
             # we've already checked if the regex was valid
             edited_regex = True
+            changed_values.append("regex")
             msg += _("Regex: `{regex}`\n").format(regex=self.regex.value)
         if self.replies.values:
             if self.replies.values[0] == "True":
@@ -516,9 +534,13 @@ class ReTriggerEditModal(discord.ui.Modal):
             else:
                 self.trigger.reply = None
             edited_replies = True
+            changed_values.append("replies")
             msg += _("Replies: `{replies}`\n").format(replies=self.replies.values[0])
         if edited_text or edited_regex or edited_replies:
             await interaction.response.send_message(msg)
+            self.trigger._last_modified_by = interaction.user.id
+            self.trigger._last_modified_at = interaction.id
+            self.trigger._last_modified = humanize_list(changed_values)
             async with self.og_button.view.cog.config.guild(guild).trigger_list() as trigger_list:
                 trigger_list[self.trigger.name] = await self.trigger.to_json()
         else:
@@ -553,7 +575,14 @@ class ReTriggerEditButton(discord.ui.Button):
         self.label = _("Edit Trigger")
 
     async def callback(self, interaction: discord.Interaction):
-        modal = ReTriggerEditModal(self.view.source.selection, self)
+        trigger = self.view.source.selection
+        cog = interaction.client.get_cog("ReTrigger")
+        if not await cog.can_edit(interaction.user, trigger):
+            await interaction.response.send_message(
+                _("You are not authorized to edit this trigger."), ephemeral=True
+            )
+            return
+        modal = ReTriggerEditModal(trigger, self)
         await interaction.response.send_modal(modal)
 
 
@@ -589,7 +618,10 @@ class DeleteTriggerButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         """Enables and disables triggers"""
         member = interaction.user
-        if await self.view.cog.can_edit(member, self.view.source.selection):
+        if (
+            await self.view.cog.can_edit(member, self.view.source.selection)
+            or member.guild_permissions.administrator
+        ):
             new_view = discord.ui.View()
             approve_button = discord.ui.Button(style=discord.ButtonStyle.green, label=_("Yes"))
             approve_button.callback = self.delete_trigger
@@ -604,8 +636,11 @@ class DeleteTriggerButton(discord.ui.Button):
                 ephemeral=True,
                 view=new_view,
             )
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        else:
+            await interaction.response.send_message(
+                _("You are not authorized to delete this trigger."), ephemeral=True
+            )
+            return
 
 
 class ReTriggerMenu(discord.ui.View):

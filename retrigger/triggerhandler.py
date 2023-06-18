@@ -7,7 +7,7 @@ import string
 from copy import copy
 from datetime import datetime, timezone
 from io import BytesIO
-from typing import Any, Dict, List, Literal, Optional, Pattern, Tuple, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
 import aiohttp
 import discord
@@ -46,13 +46,13 @@ except ImportError:
 log = getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
 
-RE_CTX: Pattern = re.compile(r"{([^}]+)\}")
-RE_POS: Pattern = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")
-LINK_REGEX: Pattern = re.compile(
-    r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|mp3|mp4))", flags=re.I
+RE_CTX: re.Pattern = re.compile(r"{([^}]+)\}")
+RE_POS: re.Pattern = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")
+LINK_REGEX: re.Pattern = re.compile(
+    r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|mp3|mp4|webp))", flags=re.I
 )
-IMAGE_REGEX: Pattern = re.compile(
-    r"(?:(?:https?):\/\/)?[\w\/\-?=%.]+\.(?:png|jpg|jpeg)+", flags=re.I
+IMAGE_REGEX: re.Pattern = re.compile(
+    r"(?:(?:https?):\/\/)?[\w\/\-?=%.]+\.(?:png|jpg|jpeg|webp)+", flags=re.I
 )
 
 
@@ -77,6 +77,19 @@ class TriggerHandler(ReTriggerMixin):
         if author is author.guild.owner and TriggerResponse.mock not in trigger.response_type:
             return True
         return False
+
+    async def can_enable_or_disable(self, author: discord.Member, trigger: Trigger) -> bool:
+        if TriggerResponse.mock in trigger.response_type:
+            # explicitly disallow anyone but the trigger author to
+            # enable or disable mocked command triggers
+            return await self.can_edit(author, trigger)
+        if await self.can_edit(author, trigger):
+            # Allow all who previously could edit to also still do this
+            return True
+        # finally if they could not previously edit compare permissions
+        # to see if they have all required permissions from the triggers
+        # response types
+        return author.guild_permissions >= trigger.get_permissions()
 
     async def is_mod_or_admin(self, member: discord.Member) -> bool:
         guild = member.guild
@@ -609,12 +622,15 @@ class TriggerHandler(ReTriggerMixin):
         self, message: discord.Message, trigger: Trigger, find: List[str]
     ) -> None:
         guild: discord.Guild = cast(discord.Guild, message.guild)
-        channel: discord.abc.GuildChannel = message.channel
+        channel = message.channel
         author: discord.Member = cast(discord.Member, message.author)
         reason = _("Trigger response: {trigger}").format(trigger=trigger.name)
         own_permissions = channel.permissions_for(guild.me)
-        is_thread_message = getattr(message, "is_thread", False)
-        if not isinstance(channel, discord.Thread):
+        # is_thread_message = getattr(message, "is_thread", False)
+        if isinstance(channel, discord.TextChannel):
+            # currently only text channels are capable of creating threads from
+            # a message being sent. Forum Chanels can't have sent messages by
+            # design and therefore we can't automatically make a thread in them.
             if (
                 trigger.thread.public is not None
                 and own_permissions.send_messages_in_threads
