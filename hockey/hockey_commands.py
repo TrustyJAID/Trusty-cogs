@@ -731,7 +731,13 @@ class HockeyCommands(HockeyMixin):
                 position += _("You have {wins}/{total} incorrect ({percent:.4}%).").format(
                     wins=wins, total=total, percent=percent
                 )
-
+        if not leaderboard_list:
+            await ctx.send(
+                _("No data could be found in the {style} leaderboard.").format(
+                    style=leaderboard_type.as_str()
+                )
+            )
+            return
         if ctx.assume_yes:
             em = discord.Embed(timestamp=datetime.now())
             description = ""
@@ -747,13 +753,7 @@ class HockeyCommands(HockeyMixin):
             em.set_thumbnail(url=guild.icon)
             await ctx.send(embed=em)
             return
-        if not leaderboard_list:
-            await ctx.send(
-                _("No data could be found in the {style} leaderboard.").format(
-                    style=leaderboard_type.as_str()
-                )
-            )
-            return
+
         await BaseMenu(
             source=LeaderboardPages(pages=leaderboard_list, style=leaderboard_type),
             delete_message_after=False,
