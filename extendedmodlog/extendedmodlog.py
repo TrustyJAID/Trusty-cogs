@@ -62,7 +62,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.12.1"
+    __version__ = "2.12.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -94,7 +94,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if await self.config.version() < "2.8.5":
             await self.migrate_2_8_5_settings()
         for guild_id in await self.config.all_guilds():
-            self.settings[guild_id] = await self.config.guild_from_id(guild_id).all()
+            self.settings[int(guild_id)] = await self.config.guild_from_id(guild_id).all()
 
     async def migrate_2_8_5_settings(self):
         all_data = await self.config.all_guilds()
@@ -152,7 +152,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             guild=guild.name, channel=modlog_channel
         )
         if guild.id not in self.settings:
-            self.settings[guild.id] = inv_settings
+            self.settings[guild.id] = await self.config.guild(guild).all()
 
         data = self.settings[guild.id]
         ign_chans = data["ignored_channels"]
@@ -203,6 +203,11 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         pass
 
+    async def save(self, guild: discord.Guild):
+        async with self.config.guild(guild).all() as all_settings:
+            for key, value in self.settings[guild.id].items():
+                all_settings[key] = value
+
     @_modlog.command(name="settings")
     async def _show_modlog_settings(self, ctx: commands.Context):
         """
@@ -232,9 +237,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             new_colour = colour
         for event in events:
             self.settings[ctx.guild.id][event]["colour"] = new_colour
-            await self.config.guild(ctx.guild).set_raw(
-                event, value=self.settings[ctx.guild.id][event]
-            )
+        await self.save(ctx.guild)
         await ctx.send(
             _("{event} has been set to {colour}").format(
                 event=humanize_list([e.replace("user_", "member_") for e in events]),
@@ -258,9 +261,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         for event in events:
             self.settings[ctx.guild.id][event]["embed"] = true_or_false
-            await self.config.guild(ctx.guild).set_raw(
-                event, value=self.settings[ctx.guild.id][event]
-            )
+        await self.save(ctx.guild)
         await ctx.send(
             _("{event} embed logs have been set to {true_or_false}").format(
                 event=humanize_list([e.replace("user_", "member_") for e in events]),
@@ -294,9 +295,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         new_emoji = str(emoji)
         for event in events:
             self.settings[ctx.guild.id][event]["emoji"] = new_emoji
-            await self.config.guild(ctx.guild).set_raw(
-                event, value=self.settings[ctx.guild.id][event]
-            )
+        await self.save(ctx.guild)
         await ctx.send(
             _("{event} emoji has been set to {new_emoji}").format(
                 event=humanize_list([e.replace("user_", "member_") for e in events]),
@@ -323,9 +322,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         for event in events:
             self.settings[ctx.guild.id][event]["enabled"] = true_or_false
-            await self.config.guild(ctx.guild).set_raw(
-                event, value=self.settings[ctx.guild.id][event]
-            )
+        await self.save(ctx.guild)
         await ctx.send(
             _("{event} logs have been set to {true_or_false}").format(
                 event=humanize_list([e.replace("user_", "member_") for e in events]),
@@ -352,9 +349,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         for event in events:
             self.settings[ctx.guild.id][event]["channel"] = channel.id
-            await self.config.guild(ctx.guild).set_raw(
-                event, value=self.settings[ctx.guild.id][event]
-            )
+        await self.save(ctx.guild)
         await ctx.send(
             _("{event} logs have been set to {channel}").format(
                 event=humanize_list([e.replace("user_", "member_") for e in events]),
@@ -378,9 +373,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         for event in events:
             self.settings[ctx.guild.id][event]["channel"] = None
-            await self.config.guild(ctx.guild).set_raw(
-                event, value=self.settings[ctx.guild.id][event]
-            )
+        await self.save(ctx.guild)
         await ctx.send(
             _("{event} logs channel have been reset.").format(event=humanize_list(events))
         )
@@ -394,10 +387,10 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
-        for setting in inv_settings.keys():
+        for setting in self.settings[ctx.guild.id].keys():
             if "enabled" in self.settings[ctx.guild.id][setting]:
                 self.settings[ctx.guild.id][setting]["enabled"] = true_or_false
-        await self.config.guild(ctx.guild).set(self.settings[ctx.guild.id])
+        await self.save(ctx.guild)
         await self.modlog_settings(ctx)
 
     @_modlog.group(name="delete")
@@ -417,13 +410,12 @@ class ExtendedModLog(EventMixin, commands.Cog):
         guild = ctx.message.guild
         msg = _("Bulk message delete logs {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_delete.bulk_enabled():
-            await self.config.guild(guild).message_delete.bulk_enabled.set(True)
             self.settings[ctx.guild.id]["message_delete"]["bulk_enabled"] = True
             verb = _("enabled")
         else:
-            await self.config.guild(guild).message_delete.bulk_enabled.set(False)
             self.settings[ctx.guild.id]["message_delete"]["bulk_enabled"] = False
             verb = _("disabled")
+        await self.save(ctx.guild)
         await ctx.send(msg.format(enabled_or_disabled=verb))
 
     @_delete.command(name="individual")
@@ -436,13 +428,12 @@ class ExtendedModLog(EventMixin, commands.Cog):
         guild = ctx.message.guild
         msg = _("Individual message delete logs for bulk message delete {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_delete.bulk_individual():
-            await self.config.guild(guild).message_delete.bulk_individual.set(True)
             self.settings[ctx.guild.id]["message_delete"]["bulk_individual"] = True
             verb = _("enabled")
         else:
-            await self.config.guild(guild).message_delete.bulk_individual.set(False)
             self.settings[ctx.guild.id]["message_delete"]["bulk_individual"] = False
             verb = _("disabled")
+        await self.save(ctx.guild)
         await ctx.send(msg.format(enabled_or_disabled=verb))
 
     @_delete.command(name="cachedonly")
@@ -458,13 +449,12 @@ class ExtendedModLog(EventMixin, commands.Cog):
         guild = ctx.message.guild
         msg = _("Delete logs for non-cached messages {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_delete.cached_only():
-            await self.config.guild(guild).message_delete.cached_only.set(True)
             self.settings[ctx.guild.id]["message_delete"]["cached_only"] = True
             verb = _("disabled")
         else:
-            await self.config.guild(guild).message_delete.cached_only.set(False)
             self.settings[ctx.guild.id]["message_delete"]["cached_only"] = False
             verb = _("enabled")
+        await self.save(ctx.guild)
         await ctx.send(msg.format(enabled_or_disabled=verb))
 
     @_delete.command(name="ignorecommands")
@@ -477,13 +467,12 @@ class ExtendedModLog(EventMixin, commands.Cog):
         guild = ctx.message.guild
         msg = _("Ignore deleted command messages {enabled_or_disalbled}.")
         if not await self.config.guild(guild).message_delete.cached_only():
-            await self.config.guild(guild).message_delete.cached_only.set(False)
             self.settings[ctx.guild.id]["message_delete"]["ignore_commands"] = False
             verb = _("disabled")
         else:
-            await self.config.guild(guild).message_delete.cached_only.set(True)
             self.settings[ctx.guild.id]["message_delete"]["ignore_commands"] = True
             verb = _("enabled")
+        await self.save(ctx.guild)
         await ctx.send(msg.format(enabled_or_disabled=verb))
 
     @_modlog.group(name="member", aliases=["members", "memberchanges"])
@@ -508,7 +497,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         data = self.settings[guild.id]["user_change"]
         for update_type in MemberUpdateEnum:
             msg += f"{update_type.get_name()}: **{data[update_type.name]}**\n"
-        await self.config.guild(ctx.guild).set(data)
+        await self.save(ctx.guild)
         # save the data back to config incase we had some deleted channels
         await ctx.maybe_send_embed(msg)
 
@@ -521,7 +510,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["nicknames"]
         self.settings[ctx.guild.id]["user_change"]["nicknames"] = not setting
-        await self.config.guild(ctx.guild).user_change.nicknames.set(not setting)
+        await self.save(ctx.guild)
         if setting:
             await self._members_settings(
                 ctx, _("Nicknames will no longer be tracked in member change logs.")
@@ -540,7 +529,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["avatar"]
         self.settings[ctx.guild.id]["user_change"]["avatar"] = not setting
-        await self.config.guild(ctx.guild).user_change.avatar.set(not setting)
+        await self.save(ctx.guild)
         if setting:
             await self._members_settings(
                 ctx, _("Avatars will no longer be tracked in member change logs.")
@@ -557,7 +546,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["roles"]
         self.settings[ctx.guild.id]["user_change"]["roles"] = not setting
-        await self.config.guild(ctx.guild).user_change.roles.set(not setting)
+        await self.save(ctx.guild)
         if setting:
             await self._members_settings(
                 ctx, _("Roles will no longer be tracked in member change logs.")
@@ -574,7 +563,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["pending"]
         self.settings[ctx.guild.id]["user_change"]["pending"] = not setting
-        await self.config.guild(ctx.guild).user_change.pending.set(not setting)
+        await self.save(ctx.guild)
         if setting:
             await self._members_settings(
                 ctx, _("Pending will no longer be tracked in member change logs.")
@@ -594,7 +583,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["timeout"]
         self.settings[ctx.guild.id]["user_change"]["timeout"] = not setting
-        await self.config.guild(ctx.guild).user_change.timeout.set(not setting)
+        await self.save(ctx.guild)
         if setting:
             await self._members_settings(
                 ctx, _("Timeout will no longer be tracked in member change logs.")
@@ -617,7 +606,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["flags"]
         self.settings[ctx.guild.id]["user_change"]["flags"] = not setting
-        await self.config.guild(ctx.guild).user_change.flags.set(not setting)
+        await self.save(ctx.guild)
         if setting:
             await self._members_settings(
                 ctx, _("Member flags will no longer be tracked in member change logs.")
@@ -629,7 +618,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
 
     # For whatever reason trying to toggle all these settings causes all of the guilds
     # config to reset and I have no clue why so this will be unsupported for now
-    #  @_members.command(name="all")
+    @_members.command(name="all")
     async def _user_all_logging(self, ctx: commands.Context, set_to: bool) -> None:
         """
         Set all member update settings.
@@ -642,9 +631,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         # async with self.config.guild(ctx.guild).user_change() as user_change:
         for update_type in MemberUpdateEnum:
             self.settings[ctx.guild.id]["user_change"][update_type.name] = set_to
-        await self.config.guild(ctx.guild).user_change.set_raw(
-            "user_change", value=self.settings[ctx.guild.id]["user_change"]
-        )
+        await self.save(ctx.guild)
         # user_change[update_type.name] = set_to
         await self._members_settings(ctx)
 
@@ -668,10 +655,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         if len(level) == 0:
             return await ctx.send_help()
-        guild = ctx.message.guild
         msg = _("Command logs set to: ")
-        await self.config.guild(guild).commands_used.privs.set(list(level))
         self.settings[ctx.guild.id]["commands_used"]["privs"] = list(level)
+        await self.save(ctx.guild)
         await ctx.send(msg + humanize_list(level))
 
     @_modlog.command()
@@ -698,8 +684,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
         cur_ignored = await self.config.guild(guild).ignored_channels()
         if channel.id not in cur_ignored:
             cur_ignored.append(channel.id)
-            await self.config.guild(guild).ignored_channels.set(cur_ignored)
             self.settings[guild.id]["ignored_channels"] = cur_ignored
+            await self.save(ctx.guild)
             await ctx.send(_("Now ignoring events in {channel}.").format(channel=channel.mention))
         else:
             await ctx.send(
@@ -730,8 +716,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
         cur_ignored = await self.config.guild(guild).ignored_channels()
         if channel.id in cur_ignored:
             cur_ignored.remove(channel.id)
-            await self.config.guild(guild).ignored_channels.set(cur_ignored)
             self.settings[guild.id]["ignored_channels"] = cur_ignored
+            await self.save(ctx.guild)
             await ctx.send(_("Now tracking events in {channel}.").format(channel=channel.mention))
         else:
             await ctx.send(_("{channel} is not being ignored.").format(channel=channel.mention))
@@ -750,13 +736,12 @@ class ExtendedModLog(EventMixin, commands.Cog):
         guild = ctx.message.guild
         msg = _("Bots edited messages {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_edit.bots():
-            await self.config.guild(guild).message_edit.bots.set(True)
             self.settings[guild.id]["message_edit"]["bots"] = True
             verb = _("enabled")
         else:
-            await self.config.guild(guild).message_edit.bots.set(False)
             self.settings[guild.id]["message_edit"]["bots"] = False
             verb = _("disabled")
+        await self.save(ctx.guild)
         await ctx.send(msg.format(enabled_or_disabled=verb))
 
     @_modlog_bot.command(name="deletes", aliases=["delete"])
@@ -771,13 +756,12 @@ class ExtendedModLog(EventMixin, commands.Cog):
         guild = ctx.message.guild
         msg = _("Bot delete logs {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_delete.bots():
-            await self.config.guild(guild).message_delete.bots.set(True)
             self.settings[ctx.guild.id]["message_delete"]["bots"] = True
             verb = _("enabled")
         else:
-            await self.config.guild(guild).message_delete.bots.set(False)
             self.settings[ctx.guild.id]["message_delete"]["bots"] = False
             verb = _("disabled")
+        await self.save(ctx.guild)
         await ctx.send(msg.format(enabled_or_disabled=verb))
 
     @_modlog_bot.command(name="change")
@@ -791,7 +775,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["user_change"]["bots"]
         self.settings[ctx.guild.id]["user_change"]["bots"] = not setting
-        await self.config.guild(ctx.guild).user_change.bots.set(not setting)
+        await self.save(ctx.guild)
         if setting:
             await ctx.send(_("Bots will no longer be tracked in member change logs."))
         else:
@@ -806,7 +790,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         setting = self.settings[ctx.guild.id]["voice_change"]["bots"]
         self.settings[ctx.guild.id]["voice_change"]["bots"] = not setting
-        await self.config.guild(ctx.guild).voice_change.bots.set(not setting)
+        await self.save(ctx.guild)
         if setting:
             await ctx.send(_("Bots will no longer be tracked in voice update logs."))
         else:

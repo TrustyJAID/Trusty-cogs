@@ -196,7 +196,7 @@ class EventMixin:
             return
         if not self.settings[guild.id]["commands_used"]["enabled"]:
             return
-        if await self.is_ignored_channel(guild, ctx.channel.id):
+        if await self.is_ignored_channel(guild, ctx.channel):
             return
         if guild.me.is_timed_out():
             return
@@ -232,17 +232,35 @@ class EventMixin:
         else:
             com_str = ctx.message.content
         try:
-            privs = ctx.command.requires.privilege_level
-            user_perms = ctx.command.requires.user_perms
-            my_perms = ctx.command.requires.bot_perms
+            com = ctx.command
+            privs = com.requires.privilege_level
+            user_perms = com.requires.user_perms
+            my_perms = com.requires.bot_perms
+            for p in com.parents:
+                if p.requires.privilege_level is not None:
+                    if (
+                        privs is commands.PrivilegeLevel.NONE
+                        and p.requires.privilege_level > privs
+                    ):
+                        # work our way up to the *first* priv level in the chain
+                        # This should ideally be the most relevant one
+                        privs = p.requires.privilege_level
+                if p.requires.user_perms:
+                    user_perms |= p.requires.user_perms
+                if p.requires.bot_perms:
+                    my_perms |= p.requires.bot_perms
+
         except Exception:
+            logger.exception(
+                "Something went wrong figuring out user and bot privileges on a command."
+            )
             return
         if privs is None:
             privs = commands.PrivilegeLevel.NONE
             # apparently requires.privilege_level can be None
             # for me I will just consider it as PrivilegeLevel.NONE
         if privs.name not in self.settings[guild.id]["commands_used"]["privs"]:
-            logger.debug("command not in list %s", privs)
+            logger.debug("command not in list %s", privs.name)
             return
 
         if privs is commands.PrivilegeLevel.MOD:
@@ -321,7 +339,6 @@ class EventMixin:
             return
         if guild.me.is_timed_out():
             return
-        # settings = await self.config.guild(guild).message_delete()
         settings = self.settings[guild.id]["message_delete"]
         if not settings["enabled"]:
             return
@@ -576,14 +593,14 @@ class EventMixin:
             except Exception:
                 logger.exception("Error saving invites.")
                 pass
-        await self.config.guild(guild).invite_links.set(invites)
+
         self.settings[guild.id]["invite_links"] = invites
+        await self.save(guild)
         return True
 
     async def get_invite_link(self, member: discord.Member) -> str:
         guild = member.guild
         manage_guild = guild.me.guild_permissions.manage_guild
-        # invites = await self.config.guild(guild).invite_links()
         invites = self.settings[guild.id]["invite_links"]
         possible_link = ""
         check_logs = manage_guild and guild.me.guild_permissions.view_audit_log
@@ -655,8 +672,6 @@ class EventMixin:
             return
         if not self.settings[guild.id]["user_join"]["enabled"]:
             return
-        # if not await self.config.guild(guild).user_join.enabled():
-        # return
         if await self.bot.cog_disabled_in_guild(self, guild):
             return
         if guild.me.is_timed_out():
@@ -1906,9 +1921,7 @@ class EventMixin:
                 "inviter": getattr(inviter, "id", "Unknown"),
                 "channel": channel.id,
             }
-            await self.config.guild(guild).invite_links.set(
-                self.settings[guild.id]["invite_links"]
-            )
+            await self.save(guild)
         if not self.settings[guild.id]["invite_created"]["enabled"]:
             return
         try:
