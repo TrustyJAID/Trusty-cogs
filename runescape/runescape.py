@@ -18,6 +18,7 @@ from .profile import (
     PlayerDetails,
     PrivateProfileError,
     Profile,
+    WildernessFlashEvents,
 )
 
 log = getLogger("red.trusty-cogs.runescape")
@@ -37,7 +38,7 @@ class Runescape(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.3"
+    __version__ = "1.4.0"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -585,7 +586,7 @@ class Runescape(commands.Cog):
     async def reset(self, ctx: commands.Context) -> None:
         """Show Runescapes Daily, Weekly, and Monthly reset times."""
         async with ctx.typing():
-            today = datetime.now(timezone.utc).replace(minute=0)
+            today = datetime.now(timezone.utc).replace(minute=0, second=0)
             daily = today + timedelta(hours=((0 - today.hour) % 24))
             weekly = daily + timedelta(days=((2 - daily.weekday()) % 7))
             monthly = datetime(
@@ -600,3 +601,32 @@ class Runescape(commands.Cog):
                 "Monthly Reset is <t:{month}:R> (<t:{month}>)."
             ).format(weekly=weekly_reset_str, daily=daily_reset_str, month=monthly_reset_str)
         await ctx.send(msg)
+
+    @runescape.command(aliases=["flash", "wildyflash", "wildy"])
+    async def wilderness(self, ctx: commands.Context) -> None:
+        """Show Runescapes Daily, Weekly, and Monthly reset times."""
+        async with ctx.typing():
+            use_links = await ctx.embed_requested()
+            msg = "## Wilderness Flash Event Schedule\n"
+            max_spaces = 26
+            today = datetime.now(timezone.utc).replace(minute=0, second=0)
+            for event in sorted(
+                [e for e in WildernessFlashEvents], key=lambda x: x.get_next(today)
+            ):
+                special = "*" if event.special else ""
+                event_name = special + str(event)
+                url = "https://runescape.wiki/w/Wilderness_Flash_Events#" + str(event).replace(
+                    " ", "_"
+                )
+                ts = discord.utils.format_dt(event.get_next(today), "R")
+                special_header = "### " if event.special else ""
+                if use_links:
+                    msg += f"{special_header}- `{event_name.ljust(max_spaces)}` - {ts} [link]({url})\n"
+                else:
+                    msg += f"{special_header}- `{event_name.ljust(max_spaces)}` - {ts}\n"
+            wild_rewards_url = "https://runescape.wiki/w/Sack_of_very_wild_rewards"
+            if use_links:
+                msg += f"*Special events have a chance to drop a [sack of very wild rewards]({wild_rewards_url})."
+            else:
+                msg += f"*Special events have a chance to drop a sack of very wild rewards.\n{wild_rewards_url}"
+        await ctx.maybe_send_embed(msg)
