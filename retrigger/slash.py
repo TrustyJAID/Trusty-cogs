@@ -557,8 +557,6 @@ class ReTriggerSlash(ReTriggerMixin):
         guild_id: Optional[app_commands.Transform[str, SnowflakeTransformer]],
     ):
         """List information about a trigger"""
-        if trigger is None:
-            return
         ctx = await interaction.client.get_context(interaction)
         await self.list(ctx, guild_id, trigger)
 
