@@ -1,3 +1,4 @@
+import asyncio
 from copy import copy
 from io import BytesIO
 from typing import List, Literal, Optional, Tuple, Union
@@ -208,10 +209,11 @@ class SpotifyCommands(SpotifyMixin):
         """
         Show settings for menu timeouts
         """
-        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
-        msg = _(
-            "Delete After: {delete_after}\nClear After: {clear_after}\nTimeout: {timeout}"
-        ).format(delete_after=delete_after, clear_after=clear_after, timeout=timeout)
+        async with ctx.typing():
+            delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+            msg = _(
+                "Delete After: {delete_after}\nClear After: {clear_after}\nTimeout: {timeout}"
+            ).format(delete_after=delete_after, clear_after=clear_after, timeout=timeout)
         await ctx.maybe_send_embed(msg)
 
     @spotify_set.command(name="showprivate")
@@ -222,11 +224,12 @@ class SpotifyCommands(SpotifyMixin):
         This will also display your spotify username and a link
         to your profile if you use `[p]spotify me` command in public channels.
         """
-        await self.config.user(ctx.author).show_private.set(show_private)
-        if show_private:
-            msg = _("I will show private playlists now.")
-        else:
-            msg = _("I will stop showing private playlists now.")
+        async with ctx.typing():
+            await self.config.user(ctx.author).show_private.set(show_private)
+            if show_private:
+                msg = _("I will show private playlists now.")
+            else:
+                msg = _("I will stop showing private playlists now.")
         await ctx.send(msg)
 
     @spotify_set.command(name="clearreactions")
@@ -237,15 +240,16 @@ class SpotifyCommands(SpotifyMixin):
 
         Note: the bot requires manage messages for this to work
         """
-        await self.config.guild(ctx.guild).clear_reactions_after.set(clear_after)
-        if clear_after:
-            msg = _("I will now clear reactions after the menu has timed out.\n")
-        else:
-            msg = _("I will stop clearing reactions after the menu has timed out.\n")
-        if not ctx.channel.permissions_for(ctx.guild.me).manage_messages:
-            msg += _(
-                "I don't have manage messages permissions so this might not work as expected."
-            )
+        async with ctx.typing():
+            await self.config.guild(ctx.guild).clear_reactions_after.set(clear_after)
+            if clear_after:
+                msg = _("I will now clear reactions after the menu has timed out.\n")
+            else:
+                msg = _("I will stop clearing reactions after the menu has timed out.\n")
+            if not ctx.channel.permissions_for(ctx.guild.me).manage_messages:
+                msg += _(
+                    "I don't have manage messages permissions so this might not work as expected."
+                )
         await ctx.send(msg)
 
     @spotify_set.command(name="deletemessage")
@@ -255,11 +259,12 @@ class SpotifyCommands(SpotifyMixin):
         Set whether or not to delete the spotify message after timing out
 
         """
-        await self.config.guild(ctx.guild).delete_message_after.set(delete_after)
-        if delete_after:
-            msg = _("I will now delete the menu message after timeout.\n")
-        else:
-            msg = _("I will stop deleting the menu message after timeout.\n")
+        async with ctx.typing():
+            await self.config.guild(ctx.guild).delete_message_after.set(delete_after)
+            if delete_after:
+                msg = _("I will now delete the menu message after timeout.\n")
+            else:
+                msg = _("I will stop deleting the menu message after timeout.\n")
         await ctx.send(msg)
 
     @spotify_set.command(name="menutimeout")
@@ -272,9 +277,10 @@ class SpotifyCommands(SpotifyMixin):
         interacting with the menu.
         Note: This has a maximum of 10 minutes and a minimum of 30 seconds.
         """
-        timeout = max(min(600, timeout), 30)
-        await self.config.guild(ctx.guild).menu_timeout.set(timeout)
-        msg = _("I will timeout menus after {time} seconds.\n").format(time=timeout)
+        async with ctx.typing():
+            timeout = max(min(600, timeout), 30)
+            await self.config.guild(ctx.guild).menu_timeout.set(timeout)
+            msg = _("I will timeout menus after {time} seconds.\n").format(time=timeout)
         await ctx.send(msg)
 
     @spotify_set.command(name="resetemojis", aliases=["resetemoji"])
@@ -283,9 +289,10 @@ class SpotifyCommands(SpotifyMixin):
         """
         Resets the bot to use the default emojis
         """
-        await self.config.emojis.clear()
-        await self.config.emojis_author.clear()
-        spotify_emoji_handler.reload_emojis()
+        async with ctx.typing():
+            await self.config.emojis.clear()
+            await self.config.emojis_author.clear()
+            spotify_emoji_handler.reload_emojis()
         await ctx.send(_("I will now use the default emojis."))
 
     @spotify_set.command(name="showemojis")
@@ -295,12 +302,13 @@ class SpotifyCommands(SpotifyMixin):
         """
         Show information about the currently set emoji pack
         """
-        emojis = await self.config.emojis()
-        emojis_author = await self.config.emojis_author()
-        yaml_str = f"author: {emojis_author}\n"
-        for name, emoji in emojis.items():
-            yaml_str += f"{name}: {emoji}\n"
-        file = discord.File(BytesIO(yaml_str.encode("utf8")), filename="spotify_emojis.yaml")
+        async with ctx.typing():
+            emojis = await self.config.emojis()
+            emojis_author = await self.config.emojis_author()
+            yaml_str = f"author: {emojis_author}\n"
+            for name, emoji in emojis.items():
+                yaml_str += f"{name}: {emoji}\n"
+            file = discord.File(BytesIO(yaml_str.encode("utf8")), filename="spotify_emojis.yaml")
         await ctx.send(files=[file])
 
     @spotify_set.command(name="emojis", with_app_command=False)
@@ -343,74 +351,75 @@ class SpotifyCommands(SpotifyMixin):
         queue: 🇶
         ```
         """
-        if new_emojis is None or isinstance(new_emojis, str):
-            yaml_error = _("There was an error reading your yaml file.")
-            if ctx.message.attachments:
-                if not ctx.message.attachments[0].filename.endswith(".yaml"):
-                    await ctx.send(_("You must provide a `.yaml` file to use this command."))
-                    return
-                try:
-                    new_emojis = yaml.safe_load(await ctx.message.attachments[0].read())
-                except yaml.error.YAMLError:
-                    await ctx.send(yaml_error)
-                    return
-            elif not new_emojis:
-                await ctx.send_help()
-                return
-            else:
-                try:
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(new_emojis) as resp:
-                            try:
-                                new_emojis = yaml.safe_load(await resp.read())
-                            except yaml.error.YAMLError:
-                                await ctx.send(yaml_error)
-                                return
-                except Exception:
-                    log.info("There was an error reading the url.", exec_info=True)
-                    await ctx.send(yaml_error)
-                    return
-            if isinstance(new_emojis, str):
-                await ctx.send(yaml_error)
-                return
-
-        emojis_changed = {}
-        async with self.config.emojis() as emojis:
-            for name, raw_emoji in new_emojis.items():
-                if name.lower() == "author":
-                    await self.config.emojis_author.set(raw_emoji)
-                    continue
-                emoji = discord.PartialEmoji.from_str(raw_emoji)
-                if emoji.is_unicode_emoji():
+        async with ctx.typing():
+            if new_emojis is None or isinstance(new_emojis, str):
+                yaml_error = _("There was an error reading your yaml file.")
+                if ctx.message.attachments:
+                    if not ctx.message.attachments[0].filename.endswith(".yaml"):
+                        await ctx.send(_("You must provide a `.yaml` file to use this command."))
+                        return
                     try:
-                        await ctx.message.add_reaction(str(emoji))
-                        spotify_emoji_handler.replace_emoji(name, str(emoji))
-                        emojis[name] = str(emoji)
-                        emojis_changed[name] = str(emoji)
-                    except (InvalidEmoji, discord.errors.HTTPException):
-                        pass
+                        new_emojis = yaml.safe_load(await ctx.message.attachments[0].read())
+                    except yaml.error.YAMLError:
+                        await ctx.send(yaml_error)
+                        return
+                elif not new_emojis:
+                    await ctx.send_help()
+                    return
                 else:
-                    animated = "a" if emoji.animated else ""
-                    emoji_str = f"<{animated}:{emoji.name}:{emoji.id}>"
-                    spotify_emoji_handler.replace_emoji(name, emoji_str)
-                    emojis[name] = emoji_str
-                    emojis_changed[name] = str(emoji)
-        view = discord.ui.View()
-        select = discord.ui.Select(placeholder=_("New Emojis"))
-        msg = _("The following emojis have been replaced:\n")
-        for name, emoji in emojis_changed.items():
-            original = spotify_emoji_handler.default[name]
-            msg += f"{original} -> {emoji}\n"
-            select.add_option(label=name, emoji=discord.PartialEmoji.from_str(emoji))
-        view.add_item(select)
-        try:
-            await ctx.send(msg, view=view)
-        except Exception:
-            await ctx.send(_("Emojis were reset as there was an error with one of them."))
-            await self.config.emojis.clear()
-            await self.config.emojis_author.clear()
-            spotify_emoji_handler.reload_emojis()
-            return
+                    try:
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(new_emojis) as resp:
+                                try:
+                                    new_emojis = yaml.safe_load(await resp.read())
+                                except yaml.error.YAMLError:
+                                    await ctx.send(yaml_error)
+                                    return
+                    except Exception:
+                        log.info("There was an error reading the url.", exec_info=True)
+                        await ctx.send(yaml_error)
+                        return
+                if isinstance(new_emojis, str):
+                    await ctx.send(yaml_error)
+                    return
+
+            emojis_changed = {}
+            async with self.config.emojis() as emojis:
+                for name, raw_emoji in new_emojis.items():
+                    if name.lower() == "author":
+                        await self.config.emojis_author.set(raw_emoji)
+                        continue
+                    emoji = discord.PartialEmoji.from_str(raw_emoji)
+                    if emoji.is_unicode_emoji():
+                        try:
+                            await ctx.message.add_reaction(str(emoji))
+                            spotify_emoji_handler.replace_emoji(name, str(emoji))
+                            emojis[name] = str(emoji)
+                            emojis_changed[name] = str(emoji)
+                        except (InvalidEmoji, discord.errors.HTTPException):
+                            pass
+                    else:
+                        animated = "a" if emoji.animated else ""
+                        emoji_str = f"<{animated}:{emoji.name}:{emoji.id}>"
+                        spotify_emoji_handler.replace_emoji(name, emoji_str)
+                        emojis[name] = emoji_str
+                        emojis_changed[name] = str(emoji)
+            view = discord.ui.View()
+            select = discord.ui.Select(placeholder=_("New Emojis"))
+            msg = _("The following emojis have been replaced:\n")
+            for name, emoji in emojis_changed.items():
+                original = spotify_emoji_handler.default[name]
+                msg += f"{original} -> {emoji}\n"
+                select.add_option(label=name, emoji=discord.PartialEmoji.from_str(emoji))
+            view.add_item(select)
+            try:
+                await ctx.send(msg, view=view)
+            except Exception:
+                await ctx.send(_("Emojis were reset as there was an error with one of them."))
+                await self.config.emojis.clear()
+                await self.config.emojis_author.clear()
+                spotify_emoji_handler.reload_emojis()
+                return
 
     @spotify_set.command(name="scope", aliases=["scopes"], with_app_command=False)
     @commands.is_owner()
@@ -438,23 +447,24 @@ class SpotifyCommands(SpotifyMixin):
         You can find more information here:
         https://developer.spotify.com/documentation/general/guides/scopes/
         """
-        added = []
-        removed = []
-        async with self.config.scopes() as current_scope:
-            for scope in scopes:
-                if scope in current_scope:
-                    current_scope.remove(scope)
-                    removed.append(scope)
-                else:
-                    current_scope.append(scope)
-                    added.append(scope)
-        add = humanize_list(added)
-        rem = humanize_list(removed)
-        msg = ""
-        if add:
-            msg += _("The following scopes were added: {added}\n").format(added=add)
-        if rem:
-            _("The following scopes were removed: {removed}\n").format(removed=rem)
+        async with ctx.typing():
+            added = []
+            removed = []
+            async with self.config.scopes() as current_scope:
+                for scope in scopes:
+                    if scope in current_scope:
+                        current_scope.remove(scope)
+                        removed.append(scope)
+                    else:
+                        current_scope.append(scope)
+                        added.append(scope)
+            add = humanize_list(added)
+            rem = humanize_list(removed)
+            msg = ""
+            if add:
+                msg += _("The following scopes were added: {added}\n").format(added=add)
+            if rem:
+                _("The following scopes were removed: {removed}\n").format(removed=rem)
         await ctx.maybe_send_embed(msg)
 
     @spotify_set.command(name="currentscope", aliases=["currentscopes"], with_app_command=False)
@@ -463,38 +473,40 @@ class SpotifyCommands(SpotifyMixin):
         """
         View the current scopes being requested
         """
-        scope = humanize_list(await self.config.scopes())
+        async with ctx.typing():
+            scope = humanize_list(await self.config.scopes())
         await ctx.maybe_send_embed(_("Current scopes:\n{scopes}").format(scopes=scope))
 
     @spotify_set.command(name="creds", with_app_command=False)
     @commands.is_owner()
     async def spotify_api_credential_set(self, ctx: commands.Context):
         """Instructions to set the Spotify API tokens."""
-        message = _(
-            "1. Go to Spotify developers and log in with your Spotify account.\n"
-            "(https://developer.spotify.com/dashboard/applications)\n"
-            '2. Click "Create An App".\n'
-            "3. Fill out the form provided with your app name, etc.\n"
-            '4. When asked if you\'re developing commercial integration select "No".\n'
-            "5. Accept the terms and conditions.\n"
-            "6. Copy your client ID and your client secret into:\n"
-            "`{prefix}set api spotify client_id <your_client_id_here> "
-            "client_secret <your_client_secret_here>`\n"
-            "You may also provide `redirect_uri` in this command with "
-            "a different redirect you would like to use but this is optional. "
-            "the default redirect_uri is https://localhost/\n\n"
-            "Note: The redirect URI Must be set in the Spotify Dashboard and must "
-            "match either `https://localhost/` or the one you set with the `[p]set api` command"
-        ).format(prefix=ctx.prefix)
-        keys = {"client_id": "", "client_secret": "", "redirect_uri": "https://localhost/"}
-        view = SetApiView("spotify", keys)
-        if await ctx.embed_requested():
-            em = discord.Embed(description=message)
-            msg = await ctx.send(embed=em, view=view)
-            # await ctx.send(embed=em)
-        else:
-            msg = await ctx.send(message, view=view)
-            # await ctx.send(message)
+        async with ctx.typing(ephemeral=True):
+            message = _(
+                "1. Go to Spotify developers and log in with your Spotify account.\n"
+                "(https://developer.spotify.com/dashboard/applications)\n"
+                '2. Click "Create An App".\n'
+                "3. Fill out the form provided with your app name, etc.\n"
+                '4. When asked if you\'re developing commercial integration select "No".\n'
+                "5. Accept the terms and conditions.\n"
+                "6. Copy your client ID and your client secret into:\n"
+                "`{prefix}set api spotify client_id <your_client_id_here> "
+                "client_secret <your_client_secret_here>`\n"
+                "You may also provide `redirect_uri` in this command with "
+                "a different redirect you would like to use but this is optional. "
+                "the default redirect_uri is https://localhost/\n\n"
+                "Note: The redirect URI Must be set in the Spotify Dashboard and must "
+                "match either `https://localhost/` or the one you set with the `[p]set api` command"
+            ).format(prefix=ctx.prefix)
+            keys = {"client_id": "", "client_secret": "", "redirect_uri": "https://localhost/"}
+            view = SetApiView("spotify", keys)
+            if await ctx.embed_requested():
+                em = discord.Embed(description=message)
+                msg = await ctx.send(embed=em, view=view)
+                # await ctx.send(embed=em)
+            else:
+                msg = await ctx.send(message, view=view)
+                # await ctx.send(message)
         await view.wait()
         await msg.edit(view=None)
 
@@ -503,12 +515,12 @@ class SpotifyCommands(SpotifyMixin):
         """
         Forget all your spotify settings and credentials on the bot
         """
-        await ctx.defer()
-        author = ctx.author
-        await self.config.user(author).clear()
-        if author.id in self.dashboard_authed:
-            self.dashboard_authed.remove(author.id)
-        msg = _("All your spotify data deleted from my settings.")
+        async with ctx.typing():
+            author = ctx.author
+            await self.config.user(author).clear()
+            if author.id in self.dashboard_authed:
+                self.dashboard_authed.remove(author.id)
+            msg = _("All your spotify data deleted from my settings.")
         await ctx.send(msg)
 
     @spotify_com.command(name="me")
@@ -517,44 +529,46 @@ class SpotifyCommands(SpotifyMixin):
         """
         Shows your current Spotify Settings
         """
-        await ctx.defer(ephemeral=True)
-        author = ctx.author
-        is_slash = ctx.interaction is not None
-        em = discord.Embed(color=discord.Colour(0x1DB954))
-        em.set_author(name=author.display_name + _(" Spotify Profile"), icon_url=author.avatar.url)
-        msg = ""
-        cog_settings = await self.config.user(author).all()
-        show_private = cog_settings["show_private"]
-        msg += _("Show Private Playlists: {show_private}\n").format(show_private=show_private)
-        if not cog_settings["token"]:
-            em.description = msg
-            await ctx.send(embed=em)
-            return
-        user_token = await self.get_user_auth(ctx)
-        if user_token:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                cur = await user_spotify.current_user()
-                device_id = await self.config.user(author).default_device()
-                devices = await user_spotify.playback_devices()
-                device_name = "None"
-                for d in devices:
-                    if d.id == device_id:
-                        device_name = d.name
-                msg += _("Default Spotify Device: {device}").format(device=device_name)
-        if show_private or isinstance(ctx.channel, discord.DMChannel):
-            msg += _(
-                "Spotify Name: [{display_name}](https://open.spotify.com/user/{user_id})\n"
-                "Subscription: {product}\n"
-            ).format(display_name=cur.display_name, product=cur.product, user_id=cur.id)
-        if isinstance(ctx.channel, discord.DMChannel) or is_slash:
-            private = _("Country: {country}\nSpotify ID: {id}\nEmail: {email}\n").format(
-                country=cur.country, id=cur.id, email=cur.email
+        async with ctx.typing(ephemeral=True):
+            author = ctx.author
+            is_slash = ctx.interaction is not None
+            em = discord.Embed(color=discord.Colour(0x1DB954))
+            em.set_author(
+                name=author.display_name + _(" Spotify Profile"), icon_url=author.avatar.url
             )
-            em.add_field(name=_("Private Data"), value=private)
-        if cur.images:
-            em.set_thumbnail(url=cur.images[0].url)
-        em.description = msg
+            msg = ""
+            cog_settings = await self.config.user(author).all()
+            show_private = cog_settings["show_private"]
+            msg += _("Show Private Playlists: {show_private}\n").format(show_private=show_private)
+            if not cog_settings["token"]:
+                em.description = msg
+                await ctx.send(embed=em)
+                return
+            user_token = await self.get_user_auth(ctx)
+            if user_token:
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.current_user()
+                    device_id = await self.config.user(author).default_device()
+                    devices = await user_spotify.playback_devices()
+                    device_name = "None"
+                    for d in devices:
+                        if d.id == device_id:
+                            device_name = d.name
+                    msg += _("Default Spotify Device: {device}").format(device=device_name)
+            if show_private or isinstance(ctx.channel, discord.DMChannel):
+                msg += _(
+                    "Spotify Name: [{display_name}](https://open.spotify.com/user/{user_id})\n"
+                    "Subscription: {product}\n"
+                ).format(display_name=cur.display_name, product=cur.product, user_id=cur.id)
+            if isinstance(ctx.channel, discord.DMChannel) or is_slash:
+                private = _("Country: {country}\nSpotify ID: {id}\nEmail: {email}\n").format(
+                    country=cur.country, id=cur.id, email=cur.email
+                )
+                em.add_field(name=_("Private Data"), value=private)
+            if cur.images:
+                em.set_thumbnail(url=cur.images[0].url)
+            em.description = msg
         await ctx.send(embed=em)
 
     @spotify_com.command(name="now", aliases=["np"])
@@ -626,35 +640,36 @@ class SpotifyCommands(SpotifyMixin):
         """
         Tell the bot to play the users current song in their current voice channel
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                cur = await user_spotify.playback()
-                if not cur:
-                    await ctx.send(_("It appears you're not currently listening to Spotify."))
-                elif isinstance(cur.item, tekore.model.FullEpisode):
-                    return await ctx.send(_("I cannot play podcasts from spotify."))
-                elif cur.is_playing and not getattr(cur.item, "is_local", False):
-                    msg = copy(ctx.message)
-                    msg.content = ctx.prefix + f"play {cur.item.uri}"
-                    self.bot.dispatch("message", msg)
-                    await ctx.tick()
-                else:
-                    return await ctx.send(
-                        _("You don't appear to be listening to something I can play in audio.")
-                    )
-        except tekore.Unauthorised:
-            await self.not_authorized(ctx)
-        except tekore.NotFound:
-            await self.no_device(ctx)
-        except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, e)
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await self.unknown_error(ctx)
+        async with ctx.typing():
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            try:
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.playback()
+                    if not cur:
+                        await ctx.send(_("It appears you're not currently listening to Spotify."))
+                    elif isinstance(cur.item, tekore.model.FullEpisode):
+                        return await ctx.send(_("I cannot play podcasts from spotify."))
+                    elif cur.is_playing and not getattr(cur.item, "is_local", False):
+                        msg = copy(ctx.message)
+                        msg.content = ctx.prefix + f"play {cur.item.uri}"
+                        self.bot.dispatch("message", msg)
+                        await ctx.tick()
+                    else:
+                        return await ctx.send(
+                            _("You don't appear to be listening to something I can play in audio.")
+                        )
+            except tekore.Unauthorised:
+                await self.not_authorized(ctx)
+            except tekore.NotFound:
+                await self.no_device(ctx)
+            except tekore.Forbidden as e:
+                await self.forbidden_action(ctx, e)
+            except tekore.HTTPError:
+                log.exception("Error grabing user info from spotify")
+                await self.unknown_error(ctx)
 
     @spotify_com.command(name="search")
     @commands.bot_has_permissions(embed_links=True)
@@ -768,36 +783,36 @@ class SpotifyCommands(SpotifyMixin):
 
          e.g. `[p]spotify recommendations genre: edm electronic valence: 100 mode: major`
         """
-        log.verbose("spotify_recommendations recommendations: %s", recommendations)
-        # user_spotify = await self.get_user_spotify(ctx)
-        if not any([recommendations.genres, recommendations.artists, recommendations.tracks]):
-            await ctx.send(
-                _(
-                    "You must provide either genres, tracks, or artists to seed the recommendations."
-                )
-            )
-            return
-        recs = {
-            "genres": recommendations.genres,
-            "track_ids": recommendations.tracks,
-            "artist_ids": recommendations.artists,
-            "limit": 100,
-            "market": "from_token",
-            "target_acousticness": recommendations.acousticness,
-            "target_danceability": recommendations.danceability,
-            "target_energy": recommendations.energy,
-            "target_instrumentalness": recommendations.instrumentalness,
-            "target_key": recommendations.key,
-            "target_liveness": recommendations.liveness,
-            "target_loudness": recommendations.loudness,
-            "target_mode": str(recommendations.mode) if recommendations.mode else None,
-            "target_popularity": recommendations.popularity,
-            "target_speechiness": recommendations.speechiness,
-            "target_tempo": recommendations.tempo,
-            "target_time_signature": recommendations.time_signature,
-            "target_valence": recommendations.valence,
-        }
         async with ctx.typing():
+            log.verbose("spotify_recommendations recommendations: %s", recommendations)
+            # user_spotify = await self.get_user_spotify(ctx)
+            if not any([recommendations.genres, recommendations.artists, recommendations.tracks]):
+                await ctx.send(
+                    _(
+                        "You must provide either genres, tracks, or artists to seed the recommendations."
+                    )
+                )
+                return
+            recs = {
+                "genres": recommendations.genres,
+                "track_ids": recommendations.tracks,
+                "artist_ids": recommendations.artists,
+                "limit": 100,
+                "market": "from_token",
+                "target_acousticness": recommendations.acousticness,
+                "target_danceability": recommendations.danceability,
+                "target_energy": recommendations.energy,
+                "target_instrumentalness": recommendations.instrumentalness,
+                "target_key": recommendations.key,
+                "target_liveness": recommendations.liveness,
+                "target_loudness": recommendations.loudness,
+                "target_mode": str(recommendations.mode) if recommendations.mode else None,
+                "target_popularity": recommendations.popularity,
+                "target_speechiness": recommendations.speechiness,
+                "target_tempo": recommendations.tempo,
+                "target_time_signature": recommendations.time_signature,
+                "target_valence": recommendations.valence,
+            }
             async with self.get_user_spotify(ctx) as user_spotify:
                 try:
                     search = await user_spotify.recommendations(**recs)
@@ -938,10 +953,10 @@ class SpotifyCommands(SpotifyMixin):
         """
         Pauses spotify for you
         """
+        await ctx.defer(ephemeral=True)
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
-        await ctx.defer(ephemeral=True)
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -966,10 +981,10 @@ class SpotifyCommands(SpotifyMixin):
         """
         Resumes spotify for you
         """
+        await ctx.defer(ephemeral=True)
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
-        await ctx.defer()
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             device_id = None
@@ -1002,10 +1017,10 @@ class SpotifyCommands(SpotifyMixin):
         """
         Skips to the next track in queue on Spotify
         """
+        await ctx.defer(ephemeral=True)
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
-        await ctx.defer(ephemeral=True)
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1030,10 +1045,10 @@ class SpotifyCommands(SpotifyMixin):
         """
         Skips to the previous track in queue on Spotify
         """
+        await ctx.defer(ephemeral=True)
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
-        await ctx.defer(ephemeral=True)
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1189,6 +1204,8 @@ class SpotifyCommands(SpotifyMixin):
     ):
         cur = await client.saved_tracks(limit=50)
         await client.playback_start_tracks([t.track.id for t in cur.items], device_id=device_id)
+        # wait 2 seconds to let Spotify catch up with the newly added tracks
+        await asyncio.sleep(2)
         user_token = await self.get_user_auth(ctx)
         user_menu = SpotifyUserMenu(
             source=SpotifyPages(user_token=user_token, sender=self._sender, detailed=False),
@@ -1219,10 +1236,10 @@ class SpotifyCommands(SpotifyMixin):
         the bot will search through your playlists and start playing
         the playlist with the closest matching name
         """
+        await ctx.defer(ephemeral=True)
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
-        await ctx.defer()
         url_or_playlist_name = url_or_playlist_name.replace("🧑‍🎨", ":artist:")
         # because discord will replace this in URI's automatically 🙄
         song_data = SPOTIFY_RE.finditer(url_or_playlist_name)
@@ -1280,47 +1297,50 @@ class SpotifyCommands(SpotifyMixin):
         `<songs>` is one or more spotify URL or URI leading to a single track that will
         be added to your current queue
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer(ephemeral=True)
-        tracks = []
-        for song in songs:
-            if song.group(2) == "track":
-                tracks.append(f"spotify:{song.group(2)}:{song.group(3)}")
-        if not tracks:
-            msg = _("I can only add tracks to your spotify queue.")
-            await ctx.send(msg, ephemeral=True)
-            return
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                for uri in tracks:
-                    log.trace("Queueing uri=%s", uri)
-                    await user_spotify.playback_queue_add(uri)
-                all_tracks = await user_spotify.tracks(tracks)
-            if ctx.interaction:
-                track = all_tracks[0]
-                track_name = track.name
-                artists = getattr(track, "artists", [])
-                artist = humanize_list([a.name for a in artists])
-                em = await song_embed(track, False)
-                await ctx.send(
-                    _("Queueing {track} by {artist}").format(track=track_name, artist=artist),
-                    embed=em,
-                    ephemeral=True,
-                )
-            else:
-                await ctx.react_quietly(spotify_emoji_handler.get_emoji("next", True))
-        except tekore.Unauthorised:
-            await self.not_authorized(ctx)
-        except tekore.NotFound:
-            await self.no_device(ctx)
-        except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, e)
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await self.unknown_error(ctx)
+        async with ctx.typing(ephemeral=True):
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            tracks = set()
+            track_ids = set()
+            for song in songs:
+                if song.group(2) == "track":
+                    tracks.add(f"spotify:{song.group(2)}:{song.group(3)}")
+                    track_ids.add(song.group(3))
+            if not tracks:
+                msg = _("I can only add tracks to your spotify queue.")
+                await ctx.send(msg, ephemeral=True)
+                return
+            try:
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    for uri in tracks:
+                        log.trace("Queueing uri=%s", uri)
+                        await user_spotify.playback_queue_add(uri)
+                    all_tracks = await user_spotify.tracks(track_ids)
+                if ctx.interaction:
+                    log.debug(all_tracks)
+                    track = all_tracks[0]
+                    track_name = track.name
+                    artists = getattr(track, "artists", [])
+                    artist = humanize_list([a.name for a in artists])
+                    em = await song_embed(track, False)
+                    await ctx.send(
+                        _("Queueing {track} by {artist}").format(track=track_name, artist=artist),
+                        embed=em,
+                        ephemeral=True,
+                    )
+                else:
+                    await ctx.react_quietly(spotify_emoji_handler.get_emoji("next", True))
+            except tekore.Unauthorised:
+                await self.not_authorized(ctx)
+            except tekore.NotFound:
+                await self.no_device(ctx)
+            except tekore.Forbidden as e:
+                await self.forbidden_action(ctx, e)
+            except tekore.HTTPError:
+                log.exception("Error grabing user info from spotify")
+                await self.unknown_error(ctx)
 
     async def get_device(
         self, ctx: commands.Context, user_spotify: tekore.Spotify
@@ -1350,10 +1370,10 @@ class SpotifyCommands(SpotifyMixin):
 
         `["off"|"track"|"context"]` must accept one of `off`, `track`, or `context`.
         """
+        await ctx.defer(ephemeral=True)
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
-        await ctx.defer(ephemeral=True)
 
         if state and state.lower() not in ["off", "track", "context"]:
             msg = _("Repeat must accept either `off`, `track`, or `context`.")
@@ -1419,10 +1439,10 @@ class SpotifyCommands(SpotifyMixin):
 
         `<state>` either true or false. Not providing this will toggle the current setting.
         """
+        await ctx.defer(ephemeral=True)
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
-        await ctx.defer(ephemeral=True)
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1461,6 +1481,7 @@ class SpotifyCommands(SpotifyMixin):
         `<seconds>` Accepts seconds or a value formatted like
         00:00:00 (`hh:mm:ss`) or 00:00 (`mm:ss`).
         """
+        await ctx.defer(ephemeral=True)
         try:
             int(seconds)
             abs_position = False
@@ -1470,7 +1491,7 @@ class SpotifyCommands(SpotifyMixin):
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
-        await ctx.defer(ephemeral=True)
+
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1510,11 +1531,11 @@ class SpotifyCommands(SpotifyMixin):
 
         `<volume>` a number between 0 and 100 for volume percentage.
         """
+        await ctx.defer(ephemeral=True)
         volume = max(min(100, volume), 0)  # constrains volume to be within 100
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
-        await ctx.defer(ephemeral=True)
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1571,62 +1592,64 @@ class SpotifyCommands(SpotifyMixin):
 
         `<device_name>` The name of the device you want to switch to.
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer(ephemeral=True)
-        try:
-            is_playing = False
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                devices = await user_spotify.playback_devices()
-                now = await user_spotify.playback()
-                if now and now.is_playing:
-                    is_playing = True
-            new_device = None
-            if device_name:
-                for d in devices:
-                    if device_name.lower() in d.name.lower() or device_name == d.id:
-                        log.debug("Transferring playback to %s", d.name)
-                        new_device = d
-            else:
-                new_view = SpotifyDeviceView(ctx)
-                options = []
-                for device in devices[:25]:
-                    options.append(
-                        discord.SelectOption(
-                            label=device.name[:100], description=str(device.type), value=device.id
+        async with ctx.typing(ephemeral=True):
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            try:
+                is_playing = False
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    devices = await user_spotify.playback_devices()
+                    now = await user_spotify.playback()
+                    if now and now.is_playing:
+                        is_playing = True
+                new_device = None
+                if device_name:
+                    for d in devices:
+                        if device_name.lower() in d.name.lower() or device_name == d.id:
+                            log.debug("Transferring playback to %s", d.name)
+                            new_device = d
+                else:
+                    new_view = SpotifyDeviceView(ctx)
+                    options = []
+                    for device in devices[:25]:
+                        options.append(
+                            discord.SelectOption(
+                                label=device.name[:100],
+                                description=str(device.type),
+                                value=device.id,
+                            )
                         )
+                    select_view = SpotifySelectDevice(options, user_token, self._sender)
+                    new_view.add_item(select_view)
+                    msg = _("Pick the device you want to transfer playback to")
+                    await ctx.send(msg, view=new_view)
+                    # new_device = await self.spotify_pick_device(ctx, devices)
+                    return
+                if not new_device:
+                    msg = _("I will not transfer spotify playback for you.")
+                    await ctx.send(msg)
+                    return
+                with user_spotify.token_as(user_token):
+                    await user_spotify.playback_transfer(new_device.id, is_playing)
+                if ctx.interaction:
+                    await ctx.send(
+                        _("Transferring playback to {device}").format(device=new_device.name),
+                        ephemeral=True,
                     )
-                select_view = SpotifySelectDevice(options, user_token, self._sender)
-                new_view.add_item(select_view)
-                msg = _("Pick the device you want to transfer playback to")
-                await ctx.send(msg, view=new_view)
-                # new_device = await self.spotify_pick_device(ctx, devices)
-                return
-            if not new_device:
-                msg = _("I will not transfer spotify playback for you.")
-                await ctx.send(msg)
-                return
-            with user_spotify.token_as(user_token):
-                await user_spotify.playback_transfer(new_device.id, is_playing)
-            if ctx.interaction:
-                await ctx.send(
-                    _("Transferring playback to {device}").format(device=new_device.name),
-                    ephemeral=True,
-                )
-            else:
-                await ctx.tick()
-        except tekore.Unauthorised:
-            log.debug("Error transferring playback", exc_info=True)
-            await self.not_authorized(ctx)
-        except tekore.NotFound:
-            await self.no_device(ctx)
-        except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, e)
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await self.unknown_error(ctx)
+                else:
+                    await ctx.tick()
+            except tekore.Unauthorised:
+                log.debug("Error transferring playback", exc_info=True)
+                await self.not_authorized(ctx)
+            except tekore.NotFound:
+                await self.no_device(ctx)
+            except tekore.Forbidden as e:
+                await self.forbidden_action(ctx, e)
+            except tekore.HTTPError:
+                log.exception("Error grabing user info from spotify")
+                await self.unknown_error(ctx)
 
     @spotify_device.command(name="default")
     @commands.bot_has_permissions(embed_links=True)
@@ -1642,74 +1665,76 @@ class SpotifyCommands(SpotifyMixin):
 
         `<device_name>` The name of the device you want to switch to.
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer(ephemeral=True)
-        try:
-            is_playing = False
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                devices = await user_spotify.playback_devices()
-                now = await user_spotify.playback()
-                if now and now.is_playing:
-                    is_playing = True
-            new_device = None
-            if device_name:
-                for d in devices:
-                    if device_name.lower() in d.name.lower() or device_name == d.id:
-                        log.debug("Transferring playback to %s", d.name)
-                        new_device = d
-            else:
-                new_view = SpotifyDeviceView(ctx)
-                options = []
-                for device in devices[:25]:
-                    options.append(discord.SelectOption(label=device.name[:25], value=device.id))
-                options.insert(0, discord.SelectOption(label="None", value="None"))
-                select_view = SpotifySelectDevice(
-                    options, user_token, self._sender, send_callback=False
-                )
-                new_view.add_item(select_view)
-                msg = _("Pick the device you want to set as your default player")
-                await ctx.send(msg, view=new_view)
-                await new_view.wait()
-                device_id = select_view.device_id if select_view.device_id != "None" else None
-
-                if device_id:
+        async with ctx.typing(ephemeral=True):
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            try:
+                is_playing = False
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    devices = await user_spotify.playback_devices()
+                    now = await user_spotify.playback()
+                    if now and now.is_playing:
+                        is_playing = True
+                new_device = None
+                if device_name:
                     for d in devices:
-                        if d.id == device_id:
-                            device_name = d.name
-                    await self.config.user(ctx.author).default_device.set(device_id)
+                        if device_name.lower() in d.name.lower() or device_name == d.id:
+                            log.debug("Transferring playback to %s", d.name)
+                            new_device = d
                 else:
+                    new_view = SpotifyDeviceView(ctx)
+                    options = []
+                    for device in devices[:25]:
+                        options.append(
+                            discord.SelectOption(label=device.name[:25], value=device.id)
+                        )
+                    options.insert(0, discord.SelectOption(label="None", value="None"))
+                    select_view = SpotifySelectDevice(
+                        options, user_token, self._sender, send_callback=False
+                    )
+                    new_view.add_item(select_view)
+                    msg = _("Pick the device you want to set as your default player")
+                    await ctx.send(msg, view=new_view)
+                    await new_view.wait()
+                    device_id = select_view.device_id if select_view.device_id != "None" else None
+
+                    if device_id:
+                        for d in devices:
+                            if d.id == device_id:
+                                device_name = d.name
+                        await self.config.user(ctx.author).default_device.set(device_id)
+                    else:
+                        await self.config.user(ctx.author).default_device.clear()
+                        device_name = "None"
+                    msg = _("Saving default device as {device}.").format(device=device_name)
+                    await ctx.send(msg)
+                    # new_device = await self.spotify_pick_device(ctx, devices)
+                    return
+                if not new_device:
+                    msg = _("I will not save your default device for you.")
+                    await ctx.send(msg)
                     await self.config.user(ctx.author).default_device.clear()
-                    device_name = "None"
-                msg = _("Saving default device as {device}.").format(device=device_name)
-                await ctx.send(msg)
-                # new_device = await self.spotify_pick_device(ctx, devices)
-                return
-            if not new_device:
-                msg = _("I will not save your default device for you.")
-                await ctx.send(msg)
-                await self.config.user(ctx.author).default_device.clear()
-                return
-            await self.config.user(ctx.author).default_device.set(new_device.id)
-            if ctx.interaction:
-                await ctx.send(
-                    _("Saving default device as {device}.").format(device=new_device.name),
-                    ephemeral=True,
-                )
-            else:
-                await ctx.tick()
-        except tekore.Unauthorised:
-            log.debug("Error transferring playback", exc_info=True)
-            await self.not_authorized(ctx)
-        except tekore.NotFound:
-            await self.no_device(ctx)
-        except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, e)
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await self.unknown_error(ctx)
+                    return
+                await self.config.user(ctx.author).default_device.set(new_device.id)
+                if ctx.interaction:
+                    await ctx.send(
+                        _("Saving default device as {device}.").format(device=new_device.name),
+                        ephemeral=True,
+                    )
+                else:
+                    await ctx.tick()
+            except tekore.Unauthorised:
+                log.debug("Error transferring playback", exc_info=True)
+                await self.not_authorized(ctx)
+            except tekore.NotFound:
+                await self.no_device(ctx)
+            except tekore.Forbidden as e:
+                await self.forbidden_action(ctx, e)
+            except tekore.HTTPError:
+                log.exception("Error grabing user info from spotify")
+                await self.unknown_error(ctx)
 
     @spotify_device_transfer.autocomplete("device_name")
     @spotify_device_default.autocomplete("device_name")
@@ -1793,26 +1818,26 @@ class SpotifyCommands(SpotifyMixin):
         """
         List your Spotify featured Playlists
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer()
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                playlists = await user_spotify.featured_playlists(limit=50)
-        except tekore.Unauthorised:
-            return await self.not_authorized(ctx)
-        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
-        playlist_list = playlists[1].items
-        x = SpotifySearchMenu(
-            source=SpotifyNewPages(playlist_list),
-            delete_message_after=delete_after,
-            clear_buttons_after=clear_after,
-            timeout=timeout,
-            cog=self,
-            user_token=user_token,
-        )
+        async with ctx.typing(ephemeral=True):
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            try:
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    playlists = await user_spotify.featured_playlists(limit=50)
+            except tekore.Unauthorised:
+                return await self.not_authorized(ctx)
+            delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+            playlist_list = playlists[1].items
+            x = SpotifySearchMenu(
+                source=SpotifyNewPages(playlist_list),
+                delete_message_after=delete_after,
+                clear_buttons_after=clear_after,
+                timeout=timeout,
+                cog=self,
+                user_token=user_token,
+            )
         await x.send_initial_message(ctx)
 
     @spotify_playlist.command(name="list", aliases=["ls"])
@@ -1934,28 +1959,29 @@ class SpotifyCommands(SpotifyMixin):
         `[public]` Wheter or not the playlist should be public, defaults to False.
         `[description]` The description of the playlist you're making.
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer()
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                user = await user_spotify.current_user()
-                await user_spotify.playlist_create(user.id, name, public, description)
-            msg = _("Created {public} playlist named: {name}").format(
-                public=_("Public") if public else _("Private"), name=name
-            )
-            await ctx.send(msg, ephemeral=True)
-        except tekore.Unauthorised:
-            await self.not_authorized(ctx)
-        except tekore.NotFound:
-            await self.no_device(ctx)
-        except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, e)
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await self.unknown_error(ctx)
+        async with ctx.typing(ephemeral=True):
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+
+            try:
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    user = await user_spotify.current_user()
+                    await user_spotify.playlist_create(user.id, name, public, description)
+                msg = _("Created {public} playlist named: {name}").format(
+                    public=_("Public") if public else _("Private"), name=name
+                )
+                await ctx.send(msg, ephemeral=True)
+            except tekore.Unauthorised:
+                await self.not_authorized(ctx)
+            except tekore.NotFound:
+                await self.no_device(ctx)
+            except tekore.Forbidden as e:
+                await self.forbidden_action(ctx, e)
+            except tekore.HTTPError:
+                log.exception("Error grabing user info from spotify")
+                await self.unknown_error(ctx)
 
     @spotify_playlist.command(name="add")
     @commands.bot_has_permissions(embed_links=True)
@@ -1972,56 +1998,59 @@ class SpotifyCommands(SpotifyMixin):
         `<name>` The name of playlist you want to add songs to
         `<to_add>` The song links or URI's you want to add
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        if ctx.interaction:
-            try:
-                to_add = await SpotifyURIConverter().convert(ctx, to_add)
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
+        async with ctx.typing(ephemeral=True):
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            if ctx.interaction:
+                try:
+                    to_add = await SpotifyURIConverter().convert(ctx, to_add)
+                except commands.BadArgument as e:
+                    await ctx.send(e, ephemeral=True)
+                    return
+                if not ctx.response.is_done():
+                    await ctx.response.defer(ephemeral=True)
+                is_slash = True
+            tracks = []
+            new_uri = ""
+            for match in to_add:
+                new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
+                if match.group(2) == "track":
+                    tracks.append(new_uri)
+            if not tracks:
+                msg = _("You did not provide any tracks for me to add to the playlist.")
+                if is_slash:
+                    await ctx.send(msg, ephemeral=True)
+                else:
+                    await ctx.send(msg)
                 return
-            if not ctx.response.is_done():
-                await ctx.response.defer(ephemeral=True)
-            is_slash = True
-        tracks = []
-        new_uri = ""
-        for match in to_add:
-            new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
-            if match.group(2) == "track":
-                tracks.append(new_uri)
-        if not tracks:
-            msg = _("You did not provide any tracks for me to add to the playlist.")
-            if is_slash:
-                await ctx.send(msg, ephemeral=True)
-            else:
+            try:
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.followed_playlists(limit=50)
+                    playlists = cur.items
+                    while len(playlists) < cur.total:
+                        new = await user_spotify.followed_playlists(
+                            limit=50, offset=len(playlists)
+                        )
+                        for p in new.items:
+                            playlists.append(p)
+                    for playlist in playlists:
+                        if name.lower() == playlist.name.lower():
+                            await user_spotify.playlist_add(playlist.id, tracks)
+                            await ctx.tick()
+                            return
+                msg = _("I could not find a playlist matching {name}.").format(name=name)
                 await ctx.send(msg)
-            return
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                cur = await user_spotify.followed_playlists(limit=50)
-                playlists = cur.items
-                while len(playlists) < cur.total:
-                    new = await user_spotify.followed_playlists(limit=50, offset=len(playlists))
-                    for p in new.items:
-                        playlists.append(p)
-                for playlist in playlists:
-                    if name.lower() == playlist.name.lower():
-                        await user_spotify.playlist_add(playlist.id, tracks)
-                        await ctx.tick()
-                        return
-            msg = _("I could not find a playlist matching {name}.").format(name=name)
-            await ctx.send(msg)
-        except tekore.Unauthorised:
-            await self.not_authorized(ctx)
-        except tekore.NotFound:
-            await self.no_device(ctx)
-        except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, e)
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await self.unknown_error(ctx)
+            except tekore.Unauthorised:
+                await self.not_authorized(ctx)
+            except tekore.NotFound:
+                await self.no_device(ctx)
+            except tekore.Forbidden as e:
+                await self.forbidden_action(ctx, e)
+            except tekore.HTTPError:
+                log.exception("Error grabing user info from spotify")
+                await self.unknown_error(ctx)
 
     @spotify_playlist.command(name="remove")
     @commands.bot_has_permissions(embed_links=True)
@@ -2038,49 +2067,52 @@ class SpotifyCommands(SpotifyMixin):
         `<name>` The name of playlist you want to remove songs from
         `<to_remove>` The song links or URI's you want to have removed
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        if ctx.interaction:
+        async with ctx.typing(ephemeral=True):
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            if ctx.interaction:
+                try:
+                    to_remove = await SpotifyURIConverter().convert(ctx, to_remove)
+                except commands.BadArgument as e:
+                    await ctx.send(e, ephemeral=True)
+                    return
+            tracks = []
+            new_uri = ""
+            for match in to_remove:
+                new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
+                if match.group(2) == "track":
+                    tracks.append(new_uri)
+            if not tracks:
+                msg = _("You did not provide any tracks for me to add to the playlist.")
+                await ctx.send(msg)
             try:
-                to_remove = await SpotifyURIConverter().convert(ctx, to_remove)
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-        tracks = []
-        new_uri = ""
-        for match in to_remove:
-            new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
-            if match.group(2) == "track":
-                tracks.append(new_uri)
-        if not tracks:
-            msg = _("You did not provide any tracks for me to add to the playlist.")
-            await ctx.send(msg)
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                cur = await user_spotify.followed_playlists(limit=50)
-                playlists = cur.items
-                while len(playlists) < cur.total:
-                    new = await user_spotify.followed_playlists(limit=50, offset=len(playlists))
-                    for p in new.items:
-                        playlists.append(p)
-                for playlist in playlists:
-                    if name.lower() == playlist.name.lower():
-                        await user_spotify.playlist_remove(playlist.id, tracks)
-                        await ctx.tick()
-                        return
-            msg = _("I could not find a playlist matching {name}.").format(name=name)
-            await ctx.send(msg)
-        except tekore.Unauthorised:
-            await self.not_authorized(ctx)
-        except tekore.NotFound:
-            await self.no_device(ctx)
-        except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, e)
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await self.unknown_error(ctx)
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.followed_playlists(limit=50)
+                    playlists = cur.items
+                    while len(playlists) < cur.total:
+                        new = await user_spotify.followed_playlists(
+                            limit=50, offset=len(playlists)
+                        )
+                        for p in new.items:
+                            playlists.append(p)
+                    for playlist in playlists:
+                        if name.lower() == playlist.name.lower():
+                            await user_spotify.playlist_remove(playlist.id, tracks)
+                            await ctx.tick()
+                            return
+                msg = _("I could not find a playlist matching {name}.").format(name=name)
+                await ctx.send(msg)
+            except tekore.Unauthorised:
+                await self.not_authorized(ctx)
+            except tekore.NotFound:
+                await self.no_device(ctx)
+            except tekore.Forbidden as e:
+                await self.forbidden_action(ctx, e)
+            except tekore.HTTPError:
+                log.exception("Error grabing user info from spotify")
+                await self.unknown_error(ctx)
 
     @spotify_playlist.command(name="follow")
     @commands.bot_has_permissions(embed_links=True)
@@ -2097,37 +2129,38 @@ class SpotifyCommands(SpotifyMixin):
         `[public]` Whether or not the followed playlist should be public after
         `<to_follow>` The song links or URI's you want to have removed
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        if ctx.interaction:
+        async with ctx.typing(ephemeral=True):
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            if ctx.interaction:
+                try:
+                    to_follow = await SpotifyURIConverter().convert(ctx, to_follow)
+                except commands.BadArgument as e:
+                    await ctx.send(e, ephemeral=True)
+                    return
+            tracks = []
+            for match in to_follow:
+                if match.group(2) == "playlist":
+                    tracks.append(match.group(3))
+            if not tracks:
+                msg = _("You did not provide any playlists for me to add to your library.")
+                await ctx.send(msg)
             try:
-                to_follow = await SpotifyURIConverter().convert(ctx, to_follow)
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-        tracks = []
-        for match in to_follow:
-            if match.group(2) == "playlist":
-                tracks.append(match.group(3))
-        if not tracks:
-            msg = _("You did not provide any playlists for me to add to your library.")
-            await ctx.send(msg)
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                for playlist in tracks:
-                    await user_spotify.playlist_follow(playlist, public)
-                await ctx.tick()
-        except tekore.Unauthorised:
-            await self.not_authorized(ctx)
-        except tekore.NotFound:
-            await self.no_device(ctx)
-        except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, e)
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await self.unknown_error(ctx)
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    for playlist in tracks:
+                        await user_spotify.playlist_follow(playlist, public)
+                    await ctx.tick()
+            except tekore.Unauthorised:
+                await self.not_authorized(ctx)
+            except tekore.NotFound:
+                await self.no_device(ctx)
+            except tekore.Forbidden as e:
+                await self.forbidden_action(ctx, e)
+            except tekore.HTTPError:
+                log.exception("Error grabing user info from spotify")
+                await self.unknown_error(ctx)
 
     @spotify_artist.command(name="follow")
     @commands.bot_has_permissions(embed_links=True)
@@ -2142,35 +2175,36 @@ class SpotifyCommands(SpotifyMixin):
 
         `<to_follow>` The song links or URI's you want to have removed
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        if ctx.interaction:
+        async with ctx.typing(ephemeral=True):
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            if ctx.interaction:
+                try:
+                    to_follow = await SpotifyURIConverter().convert(ctx, to_follow)
+                except commands.BadArgument as e:
+                    await ctx.send(e, ephemeral=True)
+                    return
+            tracks = []
+            for match in to_follow:
+                if match.group(2) == "artist":
+                    tracks.append(match.group(3))
             try:
-                to_follow = await SpotifyURIConverter().convert(ctx, to_follow)
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-        tracks = []
-        for match in to_follow:
-            if match.group(2) == "artist":
-                tracks.append(match.group(3))
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                for playlist in tracks:
-                    await user_spotify.artist_follow(playlist)
-                    msg = _("Now following {artist}").format(artist=playlist)
-            await ctx.send(msg)
-        except tekore.Unauthorised:
-            await self.not_authorized(ctx)
-        except tekore.NotFound:
-            await self.no_device(ctx)
-        except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, e)
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await self.unknown_error(ctx)
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    for playlist in tracks:
+                        await user_spotify.artist_follow(playlist)
+                        msg = _("Now following {artist}").format(artist=playlist)
+                await ctx.send(msg)
+            except tekore.Unauthorised:
+                await self.not_authorized(ctx)
+            except tekore.NotFound:
+                await self.no_device(ctx)
+            except tekore.Forbidden as e:
+                await self.forbidden_action(ctx, e)
+            except tekore.HTTPError:
+                log.exception("Error grabing user info from spotify")
+                await self.unknown_error(ctx)
 
     @spotify_artist.command(name="albums", aliases=["album"])
     @commands.bot_has_permissions(embed_links=True)

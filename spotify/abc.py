@@ -55,10 +55,6 @@ class SpotifyMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def format_help_for_context(self, ctx: commands.Context) -> str:
-        raise NotImplementedError()
-
-    @abstractmethod
     async def cog_before_invoke(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 

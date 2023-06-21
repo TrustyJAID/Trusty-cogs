@@ -47,7 +47,7 @@ class Spotify(
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.7.0"
+    __version__ = "1.7.1"
 
     def __init__(self, bot):
         super().__init__()
@@ -113,6 +113,8 @@ class Spotify(
         )
 
     async def cog_load(self):
+        self.bot.tree.add_command(self.play_ctx)
+        self.bot.tree.add_command(self.queue_ctx)
         tokens = await self.bot.get_shared_api_tokens("spotify")
         if not tokens:
             self._ready.set()
