@@ -38,7 +38,7 @@ class ServerStats(commands.GroupCog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.7.2"
+    __version__ = "1.7.3"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -1000,12 +1000,17 @@ class ServerStats(commands.GroupCog):
                 member = user_id
 
             if await self.bot.is_owner(ctx.author):
-                guild_list = member.mutual_guilds
+                if member.id == ctx.me.id:
+                    guild_list = ctx.bot.guilds
+                else:
+                    guild_list = member.mutual_guilds
             else:
-                guild_list = []
-                search = set(member.mutual_guilds)
-                author = set(ctx.author.mutual_guilds)
-                guild_list = list(author.intersection(search))
+                if member.id == ctx.me.id:
+                    guild_list = ctx.author.mutual_guilds
+                else:
+                    search = set(member.mutual_guilds)
+                    author = set(ctx.author.mutual_guilds)
+                    guild_list = list(author.intersection(search))
 
             embed_list = []
             robot = "\N{ROBOT FACE}" if member.bot else ""
