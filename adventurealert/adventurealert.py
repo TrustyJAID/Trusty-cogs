@@ -31,7 +31,7 @@ class AdventureAlert(
 ):
     """Alert when a dragon appears in adventure"""
 
-    __version__ = "1.5.0"
+    __version__ = "1.5.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -220,7 +220,7 @@ class AdventureAlert(
             style = alert_style
         conf = style.get_role_config(self.config.guild(ctx.guild))
         if role.id in await conf():
-            async with conf as data:
+            async with conf() as data:
                 data.remove(role.id)
             await ctx.send(
                 _("{role} will no longer receive notifications on {style} alerts.").format(
