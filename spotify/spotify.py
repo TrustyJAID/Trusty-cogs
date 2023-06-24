@@ -47,7 +47,7 @@ class Spotify(
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.7.1"
+    __version__ = "1.7.2"
 
     def __init__(self, bot):
         super().__init__()
@@ -354,6 +354,21 @@ class Spotify(
                 for field in em_dict["fields"]:
                     content += " " + field["name"] + " " + field["value"]
             log.verbose("Spotify content: %s", content)
+        for component in message.components:
+            if not isinstance(component, discord.ActionRow):
+                if component.custom_id is not None:
+                    continue
+                if component.url is None:
+                    continue
+                content += f" {component.url}"
+            else:
+                for item in component.children:
+                    if item.custom_id is not None:
+                        continue
+                    if item.url is None:
+                        continue
+                    content += f" {item.url}"
+
         content = content.replace("🧑‍🎨", ":artist:")
         # because discord will replace this in URI's automatically 🙄
         song_data = SPOTIFY_RE.finditer(content)
