@@ -63,7 +63,7 @@ class Welcome(Events, commands.Cog):
     https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
     __author__ = ["irdumb", "TrustyJAID"]
-    __version__ = "2.5.0"
+    __version__ = "2.5.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -86,16 +86,30 @@ class Welcome(Events, commands.Cog):
         """
         return
 
-    @tasks.loop(seconds=300)
+    @tasks.loop(seconds=10)
     async def group_welcome(self) -> None:
         # log.debug("Checking for new welcomes")
+        clear_guilds = []
         for guild_id, members in self.joined.items():
+
             if members:
+                last_time_id = await self.config.guild_from_id(guild_id).LAST_GREETING()
+                if last_time_id is not None:
+                    last_time = (
+                        datetime.now(timezone.utc) - discord.utils.snowflake_time(last_time_id)
+                    ).total_seconds()
+                    if len(members) > 1 and last_time <= 30.0:
+                        continue
                 try:
                     await self.send_member_join(members, self.bot.get_guild(guild_id))
+                    clear_guilds.append(guild_id)
                 except Exception:
                     log.exception("Error in group welcome:")
-        self.joined = {}
+        for guild_id in clear_guilds:
+            try:
+                del self.joined[guild_id]
+            except KeyError:
+                pass
 
     @group_welcome.before_loop
     async def before_group_welcome(self):
