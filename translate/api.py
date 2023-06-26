@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import time
+from collections import OrderedDict
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Dict, List, Mapping, Optional, Union, cast
@@ -14,6 +15,7 @@ from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
+from redbot.core.utils.views import SimpleMenu
 
 from .errors import GoogleTranslateAPIError
 from .flags import FLAGS
@@ -119,14 +121,28 @@ class TranslateTextResponse(GoogleTranslateResponse):
             translations=[Translation.from_json(i) for i in data["data"]["translations"]],
         )
 
-    def embed(
+    def embeds(
         self,
         author: Union[discord.Member, discord.User],
         from_language: str,
         to_language: str,
         requestor: Optional[Union[discord.Member, discord.User]] = None,
+    ):
+        """Return a list of all translations"""
+        return [
+            self.embed(translation, author, from_language, to_language, requestor)
+            for translation in self.translations
+        ]
+
+    def embed(
+        self,
+        translation: Translation,
+        author: Union[discord.Member, discord.User],
+        from_language: str,
+        to_language: str,
+        requestor: Optional[Union[discord.Member, discord.User]] = None,
     ) -> discord.Embed:
-        em = discord.Embed(colour=author.colour, description=str(self.translations[0]))
+        em = discord.Embed(colour=author.colour, description=str(translation))
         em.set_author(name=author.display_name, icon_url=author.display_avatar)
         detail_string = _("{_from} to {_to} | Requested by ").format(
             _from=from_language.upper(), _to=to_language.upper()
@@ -175,22 +191,63 @@ class DetectedLanguage:
         return cls(**data[0])
 
 
+class FixedSizeOrderedDict(OrderedDict):
+    # https://stackoverflow.com/a/49274421
+    def __init__(self, *args, max_len=0, **kwargs):
+        self._max_len = max_len
+        super().__init__(*args, **kwargs)
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        if self._max_len > 0:
+            if len(self) > self._max_len:
+                self.popitem(False)
+
+
 class GoogleTranslator:
-    def __init__(self, api_token: str, session: Optional[aiohttp.ClientSession] = None):
+    def __init__(
+        self,
+        api_token: Optional[str],
+        session: Optional[aiohttp.ClientSession] = None,
+        *,
+        stats_counter: StatsCounter,
+    ):
         self._api_token = api_token
         self.session = session or aiohttp.ClientSession(
             headers={"User-Agent": "Trusty-cogs Translate cog for Red-DiscordBot"}
         )
+        self.stats_counter = stats_counter
+        self._cache_limit = 128
+        self._translation_cache = FixedSizeOrderedDict(max_len=self._cache_limit)
+        self._detection_cache = FixedSizeOrderedDict(max_len=self._cache_limit)
+
+    @property
+    def has_token(self):
+        return self._api_token is not None
 
     async def close(self):
+        await self.stats_counter.save()
         await self.session.close()
 
-    async def detect_language(self, text: str) -> Optional[DetectedLanguage]:
+    async def detect_language(
+        self,
+        text: str,
+        *,
+        guild: Optional[discord.Guild] = None,
+    ) -> Optional[DetectedLanguage]:
         """
         Detect the language from given text
         """
         if self._api_token is None:
             raise GoogleTranslateAPIError("The API token is missing.")
+        # Hash the text for a relatively unique key
+        # I am not concerned about collisions here just memory
+        # a user message can be up to 4000 characters long which would be 4049 bytes
+        # a hash is only 36 bytes and since we're caching the result which is much larger
+        # there's no reason to cache the original text just a hash of it
+        cache_key = hash(text)
+        if cache_key in self._detection_cache:
+            return self._detection_cache[cache_key]
         params = {"q": text, "key": self._api_token}
         url = BASE_URL + "/language/translate/v2/detect"
         async with self.session.get(url, params=params) as resp:
@@ -199,16 +256,31 @@ class GoogleTranslator:
             log.error(data["error"]["message"])
             raise GoogleTranslateAPIError(data["error"]["message"])
         detection = DetectLanguageResponse.from_json(data)
+        await self.stats_counter.add_detect(guild)
+        self._detection_cache[cache_key] = detection.language
         return detection.language
 
     async def translate_text(
-        self, target: str, text: str, from_lang: Optional[str] = None
+        self,
+        target: str,
+        text: str,
+        from_lang: Optional[str] = None,
+        *,
+        guild: Optional[discord.Guild] = None,
     ) -> Optional[TranslateTextResponse]:
         """
         request to translate the text
         """
         if self._api_token is None:
             raise GoogleTranslateAPIError("The API token is missing.")
+        # Hash the text for a relatively unique key
+        # I am not concerned about collisions here just memory
+        # a user message can be up to 4000 characters long which would be 4049 bytes
+        # a hash is only 36 bytes and since we're caching the result which is much larger
+        # there's no reason to cache the original text just a hash of it
+        cache_key = (target, hash(text), from_lang)
+        if cache_key in self._translation_cache:
+            return self._translation_cache[cache_key]
         formatting = "text"
         params = {
             "q": text,
@@ -228,6 +300,8 @@ class GoogleTranslator:
             log.error(data["error"]["message"])
             raise GoogleTranslateAPIError(data["error"]["message"])
         translation = TranslateTextResponse.from_json(data)
+        await self.stats_counter.add_requests(guild, text)
+        self._translation_cache[cache_key] = translation
         return translation
 
 
@@ -244,7 +318,7 @@ class StatsCounter:
             "characters": _("Characters requested:"),
         }
         gl_count = self._global_counter if self._global_counter else await self.config.count()
-        msg = _("__Global Usage__:\n")
+        msg = _("### __Global Usage__:\n")
         for key, value in gl_count.items():
             msg += tr_keys[key] + f" **{value}**\n"
         if guild is not None:
@@ -253,7 +327,7 @@ class StatsCounter:
                 if guild.id in self._guild_counter
                 else await self.config.guild(guild).count()
             )
-            msg += _("__{guild} Usage__:\n").format(guild=guild.name)
+            msg += _("### __{guild} Usage__:\n").format(guild=guild.name)
             for key, value in count.items():
                 msg += tr_keys[key] + f" **{value}**\n"
         return msg
@@ -301,13 +375,12 @@ class GoogleTranslateAPI:
     bot: Red
     cache: dict
     _key: Optional[str]
-    stats_counter: StatsCounter
     _tr: GoogleTranslator
 
     async def translate_from_message(
         self, interaction: discord.Interaction, message: discord.Message
     ):
-        if self._tr is None:
+        if not self._tr.has_token:
             await interaction.response.send_message(
                 _("The bot owner needs to set an api key first!"), ephemeral=True
             )
@@ -325,8 +398,7 @@ class GoogleTranslateAPI:
             return
         target = str(interaction.locale).split("-")[0]
         try:
-            detected_lang = await self._tr.detect_language(to_translate)
-            await self.stats_counter.add_detect(guild)
+            detected_lang = await self._tr.detect_language(to_translate, guild=interaction.guild)
         except GoogleTranslateAPIError:
             return
         except Exception:
@@ -344,21 +416,24 @@ class GoogleTranslateAPI:
             )
             return
         try:
-            translated_text = await self._tr.translate_text(target, to_translate, str(from_lang))
-            await self.stats_counter.add_requests(guild, to_translate)
+            translated_text = await self._tr.translate_text(
+                target, to_translate, str(from_lang), guild=interaction.guild
+            )
         except Exception:
             log.exception(f"Error translating message {guild=} {interaction.channel=}")
             return
         if not translated_text:
             return
         # translation = (translated_text, from_lang, to_lang)
-        em = translated_text.embed(author, from_lang, to_lang, interaction.user)
-        await interaction.followup.send(embed=em, ephemeral=True)
+        ems = translated_text.embeds(author, from_lang, to_lang, interaction.user)
+        ctx = await interaction.client.get_context(interaction)
+        await SimpleMenu(ems).start(ctx)
+        # await interaction.followup.send(embed=em, ephemeral=True)
 
     @tasks.loop(seconds=120)
     async def translation_loop(self):
         self.cache["translations"] = []
-        await self.stats_counter.save()
+        await self._tr.stats_counter.save()
 
     async def check_bw_list(
         self,
@@ -441,19 +516,15 @@ class GoogleTranslateAPI:
         cooldown["past_flags"].append(str(flag))
         self.cache["cooldown_translations"][message.id] = cooldown
 
-        em = await self.translate_message(message, to_lang=None, flag=str(flag))
-        if em is None:
+        msgs = await self.translate_message(message, to_lang=None, flag=str(flag))
+        if not msgs:
             return
-        translated_text = em.description
-        if await self.bot.embed_requested(channel):
-            translated_msg = await channel.send(embed=em, reference=message, mention_author=False)
-        else:
-            msg = _("{author}:\n{translated_text}").format(
-                author=author, translated_text=translated_text
-            )
-            translated_msg = await channel.send(msg, reference=message, mention_author=False)
+        ctx = await self.bot.get_context(message)
+        if not await ctx.embed_requested():
+            msgs = [f"{author}:\n{translated_text.description}" for translated_text in msgs]
+        await SimpleMenu(msgs).start(ctx)
         if not cooldown["multiple"]:
-            self.cache["translations"].append(translated_msg.id)
+            self.cache["translations"].append(message.id)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
@@ -464,39 +535,51 @@ class GoogleTranslateAPI:
         if payload.message_id in self.cache["translations"]:
             return
         if str(payload.emoji) not in FLAGS:
+            log.debug("Emoji is not in the flags")
             return
-        if self._tr is None:
+        if not self._tr.has_token:
+            log.debug("Bot owner token has not been set")
             return
         if payload.guild_id is None:
+            log.debug("We don't support reaction translations in dms")
             return
         guild = self.bot.get_guild(payload.guild_id)
         if guild is None:
+            log.debug("The guild cannot be found")
             return
         channel = guild.get_channel(payload.channel_id)
         if channel is None:
+            log.debug("The channel cannot be found")
             return
         if await self.bot.cog_disabled_in_guild(self, guild):
+            log.debug("The cog is disabled in this guild")
             return
-        reacted_user = guild.get_member(payload.user_id)
+        reacted_user = payload.member or guild.get_member(payload.user_id)
         if reacted_user is None or reacted_user.bot:
+            log.debug("The User reacting cannot be found or is a bot user")
             return
         if not await self.check_bw_list(guild, channel, reacted_user):
+            log.debug("The User reacting  did so in a blocked channel or is blocked themselves")
             return
         if not await self._check_cooldown(payload.message_id, FLAGS[str(payload.emoji)]["code"]):
+            log.debug("This message has hit the cooldown checks")
             return
 
         if guild.id not in self.cache["guild_reactions"]:
             if not await self.config.guild(guild).reaction():
+                log.debug("This server has not opted for reaction translations")
                 return
             else:
                 self.cache["guild_reactions"].append(guild.id)
         try:
             message = await channel.fetch_message(payload.message_id)
         except (discord.errors.NotFound, discord.Forbidden):
+            log.debug("The message could not be found")
             return
-
-        if guild.get_member(message.author.id):
+        message_author = guild.get_member(message.author.id)
+        if message_author and not message_author.bot:
             if not await self.bot.message_eligible_as_command(message):
+                log.debug("The message is not eligable as a command")
                 return
 
         if message.id not in self.cache["cooldown_translations"]:
@@ -509,23 +592,20 @@ class GoogleTranslateAPI:
         cooldown["past_flags"].append(str(payload.emoji))
         self.cache["cooldown_translations"][message.id] = cooldown
 
-        em = await self.translate_message(
+        msgs = await self.translate_message(
             message, to_lang=None, flag=str(payload.emoji), reacted_user=reacted_user
         )
-        if em is None:
+        if msgs is None:
+            log.debug("The translation failed")
             return
         channel = message.channel
         author = message.author
-        translated_text = em.description
-        if await self.bot.embed_requested(message.channel):
-            translated_msg = await channel.send(embed=em, reference=message, mention_author=False)
-        else:
-            msg = _("{author}:\n{translated_text}").format(
-                author=author, translated_text=translated_text
-            )
-            translated_msg = await channel.send(msg, reference=message, mention_author=False)
+        ctx = await self.bot.get_context(message)
+        if not await ctx.embed_requested():
+            msgs = [f"{author}:\n{translated_text.description}" for translated_text in msgs]
+        await SimpleMenu(msgs).start(ctx)
         if not cooldown["multiple"]:
-            self.cache["translations"].append(translated_msg.id)
+            self.cache["translations"].append(message.id)
 
     async def _check_cooldown(self, message: Union[discord.Message, int], lang: str) -> bool:
         if isinstance(message, int):
@@ -548,7 +628,7 @@ class GoogleTranslateAPI:
         to_lang: Optional[str] = None,
         flag: Optional[str] = None,
         reacted_user: Optional[discord.Member] = None,
-    ) -> Optional[discord.Embed]:
+    ) -> List[discord.Embed]:
         to_translate = None
         if message.embeds != []:
             if message.embeds[0].description:
@@ -557,40 +637,40 @@ class GoogleTranslateAPI:
             to_translate = message.clean_content
 
         if not to_translate:
-            return
+            return []
         if flag is not None:
             num_emojis = 0
             for reaction in message.reactions:
                 if reaction.emoji == str(flag):
                     num_emojis = reaction.count
             if num_emojis > 1:
-                return
+                return []
             to_lang = FLAGS[str(flag)]["code"]
         try:
-            detected_lang = await self._tr.detect_language(to_translate)
-            await self.stats_counter.add_detect(message.guild)
+            detected_lang = await self._tr.detect_language(to_translate, guild=message.guild)
         except GoogleTranslateAPIError:
-            return
+            return []
         except Exception:
             log.exception("Error detecting language")
-            return
+            return []
         original_lang = str(detected_lang)
         if original_lang is None:
-            return
+            return []
         author = message.author
         from_lang = str(detected_lang)
         if from_lang == to_lang:
             # don't post anything if the detected language is the same
-            return
+            return []
         try:
-            translated_text = await self._tr.translate_text(to_lang, to_translate, original_lang)
-            await self.stats_counter.add_requests(message.guild, to_translate)
+            translated_text = await self._tr.translate_text(
+                to_lang, to_translate, original_lang, guild=message.guild
+            )
         except Exception:
             log.exception(f"Error translating message {message.guild=} {message.channel=}")
-            return
+            return []
         if not translated_text:
-            return
-        return translated_text.embed(author, from_lang, to_lang, reacted_user)
+            return []
+        return translated_text.embeds(author, from_lang, to_lang, reacted_user)
 
     @commands.Cog.listener()
     async def on_red_api_tokens_update(
