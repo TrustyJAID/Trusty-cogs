@@ -847,7 +847,6 @@ class SpotifyCommands(SpotifyMixin):
             user_token = await self.get_user_auth(ctx)
             if not user_token:
                 return await self.no_user_token(ctx)
-            await ctx.defer()
             try:
                 user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
