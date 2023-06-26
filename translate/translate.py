@@ -184,6 +184,8 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         for key, value in guild_settings.items():
             if key == "count":
                 continue
+            if key not in add_keys:
+                continue
             key_name = add_keys[key]
             value_str = str(value)
             if key in ("whitelist", "blacklist"):
