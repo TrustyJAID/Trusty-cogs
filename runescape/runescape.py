@@ -18,6 +18,7 @@ from .profile import (
     PlayerDetails,
     PrivateProfileError,
     Profile,
+    RuneGoldberg,
     WildernessFlashEvents,
 )
 
@@ -38,7 +39,7 @@ class Runescape(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.4.0"
+    __version__ = "1.4.1"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -194,46 +195,13 @@ class Runescape(commands.Cog):
 
         https://runescape.wiki/w/Rune_Goldberg_Machine
         """
-        async with ctx.typing():
-            today = datetime.now(timezone.utc).replace(minute=0)
-            daily = today + timedelta(hours=((0 - today.hour) % 24))
-            wiki_url = "https://runescape.wiki/api.php"
-            params = {
-                "action": "parse",
-                "page": "Rune_Goldberg_Machine",
-                "section": "1",
-                "prop": "wikitext",
-                "format": "json",
-            }
-            async with self.session.get(wiki_url, params=params) as r:
-                if r.status == 200:
-                    data = await r.json()
-                else:
-                    await ctx.send(
-                        "I could not find the curren vis wax combinations on the Runescape Wiki."
-                    )
-                    return
-            wikitext = data["parse"]["wikitext"]["*"]
-            rune_re = re.compile(r"({{[^||]+\|([a-zA-Z ]+)\|[^||]+}})")
-            # date_re = re.compile(r"date=(.+)\|")
-            # date = date_re.search(wikitext)
-            slot_1 = []
-            slot_2 = [[], [], []]
-            count = 0
-            for rune in rune_re.finditer(wikitext):
-                if len(slot_1) < 3:
-                    slot_1.append(bold(rune.group(2)))
-                else:
-                    if count == 3:
-                        count = 0
-                    slot_2[count].append(bold(rune.group(2)))
-                    count += 1
-            _from = "\n" + wikitext.split("|")[-2]
-            msg = f"Runescape Vis Wax Refreshes <t:{int(daily.timestamp())}:R>:\n"
-            for i in range(len(slot_1)):
-                msg += f"__Combination {i+1}__: {slot_1[i]} and either {humanize_list(slot_2[i], style='or')}\n"
-            msg += _from + "\nhttps://runescape.wiki/w/Rune_Goldberg_Machine"
-        await ctx.maybe_send_embed(msg)
+        await ctx.typing()
+        rgb = RuneGoldberg()
+        if await ctx.embed_requested():
+            em = rgb.embed()
+            await ctx.send(embed=em)
+        else:
+            await ctx.send(str(rgb))
 
     @runescape.command(name="nemiforest", aliases=["nemi", "forest"])
     async def runescape_nemiforest(self, ctx: commands.Context):
@@ -609,7 +577,7 @@ class Runescape(commands.Cog):
             use_links = await ctx.embed_requested()
             msg = "## Wilderness Flash Event Schedule\n"
             max_spaces = 26
-            today = datetime.now(timezone.utc).replace(minute=0, second=0)
+            today = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
             for event in sorted(
                 [e for e in WildernessFlashEvents], key=lambda x: x.get_next(today)
             ):
