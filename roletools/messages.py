@@ -114,7 +114,7 @@ class RoleToolsMessages(RoleToolsMixin):
             elif isinstance(c, ButtonRole):
                 existing = self.settings[guild_id]["buttons"].get(c.name, {})
                 if message_key in existing.get("messages", []):
-                    self.settings[guild_id]["select_menus"][c.name]["messages"].remove(message_key)
+                    self.settings[guild_id]["buttons"][c.name]["messages"].remove(message_key)
         await self.config.guild_from_id(guild_id).buttons.set(self.settings[guild_id]["buttons"])
         await self.config.guild_from_id(guild_id).select_menus.set(
             self.settings[guild_id]["select_menus"]
