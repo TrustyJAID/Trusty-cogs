@@ -164,7 +164,7 @@ class Memes(discord.app_commands.Transformer):
                 # this shouldn't happen
             await self.get_memes(cog.session)
         if not argument.isdigit():
-            for memes in self.meme_list:
+            for memes in self.meme_list.values():
                 if argument.lower() in memes.name.lower():
                     result = memes
             if result is None:
