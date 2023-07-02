@@ -219,28 +219,32 @@ class EventMixin:
             can_run=can_run, can_see=can_see
         )
         logger.verbose("on_command name: %s", ctx.command.qualified_name)
-        parent = ""
         if ctx.interaction:
-            app_commands = await ctx.bot.list_enabled_app_commands()
-            all_commands = {com: _id for k in app_commands.values() for com, _id in k.items()}
-
-            parent = ctx.command.app_command.qualified_name
-            command_str = f"{ctx.clean_prefix}{parent}"
-            try:
-                root_parent = parent.split(" ")[0]
-            except IndexError:
-                root_parent = parent
-            if root_parent in all_commands:
-                com_id = all_commands[root_parent]
-                command_str = f"</{parent}:{com_id}>"
-
-            kwargs = " ".join(f"{k}: {v}" for k, v in ctx.kwargs.items() if v is not None)
-            args = " ".join(
-                str(v)
-                for v in ctx.args
-                if v and not isinstance(v, (commands.Cog, commands.Context))
-            )
-            com_str = f"{command_str} {args} {kwargs}"
+            data = ctx.interaction.data
+            com_id = data.get("id")
+            root_command = data.get("name")
+            sub_commands = ""
+            arguments = ""
+            for option in data.get("options", []):
+                if option["type"] in (1, 2):
+                    sub_commands += " " + option["name"]
+                else:
+                    option_name = option["name"]
+                    option_value = option.get("value")
+                    arguments += f"{option_name}: {option_value}"
+                for sub_option in option.get("options", []):
+                    if sub_option["type"] in (1, 2):
+                        sub_commands += " " + sub_option["name"]
+                    else:
+                        sub_option_name = sub_option.get("name")
+                        sub_option_value = sub_option.get("value")
+                        arguments += f"{sub_option_name}: {sub_option_value}"
+                    for arg in sub_option.get("options", []):
+                        arg_option_name = arg.get("name")
+                        arg_option_value = arg.get("value")
+                        arguments += f"{arg_option_name}: {arg_option_value} "
+            command_name = f"{root_command}{sub_commands}"
+            com_str = f"</{command_name}:{com_id}> {arguments}"
         else:
             com_str = ctx.message.content
         try:
