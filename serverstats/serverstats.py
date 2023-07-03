@@ -20,11 +20,16 @@ from redbot.core.utils.chat_formatting import (
     humanize_timedelta,
     pagify,
 )
-from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 
 from .converters import GuildConverter, MultiGuildConverter, PermissionConverter
-from .menus import AvatarPages, BaseView, GuildPages, ListPages, TopMemberPages
+from .menus import (
+    AvatarPages,
+    BaseView,
+    ConfirmView,
+    GuildPages,
+    ListPages,
+    TopMemberPages,
+)
 
 _ = Translator("ServerStats", __file__)
 log = getLogger("red.trusty-cogs.ServerStats")
@@ -38,7 +43,7 @@ class ServerStats(commands.GroupCog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.7.3"
+    __version__ = "1.7.4"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -137,27 +142,33 @@ class ServerStats(commands.GroupCog):
             return "{0:.1f}{1}".format(num, "YB")
 
         def _bitsize(num):
-            for unit in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
+            for unit in ["bps", "kbps", "Mbps", "Gbps", "Tbps", "Pbps", "Ebps", "Zbps"]:
                 if abs(num) < 1000.0:
                     return "{0:.1f}{1}".format(num, unit)
                 num /= 1000.0
-            return "{0:.1f}{1}".format(num, "YB")
+            return "{0:.1f} {1}".format(num, "Ybps")
 
         created_at = _("Created on {date}. That's over {num}!").format(
             date=bold(f"<t:{int(guild.created_at.timestamp())}:D>"),
             num=bold(f"<t:{int(guild.created_at.timestamp())}:R>"),
         )
-        total_users = humanize_number(guild.member_count)
+        total_users = humanize_number(guild.member_count or len(guild.members))
         try:
             joined_at = guild.me.joined_at
         except AttributeError:
+            joined_at = None
+        if joined_at is None:
             joined_at = datetime.now(timezone.utc)
-        bot_joined = f"<t:{int(joined_at.timestamp())}:D>"
-        since_joined = f"<t:{int(joined_at.timestamp())}:R>"
+        bot_joined = discord.utils.format_dt(
+            joined_at, "D"
+        )  # f"<t:{int(joined_at.timestamp())}:D>"
+        since_joined = discord.utils.format_dt(
+            joined_at, "R"
+        )  # f"<t:{int(joined_at.timestamp())}:R>"
         joined_on = _(
             "**{bot_name}** joined this server on **{bot_join}**.\n"
             "That's over **{since_join}**!"
-        ).format(bot_name=self.bot.user.mention, bot_join=bot_joined, since_join=since_joined)
+        ).format(bot_name=guild.me.mention, bot_join=bot_joined, since_join=since_joined)
 
         shard = (
             _("\nShard ID: **{shard_id}/{shard_count}**").format(
@@ -227,11 +238,11 @@ class ServerStats(commands.GroupCog):
             "WELCOME_SCREEN_ENABLED": _("Welcome Screen enabled"),
         }
         guild_features_list = [
-            f"✅ {name}" for feature, name in features.items() if feature in guild.features
+            f"- {name}" for feature, name in features.items() if feature in guild.features
         ]
 
         em = discord.Embed(
-            description=(f"{guild.description}\n\n" if guild.description else "")
+            description=(f"> {bold(guild.description)}\n\n" if guild.description else "")
             + f"{created_at}\n{joined_on}",
             colour=colour,
         )
@@ -239,8 +250,10 @@ class ServerStats(commands.GroupCog):
         if "VERIFIED" in guild.features:
             author_icon = "https://cdn.discordapp.com/emojis/457879292152381443.png"
         if "PARTNERED" in guild.features:
-            author_icon = "https://cdn.discordapp.com/emojis/508929941610430464.png"
-        guild_icon = "https://cdn.discordapp.com/embed/avatars/1.png"
+            author_icon = (
+                "https://cdn.discordapp.com/badge-icons/3f9748e53446a137a052f3454e2de41e.png"
+            )
+        guild_icon = "https://cdn.discordapp.com/embed/avatars/5.png"
         if guild.icon:
             guild_icon = guild.icon
         em.set_author(
@@ -248,25 +261,7 @@ class ServerStats(commands.GroupCog):
             icon_url=author_icon,
             url=guild_icon,
         )
-        em.set_thumbnail(
-            url=guild.icon if guild.icon else "https://cdn.discordapp.com/embed/avatars/1.png"
-        )
-        em.add_field(name=_("Members:"), value=member_msg)
-        em.add_field(
-            name=_("Channels:"),
-            value=_(
-                "\N{SPEECH BALLOON} Text: {text}\n{nsfw}"
-                "\N{SPEAKER WITH THREE SOUND WAVES} Voice: {voice}"
-            ).format(
-                text=bold(humanize_number(text_channels)),
-                nsfw=_("\N{NO ONE UNDER EIGHTEEN SYMBOL} Nsfw: {}\n").format(
-                    bold(humanize_number(nsfw_channels))
-                )
-                if nsfw_channels
-                else "",
-                voice=bold(humanize_number(voice_channels)),
-            ),
-        )
+        em.set_thumbnail(url=guild.icon)
         owner = guild.owner if guild.owner else await self.bot.get_or_fetch_user(guild.owner_id)
         em.add_field(
             name=_("Utility:"),
@@ -281,34 +276,57 @@ class ServerStats(commands.GroupCog):
             ),
             inline=False,
         )
+        em.add_field(name=_("Members:"), value=member_msg)
+        em.add_field(
+            name=_("Channels:"),
+            value=_(
+                "\N{SPEECH BALLOON} Text: {text}\n{nsfw}"
+                "\N{NEWSPAPER} Forums: {forum}\n\N{SPOOL OF THREAD} Threads: {threads}\n"
+                "\N{SPEAKER WITH THREE SOUND WAVES} Voice: {voice}\n"
+                "\N{MICROPHONE} Stage: {stage}"
+            ).format(
+                text=bold(humanize_number(text_channels)),
+                forum=bold(humanize_number(len(guild.forums))),
+                threads=bold(humanize_number(len(guild.threads))),
+                nsfw=_("\N{NO ONE UNDER EIGHTEEN SYMBOL} Nsfw: {}\n").format(
+                    bold(humanize_number(nsfw_channels))
+                )
+                if nsfw_channels
+                else "",
+                voice=bold(humanize_number(voice_channels)),
+                stage=bold(humanize_number(len(guild.stage_channels))),
+            ),
+        )
+
         em.add_field(
             name=_("Misc:"),
-            value=_(
-                "AFK channel: {afk_chan}\nAFK timeout: {afk_timeout}\nCustom emojis: {emojis}\nRoles: {roles}"
-            ).format(
+            value=_("AFK channel: {afk_chan}\nAFK timeout: {afk_timeout}\nRoles: {roles}").format(
                 afk_chan=bold(str(guild.afk_channel)) if guild.afk_channel else bold(_("Not set")),
                 afk_timeout=bold(humanize_timedelta(seconds=guild.afk_timeout)),
-                emojis=bold(humanize_number(len(guild.emojis))),
                 roles=bold(humanize_number(len(guild.roles))),
             ),
-            inline=False,
         )
+        nitro_boost = _(
+            "Tier {boostlevel} with {nitroboosters} boosters\n"
+            "File size limit: {filelimit}\n"
+            "Emoji limit: {emojis_limit}\n"
+            "Sticker limit: {sticker_limit}\n"
+            "VCs max bitrate: {bitrate}"
+        ).format(
+            boostlevel=bold(str(guild.premium_tier)),
+            nitroboosters=bold(humanize_number(guild.premium_subscription_count)),
+            filelimit=bold(_size(guild.filesize_limit)),
+            emojis_limit=bold(f"{len(guild.emojis)}/{guild.emoji_limit}"),
+            sticker_limit=bold(f"{len(guild.stickers)}/{guild.sticker_limit}"),
+            bitrate=bold(_bitsize(guild.bitrate_limit)),
+        )
+        em.add_field(name=_("Nitro Boost:"), value=nitro_boost)
         if guild_features_list:
             em.add_field(name=_("Server features:"), value="\n".join(guild_features_list))
-        if guild.premium_tier != 0:
-            nitro_boost = _(
-                "Tier {boostlevel} with {nitroboosters} boosters\n"
-                "File size limit: {filelimit}\n"
-                "Emoji limit: {emojis_limit}\n"
-                "VCs max bitrate: {bitrate}"
-            ).format(
-                boostlevel=bold(str(guild.premium_tier)),
-                nitroboosters=bold(humanize_number(guild.premium_subscription_count)),
-                filelimit=bold(_size(guild.filesize_limit)),
-                emojis_limit=bold(str(guild.emoji_limit)),
-                bitrate=bold(_bitsize(guild.bitrate_limit)),
-            )
-            em.add_field(name=_("Nitro Boost:"), value=nitro_boost)
+        if guild.vanity_url:
+            # you can only have a vanity URL in expected public servers
+            em.add_field(name=_("Vanity URL:"), value=guild.vanity_url, inline=False)
+
         if guild.splash:
             em.set_image(url=guild.splash.url)
         return em
@@ -746,6 +764,7 @@ class ServerStats(commands.GroupCog):
         pass
 
     @pruneroles.command()
+    @commands.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def list(self, ctx: commands.Context, days: int, role: discord.Role = None) -> None:
         """
@@ -813,24 +832,19 @@ class ServerStats(commands.GroupCog):
         - `[reinvite=True]` True/False whether to try to send the user a message before kicking
         """
         if days < 1:
-            return await ctx.send(_("You must provide a value of more than 0 days."))
+            await ctx.send(_("You must provide a value of more than 0 days."))
+            return
         if role is not None and role >= ctx.me.top_role:
-            msg = _("That role is higher than my " "role so I cannot kick those members.")
+            msg = _("That role is higher than my role so I cannot kick those members.")
             await ctx.send(msg)
             return
         member_list = await self.get_members_since(ctx, days, role)
-        send_msg = str(len(member_list)) + _(
-            " estimated users to kick. " "Would you like to kick them?"
-        )
-        msg = await ctx.send(send_msg)
-        pred = ReactionPredicate.yes_or_no(msg, ctx.author)
-        start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-
-        try:
-            await self.bot.wait_for("reaction_add", check=pred, timeout=60)
-        except asyncio.TimeoutError:
-            await ctx.send(_("I guess not."), delete_after=30)
-            return
+        send_msg = _(
+            "{num} estimated users to give the role. Would you like to reassign their roles now?"
+        ).format(num=str(len(member_list)))
+        pred = ConfirmView(ctx.author)
+        pred.message = await ctx.send(send_msg, view=pred)
+        await pred.wait()
         if pred.result is True:
             link = await self.ask_for_invite(ctx)
             no_invite = []
@@ -845,7 +859,7 @@ class ServerStats(commands.GroupCog):
                 msg = str(len(no_invite)) + _(" users could not be DM'd an invite link")
                 await ctx.send(msg)
         else:
-            await ctx.send(_("I guess not."), delete_after=30)
+            await ctx.send(_("I guess not."))
             return
         await ctx.send(_("Done."))
 
@@ -860,7 +874,8 @@ class ServerStats(commands.GroupCog):
         - `[new_roles...]` The new roles to apply to a user who is inactive
         """
         if days < 1:
-            return await ctx.send(_("You must provide a value of more than 0 days."))
+            await ctx.send(_("You must provide a value of more than 0 days."))
+            return
         if any([r >= ctx.me.top_role for r in new_roles]):
             msg = _(
                 "At least one of those roles is higher than my "
@@ -869,24 +884,25 @@ class ServerStats(commands.GroupCog):
             await ctx.send(msg)
             return
         member_list = await self.get_members_since(ctx, days, None)
-        send_msg = str(len(member_list)) + _(
-            " estimated users to give the role. " "Would you like to reassign their roles now?"
-        )
-        msg = await ctx.send(send_msg)
-        pred = ReactionPredicate.yes_or_no(msg, ctx.author)
-        start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-
-        try:
-            await self.bot.wait_for("reaction_add", check=pred, timeout=60)
-        except asyncio.TimeoutError:
-            await ctx.send(_("I guess not."), delete_after=30)
-            return
+        send_msg = _(
+            "{num} estimated users to give the role. Would you like to reassign their roles now?"
+        ).format(num=str(len(member_list)))
+        pred = ConfirmView(ctx.author)
+        pred.message = await ctx.send(send_msg, view=pred)
+        await pred.wait()
         if pred.result is True:
             for member in member_list:
-                roles = list(set(member.roles + list(new_roles)))
-                await member.edit(roles=roles, reason=_("Given role due to inactivity."))
+                # roles = list(set(member.roles + list(new_roles)))
+                try:
+                    await member.add_roles(*new_roles, reason=_("Given role due to inactivity."))
+                except discord.Forbidden:
+                    log.debug("Could not find member %s, have they left the guild?", member)
+                except Exception:
+                    log.debug(
+                        "Error editing %s roles for activity, have they left the guild?", member
+                    )
         else:
-            await ctx.send(_("I guess not."), delete_after=30)
+            await ctx.send(_("I guess not."))
             return
         await ctx.send(_("Done."))
 
@@ -901,7 +917,8 @@ class ServerStats(commands.GroupCog):
         - `[removed_roles...]` the roles to remove from inactive users.
         """
         if days < 1:
-            return await ctx.send(_("You must provide a value of more than 0 days."))
+            await ctx.send(_("You must provide a value of more than 0 days."))
+            return
         if any([r >= ctx.me.top_role for r in removed_roles]):
             msg = _(
                 "At least one of those roles is higher than my "
@@ -910,25 +927,26 @@ class ServerStats(commands.GroupCog):
             await ctx.send(msg)
             return
         member_list = await self.get_members_since(ctx, days, removed_roles)
-        send_msg = str(len(member_list)) + _(
-            " estimated users to remove their roles. "
-            "Would you like to reassign their roles now?"
-        )
-        msg = await ctx.send(send_msg)
-        pred = ReactionPredicate.yes_or_no(msg, ctx.author)
-        start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-
-        try:
-            await self.bot.wait_for("reaction_add", check=pred, timeout=60)
-        except asyncio.TimeoutError:
-            await ctx.send(_("I guess not."), delete_after=30)
-            return
+        send_msg = _(
+            "{num} estimated users to give the role. Would you like to reassign their roles now?"
+        ).format(num=str(len(member_list)))
+        pred = ConfirmView(ctx.author)
+        pred.message = await ctx.send(send_msg, view=pred)
+        await pred.wait()
         if pred.result is True:
             for member in member_list:
-                roles = list(set(member.roles) - set(removed_roles))
-                await member.edit(roles=roles, reason=_("Roles removed due to inactivity."))
+                try:
+                    await member.remove_roles(
+                        *removed_roles, reason=_("Roles removed due to inactivity.")
+                    )
+                except discord.Forbidden:
+                    log.debug("Could not find member %s, have they left the guild?", member)
+                except Exception:
+                    log.exception(
+                        "Error editing %s roles for activity, have they left the guild?", member
+                    )
         else:
-            await ctx.send(_("I guess not."), delete_after=30)
+            await ctx.send(_("I guess not."))
             return
         await ctx.send(_("Done."))
 
@@ -1350,13 +1368,14 @@ class ServerStats(commands.GroupCog):
 
     @staticmethod
     async def confirm_leave_guild(ctx: commands.Context, guild) -> None:
-        await ctx.send(
+        pred = ConfirmView(ctx.author)
+        pred.message = await ctx.send(
             _("Are you sure you want me to leave {guild}? (reply yes or no)").format(
                 guild=guild.name
-            )
+            ),
+            view=pred,
         )
-        pred = MessagePredicate.yes_or_no(ctx)
-        await ctx.bot.wait_for("message", check=pred)
+        await pred.wait()
         if pred.result is True:
             try:
                 await ctx.send(_("Leaving {guild}.").format(guild=guild.name))
@@ -1677,21 +1696,21 @@ class ServerStats(commands.GroupCog):
         Note: This is a very slow function and may take some time to complete
         """
 
-        warning_msg = await ctx.send(
-            _(
-                "This can take a long time to gather all information for the first time! Are you sure you want to continue?"
-            )
+        warning_msg = _(
+            "This can take a long time to gather all information for the first time! Are you sure you want to continue?"
         )
-        pred = ReactionPredicate.yes_or_no(warning_msg, ctx.author)
-        start_adding_reactions(warning_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-
-        try:
-            await self.bot.wait_for("reaction_add", check=pred, timeout=60)
-        except asyncio.TimeoutError:
-            await ctx.send(_("I guess not."), delete_after=30)
-            return
+        pred = ConfirmView(ctx.author)
+        # To anyone looking, this is intentionally red.
+        # Testing this command in Red's #testing channel with over 2 million
+        # messages took the bot nearly 2 days and still did not finish collecting
+        # all the data. Therefore, I really don't want people doing this
+        # if they're not prepared for it.
+        pred.confirm_button.style = discord.ButtonStyle.red
+        pred.message = await ctx.send(warning_msg, view=pred)
+        await pred.wait()
         if not pred.result:
-            return await ctx.send(_("Alright I will not gather data."))
+            await ctx.send(_("Alright I will not gather data."))
+            return
         async with ctx.channel.typing():
             guild_data = await self.get_server_stats(ctx.guild)
             channel_messages = []
@@ -1757,19 +1776,18 @@ class ServerStats(commands.GroupCog):
         `limit` must be a number of messages to check, defaults to all messages
         Note: This can be a very slow function and may take some time to complete
         """
-        warning_msg = await ctx.send(
-            _(
-                "This can take a long time to gather all information for the first time! Are you sure you want to continue?"
-            )
+        warning_msg = _(
+            "This can take a long time to gather all information for the first time! Are you sure you want to continue?"
         )
-        pred = ReactionPredicate.yes_or_no(warning_msg, ctx.author)
-        start_adding_reactions(warning_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-
-        try:
-            await self.bot.wait_for("reaction_add", check=pred, timeout=60)
-        except asyncio.TimeoutError:
-            await ctx.send(_("I guess not."), delete_after=30)
-            return
+        pred = ConfirmView(ctx.author)
+        # To anyone looking, this is intentionally red.
+        # Testing this command in Red's #testing channel with over 2 million
+        # messages took the bot nearly 2 days and still did not finish collecting
+        # all the data. Therefore, I really don't want people doing this
+        # if they're not prepared for it.
+        pred.confirm_button.style = discord.ButtonStyle.red
+        pred.message = await ctx.send(warning_msg, view=pred)
+        await pred.wait()
         if not pred.result:
             return await ctx.send(_("Alright I will not gather data."))
         if not channel:
