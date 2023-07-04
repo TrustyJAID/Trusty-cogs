@@ -29,12 +29,12 @@ class TMSTransformer(discord.app_commands.Transformer):
         return await self.convert(ctx, argument)
 
     async def autocomplete(
-        self, interaction: discord.Interaction, argument: str
+        self, interaction: discord.Interaction, current: str
     ) -> List[discord.app_commands.Choice]:
         choices = [
-            discord.app_commands.Choice(name=name, value=e.value)
+            discord.app_commands.Choice(name=name, value=str(e.value))
             for e, name in TMSItems.names().items()
-            if argument.lower() in name.lower()
+            if current.lower() in name.lower()
         ]
         return choices[:25]
 
