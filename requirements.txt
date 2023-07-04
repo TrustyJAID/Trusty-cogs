@@ -16,7 +16,6 @@ skyfield
 tabulate
 tekore
 tweepy[async]>=4.10.0
-Unidecode
 unidecode
 wand
 yt-dlp
