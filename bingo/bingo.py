@@ -24,7 +24,7 @@ IMAGE_LINKS: Pattern = re.compile(
 
 
 class Bingo(commands.Cog):
-    __version__ = "1.2.0"
+    __version__ = "1.2.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -438,7 +438,7 @@ class Bingo(commands.Cog):
         credit_font = ImageFont.truetype(font=font_path, size=10)
         draw.text(
             (690, 975),
-            f"Bingo Cog written by TrustyJAID#0001\nBingo card colours and images provided by {guild_name} moderators",
+            f"Bingo Cog written by @trustyjaid\nBingo card colours and images provided by {guild_name} moderators",
             fill=text_colour,
             stroke_width=1,
             align="right",
@@ -520,7 +520,7 @@ class Bingo(commands.Cog):
                     text = text[:57] + "..."
 
                 lines = textwrap.wrap(text, width=13)
-                font_height = font2.getsize(text)[1]
+                font_height = font2.getbbox(text)[3] - font2.getbbox(text)[1]
                 text_x = x0 + int(scale / 2)
                 if len(lines) > 1:
                     text_y = y0 + (int(scale / 2) - ((len(lines) / 3) * font_height))
