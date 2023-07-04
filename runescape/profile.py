@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import json
-import math
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, NamedTuple, Optional, Tuple, Union
 
@@ -15,209 +14,9 @@ from red_commons.logging import getLogger
 from redbot.core.utils.chat_formatting import humanize_number, pagify
 from tabulate import tabulate
 
-HEADERS = {"User-Agent": f"Red-DiscordBot Trusty-cogs Runescape Cog"}
+from .helpers import HEADERS
 
 log = getLogger("red.trusty-cogs.runescape")
-
-
-RUNEDATE_EPOCH = datetime(year=2002, month=2, day=27, hour=0, tzinfo=timezone.utc)
-
-
-def get_runedate(date: Optional[datetime] = None) -> float:
-    if date is None:
-        date = datetime.now(timezone.utc)
-    return (date - RUNEDATE_EPOCH).total_seconds() / (60 * 60 * 24)
-
-
-class Runes(Enum):
-    air = 0
-    water = 1
-    earth = 2
-    fire = 3
-    dust = 4
-    lava = 5
-    mist = 6
-    mud = 7
-    smoke = 8
-    steam = 9
-    mind = 10
-    body = 11
-    cosmic = 12
-    chaos = 13
-    nature = 14
-    law = 15
-    death = 16
-    astral = 17
-    blood = 18
-    soul = 19
-
-    @property
-    def image(self):
-        return f"https://runescape.wiki/images/{self.name.title()}_rune.png"
-
-    @property
-    def amount(self) -> int:
-        """
-        Amount of runes for each selection on the machine
-
-        Only really useful for calculating effective cost
-        """
-        return {
-            Runes.air: 1000,
-            Runes.water: 1000,
-            Runes.earth: 1000,
-            Runes.fire: 1000,
-            Runes.dust: 500,
-            Runes.lava: 500,
-            Runes.mist: 500,
-            Runes.mud: 300,
-            Runes.smoke: 500,
-            Runes.steam: 500,
-            Runes.mind: 2000,
-            Runes.body: 2000,
-            Runes.cosmic: 400,
-            Runes.chaos: 500,
-            Runes.nature: 350,
-            Runes.law: 300,
-            Runes.death: 400,
-            Runes.astral: 300,
-            Runes.blood: 350,
-            Runes.soul: 300,
-        }[self]
-
-
-class JavaLCG:
-    """
-    Java's Random() partially implemented in Python
-    https://docs.oracle.com/javase/8/docs/api/java/util/Random.html
-    """
-
-    def __init__(self, seed: int):
-        self.set_seed(seed)
-
-    def next(self, bits: int) -> int:
-        self.seed = (self.seed * 0x5DEECE66D + 0xB) & ((1 << 48) - 1)
-        return self._rshift(self.seed, (48 - bits))
-
-    def next_int(self, n: Optional[int]) -> int:
-        if n is None:
-            return self.next(32)
-        if n <= 0:
-            raise ValueError
-        if (n & -n) == n:
-            return n * self.next(31) >> 31
-        bits = self.next(31)
-        val = bits % n
-        while bits - val + (n - 1) < 0:
-            bits = self.next(31)
-            val = bits % n
-        return val
-
-    def set_seed(self, seed: int):
-        self.seed = (seed ^ 0x5DEECE66D) & ((1 << 48) - 1)
-        return self.seed
-
-    @staticmethod
-    def _rshift(val: int, n: int) -> int:
-        # print(f"{val=} {n=}")
-        # https://stackoverflow.com/a/5833119
-        n = val >> n
-        # https://stackoverflow.com/a/37095855/4438492
-        n = n & 0xFFFFFFFF
-        return n | (-(n & 0x80000000))
-
-
-class RuneGoldberg:
-    def __init__(self, *, runedate: Optional[float] = None, date_time: Optional[datetime] = None):
-        if runedate is None:
-            runedate = get_runedate(date_time)
-
-        self.slot1: Runes = self.get_slot1(int(runedate))
-        self.slot2: List[Runes] = self.get_slot2(int(runedate))
-        self.runedate = runedate
-
-    def __str__(self):
-        today = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
-        daily = today + timedelta(hours=((0 - today.hour) % 24))
-        msg = f"## Runescape Vis Wax Refreshes <t:{int(daily.timestamp())}:R>\n"
-        msg += f"- Slot 1:\n - {self.slot1.name.title()} Rune\n"
-        msg += "- Slot 2:\n"
-        for r in self.slot2:
-            msg += f" - {r.name.title()} Rune\n"
-        msg += "https://runescape.wiki/w/Rune_Goldberg_Machine"
-        return msg
-
-    def get_slot1(self, runedate: int) -> Runes:
-        return Runes(JavaLCG(int(runedate) << 32).next_int(19) % 19)
-
-    def get_slot2(self, runedate: int) -> List[Runes]:
-        slot_2_params = [[2, -2], [3, -1], [4, 2]]
-        slot_2_best = []
-        for slot in slot_2_params:
-            multiplier = slot[0]
-            final_offset = slot[1]
-            rng = JavaLCG(multiplier * (int(runedate) << 32)).next_int(19)
-            rune_index = (rng + final_offset + 19) % 19
-            if rune_index == self.slot1.value:
-                rune_index += 1
-            rune = Runes(rune_index)
-            slot_2_best.append(rune)
-        return slot_2_best
-
-    def embed(self) -> discord.Embed:
-        today = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
-        daily = today + timedelta(hours=((0 - today.hour) % 24))
-        em = discord.Embed(title=f"Runescape Vis Wax Refreshes <t:{int(daily.timestamp())}:R>:")
-        em.set_thumbnail(url=self.slot1.image)
-        em.add_field(name="Slot 1", value=f"- {self.slot1.name.title()} Rune")
-        slot_2 = "\n".join(f"- {i.name.title()} Rune" for i in self.slot2)
-        em.add_field(name="Slot 2", value=slot_2)
-        em.description = "https://runescape.wiki/w/Rune_Goldberg_Machine"
-        return em
-
-
-class WildernessFlashEvents(Enum):
-    spider_swarm = 0
-    unnatural_outcrop = 1
-    demon_stragglers = 2
-    butterfly_swarm = 3
-    king_black_dragon_rampage = 4
-    forgotten_soldiers = 5
-    surprising_seedlings = 6
-    hellohound_pack = 7
-    infernal_star = 8
-    lost_souls = 9
-    ramokee_incursion = 10
-    displaced_energy = 11
-    evil_bloodwood_tree = 12
-
-    def __str__(self):
-        return self.name.replace("_", " ").title()
-
-    @property
-    def special(self):
-        return self in (
-            WildernessFlashEvents.king_black_dragon_rampage,
-            WildernessFlashEvents.infernal_star,
-            WildernessFlashEvents.evil_bloodwood_tree,
-        )
-
-    def get_next(self, today: datetime) -> datetime:
-        # represents the hours since the first spider swarm
-        # we add 10 hours because the first spiderswarm in relation to the Runedate
-        # is 10 hours after
-        hours_since = int((int((today - RUNEDATE_EPOCH).total_seconds()) / 3600)) + 10
-        # the offset mapping how many hours until this even should be next
-        offset = hours_since % 13
-        # the number of hours until this event should be nect
-        hour = self.value - offset
-        # Since the hour can be in the past and we don't care about the past
-        # we add 13 hours, the total number of events.
-        if hour < 0:
-            hour += 13
-        # add 1 hour because it's off by 1 hour
-        next_event = today + timedelta(hours=hour + 1)
-        return next_event
 
 
 class APIError(Exception):
@@ -324,6 +123,7 @@ class Skills(Enum):
     Divination = 25
     Invention = 26
     Archaeology = 27
+    Necromancy = 28
 
 
 class Item:
@@ -490,6 +290,7 @@ class Profile:
     divination: Skill
     invention: Skill
     archaeology: Skill
+    necromancy: Skill
 
     def __str__(self):
         skills_list = [["Overall", self.totalskill, "{:,}".format(self.totalxp), self.rank]]
@@ -499,7 +300,7 @@ class Profile:
                 level = 1
                 xp = 0
                 rank = "Unranked"
-                skills_list.append([skill_name, level, xp, rank])
+                skills_list.append([skill_name.name, level, xp, rank])
                 continue
             level = skill.level
             xp = skill.xp
@@ -580,10 +381,10 @@ class Profile:
     @classmethod
     def from_json(cls, data: dict):
         logged_in = True if data["loggedIn"] == "true" else False
+        skills = {skill.value: 0 for skill in Skills}
         if "skillvalues" in data:
-            skills = {skill["id"]: Skill.from_json(skill) for skill in data["skillvalues"]}
-        else:
-            skills = {skill.value: 0 for skill in Skills}
+            for skill in data["skillvalues"]:
+                skills[skill["id"]] = Skill.from_json(skill)
 
         return cls(
             name=data["name"],
@@ -627,6 +428,7 @@ class Profile:
             divination=skills[25],
             invention=skills[26],
             archaeology=skills[27],
+            necromancy=skills[28],
         )
 
     @classmethod
