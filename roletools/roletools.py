@@ -121,6 +121,8 @@ class RoleTools(
         self.settings: Dict[int, Any] = {}
         self._ready: asyncio.Event = asyncio.Event()
         self.views: Dict[int, Dict[str, discord.ui.View]] = {}
+        self._repo = ""
+        self._commit = ""
 
     def cog_check(self, ctx: commands.Context) -> bool:
         return self._ready.is_set()
@@ -130,7 +132,14 @@ class RoleTools(
         Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
-        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+        ret = f"{pre_processed}\n\n- Cog Version: {self.__version__}\n"
+        # we'll only have a repo if the cog was installed through Downloader at some point
+        if self._repo:
+            ret += f"- Repo: {self._repo}\n"
+        # we should have a commit if we have the repo but just incase
+        if self._commit:
+            ret += f"- Commit: [{self._commit[:9]}]({self._repo}/tree/{self._commit})"
+        return ret
 
     async def add_cog_to_dev_env(self):
         await self.bot.wait_until_red_ready()
@@ -139,6 +148,17 @@ class RoleTools(
                 self.bot.add_dev_env_value("roletools", lambda x: self)
             except Exception:
                 pass
+
+    async def _get_commit(self):
+        downloader = self.bot.get_cog("Downloader")
+        if not downloader:
+            return
+        cogs = await downloader.installed_cogs()
+        for cog in cogs:
+            if cog.name == "roletools":
+                if cog.repo is not None:
+                    self._repo = cog.repo.clean_url
+                self._commit = cog.commit
 
     async def load_views(self):
         self.settings = await self.config.all_guilds()
@@ -199,6 +219,7 @@ class RoleTools(
         loop = asyncio.get_running_loop()
         loop.create_task(self.load_views())
         loop.create_task(self.add_cog_to_dev_env())
+        loop.create_task(self._get_commit())
 
     async def cog_unload(self):
         for views in self.views.values():
