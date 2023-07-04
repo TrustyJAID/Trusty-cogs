@@ -293,6 +293,8 @@ class TriggerHandler(ReTriggerMixin):
     async def on_thread_create(self, thread: discord.Thread):
         if await self.bot.cog_disabled_in_guild(self, thread.guild):
             return
+        if thread.guild.id not in self.triggers:
+            return
         if not thread.permissions_for(thread.guild.me).manage_threads:
             return
         try:
@@ -303,6 +305,8 @@ class TriggerHandler(ReTriggerMixin):
     @commands.Cog.listener()
     async def on_thread_update(self, before: discord.Thread, after: discord.Thread):
         if await self.bot.cog_disabled_in_guild(self, before.guild):
+            return
+        if before.guild.id not in self.triggers:
             return
         if not before.permissions_for(before.guild.me).manage_threads:
             return
