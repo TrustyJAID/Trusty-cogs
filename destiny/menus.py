@@ -486,7 +486,7 @@ class BungieNewsSource(menus.ListPageSource):
                 )
             )
 
-    async def format_page(self, menu: menus.MenuPages, page: dict):
+    async def format_page(self, menu: Optional[BaseMenu], page: dict):
         link = page["Link"]
         time = datetime.strptime(page["PubDate"], "%Y-%m-%dT%H:%M:%SZ").replace(
             tzinfo=timezone.utc

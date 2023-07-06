@@ -99,6 +99,8 @@ class MyTyping(discord.ext.commands.context.DeferTyping):
     async def __aenter__(self):
         if self.ctx.interaction and not self.ctx.interaction.response.is_done():
             await self.ctx.defer(ephemeral=self.ephemeral)
+        else:
+            await self.ctx.typing()
 
 
 @cog_i18n(_)
@@ -109,6 +111,26 @@ class DestinyAPI:
     dashboard_authed: Dict[int, dict]
     session: aiohttp.ClientSession
     _manifest: dict
+    _ready: asyncio.Event
+
+    async def load_cache(self):
+        if await self.config.cache_manifest() > 1:
+            self._ready.set()
+            return
+        loop = asyncio.get_running_loop()
+        for file in cog_data_path(self).iterdir():
+            if not file.is_file():
+                continue
+            task = functools.partial(self.load_file, file=file)
+            name = file.name.replace(".json", "")
+            try:
+                self._manifest[name] = await asyncio.wait_for(
+                    loop.run_in_executor(None, task), timeout=60
+                )
+            except asyncio.TimeoutError:
+                log.info("Error loading manifest data")
+                continue
+        self._ready.set()
 
     async def request_url(
         self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None
@@ -538,28 +560,6 @@ class DestinyAPI:
         with file.open(encoding="utf-8", mode="r") as f:
             data = json.load(f)
         return data
-
-    async def cog_load(self):
-        if self.bot.user.id in DEV_BOTS:
-            try:
-                self.bot.add_dev_env_value("destiny", lambda x: self)
-            except Exception:
-                pass
-        if await self.config.cache_manifest() <= 1:
-            return
-        loop = asyncio.get_running_loop()
-        for file in cog_data_path(self).iterdir():
-            if not file.is_file():
-                continue
-            task = functools.partial(self.load_file, file=file)
-            name = file.name.replace(".json", "")
-            try:
-                self._manifest[name] = await asyncio.wait_for(
-                    loop.run_in_executor(None, task), timeout=60
-                )
-            except asyncio.TimeoutError:
-                log.info("Error loading manifest data")
-                continue
 
     async def get_entities(self, entity: str, d1: bool = False) -> dict:
         """This returns the full entity data asynchronously

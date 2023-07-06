@@ -1,3 +1,4 @@
+import asyncio
 import csv
 import datetime
 import random
@@ -63,7 +64,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.8.1"
+    __version__ = "1.9.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -81,13 +82,17 @@ class Destiny(DestinyAPI, commands.Cog):
         self.config = Config.get_conf(self, 35689771456)
         self.config.register_global(**default_global)
         self.config.register_user(oauth={}, account={}, characters={})
-        self.config.register_guild(clan_id=None, commands={})
+        self.config.register_guild(clan_id=None, commands={}, news_channel=None, posted_news=[])
         self.throttle: float = 0
         self.dashboard_authed: Dict[int, dict] = {}
         self.session = aiohttp.ClientSession(headers={"User-Agent": "Red-TrustyCogs-DestinyCog"})
         self.manifest_check_loop.start()
+        self.news_checker.start()
         self._manifest: dict = {}
         self._loadout_temp: dict = {}
+        self._repo = ""
+        self._commit = ""
+        self._ready = asyncio.Event()
 
     async def cog_unload(self):
         try:
@@ -97,13 +102,31 @@ class Destiny(DestinyAPI, commands.Cog):
         if not self.session.closed:
             await self.session.close()
         self.manifest_check_loop.cancel()
+        self.news_checker.cancel()
+
+    async def cog_load(self):
+        if self.bot.user.id in DEV_BOTS:
+            try:
+                self.bot.add_dev_env_value("destiny", lambda x: self)
+            except Exception:
+                pass
+        loop = asyncio.get_running_loop()
+        loop.create_task(self.load_cache())
+        loop.create_task(self._get_commit())
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
         Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
-        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+        ret = f"{pre_processed}\n\n- Cog Version: {self.__version__}\n"
+        # we'll only have a repo if the cog was installed through Downloader at some point
+        if self._repo:
+            ret += f"- Repo: {self._repo}\n"
+        # we should have a commit if we have the repo but just incase
+        if self._commit:
+            ret += f"- Commit: [{self._commit[:9]}]({self._repo}/tree/{self._commit})"
+        return ret
 
     async def red_delete_data_for_user(
         self,
@@ -116,6 +139,21 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         await self.config.user_from_id(user_id).clear()
 
+    async def _get_commit(self):
+        downloader = self.bot.get_cog("Downloader")
+        if not downloader:
+            return
+        cogs = await downloader.installed_cogs()
+        for cog in cogs:
+            if cog.name == "destiny":
+                if cog.repo is not None:
+                    self._repo = cog.repo.clean_url
+                self._commit = cog.commit
+
+    async def cog_before_invoke(self, ctx: commands.Context):
+        await self._ready.wait()
+        return True
+
     @commands.Cog.listener()
     async def on_oauth_receive(self, user_id: int, payload: dict):
         if payload["provider"] != "destiny":
@@ -124,6 +162,38 @@ class Destiny(DestinyAPI, commands.Cog):
             log.error("Received Destiny OAuth without a code parameter %s - %s", user_id, payload)
             return
         self.dashboard_authed[int(user_id)] = payload
+
+    @tasks.loop(seconds=300)
+    async def news_checker(self):
+        try:
+            news = await self.get_news()
+        except Destiny2APIError as e:
+            log.error("Error checking Destiny news sources: %s", e)
+            return
+        news_dict = {a["UniqueIdentifier"]: a for a in news.get("NewsArticles", [])}
+        guilds = await self.config.all_guilds()
+        source = BungieNewsSource(news)
+        for guild_id, data in guilds.items():
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                continue
+            channel = guild.get_channel(data["news_channel"])
+            if channel is None:
+                continue
+            if not channel.permissions_for(guild.me).send_messages:
+                continue
+            for _id, article in news_dict.items():
+                if _id in data["posted_news"]:
+                    continue
+                kwargs = await source.format_page(None, article)
+                if not channel.permissions_for(guild.me).embed_links:
+                    kwargs["embed"] = None
+                await channel.send(**kwargs)
+            await self.config.guild(guild).posted_news.set(list(news_dict.keys()))
+
+    @news_checker.before_loop
+    async def before_news_checker(self):
+        await self.bot.wait_until_red_ready()
 
     @tasks.loop(seconds=3600)
     async def manifest_check_loop(self):
@@ -166,9 +236,43 @@ class Destiny(DestinyAPI, commands.Cog):
                 ).format(old_ver=manifest_version, version=manifest_data["version"])
                 await channel.send(msg)
 
-    @commands.hybrid_group(name="destiny", extras={"red_force_enable": True})
+    @commands.hybrid_group(name="destiny")
     async def destiny(self, ctx: commands.Context) -> None:
         """Get information from the Destiny 2 API"""
+
+    @destiny.group(name="set")
+    async def destiny_set(self, ctx: commands.Context) -> None:
+        """Setup for the Destiny cog"""
+
+    @destiny_set.command(name="news")
+    async def destiny_set_news(
+        self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
+    ):
+        """
+        Setup a channel to receive Destiny news articles automatically
+
+        - `<channel>` The channel you want news articles posted in.
+        """
+        if channel is not None:
+            try:
+                news = await self.get_news()
+            except Destiny2APIError:
+                await ctx.send(
+                    _("There was an error getting the current news posts. Please try again later.")
+                )
+                return
+            current = [a["UniqueIdentifier"] for a in news.get("NewsArticles", [])]
+            await self.config.guild(ctx.guild).posted_news.set(current)
+            await self.config.guild(ctx.guild).news_channel.set(channel.id)
+            await ctx.send(
+                _("I will now post new Destiny articles in {channel}.").format(
+                    channel=channel.mention
+                )
+            )
+        else:
+            await self.config.guild(ctx.guild).posted_news.clear()
+            await self.config.guild(ctx.guild).news_channel.clear()
+            await ctx.send(_("I will no longer automaticall post news articles in this server."))
 
     async def send_error_msg(self, ctx: commands.Context, error: Exception):
         if isinstance(error, ServersUnavailable):
