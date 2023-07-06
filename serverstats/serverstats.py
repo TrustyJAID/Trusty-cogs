@@ -168,7 +168,7 @@ class ServerStats(commands.GroupCog):
         joined_on = _(
             "**{bot_name}** joined this server on **{bot_join}**.\n"
             "That's over **{since_join}**!"
-        ).format(bot_name=guild.me.mention, bot_join=bot_joined, since_join=since_joined)
+        ).format(bot_name=self.bot.user.mention, bot_join=bot_joined, since_join=since_joined)
 
         shard = (
             _("\nShard ID: **{shard_id}/{shard_count}**").format(
