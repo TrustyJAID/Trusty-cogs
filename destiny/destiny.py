@@ -245,6 +245,7 @@ class Destiny(DestinyAPI, commands.Cog):
         """Setup for the Destiny cog"""
 
     @destiny_set.command(name="news")
+    @commands.mod_or_permissions(manage_messages=True)
     async def destiny_set_news(
         self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
     ):
@@ -254,6 +255,13 @@ class Destiny(DestinyAPI, commands.Cog):
         - `<channel>` The channel you want news articles posted in.
         """
         if channel is not None:
+            if not channel.permissions_for(ctx.me).send_messages:
+                await ctx.send(
+                    _("I don't have permission to send messages in {channel}.").format(
+                        channel=channel.mention
+                    )
+                )
+                return
             try:
                 news = await self.get_news()
             except Destiny2APIError:
