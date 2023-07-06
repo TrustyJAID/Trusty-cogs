@@ -1,15 +1,17 @@
 import asyncio
 import functools
+import os
+import random
 import sys
 from io import BytesIO
-from typing import Optional, Union, cast
+from typing import Optional, Union
 
 import aiohttp
 import discord
 from PIL import Image, ImageDraw, ImageFont, ImageSequence
 from red_commons.logging import getLogger
 from redbot.core import Config, commands
-from redbot.core.data_manager import bundled_data_path
+from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 
 from .badge_entry import Badge
@@ -17,7 +19,7 @@ from .barcode import ImageWriter, generate
 from .templates import blank_template
 
 _ = Translator("Badges", __file__)
-log = getLogger("red.Trusty-cogs.badges")
+log = getLogger("red.trusty-cogs.badges")
 
 
 @cog_i18n(_)
@@ -27,7 +29,7 @@ class Badges(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.1"
+    __version__ = "1.2.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -50,7 +52,7 @@ class Badges(commands.Cog):
         """
         return
 
-    def remove_white_barcode(self, img: Image.Image) -> Image:
+    def remove_white_barcode(self, img: Image.Image) -> Image.Image:
         """https://stackoverflow.com/questions/765736/using-pil-to-make-all-white-pixels-transparent"""
         img = img.convert("RGBA")
         datas = img.getdata()
@@ -65,7 +67,7 @@ class Badges(commands.Cog):
         img.putdata(newData)
         return img
 
-    def invert_barcode(self, img: Image.Image) -> Image:
+    def invert_barcode(self, img: Image.Image) -> Image.Image:
         """https://stackoverflow.com/questions/765736/using-pil-to-make-all-white-pixels-transparent"""
         img = img.convert("RGBA")
         datas = img.getdata()
@@ -80,18 +82,28 @@ class Badges(commands.Cog):
         img.putdata(newData)
         return img
 
-    async def dl_image(self, url: str) -> BytesIO:
+    async def dl_image(self, url: str, name: str) -> BytesIO:
         """Download bytes like object of user avatar"""
+        template_path = cog_data_path(self) / "templates"
+        if not os.path.isdir(template_path):
+            os.mkdir(template_path)
+        file_path = template_path / f"{name}.png"
+        if os.path.isfile(file_path) and os.path.getsize(file_path) > 0:
+            with file_path.open("rb") as infile:
+                data = infile.read()
+            return BytesIO(data)
         async with aiohttp.ClientSession() as session:
             async with session.get(str(url)) as resp:
                 test = await resp.read()
-                return BytesIO(test)
+        with file_path.open("wb") as outfile:
+            outfile.write(test)
+        return BytesIO(test)
 
     def make_template(
         self, user: Union[discord.User, discord.Member], badge: Badge, template: Image.Image
     ) -> Image.Image:
         """Build the base template before determining animated or not"""
-        if hasattr(user, "roles"):
+        if isinstance(user, discord.Member):
             department = (
                 _("GENERAL SUPPORT")
                 if user.top_role.name == "@everyone"
@@ -99,18 +111,25 @@ class Badges(commands.Cog):
             )
             status = user.status
             level = str(len(user.roles))
+            if badge.badge_name != "discord":
+                joined_at = str(user.joined_at).replace("+00:00", "")
+            else:
+                joined_at = str(user.created_at).replace("+00:00", "")
         else:
             department = _("GENERAL SUPPORT")
             status = "online"
             level = "1"
-        if str(status) == "online":
+            joined_at = str(user.created_at).replace("+00:00", "")
+        if status is discord.Status.online:
             status = _("ACTIVE")
-        if str(status) == "offline":
+        elif status is discord.Status.offline:
             status = _("COMPLETING TASK")
-        if str(status) == "idle":
+        elif status is discord.Status.idle:
             status = _("AWAITING INSTRUCTIONS")
-        if str(status) == "dnd":
+        elif status is discord.Status.dnd:
             status = _("MIA")
+        else:
+            status = _("Active")
         barcode = BytesIO()
         log.trace("Badges make_template barcode: %s", type(barcode))
         generate("code39", str(user.id), writer=ImageWriter(self), output=barcode)
@@ -139,7 +158,11 @@ class Badges(commands.Cog):
         # adds username
         draw.text((225, 330), str(user.display_name), fill=fill, font=font1)
         # adds ID Class
-        draw.text((225, 400), badge.code + "-" + str(user).split("#")[1], fill=fill, font=font1)
+        random.seed(user.id)
+        fake_discrim = random.randint(1, 9999)
+        draw.text(
+            (225, 400), f"{badge.code}-{str(fake_discrim).rjust(4, '0')}", fill=fill, font=font1
+        )
         # adds user id
         draw.text((250, 115), str(user.id), fill=fill, font=font2)
         # adds user status
@@ -149,10 +172,7 @@ class Badges(commands.Cog):
         # adds user level
         draw.text((420, 475), _("LEVEL ") + level, fill="red", font=font1)
         # adds user level
-        if badge.badge_name != "discord" and user is discord.Member:
-            draw.text((60, 605), str(user.joined_at), fill=fill, font=font2)
-        else:
-            draw.text((60, 605), str(user.created_at), fill=fill, font=font2)
+        draw.text((60, 605), str(joined_at), fill=fill, font=font2)
         barcode.close()
         return template
 
@@ -193,12 +213,12 @@ class Badges(commands.Cog):
         template.paste(id_image, (60, 95, 225, 260))
         temp = BytesIO()
         template.save(temp, format="PNG")
-        temp.name = "temp.gif"
+        temp.name = "temp.png"
         return temp
 
     async def create_badge(self, user, badge, is_gif: bool):
         """Async create badges handler"""
-        template_img = Image.open(await self.dl_image(badge.file_name))
+        template_img = Image.open(await self.dl_image(badge.file_name, badge.badge_name))
         task = functools.partial(self.make_template, user=user, badge=badge, template=template_img)
         loop = asyncio.get_running_loop()
         task = loop.run_in_executor(None, task)
@@ -219,7 +239,7 @@ class Badges(commands.Cog):
                 return
 
         else:
-            avatar = user.display_avatar.with_format("gif")
+            avatar = user.display_avatar.with_format("png")
             temp = BytesIO()
             await avatar.save(temp)
             avatar = Image.open(temp)
@@ -246,6 +266,7 @@ class Badges(commands.Cog):
         return to_return
 
     @commands.command(aliases=["badge"])
+    @commands.bot_has_permissions(attach_files=True)
     async def badges(self, ctx: commands.Context, *, badge: str) -> None:
         """
         Creates a fun fake badge based on your discord profile
@@ -262,7 +283,7 @@ class Badges(commands.Cog):
         if not badge_obj:
             await ctx.send(_("`{}` is not an available badge.").format(badge))
             return
-        async with ctx.channel.typing():
+        async with ctx.typing():
             badge_img = await self.create_badge(user, badge_obj, False)
             if badge_img is None:
                 await ctx.send(_("Something went wrong sorry!"))
@@ -271,9 +292,10 @@ class Badges(commands.Cog):
             embed = discord.Embed(color=ctx.author.color)
             embed.set_image(url="attachment://badge.png")
             badge_img.close()
-            await ctx.send(files=[image])
+        await ctx.send(files=[image])
 
     @commands.command(aliases=["gbadge"])
+    @commands.bot_has_permissions(attach_files=True)
     async def gbadges(self, ctx: commands.Context, *, badge: str) -> None:
         """
         Creates a fun fake gif badge based on your discord profile
@@ -291,14 +313,14 @@ class Badges(commands.Cog):
         if not badge_obj:
             await ctx.send(_("`{}` is not an available badge.").format(badge))
             return
-        async with ctx.channel.typing():
+        async with ctx.typing():
             badge_img = await self.create_badge(user, badge_obj, True)
             if badge_img is None:
                 await ctx.send(_("Something went wrong sorry!"))
                 return
             image = discord.File(badge_img)
             badge_img.close()
-            await ctx.send(file=image)
+        await ctx.send(file=image)
 
     @commands.command()
     async def listbadges(self, ctx: commands.Context) -> None:
