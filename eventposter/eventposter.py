@@ -28,7 +28,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "2.1.1"
+    __version__ = "2.1.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -274,7 +274,6 @@ class EventPoster(commands.Cog):
         `[include_maybe=True]` either `true` or `false` to include people who registered as maybe.
         `[message]` Optional message to include with the ping.
         """
-        announcement_channel, approval_channel = await self.get_channels(ctx)
         if str(ctx.author.id) not in await self.config.guild(ctx.guild).events():
             msg = _("You don't have an event running with people to ping.")
             await ctx.send(msg)
@@ -568,7 +567,7 @@ class EventPoster(commands.Cog):
             msg = _("You don't have an event to edit right now.")
             await ctx.send(msg)
             return
-        for message_id, event in self.event_cache[ctx.guild.id].items():
+        for event in self.event_cache[ctx.guild.id].values():
             if event.hoster == ctx.author.id:
                 event.event = new_description
                 await event.update_event()
@@ -616,7 +615,7 @@ class EventPoster(commands.Cog):
             msg = _("You don't have an event to edit right now.")
             await ctx.send(msg)
             return
-        for message_id, event in self.event_cache[ctx.guild.id].items():
+        for event in self.event_cache[ctx.guild.id].values():
             if event.hoster == ctx.author.id:
                 event.max_slots = new_slots
                 await event.update_event()
@@ -637,7 +636,7 @@ class EventPoster(commands.Cog):
             msg = _("You don't have an event to edit right now.")
             await ctx.send(msg)
             return
-        for message_id, event in self.event_cache[ctx.guild.id].items():
+        for event in self.event_cache[ctx.guild.id].values():
             if event.hoster == ctx.author.id:
                 seconds = await self.config.guild(ctx.guild).cleanup_seconds()
                 if seconds is None:
@@ -670,7 +669,7 @@ class EventPoster(commands.Cog):
             msg = _("You don't have an event to edit right now.")
             await ctx.send(msg)
             return
-        for message_id, event in self.event_cache[ctx.guild.id].items():
+        for event in self.event_cache[ctx.guild.id].values():
             if event.hoster == ctx.author.id:
                 for m in new_members:
                     await self.add_user_to_event(m, event)
@@ -701,7 +700,7 @@ class EventPoster(commands.Cog):
             msg = _("You don't have an event to edit right now.")
             await ctx.send(msg)
             return
-        for message_id, event in self.event_cache[ctx.guild.id].items():
+        for event in self.event_cache[ctx.guild.id].values():
             if event.hoster == ctx.author.id:
                 for m in members:
                     if m.id in event.members or m.id in event.maybe:
@@ -731,7 +730,7 @@ class EventPoster(commands.Cog):
             msg = _("You don't have an event to edit right now.")
             await ctx.send(msg)
             return
-        for message_id, event in self.event_cache[ctx.guild.id].items():
+        for event in self.event_cache[ctx.guild.id].values():
             if event.hoster == ctx.author.id:
                 for m in new_members:
                     if m.id not in event.members:
@@ -763,7 +762,7 @@ class EventPoster(commands.Cog):
             msg = _("You don't have an event to edit right now.")
             await ctx.send(msg)
             return
-        for message_id, event in self.event_cache[ctx.guild.id].items():
+        for event in self.event_cache[ctx.guild.id].values():
             if event.hoster == ctx.author.id:
                 for m in members:
                     if m.id in event.members or m.id in event.maybe:
@@ -954,9 +953,10 @@ class EventPoster(commands.Cog):
             await ctx.send(msg)
             return
         event = None
-        for message_id, events in self.event_cache[ctx.guild.id].items():
-            if event.hoster == hoster.id:
+        for events in self.event_cache[ctx.guild.id].values():
+            if events.hoster == hoster.id:
                 event = events
+                break
         if event is not None:
             await event.end_event()
         await ctx.send(
@@ -989,7 +989,7 @@ class EventPoster(commands.Cog):
             await ctx.send(msg)
         if ctx.guild.id not in self.event_cache:
             return
-        for message_id, event in self.event_cache[ctx.guild.id].items():
+        for event in self.event_cache[ctx.guild.id].values():
             if ctx.author.id in event.members:
                 await event.update_event()
 
