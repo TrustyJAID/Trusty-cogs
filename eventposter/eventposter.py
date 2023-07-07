@@ -28,7 +28,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "2.1.0"
+    __version__ = "2.1.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -1255,7 +1255,9 @@ class EventPoster(commands.Cog):
             msgs.append(em)
         await SimpleMenu(msgs, use_select_menu=True).start(ctx)
 
-    @event_settings.command(name="ping", aliases=["mention"])
+    @event_settings.command(
+        name="ping", aliases=["mention"], usage="[everyone=False] [here=False] [roles...]"
+    )
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     async def set_ping(
@@ -1263,33 +1265,43 @@ class EventPoster(commands.Cog):
         ctx: commands.Context,
         everyone: Optional[bool] = False,
         here: Optional[bool] = False,
-        role: Optional[discord.Role] = None,
+        roles: commands.Greedy[discord.Role] = (),
     ) -> None:
         """
         Set the ping to use when an event is announced
 
         `[everyone=False]` True or False, whether to include everyone ping.
         `[here=False]` True or False, whether to include here ping.
-        `[role]` Is the role you want to add to the list of pinged roles when
+        `[role...]` Is the role(s) you want to add to the list of pinged roles when
         an event is created.
+
+        If you want to ping here but not everyone you would do something like:
+         - `[p]event set ping false true`
+
+        If you just want to set a few roles you can do:
+         - `[p]event set ping @role1 @role2`
         """
         current = await self.config.guild(ctx.guild).ping()
-        roles = []
+        ping_roles = []
         for potential_role in current.split(" "):
             try:
-                existing_role = await commands.RoleConverter().convert(ctx, potential_role)
-                roles.append(existing_role)
+                existing_role = await commands.RoleConverter().convert(
+                    ctx, potential_role.strip(",.")
+                )
+                ping_roles.append(existing_role)
             except Exception:
                 pass
-        if role not in roles:
-            roles.append(role)
-        elif role in roles:
-            roles.remove(role)
-        role_mentions = [r.mention for r in roles]
+        if roles:
+            for role in roles:
+                if role not in ping_roles:
+                    ping_roles.append(role)
+                elif role in ping_roles:
+                    ping_roles.remove(role)
+        role_mentions = [r.mention for r in roles if r is not None]
         if here:
-            role_mentions.append("@here")
+            role_mentions.insert(0, "@here")
         if everyone:
-            role_mentions.append("@everyone")
+            role_mentions.insert(0, "@everyone")
         pings = humanize_list(role_mentions)
         await self.config.guild(ctx.guild).ping.set(pings)
         reply = _("The following pings have been registered:\n {pings}").format(pings=pings)
