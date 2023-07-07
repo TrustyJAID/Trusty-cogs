@@ -1281,22 +1281,6 @@ class EventPoster(commands.Cog):
         If you just want to set a few roles you can do:
          - `[p]event set ping @role1 @role2`
         """
-        current = await self.config.guild(ctx.guild).ping()
-        ping_roles = []
-        for potential_role in current.split(" "):
-            try:
-                existing_role = await commands.RoleConverter().convert(
-                    ctx, potential_role.strip(",.")
-                )
-                ping_roles.append(existing_role)
-            except Exception:
-                pass
-        if roles:
-            for role in roles:
-                if role not in ping_roles:
-                    ping_roles.append(role)
-                elif role in ping_roles:
-                    ping_roles.remove(role)
         role_mentions = [r.mention for r in roles if r is not None]
         if here:
             role_mentions.insert(0, "@here")
