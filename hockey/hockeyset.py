@@ -32,8 +32,8 @@ class HockeySetCommands(HockeyMixin):
         guild = ctx.guild
         standings_channel = guild.get_channel(await self.config.guild(guild).standings_channel())
         post_standings = _("On") if await self.config.guild(guild).post_standings() else _("Off")
-        gdc_channels = await self.config.guild(guild).gdc()
-        gdt_channels = await self.config.guild(guild).gdt()
+        gdc_channels = (await self.config.guild(guild).gdc_chans()).values()
+        gdt_channels = (await self.config.guild(guild).gdt_chans()).values()
         standings_chn = "None"
         standings_msg = "None"
         if gdc_channels is None:

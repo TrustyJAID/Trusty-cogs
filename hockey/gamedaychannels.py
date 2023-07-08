@@ -52,7 +52,7 @@ class GameDayChannels(HockeyMixin):
             team = await self.config.guild(guild).gdc_team()
             if team is None:
                 team = "None"
-            channels = await self.config.guild(guild).gdc()
+            channels = (await self.config.guild(guild).gdc_chans()).values()
             category = guild.get_channel(await self.config.guild(guild).category())
             delete_gdc = await self.config.guild(guild).delete_gdc()
             game_states = await self.config.guild(guild).gdc_state_updates()
@@ -289,26 +289,17 @@ class GameDayChannels(HockeyMixin):
                     next_game = await Game.from_url(next_games[0]["link"], session=self.session)
                 if next_game is None:
                     continue
-                chn_name = get_chn_name(next_game)
-                try:
-                    cur_channels = await self.config.guild(guild).gdc()
-                    if cur_channels:
-                        cur_channel = guild.get_channel(cur_channels[0])
-                    else:
-                        cur_channel = None
-                        # this is dumb but eh
-                except Exception:
-                    log.error("Error checking new GDC", exc_info=True)
-                    cur_channel = None
+                cur_channels = await self.config.guild(guild).gdc_chans()
+                cur_channel = guild.get_channel(cur_channels.get(str(next_game.game_id)))
                 if cur_channel is None:
-                    await self.create_gdc(guild)
-                elif cur_channel.name != chn_name.lower():
                     await self.delete_gdc(guild)
                     await self.create_gdc(guild)
 
             else:
                 await self.delete_gdc(guild)
                 for game in game_list:
+                    if game.game_state == "Postponed":
+                        continue
                     await self.create_gdc(guild, game)
 
     async def create_gdc(self, guild: discord.Guild, game_data: Optional[Game] = None) -> None:
@@ -353,8 +344,8 @@ class GameDayChannels(HockeyMixin):
         except Exception:
             log.exception(f"Error creating channels in {repr(guild)}")
             return
-        async with self.config.guild(guild).gdc() as current_gdc:
-            current_gdc.append(new_chn.id)
+        async with self.config.guild(guild).gdc_chans() as current_gdc:
+            current_gdc[str(next_game.game_id)] = new_chn.id
         # await config.guild(guild).create_channels.set(True)
         await self.config.channel(new_chn).team.set([team])
         await self.config.channel(new_chn).guild_id.set(guild.id)
@@ -395,21 +386,20 @@ class GameDayChannels(HockeyMixin):
         """
         Deletes all game day channels in a given guild
         """
-        channels = await self.config.guild(guild).gdc()
+        channels = await self.config.guild(guild).gdc_chans()
         if channels is None:
-            channels = []
-        for channel in channels:
-            chn = guild.get_channel(channel)
-            if chn is None:
-                await self.config.channel_from_id(channel).clear()
-                continue
-            if not await self.config.channel(chn).to_delete():
-                continue
-            try:
-                await self.config.channel(chn).clear()
-                await chn.delete()
-            except discord.errors.Forbidden:
-                log.error("Cannot delete GDC channels in %s due to permissions issue.", guild.id)
-            except Exception:
-                log.exception(f"Cannot delete GDC channels in {guild.id}")
-        await self.config.guild(guild).gdc.clear()
+            channels = {}
+        for channel in channels.values():
+            if await self.config.channel_from_id(channel).to_delete():
+                chn = guild.get_channel(channel)
+                if chn is not None:
+                    try:
+                        await chn.delete()
+                    except discord.errors.Forbidden:
+                        log.error(
+                            "Cannot delete GDC channels in %s due to permissions issue.", guild.id
+                        )
+                    except Exception:
+                        log.exception(f"Cannot delete GDC channels in {guild.id}")
+            await self.config.channel_from_id(channel).clear()
+        await self.config.guild(guild).gdc_chans.clear()

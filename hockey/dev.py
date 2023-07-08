@@ -515,7 +515,8 @@ class HockeyDev(HockeyMixin):
         """
         guild = ctx.message.guild
         good_channels = []
-        for channel_id in await self.config.guild(guild).gdc():
+        gdc_chans = await self.config.guild(guild).gdc_chans()
+        for channel_id in gdc_chans.values():
             channel = guild.get_channel(channel_id)
             if channel is None:
                 await self.config.channel_from_id(channel_id).clear()

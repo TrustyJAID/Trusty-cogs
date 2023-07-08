@@ -56,7 +56,7 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "3.4.0"
+    __version__ = "3.4.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -83,6 +83,8 @@ class Hockey(
             "gdt_channel": None,
             "gdc": [],
             "gdt": [],
+            "gdc_chans": {},
+            "gdt_chans": {},
             "delete_gdc": True,
             "update_gdt": True,
             "rules": "",
@@ -151,13 +153,22 @@ class Hockey(
         self._ready: asyncio.Event = asyncio.Event()
         # self._ready is used to prevent pickems from opening
         # data from the wrong file location
+        self._repo = ""
+        self._commit = ""
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
         Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
-        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+        ret = f"{pre_processed}\n\n- Cog Version: {self.__version__}\n"
+        # we'll only have a repo if the cog was installed through Downloader at some point
+        if self._repo:
+            ret += f"- Repo: {self._repo}\n"
+        # we should have a commit if we have the repo but just incase
+        if self._commit:
+            ret += f"- Commit: [{self._commit[:9]}]({self._repo}/tree/{self._commit})"
+        return ret
 
     async def cog_unload(self):
         try:
@@ -170,6 +181,17 @@ class Hockey(
         await self.session.close()
         self.pickems_loop.cancel()
         await self.after_pickems_loop()
+
+    async def _get_commit(self):
+        downloader = self.bot.get_cog("Downloader")
+        if not downloader:
+            return
+        cogs = await downloader.installed_cogs()
+        for cog in cogs:
+            if cog.name == "hockey":
+                if cog.repo is not None:
+                    self._repo = cog.repo.clean_url
+                self._commit = cog.commit
 
     async def red_delete_data_for_user(
         self,
@@ -192,6 +214,7 @@ class Hockey(
                 self.bot.add_dev_env_value("hockey", lambda x: self)
             except Exception:
                 pass
+        await self._get_commit()
 
     async def cog_load(self) -> None:
         asyncio.create_task(self.add_cog_to_dev_env())

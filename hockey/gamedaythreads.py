@@ -54,7 +54,7 @@ class GameDayThreads(HockeyMixin):
         team = await self.config.guild(guild).gdt_team()
         if team is None:
             team = "None"
-        threads = await self.config.guild(guild).gdt()
+        threads = (await self.config.guild(guild).gdt_chans()).values()
         channel = guild.get_channel(await self.config.guild(guild).gdt_channel())
         game_states = await self.config.guild(guild).gdt_state_updates()
         if channel is not None:
@@ -290,30 +290,22 @@ class GameDayThreads(HockeyMixin):
                     next_game = await Game.from_url(next_games[0]["link"], session=self.session)
                 if next_game is None:
                     continue
-                chn_name = get_chn_name(next_game)
-                try:
-                    cur_channels = await self.config.guild(guild).gdt()
-                    if cur_channels:
-                        cur_channel = guild.get_thread(cur_channels[0])
-                        if not cur_channel:
-                            try:
-                                cur_channel = await guild.fetch_channel(cur_channels[0])
-                            except Exception:
-                                cur_channel = None
-                                await self.config.guild(guild).gdt.clear()
-                                # clear the config data so that this always contains at most
-                                # 1 game day thread when only one team is specified
-                                # fetch_channel is used as a backup incase the thread
-                                # becomes archived and bot restarts and needs its refernce
-                    else:
-                        cur_channel = None
-                        # this is dumb but eh
-                except Exception:
-                    log.error("Error checking new GDT", exc_info=True)
-                    cur_channel = None
+                cur_channel = None
+                cur_channels = await self.config.guild(guild).gdt_chans()
+                if cur_channels and str(next_game.game_id) in cur_channels:
+                    chan_id = cur_channels[str(next_game.game_id)]
+                    cur_channel = guild.get_thread(chan_id)
+                    if not cur_channel:
+                        try:
+                            cur_channel = await guild.fetch_channel(chan_id)
+                        except Exception:
+                            cur_channel = None
+                            await self.config.guild(guild).gdt_chan.clear()
+                            # clear the config data so that this always contains at most
+                            # 1 game day thread when only one team is specified
+                            # fetch_channel is used as a backup incase the thread
+                            # becomes archived and bot restarts and needs its reference
                 if cur_channel is None:
-                    await self.create_gdt(guild)
-                elif cur_channel.name != chn_name.lower():
                     await self.delete_gdt(guild)
                     await self.create_gdt(guild)
 
@@ -397,8 +389,9 @@ class GameDayThreads(HockeyMixin):
         except Exception:
             log.exception("Error creating channels in %r", guild)
             return
-        async with self.config.guild(guild).gdt() as current_gdc:
-            current_gdc.append(new_chn.id)
+        async with self.config.guild(guild).gdt_chans() as current_gdt:
+            current_gdt[str(next_game.game_id)] = new_chn.id
+        # current_gdc.append(new_chn.id)
         # await config.guild(guild).create_channels.set(True)
         update_gdt = await self.config.guild(guild).update_gdt()
         await self.config.channel(new_chn).team.set([team])
@@ -417,16 +410,7 @@ class GameDayThreads(HockeyMixin):
         since it's no longer necessary to keep and threads will be automatically
         archived
         """
-        channels = await self.config.guild(guild).gdt()
-        if channels is None:
-            channels = []
-        for channel in channels:
-            chn = guild.get_thread(channel)
-            if chn is None:
-                await self.config.channel_from_id(channel).clear()
-                continue
-            try:
-                await self.config.channel(chn).clear()
-            except Exception:
-                log.exception(f"Cannot delete GDT threads in {guild.id}")
-        await self.config.guild(guild).gdt.clear()
+        channels = await self.config.guild(guild).gdt_chans()
+        for channel in channels.values():
+            await self.config.channel_from_id(channel).clear()
+        await self.config.guild(guild).gdt_chans.clear()
