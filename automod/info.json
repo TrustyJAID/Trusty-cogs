@@ -1,0 +1,28 @@
+{
+    "author": [
+        "TrustyJAID"
+    ],
+    "description": "A cog to interact with Discord Automod.",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store end user data.",
+    "hidden": false,
+    "install_msg": "See `[p]automod` for available commands.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
+        3,
+        9,
+        0
+    ],
+    "name": "Automod",
+    "permissions": [],
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Discord Automod",
+    "tags": [
+        "automod",
+        "moderation",
+        "mod"
+    ],
+    "type": "COG"
+}
