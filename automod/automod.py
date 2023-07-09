@@ -20,7 +20,7 @@ class AutoMod(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -70,6 +70,9 @@ class AutoMod(commands.Cog):
     async def view_automod(self, ctx: commands.Context):
         """View the servers current automod rules"""
         rules = await ctx.guild.fetch_automod_rules()
+        if len(rules) < 0:
+            await ctx.send("There are no rules setup yet.")
+            return
         pages = AutoModRulePages(rules, guild=ctx.guild)
         await BaseMenu(pages, self).start(ctx)
 
@@ -81,6 +84,9 @@ class AutoMod(commands.Cog):
         for k, v in actions_dict.items():
             v.update({"name": k, "guild": ctx.guild})
             actions.append(v)
+        if len(actions) < 0:
+            await ctx.send("There are no actions saved.")
+            return
         pages = AutoModActionsPages(actions, guild=ctx.guild)
         await BaseMenu(pages, self).start(ctx)
 
@@ -92,6 +98,9 @@ class AutoMod(commands.Cog):
         for k, v in triggers_dict.items():
             v.update({"name": k, "guild": ctx.guild})
             triggers.append(v)
+        if len(triggers) < 0:
+            await ctx.send("There are no triggers saved.")
+            return
         pages = AutoModTriggersPages(triggers, guild=ctx.guild)
         await BaseMenu(pages, self).start(ctx)
 
@@ -122,7 +131,9 @@ class AutoMod(commands.Cog):
             the saved actions `timeoutuser` and `notifymods`.
         """
         try:
-            rule = await ctx.guild.create_automod_rule(name=name, **rule.to_args())
+            rule = await ctx.guild.create_automod_rule(
+                name=name, **rule.to_args(), reason=f"Created by {ctx.author}"
+            )
         except Exception as e:
             await ctx.send(e)
         pages = AutoModRulePages([rule], guild=ctx.guild)
@@ -138,7 +149,7 @@ class AutoMod(commands.Cog):
         - `<name>` The name of this action for reference later.
         Usage: `<action>`
         - `message:` The message to send to a user when triggered.
-        - `channnel:` The channel to send a notification to.
+        - `channel:` The channel to send a notification to.
         - `duration:` How long to timeout the user for. Max 28 days.
         Only one of these options can be applied at a time.
         Examples:
