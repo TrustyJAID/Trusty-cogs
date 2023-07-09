@@ -54,8 +54,8 @@ class Citation(commands.Cog):
         "Saphire",
         "TrustyJAID",
     ]
-    __version__ = "1.2.1"
-    __flavour__ = "Let's not break 1/3rd of people using this."
+    __version__ = "1.2.2"
+    __flavour__ = "Why don't we actually reply to the reference?"
 
     def __init__(self, bot):
         self.bot = bot
@@ -136,7 +136,7 @@ class Citation(commands.Cog):
             if file is None:
                 await ctx.send("sorry something went wrong!")
                 return
-        await ctx.send(file=file)
+        await ctx.send(file=file, reference=ctx.message.reference, mention_author=False)
 
     async def replace_mentions(self, ctx: commands.Context, content: str) -> str:
         for mention in ctx.message.mentions:
@@ -213,11 +213,11 @@ class Citation(commands.Cog):
             if file is None:
                 await ctx.send("sorry something went wrong!")
                 return
-        await ctx.send(file=file)
+        await ctx.send(file=file, reference=ctx.message.reference, mention_author=False)
 
     @staticmethod
     def user_id_to_barcode(user_id: int) -> List[int]:
-        return [int(i) + 1 if int(i) == 0 else int(i) for i in str(user_id)[-4:]]
+        return [max(int(i), 1) for i in str(user_id)[-4:]]
 
     @citate.group(name="set")
     @checks.mod_or_permissions(manage_messages=True)
