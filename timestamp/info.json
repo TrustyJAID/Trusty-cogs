@@ -1,0 +1,28 @@
+{
+    "author": [
+        "TrustyJAID"
+    ],
+    "description": "A cog to generate discord timestamps!",
+    "disabled": false,
+    "end_user_data_statement": "This cog allows users to set a timezone for creating absolute timestamps at specific times based on their local time.",
+    "hidden": false,
+    "install_msg": "See `[p]timestamp` for available commands.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
+        3,
+        9,
+        0
+    ],
+    "name": "Timestamp",
+    "permissions": [],
+    "required_cogs": {},
+    "requirements": [],
+    "short": "Discord Timestamp Generator",
+    "tags": [
+        "timestamp",
+        "time",
+        "timezone"
+    ],
+    "type": "COG"
+}
