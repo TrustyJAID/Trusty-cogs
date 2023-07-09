@@ -251,14 +251,15 @@ class Timestamp(commands.Cog):
     async def absolute_timestamp(self, ctx: commands.Context, *, time: AbsoluteTimeFlags):
         """
         Produce an absolute timestamp.
+
         See `[p]timestamp timezone` to set your timezone so this is accurate for you.
         Usage:
-            - `year:` The year you want the timestamp to be for. Defaults to current year if not provided.
-            - `month:` The month you want the timestamp to be for. Defaults to current month if not provided.
-            - `day:` The day you want the timestamp to be for. Defaults to current day if not provided.
-            - `hour:` The hour you want the timestamp to be for. Defaults to current hour if not provided.
-            - `minute:` The minute you want the timestamp to be for. Defaults to 0 if not provided.
-            - `second:` The second you want the timestamp to be for. Defaults to 0 if not provided.
+        - `year:` The year you want the timestamp to be for. Defaults to current year if not provided.
+        - `month:` The month you want the timestamp to be for. Defaults to current month if not provided.
+        - `day:` The day you want the timestamp to be for. Defaults to current day if not provided.
+        - `hour:` The hour you want the timestamp to be for. Defaults to current hour if not provided.
+        - `minute:` The minute you want the timestamp to be for. Defaults to 0 if not provided.
+        - `second:` The second you want the timestamp to be for. Defaults to 0 if not provided.
         Example:
             `[p]ts a year: 2023 month: 7 day: 11 hour: 12`
             Will produce <t:1689076800:F> with no timezone set.
