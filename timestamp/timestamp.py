@@ -54,24 +54,24 @@ class MuteTime(Converter):
 class AbsoluteTimeFlags(commands.FlagConverter, case_insensitive=True):
     year: int = commands.flag(
         name="year",
-        default=datetime.now().year,
+        default=0,
         description="The year. Defaults to the current year.",
     )
     month: commands.Range[int, 1, 12] = commands.flag(
         name="month",
-        default=datetime.now().month,
+        default=0,
         description="The month. Defaults to the current month.",
     )
     day: commands.Range[int, 1, 31] = commands.flag(
         name="day",
         aliases=["d"],
-        default=datetime.now().day,
+        default=0,
         description="The day. Defaults to the current day.",
     )
     hour: commands.Range[int, 0, 24] = commands.flag(
         name="hour",
         aliases=["hours", "h"],
-        default=datetime.now().hour,
+        default=0,
         description="The hour. Defaults to the current hour.",
     )
     minute: commands.Range[int, 0, 60] = commands.flag(
@@ -88,11 +88,12 @@ class AbsoluteTimeFlags(commands.FlagConverter, case_insensitive=True):
     )
 
     def datetime(self, tzinfo: ZoneInfo) -> datetime:
+        now = datetime.now(tz=tzinfo)
         return datetime(
-            year=self.year,
-            month=self.month,
-            day=self.day,
-            hour=self.hour,
+            year=self.year or now.year,
+            month=self.month or now.month,
+            day=self.day or now.day,
+            hour=self.hour or now.hour,
             minute=self.minute,
             second=self.second,
             tzinfo=tzinfo,
@@ -127,7 +128,7 @@ class Timestamp(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
     def __init__(self, bot):
         self.bot = bot
