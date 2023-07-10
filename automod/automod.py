@@ -70,7 +70,7 @@ class AutoMod(commands.Cog):
     async def view_automod(self, ctx: commands.Context):
         """View the servers current automod rules"""
         rules = await ctx.guild.fetch_automod_rules()
-        if len(rules) < 0:
+        if len(rules) <= 0:
             await ctx.send("There are no rules setup yet.")
             return
         pages = AutoModRulePages(rules, guild=ctx.guild)
@@ -84,7 +84,7 @@ class AutoMod(commands.Cog):
         for k, v in actions_dict.items():
             v.update({"name": k, "guild": ctx.guild})
             actions.append(v)
-        if len(actions) < 0:
+        if len(actions) <= 0:
             await ctx.send("There are no actions saved.")
             return
         pages = AutoModActionsPages(actions, guild=ctx.guild)
@@ -98,7 +98,7 @@ class AutoMod(commands.Cog):
         for k, v in triggers_dict.items():
             v.update({"name": k, "guild": ctx.guild})
             triggers.append(v)
-        if len(triggers) < 0:
+        if len(triggers) <= 0:
             await ctx.send("There are no triggers saved.")
             return
         pages = AutoModTriggersPages(triggers, guild=ctx.guild)
