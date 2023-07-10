@@ -127,7 +127,7 @@ class Timestamp(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -203,14 +203,14 @@ class Timestamp(commands.Cog):
         for i in range(0, len(lst), n):
             yield lst[i : i + n]
 
-    @discord_timestamp.command(name="timezone", aliases=["tz"])
-    async def set_timezone(
+    @discord_timestamp.group(name="timezone", aliases=["tz"], fallback="view")
+    async def timezone_commands(
         self,
         ctx: commands.Context,
         timezone: Optional[discord.app_commands.Transform[ZoneInfo, TimezoneConverter]] = None,
     ):
         """
-        Set your timezone for conversions
+        Timezone related commands
         """
         if timezone is None:
             msg = ""
@@ -243,6 +243,28 @@ class Timestamp(commands.Cog):
                 msgs = pages
             await SimpleMenu(msgs, use_select_menu=True).start(ctx)
             return
+        else:
+            await ctx.send(self.get_timezone_info(timezone))
+
+    @timezone_commands.command(name="set")
+    async def set_timezone(
+        self,
+        ctx: commands.Context,
+        timezone: discord.app_commands.Transform[ZoneInfo, TimezoneConverter],
+    ):
+        """
+        Set your timezone for conversions
+
+        To see the available timezones use the command:
+        - `[p]timestamp timezone`
+
+        Choose the timezone closest to your actual location for best results.
+        Timezone names like PST, PT, MDT, MST, etc. are abbreviations and don't
+        represent the full daylight saving time calculation. Whereas
+        a timezone like `America/Pacific` Will automatically adjust
+        for timezones in your location. Unless, of course, you always
+        follow a timezone like MST.
+        """
         await self.config.user(ctx.author).timezone.set(timezone.key)
         zone_info = self.get_timezone_info(timezone)
         await ctx.send(f"I have set your timezone to `{timezone.key}`.\n{zone_info}")
