@@ -54,8 +54,8 @@ class Citation(commands.Cog):
         "Saphire",
         "TrustyJAID",
     ]
-    __version__ = "1.2.2"
-    __flavour__ = "Why don't we actually reply to the reference?"
+    __version__ = "1.2.3"
+    __flavour__ = "Don't force wrap_by_char"
 
     def __init__(self, bot):
         self.bot = bot
@@ -140,11 +140,11 @@ class Citation(commands.Cog):
 
     async def replace_mentions(self, ctx: commands.Context, content: str) -> str:
         for mention in ctx.message.mentions:
-            content = re.sub(rf"<@!?{mention.id}>", mention.display_name, content)
+            content = re.sub(rf"<@!?{mention.id}>", f"@{mention.display_name}", content)
         for mention in ctx.message.channel_mentions:
-            content = content.replace(mention.mention, mention.name)
+            content = content.replace(mention.mention, f"#{mention.name}")
         for mention in ctx.message.role_mentions:
-            content = content.replace(mention.mention, mention.name)
+            content = content.replace(mention.mention, f"@{mention.name}")
         return content
 
     @citate.command(name="advanced", aliases=["advcitation"])
@@ -331,7 +331,6 @@ class Citation(commands.Cog):
         use_alt_font: bool,
     ):
         factory = Factory(theme=theme, use_alt_font=use_alt_font)
-        factory.wrap_by_char = True
         temp = BytesIO()
         base_img = factory.generate_image(content, penalty, title, barcode)
         new_img_list = []
