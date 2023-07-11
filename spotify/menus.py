@@ -666,10 +666,9 @@ class SpotifyPages(menus.PageSource):
                         tracks = [t for t in top_tracks if t is not None]
                     if cur_state.context.type == "collection":
                         cur_tracks = await user_spotify.saved_tracks(limit=50)
-                        cur_tracks.name = _("Saved Tracks")
                         tracks = [t.track for t in cur_tracks.items if t is not None]
                     if cur_tracks:
-                        self.context_name = cur_tracks.name
+                        self.context_name = getattr(cur_tracks, "name", _("Saved Tracks"))
                     for track in tracks:
                         if track.id is not None:
                             self.select_options.append(track)
