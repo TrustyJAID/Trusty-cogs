@@ -184,7 +184,7 @@ class Timestamp(commands.Cog):
         now = datetime.now()
         msg = f"- `{zone.key}`\n - Abbreviation: {zone.tzname(now)}\n"
         utcoffset = zone.utcoffset(now) or timedelta(seconds=0)
-        locale = i18n.get_locale().replace("-", "_")
+        locale = i18n.get_babel_locale()
         # because humanize_timedelta doesn't handle negative timedeltas
         if utcoffset < timedelta(seconds=0):
             msg += f" - UTC Offset: `-{humanize_timedelta(seconds=-utcoffset.total_seconds())}`\n"
