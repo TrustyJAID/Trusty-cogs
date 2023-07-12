@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional, Union
-
 import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
@@ -11,7 +9,12 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import RoleToolsMixin
 from .components import RoleToolsView, SelectRole, SelectRoleOption
-from .converter import RoleHierarchyConverter, SelectOptionRoleConverter
+from .converter import (
+    RoleHierarchyConverter,
+    SelectMenuFlags,
+    SelectOptionFlags,
+    SelectOptionRoleConverter,
+)
 from .menus import BaseMenu, SelectMenuPages, SelectOptionPages
 
 roletools = RoleToolsMixin.roletools
@@ -94,27 +97,28 @@ class RoleToolsSelect(RoleToolsMixin):
         Setup role select menus
         """
 
-    @select.command(name="create")
+    @select.command(name="create", usage="<name> [options...] [extras]")
     async def create_select_menu(
         self,
         ctx: Context,
         name: str,
         options: commands.Greedy[SelectOptionRoleConverter],
-        min_values: Optional[int] = None,
-        max_values: Optional[int] = None,
         *,
-        placeholder: Optional[str] = None,
+        extras: SelectMenuFlags,
     ) -> None:
         """
         Create a select menu
 
-        `<name>` - The name for you to use when you send a message with this menu.
-        `[options]...` - The select menu options you designated previously.
-        `[min_values]` - The minimum number of items from this menu to be selected.
-        `[max_values]` - The maximum number of items from this menu that can be selected.
-        (If not provided this will default to the number of options provided.)
-        `[placeholder]` - This is the default text on the menu when no option has been
+        - `<name>` - The name for you to use when you send a message with this menu.
+        - `[options]...` - The select menu options you designated previously.
+        - `[extras]`
+         - `min:` - The minimum number of items from this menu to be selected.
+         - `max:` - The maximum number of items from this menu that can be selected.
+         (If not provided this will default to the number of options provided.)
+         - `placeholder:` - This is the default text on the menu when no option has been
         chosen yet.
+        Example:
+            `[p]roletools select create myrolemenu role1 role2 role3 placeholder: Pick your role!`
         """
         await ctx.typing()
         if ctx.guild.id not in self.views:
@@ -137,6 +141,8 @@ class RoleToolsSelect(RoleToolsMixin):
             msg = _("The name should be less than 70 characters long.")
             await ctx.send(msg)
             return
+        min_values = extras.min_values
+        max_values = extras.max_values
         if min_values is None:
             min_values = 1
         if max_values is None:
@@ -147,7 +153,7 @@ class RoleToolsSelect(RoleToolsMixin):
             "options": [o.name for o in options],
             "min_values": max(min(25, min_values), 0),
             "max_values": max(min(25, max_values), 0),
-            "placeholder": placeholder,
+            "placeholder": extras.placeholder,
             "name": name.lower(),
             "messages": messages,
         }
@@ -165,7 +171,7 @@ class RoleToolsSelect(RoleToolsMixin):
             min_values=min_values,
             max_values=max_values,
             options=options,
-            placeholder=placeholder,
+            placeholder=extras.placeholder,
         )
         for message_id in select_menu_settings["messages"]:
             # fix old menus with the new one when interacted with
@@ -213,27 +219,30 @@ class RoleToolsSelect(RoleToolsMixin):
                 msg = _("Select Option `{name}` doesn't appear to exist.").format(name=name)
                 await ctx.send(msg)
 
-    @select.command(name="createoption", aliases=["addoption"], with_app_command=False)
+    @select.command(name="createoption", aliases=["addoption"], usage="<name> <role> [extras]")
     async def create_select_option(
         self,
         ctx: Context,
         name: str,
         role: RoleHierarchyConverter,
-        label: Optional[str] = None,
-        description: Optional[str] = None,
-        emoji: Optional[Union[discord.PartialEmoji, str]] = None,
+        *,
+        extras: SelectOptionFlags,
     ) -> None:
         """
         Create a select menu option
 
-        `<name>` - The name of the select option for use later in setup.
-        `<role>` - The role this select option will assign or remove.
-        `[label]` - The optional label for the option, max of 25 characters.
-        `[description]` - The description for the option, max of 50 characters.
-        `[emoji]` - The optional emoji used in the select option.
+        - `<name>` - The name of the select option for use later in setup.
+        - `<role>` - The role this select option will assign or remove.
+        - `[extras]`
+         - `label:` - The optional label for the option, max of 25 characters.
+         - `description:` - The description for the option, max of 50 characters.
+         - `emoji:` - The optional emoji used in the select option.
 
         Note: If no label and no emoji are provided the roles name will be used instead.
         This name will not update if the role name is changed.
+
+        Example:
+            `[p]roletools select createoption role1 @role label: Super Fun Role emoji: 😀`
         """
         if " " in name:
             msg = _("There cannot be a space in the name of a select option.")
@@ -244,27 +253,27 @@ class RoleToolsSelect(RoleToolsMixin):
             await ctx.send(msg)
             return
         emoji_id = None
-        if emoji is not None:
-            if not isinstance(emoji, discord.PartialEmoji):
+        if extras.emoji is not None:
+            if not isinstance(extras.emoji, discord.PartialEmoji):
                 try:
-                    await ctx.message.add_reaction(emoji)
-                    emoji_id = str(emoji)
+                    await ctx.message.add_reaction(extras.emoji)
+                    emoji_id = str(extras.emoji)
                 except Exception:
                     emoji_id = None
             else:
-                emoji_id = f"{emoji.name}:{emoji.id}"
-                if emoji.animated:
+                emoji_id = f"{extras.emoji.name}:{extras.emoji.id}"
+                if extras.emoji.animated:
                     emoji_id = f"a:{emoji_id}"
-        if not emoji_id and not label:
+        label = extras.label or ""
+        # ensure that there's at least an emoji on this
+        if not emoji_id and not extras.label:
             label = f"@{role.name}"
 
-        if label:
-            label = label[:100]
         option_settings = {
             "role_id": role.id,
             "label": label,
             "emoji": emoji_id,
-            "description": description[:100] if description else None,
+            "description": extras.description,
             "name": name.lower(),
         }
 
@@ -281,7 +290,7 @@ class RoleToolsSelect(RoleToolsMixin):
             label=label,
             value=f"RTSelect-{name.lower()}-{role.id}",
             role_id=role.id,
-            description=description[:100] if description else None,
+            description=extras.description,
             emoji=emoji_id,
         )
         select_menus = discord.ui.Select(
@@ -289,6 +298,14 @@ class RoleToolsSelect(RoleToolsMixin):
             max_values=1,
             options=[option],
         )
+
+        async def test_callback(interaction: discord.Interaction):
+            await interaction.response.send_message(
+                _("This is an example select option and does not actually work."), ephemeral=True
+            )
+
+        select_menus.callback = test_callback
+
         view = discord.ui.View()  # RoleToolsView(self)
         view.add_item(select_menus)
         msg = _("Here is how your select option will look.")

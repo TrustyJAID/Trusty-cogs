@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import List, Tuple
+from typing import List, Optional, Tuple, Union
 
 import discord
 from discord.ext.commands import BadArgument, Converter
@@ -367,3 +367,29 @@ class SelectRoleConverter(discord.app_commands.Transformer):
                 0, discord.app_commands.Choice(name=supplied_options, value=supplied_options)
             )
         return ret
+
+
+class SelectMenuFlags(commands.FlagConverter, case_insensitive=True):
+    min_values: Optional[commands.Range[int, 0, 25]] = commands.flag(
+        name="min", aliases=["min_values"], default=None
+    )
+    max_values: Optional[commands.Range[int, 0, 25]] = commands.flag(
+        name="max", aliases=["max_values"], default=None
+    )
+    placeholder: Optional[str] = commands.flag(name="placeholder", default=None)
+
+
+class SelectOptionFlags(commands.FlagConverter, case_insensitive=True):
+    label: Optional[commands.Range[str, 0, 100]] = commands.flag(name="label", default=None)
+    description: Optional[commands.Range[str, 0, 100]] = commands.flag(
+        name="description", aliases=["desc"], default=None
+    )
+    emoji: Optional[Union[discord.PartialEmoji, str]] = commands.flag(name="emoji", default=None)
+
+
+class ButtonFlags(commands.FlagConverter, case_insensitive=True):
+    label: Optional[commands.Range[str, 0, 80]] = commands.flag(name="label", default=None)
+    emoji: Optional[Union[discord.PartialEmoji, str]] = commands.flag(name="emoji", default=None)
+    style: discord.ButtonStyle = commands.flag(
+        name="style", default=discord.ButtonStyle.primary, converter=ButtonStyleConverter
+    )

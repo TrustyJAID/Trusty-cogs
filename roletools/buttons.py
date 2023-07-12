@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional, Union
-
 import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
@@ -10,7 +8,7 @@ from redbot.core.i18n import Translator
 
 from .abc import RoleToolsMixin
 from .components import ButtonRole, RoleToolsView
-from .converter import ButtonStyleConverter, RoleHierarchyConverter
+from .converter import ButtonFlags, RoleHierarchyConverter
 from .menus import BaseMenu, ButtonRolePages
 
 roletools = RoleToolsMixin.roletools
@@ -70,35 +68,38 @@ class RoleToolsButtons(RoleToolsMixin):
         Setup role buttons
         """
 
-    @buttons.command(name="create", with_app_command=False)
+    @buttons.command(name="create", usage="<name> <role> [extras]")
     async def create_button(
         self,
         ctx: Context,
         name: str,
         role: RoleHierarchyConverter,
-        label: Optional[str] = None,
-        emoji: Optional[Union[discord.PartialEmoji, str]] = None,
-        style: Optional[ButtonStyleConverter] = discord.ButtonStyle.primary,
+        *,
+        extras: ButtonFlags,
     ) -> None:
         """
         Create a role button
 
-        `<name>` - The name of the button for use later in setup.
-        `<role>` - The role this button will assign or remove.
-        `[label]` - The optional label for the button.
-        `[emoji]` - The optional emoji used in the button.
-        `[style]` - The background button style. Must be one of the following:
-        - `primary`
-        - `secondary`
-        - `success`
-        - `danger`
-        - `blurple`
-        - `grey`
-        - `green`
-        - `red`
+        - `<name>` - The name of the button for use later in setup.
+        - `<role>` - The role this button will assign or remove.
+        - `[extras]`
+         - `label:` - The optional label for the button.
+         - `emoji:` - The optional emoji used in the button.
+         - `style:` - The background button style. Must be one of the following:
+           - `primary`
+           - `secondary`
+           - `success`
+           - `danger`
+           - `blurple`
+           - `grey`
+           - `green`
+           - `red`
 
         Note: If no label and no emoji are provided the roles name will be used instead.
         This name will not update if the role name is changed.
+
+        Example:
+            `[p]roletools button create role1 @role label: Super fun role style: blurple emoji: 😀`
         """
         if " " in name:
             await ctx.send(_("There cannot be a space in the name of a button."))
@@ -106,17 +107,18 @@ class RoleToolsButtons(RoleToolsMixin):
         if ctx.guild.id not in self.views:
             self.views[ctx.guild.id] = {}
         emoji_id = None
-        if emoji is not None:
-            if not isinstance(emoji, discord.PartialEmoji):
+        if extras.emoji is not None:
+            if not isinstance(extras.emoji, discord.PartialEmoji):
                 try:
-                    await ctx.message.add_reaction(emoji)
-                    emoji_id = str(emoji)
+                    await ctx.message.add_reaction(extras.emoji)
+                    emoji_id = str(extras.emoji)
                 except Exception:
                     emoji_id = None
             else:
-                emoji_id = f"{emoji.name}:{emoji.id}"
-                if emoji.animated:
+                emoji_id = f"{extras.emoji.name}:{extras.emoji.id}"
+                if extras.emoji.animated:
                     emoji_id = f"a:{emoji_id}"
+        label = extras.label or ""
         if not emoji_id and not label:
             label = f"@{role.name}"
 
@@ -124,7 +126,7 @@ class RoleToolsButtons(RoleToolsMixin):
             "role_id": role.id,
             "label": label,
             "emoji": emoji_id,
-            "style": style.value,
+            "style": extras.style.value,
             "name": name.lower(),
             "messages": [],
         }
@@ -143,7 +145,7 @@ class RoleToolsButtons(RoleToolsMixin):
             if name.lower() not in buttons:
                 buttons.append(name.lower())
         button = ButtonRole(
-            style=style.value,
+            style=extras.style.value,
             label=label,
             emoji=emoji_id,
             custom_id=custom_id,
