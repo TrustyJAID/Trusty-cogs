@@ -249,7 +249,7 @@ class TwitchAPI:
                 )
                 em = await self.make_follow_embed(followed, profile, total)
                 for channel_id in account["channels"]:
-                    channel = self.bot.get_channel(id=channel_id)
+                    channel = self.bot.get_channel(channel_id)
                     if not channel:
                         continue
                     if channel.permissions_for(channel.guild.me).embed_links:
