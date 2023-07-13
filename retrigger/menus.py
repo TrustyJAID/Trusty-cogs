@@ -11,7 +11,7 @@ from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 from redbot.vendored.discord.ext import menus
 
 from .abc import ReTriggerMixin
-from .converters import ChannelUserRole, Trigger, TriggerResponse
+from .converters import ChannelUserRole, MultiResponse, Trigger, TriggerResponse
 
 try:
     import regex as re
@@ -121,7 +121,11 @@ class ReTriggerPages(menus.ListPageSource):
             info += _("__Ignore commands__: **{ignore}**\n").format(ignore=trigger.ignore_commands)
         if TriggerResponse.text in trigger.response_type:
             if trigger.multi_payload:
-                text_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
+                text_response = "\n".join(
+                    str(t.response)
+                    for t in trigger.multi_payload
+                    if t.action is TriggerResponse.text
+                )
             else:
                 text_response = trigger.text
             if len(text_response) < 200:
@@ -132,25 +136,41 @@ class ReTriggerPages(menus.ListPageSource):
             )
         if TriggerResponse.rename in trigger.response_type:
             if trigger.multi_payload:
-                response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "rename")
+                response = "\n".join(
+                    str(t.response)
+                    for t in trigger.multi_payload
+                    if t.action is TriggerResponse.rename
+                )
             else:
                 response = trigger.text
             info += _("__Rename__: ") + "**{response}**\n".format(response=response)
         if TriggerResponse.dm in trigger.response_type:
             if trigger.multi_payload:
-                response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
+                response = "\n".join(
+                    str(t.response)
+                    for t in trigger.multi_payload
+                    if t.action is TriggerResponse.dm
+                )
             else:
                 response = trigger.text
             info += _("__DM__: ") + "**{response}**\n".format(response=response)
         if TriggerResponse.dmme in trigger.response_type:
             if trigger.multi_payload:
-                response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dmme")
+                response = "\n".join(
+                    str(t.response)
+                    for t in trigger.multi_payload
+                    if t.action is TriggerResponse.dmme
+                )
             else:
                 response = trigger.text
             info += _("__Self DM__: ") + "**{response}**\n".format(response=response)
         if TriggerResponse.command in trigger.response_type:
             if trigger.multi_payload:
-                response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "command")
+                response = "\n".join(
+                    str(t.response)
+                    for t in trigger.multi_payload
+                    if t.action is TriggerResponse.command
+                )
             else:
                 response = trigger.text
             info += _("__Command__: ") + "**{response}**\n".format(response=response)
@@ -427,7 +447,7 @@ class ReTriggerEditModal(discord.ui.Modal):
                     style=discord.TextStyle.short,
                     label=response_type.name,
                     default="".join(
-                        i[1] for i in trigger.multi_payload if i[0] == response_type.name
+                        str(i.response) for i in trigger.multi_payload if i.action is response_type
                     ),
                 )
             for ti in self.multi_inputs.values():
@@ -466,8 +486,8 @@ class ReTriggerEditModal(discord.ui.Modal):
             msg += _("- Regex\n")
             changed_values.append("regex")
         for response_type, ti in self.multi_inputs.items():
-            old = [i for i in self.trigger.multi_payload if i[0] == response_type.name]
-            old_str = "".join(i[1] for i in old)
+            old = [i for i in self.trigger.multi_payload if i.action is response_type]
+            old_str = "".join(str(i.response) for i in old)
             if ti.value is None:
                 continue
             if old_str != ti.value:
@@ -484,7 +504,7 @@ class ReTriggerEditModal(discord.ui.Modal):
                         self.trigger.multi_payload.remove(old_payload)
                     except IndexError:
                         log.error("Error removing multi payload option.")
-                self.trigger.multi_payload.append([response_type.name, ti.value])
+                self.trigger.multi_payload.append(MultiResponse(response_type, ti.value))
                 changed_values.append(response_type.name)
                 msg += _("- {response_type}").format(response_type=response_type.name)
         if any_edits:
@@ -905,6 +925,68 @@ class BaseMenu(discord.ui.View):
             *interaction.client.owner_ids,
             self.author.id,
         ):
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
+            return False
+        return True
+
+
+class ConfirmView(discord.ui.View):
+    """
+    This is just a copy of my version from Red to be removed later possibly
+    https://github.com/Cog-Creators/Red-DiscordBot/pull/6176
+    """
+
+    def __init__(
+        self,
+        author: Optional[discord.abc.User] = None,
+        *,
+        timeout: float = 180.0,
+        disable_buttons: bool = False,
+    ):
+        if timeout is None:
+            raise TypeError("This view should not be used as a persistent view.")
+        super().__init__(timeout=timeout)
+        self.result: Optional[bool] = None
+        self.author: Optional[discord.abc.User] = author
+        self.message: Optional[discord.Message] = None
+        self.disable_buttons = disable_buttons
+
+    async def on_timeout(self):
+        if self.message is None:
+            # we can't do anything here if message is none
+            return
+
+        if self.disable_buttons:
+            self.confirm_button.disabled = True
+            self.dismiss_button.disabled = True
+            await self.message.edit(view=self)
+        else:
+            await self.message.edit(view=None)
+
+    @discord.ui.button(label=_("Yes"), style=discord.ButtonStyle.green)
+    async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.result = True
+        self.stop()
+        # respond to the interaction so the user does not see "interaction failed".
+        await interaction.response.defer()
+        # call `on_timeout` explicitly here since it's not called when `stop()` is called.
+        await self.on_timeout()
+
+    @discord.ui.button(label=_("No"), style=discord.ButtonStyle.secondary)
+    async def dismiss_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.result = False
+        self.stop()
+        # respond to the interaction so the user does not see "interaction failed".
+        await interaction.response.defer()
+        # call `on_timeout` explicitly here since it's not called when `stop()` is called.
+        await self.on_timeout()
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if self.message is None:
+            self.message = interaction.message
+        if self.author and interaction.user.id != self.author.id:
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )

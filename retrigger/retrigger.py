@@ -16,8 +16,7 @@ from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .converters import (
     ChannelUserRole,
-    ConfirmView,
-    MultiResponse,
+    MultiFlags,
     Trigger,
     TriggerExists,
     TriggerResponse,
@@ -25,7 +24,13 @@ from .converters import (
     ValidEmoji,
     ValidRegex,
 )
-from .menus import BaseMenu, ExplainReTriggerPages, ReTriggerMenu, ReTriggerPages
+from .menus import (
+    BaseMenu,
+    ConfirmView,
+    ExplainReTriggerPages,
+    ReTriggerMenu,
+    ReTriggerPages,
+)
 from .slash import ReTriggerSlash
 from .triggerhandler import ALLOW_OCR, ALLOW_RESIZE, TriggerHandler
 
@@ -52,15 +57,15 @@ def wrapped_additional_help():
     added_doc = _(
         """
 
-    See https://regex101.com/ for help building a regex pattern.
-    See `[p]retrigger explain` or click the link below for more details.
-    [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
-    """
+        See https://regex101.com/ for help building a regex pattern.
+        See `[p]retrigger explain` or click the link below for more details.
+        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
     )
 
     def decorator(func):
         old = func.__doc__ or ""
-        setattr(func, "__doc__", old + added_doc)
+        setattr(func, "__doc__", old.strip() + added_doc)
         return func
 
     return decorator
@@ -89,7 +94,7 @@ class ReTrigger(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.25.0"
+    __version__ = "2.26.0"
 
     def __init__(self, bot):
         super().__init__()
@@ -933,8 +938,9 @@ class ReTrigger(
         trigger._last_modified = _("Thread creation")
 
         if public_or_private is False:
-            view = ConfirmView(ctx, default=True)
-            await ctx.send(
+            view = ConfirmView(ctx.author)
+            view.result = True
+            view.message = await ctx.send(
                 _("Would you like non-moderators to be able to add users to the created thread?"),
                 view=view,
             )
@@ -1431,8 +1437,9 @@ class ReTrigger(
         `<timeout>` is number of seconds until regex searching is kicked out.
         """
         if timeout > 1:
-            view = ConfirmView(ctx, default=False)
-            await ctx.send(
+            view = ConfirmView(ctx.author)
+            view.confirm_button.style = discord.ButtonStyle.red
+            view.message = await ctx.send(
                 _(
                     "Increasing this could cause the bot to become unstable or allow "
                     "bad regex patterns to continue to exist causing slow downs and "
@@ -1447,6 +1454,7 @@ class ReTrigger(
                 await ctx.tick()
             else:
                 await ctx.send(_("Not changing regex timeout time."))
+                return
         elif timeout > 10:
             await ctx.send(
                 _(
@@ -1474,8 +1482,9 @@ class ReTrigger(
         mess with the bot.
         """
         if bypass:
-            view = ConfirmView(ctx, default=False)
-            await ctx.send(
+            view = ConfirmView(ctx.author)
+            view.confirm_button.style = discord.ButtonStyle.red
+            view.message = await ctx.send(
                 _(
                     "Bypassing this could cause the bot to become unstable or allow "
                     "bad regex patterns to continue to exist causing slow downs and "
@@ -1489,6 +1498,7 @@ class ReTrigger(
                 await ctx.tick()
             else:
                 await ctx.send(_("Not bypassing safe Regex search."))
+                return
         else:
             await self.config.guild(ctx.guild).bypass.set(bypass)
             await ctx.send(_("Safe Regex search re-enabled."))
@@ -2146,8 +2156,9 @@ class ReTrigger(
         **Warning:** This function can let other users run a command on your behalf,
         use with caution.
         """
-        view = ConfirmView(ctx, default=False)
-        msg = await ctx.send(
+        view = ConfirmView(ctx.author)
+        view.confirm_button.style = discord.ButtonStyle.red
+        view.message = await ctx.send(
             _(
                 "Mock commands can allow any user to run a command "
                 "as if you did, are you sure you want to add this?"
@@ -2322,43 +2333,36 @@ class ReTrigger(
         ctx: commands.Context,
         name: str,
         regex: ValidRegex,
-        multi_response: commands.Greedy[MultiResponse],
+        *,
+        multi: MultiFlags,
     ) -> None:
         """
         Add a multiple response trigger
 
-        `<name>` name of the trigger
-        `<regex>` the regex that will determine when to respond
-        `[multi_response...]` the list of actions the bot will perform
-
-        Multiple responses start with the name of the action which
-        must be one of the listed options below, followed by a `;`
-        if there is a followup response add a space for the next trigger response.
-        If you want to add or remove multiple roles those may be
-        followed up with additional `;` separations.
-        e.g. `[p]retrigger multi test \\btest\\b \"dm;You said a bad word!\"
-        filter "remove_role;Regular Member" add_role;Timeout`
-        Will attempt to DM the user, delete their message, remove their
-        `@Regular Member` role and add the `@Timeout` role simultaneously.
-
-        Available options:
-        dm
-        dmme
-        remove_role
-        add_role
-        ban
-        kick
-        text
-        filter or delete
-        react
-        rename
-        command
-
-        See https://regex101.com/ for help building a regex pattern.
-        See `[p]retrigger explain` or click the link below for more details.
+        - `<name>` name of the trigger.
+        - `<regex>` the regex that will determine when to respond.
+        - `<multi>` The actions you want the trigger to perform.
+         - `dm:` DM the message author something.
+         - `dmme:` DM the trigger author something.
+         - `add:` or `remove:` Roles which can be added/removed.
+         - `ban:` True to ban the user who sent the message.
+         - `kick:` True to kick the user who sent the message.
+         - `text:` The text to send in the channel when triggers.
+         - `react:` The emojis to react to the triggered messages with.
+         - `rename:` What to change the message authors nickname to.
+         - `command:` The bot command to run when triggered. Don't include a prefix.
+         - `filter:` True to delete the triggered message.
         """
-        # log.info(multi_response)
-        # return
+
+        try:
+            multi_response = await multi.payload(ctx)
+        except commands.BotMissingPermissions as e:
+            await ctx.send(e)
+            return
+        if not multi_response:
+            await ctx.send(_("You need to provide at least one of the multi responses."))
+            return
+
         if ctx.guild.id in self.triggers and name in self.triggers[ctx.guild.id]:
             return await self._already_exists(ctx, name)
         guild = ctx.guild
@@ -2366,19 +2370,34 @@ class ReTrigger(
         if not [i[0] for i in multi_response]:
             await ctx.send(_("You have no actions provided for this trigger."))
             return
-        remove_roles = [r for t in multi_response for r in t[1:] if t[0] == "remove_role"]
-        add_roles = [r for t in multi_response for r in t[1:] if t[0] == "add_role"]
-        reactions = [
-            discord.PartialEmoji.from_str(r)
-            for t in multi_response
-            for r in t[1:]
-            if t[0] == "react"
+        remove_roles = [
+            r.response for r in multi_response if r.action is TriggerResponse.remove_role
         ]
-        log.debug(multi_response)
+        add_roles = [r.response for r in multi_response if r.action is TriggerResponse.add_role]
+        reactions = [
+            discord.PartialEmoji.from_str(str(r.response))
+            for r in multi_response
+            if r.action is TriggerResponse.react
+        ]
+        actions = list(set(i.action for i in multi_response))
+        if TriggerResponse.mock in actions:
+            view = ConfirmView(ctx.author)
+            view.confirm_button.style = discord.ButtonStyle.red
+            view.message = await ctx.send(
+                _(
+                    "Mock commands can allow any user to run a command "
+                    "as if you did, are you sure you want to add this?"
+                ),
+                view=view,
+            )
+            await view.wait()
+            if not view.result:
+                await ctx.send(_("Not creating trigger."))
+                return
         new_trigger = Trigger(
             name,
             regex,
-            [TriggerResponse(i[0]) for i in multi_response],
+            actions,
             author,
             multi_payload=multi_response,
             remove_roles=remove_roles,

@@ -693,7 +693,9 @@ class TriggerHandler(ReTriggerMixin):
             if guild.me.top_role > author.top_role:
                 if trigger.multi_payload:
                     text_response = "\n".join(
-                        t[1] for t in trigger.multi_payload if t[0] == "rename"
+                        str(t.response)
+                        for t in trigger.multi_payload
+                        if t.action is TriggerResponse.rename
                     )
                 else:
                     text_response = str(trigger.text)
@@ -723,7 +725,11 @@ class TriggerHandler(ReTriggerMixin):
         if TriggerResponse.text in trigger.response_type and own_permissions.send_messages:
             await channel.typing()
             if trigger.multi_payload:
-                text_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
+                text_response = "\n".join(
+                    str(t.response)
+                    for t in trigger.multi_payload
+                    if t.action is TriggerResponse.text
+                )
             else:
                 text_response = str(trigger.text)
             response = await self.convert_parms(message, text_response, trigger, find)
@@ -837,7 +843,11 @@ class TriggerHandler(ReTriggerMixin):
 
         if TriggerResponse.dm in trigger.response_type:
             if trigger.multi_payload:
-                dm_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
+                dm_response = "\n".join(
+                    str(t.response)
+                    for t in trigger.multi_payload
+                    if t.action is TriggerResponse.dm
+                )
             else:
                 dm_response = str(trigger.text)
             response = await self.convert_parms(message, dm_response, trigger, find)
@@ -852,7 +862,11 @@ class TriggerHandler(ReTriggerMixin):
 
         if TriggerResponse.dmme in trigger.response_type:
             if trigger.multi_payload:
-                dm_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dmme")
+                dm_response = "\n".join(
+                    str(t.response)
+                    for t in trigger.multi_payload
+                    if t.action is TriggerResponse.dmme
+                )
             else:
                 dm_response = str(trigger.text)
             response = await self.convert_parms(message, dm_response, trigger, find)
@@ -959,7 +973,11 @@ class TriggerHandler(ReTriggerMixin):
 
         if TriggerResponse.command in trigger.response_type:
             if trigger.multi_payload:
-                command_response = [t[1] for t in trigger.multi_payload if t[0] == "command"]
+                command_response = [
+                    t.response
+                    for t in trigger.multi_payload
+                    if t.action is TriggerResponse.command
+                ]
                 for command in command_response:
                     command = await self.convert_parms(message, command, trigger, find)
                     msg = copy(message)
@@ -976,7 +994,9 @@ class TriggerHandler(ReTriggerMixin):
                 self.bot.dispatch("message", msg)
         if TriggerResponse.mock in trigger.response_type:
             if trigger.multi_payload:
-                mock_response = [t[1] for t in trigger.multi_payload if t[0] == "mock"]
+                mock_response = [
+                    t.response for t in trigger.multi_payload if t.action is TriggerResponse.mock
+                ]
                 for command in mock_response:
                     command = await self.convert_parms(message, command, trigger, find)
                     msg = copy(message)

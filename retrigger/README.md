@@ -14,6 +14,16 @@ ReTrigger is a highly versatile cog that allows server moderators and administra
     - `.` any character other than newline.
     - `|` **or** statement meaning this **or** that.
 
+
+## replacements
+You can replace part of most strings with the context the command was run in. The following are discord objects that you can use to replace some data in your string with:
+- `{author}` The author of the message that triggered. See https://discordpy.readthedocs.io/en/latest/api.html#member for available attributes.
+- `{guild}` or `{server}` The server the message was triggered in. See https://discordpy.readthedocs.io/en/latest/api.html#guild for available attributes.
+- `{channel}` The channel the message was triggered in. See https://discordpy.readthedocs.io/en/latest/api.html#textchannel for available attributes.
+- `{message}` The message that triggered. See https://discordpy.readthedocs.io/en/latest/api.html#message for available attributes.
+
+For most of these you will want to use `.` to get the attribute. For example `{author.display_name}` will replace `{author}` with the message authors name as you see it in the server at the time the message triggered.
+
 Special replacement parameters are as follows:
 - `{p}` can be used to replace the bots default prefix in the message.
 - `{pp}` can be used to list all the bots prefixes available on the server.
@@ -159,28 +169,35 @@ __Usage:__ `[p]retrigger publish <name> <regex>`
 This will attempt to publish specific messages posted inside news channels based on matching patterns. Moreso for those lazy admins who forget to press the big shiny button or happened to disable it by mistake and keep forgetting. (Note: You're currently allowed 10 published messages per hour and this will attempt to wait until it can actually publish before completing or the bot restarts.)
 
 ### **multi**
-__Usage:__ `[p]retrigger multi <name> <regex> [multi_response...]`
-Add a multiple response trigger
+__Usage:__ `[p]retrigger multi <name> <regex> <multi>`
+Add a multiple response trigger.
+
 - `<name>` name of the trigger.
 - `<regex>` the regex that will determine when to respond.
-- `[multi_response...]` the list of actions the bot will perform.
-Multiple responses start with the name of the action which must be one of the listed options below, followed by a `;` if there is a followup response add a space for the next trigger response. If you want to add or remove multiple roles those may be
-followed up with additional `;` separations.
-e.g. `[p]retrigger multi test \btest\b "dm;You said a bad word!" filter "remove_role;Regular Member" add_role;Timeout`
-Will attempt to DM the user, delete their message, remove their `@Regular Member` role and add the `@Timeout` role simultaneously.
-Available options:
-- dm
-- dmme
-- remove_role
-- add_role
-- ban
-- kick
-- text
-- filter or delete
-- react
-- command
-- rename
-- publish
+- `<multi>` The actions you want the trigger to perform.
+  - `dm:` DM the message author something.
+  - `dmme:` DM the trigger author something.
+  - `add:` or `remove:` Roles which can be added/removed.
+  - `ban:` True to ban the user who sent the message.
+  - `kick:` True to kick the user who sent the message.
+  - `text:` The text to send in the channel when triggers.
+  - `react:` The emojis to react to the triggered messages with.
+  - `rename:` What to change the message authors nickname to.
+  - `command:` The bot command to run when triggered. Don't include a prefix.
+  - `filter:` True to delete the triggered message.
+
+Examples:
+
+- `[p]retrigger multi foo bar text: baz react: 😃 add: @role`
+
+Will add the 😀 reaction to the message, give the users @role, and send the text `baz`.
+
+- `[p]retrigger multi foo bar filter: true dm: You shouldn't be saying that word.`
+
+Will delete the message and attempt to dm the user.
+
+Note: If the user has DM's turned off in the server or has the bot blocked the user will not receive the DM.
+
 
 
 
@@ -208,43 +225,69 @@ This will delete a trigger.
 __Usage:__ `[p]retrigger cooldown <trigger> <time> [style=guild]`
 Set cooldown options for specified triggers. This can be used to ensure a trigger is not constantly spammed by giving some time until it is allowed to be triggered again. Time must be in seconds.
 
-### **blacklist**
-Set blacklist options for specified triggers.
-Blacklist will ensure **everyone except** the objects added to the trigger blacklist will trigger. For example if you blacklist a role for the trigger anyone with that role will **not** trigger it. This can be useful for removing select bad actors from spamming specific triggers over and over. **Note:** If a whitelist is present on the trigger anything in the blacklist is ignored.
- - **add** Add a channel, user, or role to a triggers blacklist.
-  __Usage:__ `[p]retrigger blacklist add <trigger> [channel_user_role...]`
+### **blocklist**
+Set blocklist options for specified triggers.
+Blacklist will ensure **everyone except** the objects added to the trigger blocklist will trigger. For example if you blocklist a role for the trigger anyone with that role will **not** trigger it. This can be useful for removing select bad actors from spamming specific triggers over and over. **Note:** If a allowlist is present on the trigger anything in the blocklist is ignored.
+ - **add** Add a channel, user, or role to a triggers blocklist.
+  __Usage:__ `[p]retrigger blocklist add <trigger> [channel_user_role...]`
  	multiple channels, users, or roles can be added at the same time.
- - **remove** Remove a channel, user, or role from a triggers blacklist.
-  __Usage:__ `[p]retrigger blacklist remove <trigger> [channel_user_role...]`
- 	multiple channels, users, or roles can be added at the same time.
-
-### **whitelist**
-Set whitelist options for specified triggers.
-Whitelist will ensure **only** the objects added to the trigger whitelist will actually trigger. For example if you whitelist a role for the trigger only users with that role can actually trigger it. This can be useful for setting specific triggers to only occur in a specified channel and help with automatic moderation of specific channels/users/roles.
- - **add** Add a channel, user, or role to a triggers whitelist.
- __Usage:__ `[p]retrigger whitelist add <trigger> [channel_user_role...]`
- 	multiple channels, users, or roles can be added at the same time.
- - **remove** Remove a channel, user, or role from a triggers whitelist.
- __Usage:__ `[p]retrigger whitelist remove <trigger> [channel_user_role...]`
+ - **remove** Remove a channel, user, or role from a triggers blocklist.
+  __Usage:__ `[p]retrigger blocklist remove <trigger> [channel_user_role...]`
  	multiple channels, users, or roles can be added at the same time.
 
-### **edit**
-Edit various settings in a set trigger.
- - **regex** Edit the regex of a saved trigger.
- - **edited** Toggle whether the bot will listen to edited messages as well as `on_message` for the specified trigger.
- - **ignorecommands** Toggle the regex matching inside normally ignored command messages.
- - **ocr** Toggle whether to use Optical Character Recognition to search for text within images. **Requires `pytesseract-ocr` and [google tesseract]([https://github.com/tesseract-ocr/tesseract](https://github.com/tesseract-ocr/tesseract)) be installed on the host machine.**
-   images
- - **react** Edit the emoji reactions of a saved trigger. **Note:** This cannot be used on *multi* triggers.
- - **command** Edit the text of a saved trigger. **Note:** This cannot be used on *multi* triggers.
- - **role** Edit the added or removed roles of a saved trigger. **Note:** This cannot be used on *multi* triggers.
- - **text** Edit the response text of a saved trigger. **Note:** This cannot be used on *multi* triggers.
- - **readfilenames** Edit whether or not a trigger will append filenames of attachments to the search.
- - **deleteafter** Text triggers can have an optional delete_after time set, this can be used to edit it.
- - **chance** Triggers can be setup with a chance to occur in form of `1 in chance`.
- - **readembeds** Toggle whether the bot will search the contents of embeds. **Requires `edited` also be enabled.**
+### **allowlist**
+Set allowlist options for specified triggers.
+Whitelist will ensure **only** the objects added to the trigger allowlist will actually trigger. For example if you allowlist a role for the trigger only users with that role can actually trigger it. This can be useful for setting specific triggers to only occur in a specified channel and help with automatic moderation of specific channels/users/roles.
+ - **add** Add a channel, user, or role to a triggers allowlist.
+ __Usage:__ `[p]retrigger allowlist add <trigger> [channel_user_role...]`
+ 	multiple channels, users, or roles can be added at the same time.
+ - **remove** Remove a channel, user, or role from a triggers allowlist.
+ __Usage:__ `[p]retrigger allowlist remove <trigger> [channel_user_role...]`
+ 	multiple channels, users, or roles can be added at the same time.
 
-### **modlog**
+
+## Edit commands
+Edit various settings in a set trigger. under `[p]retrigger edit`
+### regex
+ - Edit the regex of a saved trigger.
+### edited
+ - Toggle whether the bot will listen to edited messages as well as `on_message` for the specified trigger.
+ ### ignorecommands
+ - Toggle the regex matching inside normally ignored command messages.
+ ### ocr
+ - Toggle whether to use Optical Character Recognition to search for text within images. **Requires `pytesseract-ocr` and [google tesseract](https://github.com/tesseract-ocr/tesseract) be installed on the host machine.**
+### react
+ - Edit the emoji reactions of a saved trigger. **Note:** This cannot be used on *multi* triggers.
+### command
+ - Edit the text of a saved trigger. **Note:** This cannot be used on *multi* triggers.
+### role
+ - Edit the added or removed roles of a saved trigger. **Note:** This cannot be used on *multi* triggers.
+### text
+ - Edit the response text of a saved trigger. **Note:** This cannot be used on *multi* triggers.
+### readfilenames
+ - Edit whether or not a trigger will append filenames of attachments to the search.
+### deleteafter
+ - Text triggers can have an optional delete_after time set, this can be used to edit it.
+### chance
+ - Triggers can be setup with a chance to occur in form of `1 in chance`.
+### readembeds
+ - Toggle whether the bot will search the contents of embeds. **Requires `edited` also be enabled.**
+
+### readthreads
+ - Toggle whether a filter trigger will check thread titles.
+   - This only works in conjunction with delete triggers. If a thread is created with a title that would match the delete triggers pattern the thread will be deleted. This also requires the bot to have manage_threads permission in the channel the threads are created in.
+### nsfw
+ - Toggle whether a trigger is considered NSFW preventing it from activating in non Age Restricted channels.
+### reply
+ - Set whether or not to reply to the triggered message.
+   - This only works in conjunction with text response and image response triggers. Setting to `True` will ping the user, setting to `False` will not ping the user, and leaving blank will not reply to the message at all but will still trigger.
+### thread
+- Set whether or not the Trigger will attempt to create a thread on the message.
+  - You can set it to be either a public or private thread.
+  - A thread name is required and utilizes object conversion to automatically make a thread with the users name. See the replacements section for more info on what can be replaced.
+
+
+## **modlog**
 Set which events to record in the modlog. ReTrigger has a built in modlog setup which can be used to track when and how ReTrigger is performing automated moderation actions.
 
  - **addroles** Toggle custom add role messages in the modlog.

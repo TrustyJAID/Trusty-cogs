@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
     from .converters import (
         ChannelUserRole,
-        MultiResponse,
+        MultiFlags,
         Trigger,
         TriggerExists,
         ValidEmoji,
@@ -490,6 +490,7 @@ class ReTriggerMixin(ABC):
         ctx: commands.Context,
         name: str,
         regex: ValidRegex,
-        multi_response: commands.Greedy[MultiResponse],
+        *,
+        multi: MultiFlags,
     ) -> None:
         raise NotImplementedError()
