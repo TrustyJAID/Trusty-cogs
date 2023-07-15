@@ -639,7 +639,9 @@ class EventMixin:
             for invite in guild_invites:
                 if invite.code in invites:
                     uses = invites[invite.code]["uses"]
-                    # logger.info(f"{invite.code}: {invite.uses} - {uses}")
+                    # we can't get accurate information if the uses is None
+                    if invite.uses is None or uses is None:
+                        continue
                     if invite.uses > uses:
                         possible_link = _(
                             "https://discord.gg/{code}\nInvited by: {inviter}"
