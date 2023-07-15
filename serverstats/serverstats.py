@@ -1,4 +1,5 @@
 import asyncio
+import os
 from copy import copy
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
@@ -6,6 +7,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import aiohttp
 import discord
+import psutil
 from red_commons.logging import getLogger
 from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
@@ -43,7 +45,7 @@ class ServerStats(commands.GroupCog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.7.4"
+    __version__ = "1.8.0"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -52,6 +54,7 @@ class ServerStats(commands.GroupCog):
         self.config: Config = Config.get_conf(self, 54853421465543, force_registration=True)
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
+        self.process = psutil.Process()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -391,28 +394,65 @@ class ServerStats(commands.GroupCog):
         file = discord.File(image, filename=filename)
         await ctx.send(file=file)
 
-    @commands.hybrid_command()
+    @commands.hybrid_command(aliases=["bs"])
     async def botstats(self, ctx: commands.Context) -> None:
         """Display stats about the bot"""
         async with ctx.typing():
             servers = humanize_number(len(ctx.bot.guilds))
             members = humanize_number(len(self.bot.users))
-            passed = f"<t:{int(ctx.me.created_at.timestamp())}:R>"
-            since = f"<t:{int(ctx.me.created_at.timestamp())}:D>"
+            passed = discord.utils.format_dt(ctx.me.created_at, "R")
+            since = discord.utils.format_dt(ctx.me.created_at, "D")
+            uptime = discord.utils.format_dt(self.bot.uptime, "R")
+            up_since = discord.utils.format_dt(self.bot.uptime, "D")
             msg = _(
                 "{bot} is on {servers} servers serving {members} members!\n"
                 "{bot} was created on **{since}**.\n"
-                "That's over **{passed}**!"
+                "That's over **{passed}**!\nI have been up since {up_since} ({uptime}).\n"
             ).format(
                 bot=ctx.me.mention,
                 servers=servers,
                 members=members,
                 since=since,
                 passed=passed,
+                uptime=uptime,
+                up_since=up_since,
             )
-            em = discord.Embed(
-                description=msg, colour=await ctx.embed_colour(), timestamp=ctx.message.created_at
+            em = discord.Embed(colour=await ctx.embed_colour(), timestamp=ctx.message.created_at)
+            # https://github.com/Rapptz/RoboDanny/blob/f859a326d74e919b1b3042b0114a258cd6a531f4/cogs/stats.py#L716-L798
+            # The following code is inspired by RoboDanny linked above modified for Red-DiscordBot
+            description = [msg]
+            all_tasks = asyncio.all_tasks(loop=self.bot.loop)
+            event_tasks = [t for t in all_tasks if "Client._run_event" in repr(t) and not t.done()]
+
+            cogs_directory = [str(p) for p in await ctx.bot._cog_mgr.user_defined_paths()]
+            cogs_directory.insert(0, str(await ctx.bot._cog_mgr.install_path()))
+            cogs_directory.insert(0, str(ctx.bot._cog_mgr.CORE_PATH))
+
+            tasks_directory = os.path.join("discord", "ext", "tasks", "__init__.py")
+            inner_tasks = [
+                t
+                for t in all_tasks
+                if any([p in repr(t) for p in cogs_directory]) or tasks_directory in repr(t)
+            ]
+
+            bad_inner_tasks = [
+                hex(id(t)) for t in inner_tasks if t.done() and t._exception is not None
+            ]
+            bad_inner_tasks_str = humanize_list(bad_inner_tasks)
+            total_warnings = len(bad_inner_tasks)
+            em.add_field(
+                name="Inner Tasks",
+                value=f'Total: {len(inner_tasks)}\nFailed: {bad_inner_tasks_str or "None"}',
             )
+            em.add_field(name="Events Waiting", value=f"Total: {len(event_tasks)}")
+
+            memory_usage = self.process.memory_full_info().uss / 1024 ** 2
+            cpu_usage = self.process.cpu_percent() / psutil.cpu_count()
+            em.add_field(name="Process", value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU")
+
+            global_rate_limit = not self.bot.http._global_over.is_set()
+            description.append(f"Global Rate Limit: {global_rate_limit}")
+            em.set_footer(text=f"{total_warnings} warning(s)")
             if ctx.guild:
                 em.set_author(
                     name=f"{ctx.me} {f'~ {ctx.me.nick}' if ctx.me.nick else ''}",
@@ -423,11 +463,12 @@ class ServerStats(commands.GroupCog):
                     name=f"{ctx.me}",
                     icon_url=ctx.me.avatar,
                 )
+            em.description = "\n".join(description)
             em.set_thumbnail(url=ctx.me.avatar)
         if ctx.channel.permissions_for(ctx.me).embed_links:
             await ctx.send(embed=em)
         else:
-            await ctx.send(msg)
+            await ctx.send("\n".join(description)[:2000])
 
     @commands.hybrid_command()
     @checks.mod_or_permissions(manage_channels=True)
@@ -1180,6 +1221,8 @@ class ServerStats(commands.GroupCog):
         pass
 
     @guildedit.command(name="name")
+    @checks.admin_or_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
     async def guild_name(self, ctx: commands.Context, *, name: str):
         """
         Change the server name
@@ -1195,6 +1238,8 @@ class ServerStats(commands.GroupCog):
         await ctx.send(_("Server name set to {name}.").format(name=name))
 
     @guildedit.command(name="verificationlevel", aliases=["verification"])
+    @checks.admin_or_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
     async def verifivation_level(self, ctx: commands.Context, *, level: str) -> None:
         """
         Modify the guilds verification level
@@ -1232,6 +1277,8 @@ class ServerStats(commands.GroupCog):
         await ctx.send(_("Server verification level set to {level}").format(level=level))
 
     @guildedit.command(name="systemchannel", aliases=["welcomechannel"])
+    @checks.admin_or_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
     async def system_channel(
         self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
     ) -> None:
@@ -1252,6 +1299,8 @@ class ServerStats(commands.GroupCog):
         await ctx.send(_("Server systemchannel set to {channel}").format(channel=channel_name))
 
     @guildedit.command(name="afkchannel")
+    @checks.admin_or_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
     async def afk_channel(
         self, ctx: commands.Context, channel: Optional[discord.VoiceChannel] = None
     ) -> None:
@@ -1271,6 +1320,8 @@ class ServerStats(commands.GroupCog):
         await ctx.send(_("Server afk channel set to {channel}").format(channel=channel_name))
 
     @guildedit.command(name="afktimeout")
+    @checks.admin_or_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
     async def afk_timeout(self, ctx: commands.Context, timeout: int) -> None:
         """
         Change the servers AFK timeout
