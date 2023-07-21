@@ -3,15 +3,21 @@ import functools
 import random
 import re
 from io import BytesIO
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import discord
 from PIL import Image
+from red_commons.logging import getLogger
 from redbot.core import Config, checks, commands
+from redbot.core.utils.chat_formatting import humanize_list
 
 from .citations.factory import Factory
 from .citations.themes import Theme
 from .citations.themes import named as default_themes
+
+RE_CTX: re.Pattern = re.compile(r"{([^}]+)\}")
+
+log = getLogger("red.trusty-cogs.citation")
 
 
 class AdvancedCitationFlags(commands.FlagConverter, case_insensitive=True):
@@ -54,13 +60,18 @@ class Citation(commands.Cog):
         "Saphire",
         "TrustyJAID",
     ]
-    __version__ = "1.2.3"
-    __flavour__ = "Don't force wrap_by_char"
+    __version__ = "1.3.0"
+    __flavour__ = "Dynamic Replacements"
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=132620654087241729)
-        self.config.register_guild(penalty="WARNING ISSUED - NO PENALTY", theme="blue", themes={})
+        self.config.register_guild(
+            penalty="WARNING ISSUED - NO PENALTY",
+            theme="blue",
+            themes={},
+            title="{guild.name} CITATION",
+        )
         self._commit = ""
         self._repo = ""
 
@@ -94,13 +105,98 @@ class Citation(commands.Cog):
                     self._repo = cog.repo.clean_url
                 self._commit = cog.commit
 
-    async def get_themes(self, guild: discord.Guild) -> Dict[str, Theme]:
+    async def get_themes(self, guild: Optional[discord.Guild]) -> Dict[str, Theme]:
+        if guild is None:
+            return default_themes
         custom_themes = await self.config.guild(guild).themes()
         # I should only need a shallow copy of this since it's not nested
         ret = default_themes.copy()
         for theme_name, colours in custom_themes.items():
             ret[theme_name] = Theme(*colours)
         return ret
+
+    async def get_theme(self, guild: Optional[discord.Guild]) -> Theme:
+        if guild is not None:
+            themes = await self.get_themes(guild)
+            theme_name = await self.config.guild(guild).theme()
+            return themes[theme_name]
+        return default_themes["pink"]
+
+    async def replace_mentions(self, ctx: commands.Context, content: str) -> str:
+        """
+        Replace mentions in the content of a message with the actual string.
+        This is because the image doesn't render discord mentions properly.
+
+        This should be the last step before rendering. Other converters have already been used.
+        """
+        for mention in ctx.message.mentions:
+            content = re.sub(rf"<@!?{mention.id}>", f"@{mention.display_name}", content)
+        for mention in ctx.message.channel_mentions:
+            content = content.replace(mention.mention, f"#{mention.name}")
+        for mention in ctx.message.role_mentions:
+            content = content.replace(mention.mention, f"@{mention.name}")
+        return content
+
+    async def convert_parms(
+        self, ctx: commands.Context, raw_response: str, to: Optional[discord.Member]
+    ) -> str:
+        # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/customcom/customcom.py
+        # ctx = await self.bot.get_context(message)
+        results = RE_CTX.findall(raw_response)
+        for result in results:
+            param = await self.transform_parameter(result, ctx, to)
+            raw_response = raw_response.replace("{" + result + "}", param)
+        raw_response = raw_response.replace("[p]", ctx.clean_prefix)
+        raw_prefixes = await self.bot.get_prefix(ctx.channel)
+        prefixes = []
+        for p in raw_prefixes:
+            pattern = re.compile(rf"<@!?{ctx.me.id}>")
+            prefixes.append(pattern.sub(f"@{ctx.me.display_name}".replace("\\", r"\\"), p))
+        raw_response = raw_response.replace("[pp]", humanize_list(prefixes))
+        return await self.replace_mentions(ctx, raw_response)
+
+    @staticmethod
+    async def transform_parameter(
+        result: str, ctx: commands.Context, to: Optional[discord.Member]
+    ) -> str:
+        """
+        For security reasons only specific objects are allowed
+        Internals are ignored
+        """
+        raw_result = "{" + result + "}"
+        objects: Dict[str, Any] = {
+            "message": ctx.message,
+            "author": ctx.author,
+            "channel": ctx.channel,
+            "guild": ctx.guild,
+            "server": ctx.guild,
+            "bot": ctx.me,
+            "to": to,
+        }
+        if ctx.message.attachments:
+            objects["attachment"] = ctx.message.attachments[0]
+            # we can only reasonably support one attachment at a time
+        if result in objects:
+            return str(objects[result])
+        try:
+            first, second = result.split(".")
+        except ValueError:
+            return raw_result
+        if first in objects and not second.startswith("_"):
+            first = objects[first]
+        else:
+            return raw_result
+        return str(getattr(first, second, raw_result))
+
+    async def default_title(self, guild: Optional[discord.Guild]) -> str:
+        if guild is not None:
+            return await self.config.guild(guild).title()
+        return "{bot.display_name} CITATION"
+
+    async def default_penalty(self, guild: Optional[discord.Guild]) -> str:
+        if guild is not None:
+            return await self.config.guild(guild).penalty()
+        return "WARNING ISSUED - NO PENALTY"
 
     @commands.hybrid_group(aliases=["citation"], fallback="make")
     @commands.bot_has_permissions(attach_files=True)
@@ -111,19 +207,19 @@ class Citation(commands.Cog):
         `<content>` the content of the citation
         """
         async with ctx.typing():
-            content = await self.replace_mentions(ctx, content)
-            name = ctx.guild.name if ctx.guild else ctx.me.display_name
-            title = f"{name} CITATION"
-            barcode = self.user_id_to_barcode(ctx.author.id)
-
-            penalty = await self.config.guild(ctx.guild).penalty()
             user = None
             if ctx.message.reference:
                 if isinstance(ctx.message.reference.resolved, discord.Message):
                     user = ctx.message.reference.resolved.author
-            theme_name = await self.config.guild(ctx.guild).theme()
-            themes = await self.get_themes(ctx.guild)
-            theme = themes[theme_name]
+
+            content = await self.convert_parms(ctx, content, user)
+            title = await self.convert_parms(ctx, await self.default_title(ctx.guild), user)
+
+            barcode = self.user_id_to_barcode(ctx.author.id)
+
+            penalty = await self.convert_parms(ctx, await self.default_penalty(ctx.guild), user)
+
+            theme = await self.get_theme(ctx.guild)
             file = await self.make_citation(
                 issuer=ctx.author,
                 content=content,
@@ -137,15 +233,6 @@ class Citation(commands.Cog):
                 await ctx.send("sorry something went wrong!")
                 return
         await ctx.send(file=file, reference=ctx.message.reference, mention_author=False)
-
-    async def replace_mentions(self, ctx: commands.Context, content: str) -> str:
-        for mention in ctx.message.mentions:
-            content = re.sub(rf"<@!?{mention.id}>", f"@{mention.display_name}", content)
-        for mention in ctx.message.channel_mentions:
-            content = content.replace(mention.mention, f"#{mention.name}")
-        for mention in ctx.message.role_mentions:
-            content = content.replace(mention.mention, f"@{mention.name}")
-        return content
 
     @citate.command(name="advanced", aliases=["advcitation"])
     @commands.bot_has_permissions(attach_files=True)
@@ -176,9 +263,15 @@ class Citation(commands.Cog):
 
         """
         async with ctx.typing():
-            themes = await self.get_themes(ctx.guild)
-            theme = themes[await self.config.guild(ctx.guild).theme()]
+            theme = await self.get_theme(ctx.guild)
+
+            user = citation.to
+            if user is None and ctx.message.reference:
+                if isinstance(ctx.message.reference.resolved, discord.Message):
+                    user = ctx.message.reference.resolved.author
+
             if citation.theme_name:
+                themes = await self.get_themes(ctx.guild)
                 if citation.theme_name not in themes:
                     await ctx.send(f"`{citation.theme_name}` is not an available theme.")
                     return
@@ -186,20 +279,17 @@ class Citation(commands.Cog):
             elif citation.background or citation.foreground or citation.details:
                 theme = citation.get_theme(theme)
 
-            content = await self.replace_mentions(ctx, citation.content)
-            title = await self.replace_mentions(
+            content = await self.convert_parms(ctx, citation.content, user)
+            title = await self.convert_parms(
                 ctx,
-                citation.title
-                or f"{ctx.guild.name if ctx.guild else ctx.me.display_name} CITATION",
+                citation.title or await self.default_title(ctx.guild),
+                user,
             )
-            penalty = await self.replace_mentions(
-                ctx, citation.penalty or await self.config.guild(ctx.guild).penalty()
+            penalty = await self.convert_parms(
+                ctx, citation.penalty or await self.default_penalty(ctx.guild), user
             )
             barcode = self.user_id_to_barcode(ctx.author.id)
-            user = citation.to
-            if user is None and ctx.message.reference:
-                if isinstance(ctx.message.reference.resolved, discord.Message):
-                    user = ctx.message.reference.resolved.author
+
             file = await self.make_citation(
                 issuer=ctx.author,
                 content=content,
@@ -221,6 +311,7 @@ class Citation(commands.Cog):
 
     @citate.group(name="set")
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.guild_only()
     async def citationset(self, ctx: commands.Context) -> None:
         """
         Set citation settings for the server.
@@ -228,6 +319,7 @@ class Citation(commands.Cog):
         pass
 
     @citationset.command(name="theme")
+    @commands.guild_only()
     async def set_theme(self, ctx: commands.Context, theme: str):
         """
         Set the citation theme to be used on this server
@@ -246,16 +338,65 @@ class Citation(commands.Cog):
         await ctx.send(f"Theme set to `{theme}`.")
 
     @citationset.command(name="penalty")
+    @commands.guild_only()
     async def set_penalty(self, ctx: commands.Context, *, penalty: str):
         """
         Set the citation penalty for the server.
+
+        This supports dynamic replacement. So if you want to always
+        show the author of the command in the title, the server, etc.
+        you can do so.
+        Available parameters:
+        - `{author}` [Attributes.](https://discordpy.readthedocs.io/en/latest/api.html#member)
+        - `{bot}` The bot user. See `{author}` for attributes.
+        - `{channel}` [Attributes.](https://discordpy.readthedocs.io/en/latest/api.html#textchannel)
+        - `{guild}` or `{server}` [Attributes.](https://discordpy.readthedocs.io/en/latest/api.html#guild)
+        - `{message}` [Attributes.](https://discordpy.readthedocs.io/en/latest/api.html#message)
+        - `{to}` The user this is issued to. Can be `None`. See `{author}` for attributes.
+        - `[\u200bp]` The prefix that was used to make this command.
+        - `[pp]` a humanized list of all the bots prefixes in the channel.
+
+        Example:
+        `[p]citation set penalty {guild.name} WARNING`
+        will set the default title to the current server name.
         """
         async with ctx.typing():
             penalty = await self.replace_mentions(ctx, penalty)
             await self.config.guild(ctx.guild).penalty.set(penalty)
         await ctx.send(f"Penalty set to `{penalty}`")
 
+    @citationset.command(name="title")
+    @commands.guild_only()
+    async def set_title(self, ctx: commands.Context, *, title: str):
+        """
+        Set the citation title for the server.
+
+        This supports dynamic replacement. So if you want to always
+        show the author of the command in the title, the server, etc.
+        you can do so.
+        Available parameters:
+        - `{author}` [Attributes.](https://discordpy.readthedocs.io/en/latest/api.html#member)
+        - `{bot}` The bot user. See `{author}` for attributes.
+        - `{channel}` [Attributes.](https://discordpy.readthedocs.io/en/latest/api.html#textchannel)
+        - `{guild}` or `{server}` [Attributes.](https://discordpy.readthedocs.io/en/latest/api.html#guild)
+        - `{message}` [Attributes.](https://discordpy.readthedocs.io/en/latest/api.html#message)
+        - `{to}` The user this is issued to. Can be `None`. See `{author}` for attributes.
+        - `[\u200bp]` The prefix that was used to make this command.
+        - `[pp]` a humanized list of all the bots prefixes in the channel.
+
+        Example:
+        `[p]citation set title {guild.name} CITATION`
+        will set the default title to the current server name.
+        """
+        async with ctx.typing():
+            # replace the mentions here with strings so they're saved.
+            # Dynamic replacements happen after.
+            penalty = await self.replace_mentions(ctx, title)
+            await self.config.guild(ctx.guild).title.set(penalty)
+        await ctx.send(f"Penalty set to `{penalty}`")
+
     @citationset.command(name="maketheme")
+    @commands.guild_only()
     @commands.bot_has_permissions(attach_files=True)
     async def make_theme(
         self,
