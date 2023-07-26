@@ -171,8 +171,8 @@ class Destiny(DestinyAPI, commands.Cog):
             log.error("Error checking Destiny news sources: %s", e)
             return
         news_dict = {a["UniqueIdentifier"]: a for a in news.get("NewsArticles", [])}
-        guilds = await self.config.all_guilds()
         source = BungieNewsSource(news)
+        guilds = await self.config.all_guilds()
         for guild_id, data in guilds.items():
             guild = self.bot.get_guild(guild_id)
             if guild is None:

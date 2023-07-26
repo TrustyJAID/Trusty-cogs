@@ -476,7 +476,7 @@ class LoadoutPages(menus.ListPageSource):
 
 class BungieNewsSource(menus.ListPageSource):
     def __init__(self, news_pages: dict):
-        self.pages = news_pages["NewsArticles"]
+        self.pages = news_pages.get("NewsArticles", [])
         super().__init__(self.pages, per_page=1)
         self.select_options = []
         for index, page in enumerate(self.pages):
