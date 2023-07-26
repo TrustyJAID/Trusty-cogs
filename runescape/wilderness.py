@@ -12,7 +12,7 @@ class WildernessFlashEvents(Enum):
     king_black_dragon_rampage = 4
     forgotten_soldiers = 5
     surprising_seedlings = 6
-    hellohound_pack = 7
+    hellhound_pack = 7
     infernal_star = 8
     lost_souls = 9
     ramokee_incursion = 10

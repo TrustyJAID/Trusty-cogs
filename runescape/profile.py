@@ -161,7 +161,7 @@ class Activity:
             date = datetime.strptime(date_info, "%d-%b-%Y %H:%M")
         else:
             date = datetime.now()
-        date = tz.localize(date, is_dst=None).astimezone(timezone.utc)
+        date = tz.localize(date)
         text = data.get("text")
         activity_id = f"{int(date.timestamp())}-{text}"
         return cls(
