@@ -25,6 +25,7 @@ from .converter import (
     DestinyComponentType,
     DestinyStatsGroup,
     DestinyStatsGroupType,
+    NewsArticles,
     PeriodType,
 )
 from .errors import (
@@ -839,13 +840,14 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/Stats/PostGameCarnageReport/{activity_id}/"
         return await self.request_url(url, headers=headers)
 
-    async def get_news(self, page_number: int = 0) -> dict:
+    async def get_news(self, page_number: int = 0) -> NewsArticles:
         try:
             headers = await self.build_headers()
         except Exception:
             raise Destiny2RefreshTokenError
         url = f"{BASE_URL}/Content/Rss/NewsArticles/{page_number}"
-        return await self.request_url(url, headers=headers)
+        data = NewsArticles.from_json(await self.request_url(url, headers=headers))
+        return data
 
     async def get_activity_history(
         self,

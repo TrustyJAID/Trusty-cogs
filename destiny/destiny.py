@@ -170,9 +170,11 @@ class Destiny(DestinyAPI, commands.Cog):
         except Destiny2APIError as e:
             log.error("Error checking Destiny news sources: %s", e)
             return
-        news_dict = {a["UniqueIdentifier"]: a for a in news.get("NewsArticles", [])}
+        if len(news.NewsArticles) < 1:
+            return
         source = BungieNewsSource(news)
         guilds = await self.config.all_guilds()
+        article_keys = [a.save_id() for a in news.NewsArticles]
         for guild_id, data in guilds.items():
             guild = self.bot.get_guild(guild_id)
             if guild is None:
@@ -182,14 +184,24 @@ class Destiny(DestinyAPI, commands.Cog):
                 continue
             if not channel.permissions_for(guild.me).send_messages:
                 continue
-            for _id, article in news_dict.items():
-                if _id in data["posted_news"]:
+            for article in news.NewsArticles:
+                if article.UniqueIdentifier in data["posted_news"]:
+                    # modify the data to include the new save ID here
+                    data["posted_news"].remove(article.UniqueIdentifier)
+                    data["posted_news"].append(article.save_id())
+                    continue
+                if article.save_id() in data["posted_news"]:
                     continue
                 kwargs = await source.format_page(None, article)
                 if not channel.permissions_for(guild.me).embed_links:
                     kwargs["embed"] = None
                 await channel.send(**kwargs)
-            await self.config.guild(guild).posted_news.set(list(news_dict.keys()))
+                data["posted_news"].append(article.save_id())
+            if len(data["posted_news"]) > 25:
+                for old in data["posted_news"].copy():
+                    if old not in article_keys and len(data["posted_news"]) > 25:
+                        data["posted_news"].remove(old)
+            await self.config.guild(guild).posted_news.set(data["posted_news"])
 
     @news_checker.before_loop
     async def before_news_checker(self):
@@ -269,7 +281,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     _("There was an error getting the current news posts. Please try again later.")
                 )
                 return
-            current = [a["UniqueIdentifier"] for a in news.get("NewsArticles", [])]
+            current = [a.save_id() for a in news.NewsArticles]
             await self.config.guild(ctx.guild).posted_news.set(current)
             await self.config.guild(ctx.guild).news_channel.set(channel.id)
             await ctx.send(

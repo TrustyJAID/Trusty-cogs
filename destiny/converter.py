@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum, EnumMeta
 from typing import List, Optional, Union
 
@@ -18,6 +19,37 @@ _ = Translator("Destiny", __file__)
 log = getLogger("red.trusty-cogs.Destiny")
 
 STRING_VAR_RE = re.compile(r"{var:(?P<hash>\d+)}")
+
+
+@dataclass
+class NewsArticle:
+    Title: str
+    Link: str
+    PubDate: str
+    UniqueIdentifier: str
+    Description: str
+    ImagePath: str
+    OptionalMobileImagePath: Optional[str] = None
+
+    def pubdate(self) -> datetime:
+        return datetime.strptime(self.PubDate, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+
+    def save_id(self) -> str:
+        return f"{self.UniqueIdentifier}:{int(self.pubdate().timestamp())}"
+
+
+@dataclass
+class NewsArticles:
+    CurrentPaginationToken: int
+    NextPaginationToken: int
+    ResultCountThisPage: int
+    NewsArticles: List[NewsArticle]
+    PagerAction: str
+
+    @classmethod
+    def from_json(cls, data: dict) -> NewsArticles:
+        articles = [NewsArticle(**i) for i in data.pop("NewsArticles", [])]
+        return cls(NewsArticles=articles, **data)
 
 
 class DestinyComponentType(Enum):

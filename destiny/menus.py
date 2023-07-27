@@ -12,6 +12,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import bold, humanize_list
 from redbot.vendored.discord.ext import menus
 
+from .converter import NewsArticle, NewsArticles
 from .errors import Destiny2APIError
 
 BASE_URL = "https://bungie.net"
@@ -475,30 +476,28 @@ class LoadoutPages(menus.ListPageSource):
 
 
 class BungieNewsSource(menus.ListPageSource):
-    def __init__(self, news_pages: dict):
-        self.pages = news_pages.get("NewsArticles", [])
+    def __init__(self, news_pages: NewsArticles):
+        self.pages = news_pages.NewsArticles
         super().__init__(self.pages, per_page=1)
         self.select_options = []
         for index, page in enumerate(self.pages):
             self.select_options.append(
                 discord.SelectOption(
-                    label=page["Title"][:100], description=page["Description"][:100], value=index
+                    label=page.Title[:100], description=page.Description[:100], value=index
                 )
             )
 
-    async def format_page(self, menu: Optional[BaseMenu], page: dict):
-        link = page["Link"]
-        time = datetime.strptime(page["PubDate"], "%Y-%m-%dT%H:%M:%SZ").replace(
-            tzinfo=timezone.utc
-        )
+    async def format_page(self, menu: Optional[BaseMenu], page: NewsArticle):
+        link = page.Link
+        time = page.pubdate()
         url = f"{BASE_URL}{link}"
         embed = discord.Embed(
-            title=page["Title"],
+            title=page.Title,
             url=url,
-            description=page["Description"],
+            description=page.Description,
             timestamp=time,
         )
-        embed.set_image(url=page["ImagePath"])
+        embed.set_image(url=page.ImagePath)
         # time = datetime.fromisoformat(page["PubDate"])
         # embed.add_field(name=_("Published"), value=discord.utils.format_dt(time, style="R"))
 
