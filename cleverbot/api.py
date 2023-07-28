@@ -3,6 +3,7 @@ from typing import Optional, Tuple, Union
 
 import aiohttp
 import discord
+from charset_normalizer import detect
 from discord.ext.commands.converter import Converter, IDConverter
 from discord.ext.commands.errors import BadArgument
 from red_commons.logging import getLogger
@@ -12,11 +13,6 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 
 from .errors import APIError, InvalidCredentials, NoCredentials, OutOfRequests
-
-try:
-    import cchardet as chardet
-except ImportError:
-    import chardet
 
 API_URL = "https://www.cleverbot.com/getreply"
 IO_API_URL = "https://cleverbot.io/1.0"
@@ -384,8 +380,9 @@ class CleverbotAPI:
                 if r.status == 200:
                     try:
                         msg = await r.read()
-                        enc = chardet.detect(msg)
-                        data = await r.json(encoding=enc["encoding"])
+                        detected = detect(msg)
+                        encoding: str = detected["encoding"]
+                        data = await r.json(encoding=encoding)
                     except Exception:
                         raise APIError("Error decoding cleverbot respose.")
                     self.instances[str(author.id)] = data["cs"]  # Preserves conversation status
