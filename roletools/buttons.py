@@ -165,6 +165,7 @@ class RoleToolsButtons(RoleToolsMixin):
         view = RoleToolsView(self, timeout=180.0)
         view.add_item(button)
         await ctx.send("Here is how your button will look.", view=view)
+        await self.confirm_selfassignable(ctx, [role])
 
     @buttons.command(name="delete", aliases=["del", "remove"])
     async def delete_button(self, ctx: Context, *, name: str) -> None:

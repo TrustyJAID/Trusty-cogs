@@ -310,6 +310,7 @@ class RoleToolsSelect(RoleToolsMixin):
         view.add_item(select_menus)
         msg = _("Here is how your select option will look.")
         await ctx.send(msg, view=view)
+        await self.confirm_selfassignable(ctx, [role])
 
     @select.command(name="deleteoption", aliases=["deloption", "removeoption", "remoption"])
     async def delete_select_option(self, ctx: Context, *, name: str) -> None:

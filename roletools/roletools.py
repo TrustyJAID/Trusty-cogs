@@ -1,6 +1,6 @@
 import asyncio
 from abc import ABC
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import discord
 from red_commons.logging import getLogger
@@ -17,7 +17,7 @@ from .converter import RawUserIds, RoleHierarchyConverter, SelfRoleConverter
 from .events import RoleToolsEvents
 from .exclusive import RoleToolsExclusive
 from .inclusive import RoleToolsInclusive
-from .menus import BaseMenu, RolePages
+from .menus import BaseMenu, ConfirmView, RolePages
 from .messages import RoleToolsMessages
 from .reactions import RoleToolsReactions
 from .requires import RoleToolsRequires
@@ -85,7 +85,7 @@ class RoleTools(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.5.9"
+    __version__ = "1.5.10"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -231,6 +231,39 @@ class RoleTools(
             self.bot.remove_dev_env_value("roletools")
         except Exception:
             pass
+
+    async def confirm_selfassignable(
+        self, ctx: commands.Context, roles: List[discord.Role]
+    ) -> None:
+        not_assignable = [r for r in roles if not await self.config.role(r).selfassignable()]
+        if not_assignable:
+            role_list = "\n".join(f"- {role.mention}" for role in not_assignable)
+            msg_str = _(
+                "The following roles are not self assignable:\n{roles}\n"
+                "Would you liked to make them self assignable and self removeable?"
+            ).format(
+                roles=role_list,
+            )
+            pred = ConfirmView(ctx.author)
+            pred.message = await ctx.send(
+                msg_str, view=pred, allowed_mentions=discord.AllowedMentions(roles=False)
+            )
+            await pred.wait()
+            if pred.result:
+                for role in not_assignable:
+                    await self.config.role(role).selfassignable.set(True)
+                    await self.config.role(role).selfremovable.set(True)
+                await ctx.channel.send(
+                    _(
+                        "The following roles have been made self assignable and self removeable:\n{roles}"
+                    ).format(roles=role_list)
+                )
+            else:
+                await ctx.channel.send(
+                    _("Okay I won't make the following rolesself assignable:\n{roles}").format(
+                        roles=role_list
+                    )
+                )
 
     @roletools.group(invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)

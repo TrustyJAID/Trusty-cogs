@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import discord
+from aiohttp.abc import AbstractMatchInfo
 from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.bot import Red
@@ -53,6 +54,12 @@ class RoleToolsMixin(ABC):
     #######################################################################
     # roletools.py                                                        #
     #######################################################################
+
+    @abstractmethod
+    async def confirm_selfassignable(
+        self, ctx: commands.Context, roles: List[discord.Role]
+    ) -> None:
+        raise NotImplementedError()
 
     @abstractmethod
     async def selfrole(self, ctx: commands.Context, *, role: SelfRoleConverter) -> None:

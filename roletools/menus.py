@@ -527,3 +527,65 @@ class BaseMenu(discord.ui.View):
             )
             return False
         return True
+
+
+class ConfirmView(discord.ui.View):
+    """
+    This is just a copy of my version from Red to be removed later possibly
+    https://github.com/Cog-Creators/Red-DiscordBot/pull/6176
+    """
+
+    def __init__(
+        self,
+        author: Optional[discord.abc.User] = None,
+        *,
+        timeout: float = 180.0,
+        disable_buttons: bool = False,
+    ):
+        if timeout is None:
+            raise TypeError("This view should not be used as a persistent view.")
+        super().__init__(timeout=timeout)
+        self.result: Optional[bool] = None
+        self.author: Optional[discord.abc.User] = author
+        self.message: Optional[discord.Message] = None
+        self.disable_buttons = disable_buttons
+
+    async def on_timeout(self):
+        if self.message is None:
+            # we can't do anything here if message is none
+            return
+
+        if self.disable_buttons:
+            self.confirm_button.disabled = True
+            self.dismiss_button.disabled = True
+            await self.message.edit(view=self)
+        else:
+            await self.message.edit(view=None)
+
+    @discord.ui.button(label=_("Yes"), style=discord.ButtonStyle.green)
+    async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.result = True
+        self.stop()
+        # respond to the interaction so the user does not see "interaction failed".
+        await interaction.response.defer()
+        # call `on_timeout` explicitly here since it's not called when `stop()` is called.
+        await self.on_timeout()
+
+    @discord.ui.button(label=_("No"), style=discord.ButtonStyle.secondary)
+    async def dismiss_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.result = False
+        self.stop()
+        # respond to the interaction so the user does not see "interaction failed".
+        await interaction.response.defer()
+        # call `on_timeout` explicitly here since it's not called when `stop()` is called.
+        await self.on_timeout()
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if self.message is None:
+            self.message = interaction.message
+        if self.author and interaction.user.id != self.author.id:
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
+            return False
+        return True
