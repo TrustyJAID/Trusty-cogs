@@ -928,7 +928,9 @@ class ImageMaker(commands.Cog):
             textFont = ImageFont.truetype(
                 str(bundled_data_path(self)) + "/impact.ttf", size=curSize
             )
-            w, h = drawer.textsize(text, font=textFont)
+            size = drawer.textbbox((0, 0), text, font=textFont)
+            w = size[2] - size[0]
+            # w, h = drawer.textsize(text, font=textFont)
 
             if w > maxWidth:
                 curSize -= 4
@@ -952,8 +954,9 @@ class ImageMaker(commands.Cog):
 
         # Load font for text
         textFont = self.computeAndLoadTextFontForSize(draw, text, imgSize[0])
-
-        w, h = draw.textsize(text, font=textFont)
+        top, left, bottom, right = textFont.getbbox(text=text)
+        w, h = (bottom - top, right - left)
+        # w, h = draw.textsize(text, font=textFont)
         xCenter = (imgSize[0] - w) / 2
         yCenter = (50 - h) / 2
         draw.text((xCenter, 10 + yCenter), text, font=textFont, fill=txtColor)
