@@ -640,11 +640,13 @@ class NotSoBot(commands.Cog):
             img = ImageDraw.Draw(i)
             txt = figlet_format(text, font="starwars")
             img.text((20, 20), figlet_format(text, font="starwars"), fill=(0, 255, 0))
-            text_width, text_height = img.textsize(figlet_format(text, font="starwars"))
+            size = img.textbbox((0, 0), figlet_format(text, font="starwars"))
+            text_width, text_height = (size[2] - size[0], size[3] - size[1])
             imgs = Image.new("RGB", (text_width + 30, text_height))
             ii = ImageDraw.Draw(imgs)
             ii.text((20, 20), figlet_format(text, font="starwars"), fill=(0, 255, 0))
-            text_width, text_height = ii.textsize(figlet_format(text, font="starwars"))
+            size = ii.textbbox((0, 0), figlet_format(text, font="starwars"))
+            text_width, text_height = (size[2] - size[0], size[3] - size[1])
             final = BytesIO()
             imgs.save(final, "png")
             file_size = final.tell()
@@ -655,7 +657,8 @@ class NotSoBot(commands.Cog):
             imgs.close()
             return file, txt, file_size
         except Exception:
-            return False, False
+            log.exception("Error making ascii text")
+            return False, False, False
 
     @commands.command(aliases=["expand"])
     @commands.cooldown(1, 5)
@@ -852,7 +855,8 @@ class NotSoBot(commands.Cog):
             font_path = f"{str(bundled_data_path(self))}{os.sep}arial.ttf"
             font1 = ImageFont.truetype(font_path, 35)
             text = "\n".join(line for line in textwrap.wrap(text, width=15))
-            w, h = draw.multiline_textsize(text, font=font1)
+            size = draw.multiline_textbbox((0, 0), text, font=font1)
+            w = size[2] - size[1]
             draw.multiline_text(
                 (((400 - w) / 2) - 1, 50), text, fill=(50, 50, 50), font=font1, align="center"
             )
