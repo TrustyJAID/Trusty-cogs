@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from typing import List, NamedTuple, Optional, Tuple, Union
 
@@ -15,6 +15,7 @@ from redbot.core.utils.chat_formatting import humanize_number, pagify
 from tabulate import tabulate
 
 from .helpers import HEADERS
+from .xp import ELITE_XP, XP_TABLE
 
 log = getLogger("red.trusty-cogs.runescape")
 
@@ -125,6 +126,22 @@ class Skills(Enum):
     Archaeology = 27
     Necromancy = 28
 
+    @property
+    def is_elite(self):
+        return self is Skills.Invention
+
+    @property
+    def is_120(self):
+        return self in (
+            Skills.Herblore,
+            Skills.Slayer,
+            Skills.Farming,
+            Skills.Dungeoneering,
+            Skills.Invention,
+            Skills.Archaeology,
+            Skills.Necromancy,
+        )
+
 
 class Item:
     def __init__(self, *args, **kwargs):
@@ -197,6 +214,30 @@ class Skill:
     rank: int
     id: int
     name: str
+    # sort of a pseudo cached property
+    _virtual_level: Optional[int] = None
+
+    def virtual_level(self) -> Optional[int]:
+        if self._virtual_level is not None:
+            return self._virtual_level
+        table = XP_TABLE
+        max_level = 120
+        if self.skill.is_elite:
+            table = ELITE_XP
+            max_level = 150
+        # since this is for virtual levels we can reduce iterations
+        # by just slicing the list to only values after the start of virtual
+        # level calculations. This should reduce our iterations from
+        # 120(150 for elite) per skill to only 22 (52 for elite) per skill
+        split = 99
+        for level, xp in enumerate(table[split - 1 :], start=split):
+            if self.xp >= xp:
+                self._virtual_level = min(level, max_level)
+        return self._virtual_level
+
+    @property
+    def skill(self):
+        return Skills(self.id)
 
     @classmethod
     def from_json(cls, data: dict):
@@ -303,6 +344,9 @@ class Profile:
                 skills_list.append([skill_name.name, level, xp, rank])
                 continue
             level = skill.level
+            virtual = skill.virtual_level()
+            if virtual is not None and virtual != level:
+                level = f"{skill.level} ({virtual})"
             xp = skill.xp
             rank = "Unranked"
             if skill.rank:
