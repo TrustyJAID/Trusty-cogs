@@ -54,7 +54,7 @@ class AutoMod(commands.Cog):
             return
         cogs = await downloader.installed_cogs()
         for cog in cogs:
-            if cog.name == "citation":
+            if cog.name == "automod":
                 if cog.repo is not None:
                     self._repo = cog.repo.clean_url
                 self._commit = cog.commit
