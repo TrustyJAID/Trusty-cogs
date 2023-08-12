@@ -185,7 +185,7 @@ class Runescape(commands.Cog):
         base_url = "https://runescape.wiki/w/?curid="
         async with ctx.typing():
             try:
-                data = await self.wiki_api.search(GameEnum.oldschool, search)
+                data = await self.wiki_api.search(GameEnum.runescape, search)
             except WikiAPIError as e:
                 log.debug(e)
                 await ctx.send(
