@@ -35,7 +35,7 @@ class Runes(Enum):
         return f"{IMAGE_URL}{self.name.title()}_rune.png"
 
     @property
-    def amount(self) -> int:
+    def cost(self) -> int:
         """
         Amount of runes for each selection on the machine
 
@@ -80,10 +80,10 @@ class RuneGoldberg:
         timestamp = discord.utils.format_dt(daily, "R")
         msg = "## [Rune Goldberg Machine](https://runescape.wiki/w/Rune_Goldberg_Machine)\n"
         msg += f"Refreshes {timestamp}\n"
-        msg += f"- Slot 1:\n - {self.slot1.name.title()} Rune\n"
+        msg += f"- Slot 1:\n - {self.slot1.name.title()} Rune ({self.slot1.cost})\n"
         msg += "- Slot 2:\n"
         for r in self.slot2:
-            msg += f" - {r.name.title()} Rune\n"
+            msg += f" - {r.name.title()} Rune ({r.cost})\n"
         msg += "https://runescape.wiki/w/Rune_Goldberg_Machine"
         return msg
 
@@ -114,7 +114,7 @@ class RuneGoldberg:
             url="https://runescape.wiki/w/Rune_Goldberg_Machine",
         )
         em.set_thumbnail(url=self.slot1.image)
-        em.add_field(name="Slot 1", value=f"- {self.slot1.name.title()} Rune")
-        slot_2 = "\n".join(f"- {i.name.title()} Rune" for i in self.slot2)
+        em.add_field(name="Slot 1", value=f"- {self.slot1.name.title()} Rune ({self.slot1.cost})")
+        slot_2 = "\n".join(f"- {i.name.title()} Rune ({i.cost})" for i in self.slot2)
         em.add_field(name="Slot 2", value=slot_2)
         return em
