@@ -385,11 +385,8 @@ class RoleTools(
                 else:
                     if entity not in ["everyone", "here", "bots", "humans"]:
                         msg = _("`{who}` cannot have roles assigned to them.").format(who=entity)
-                        if is_slash:
-                            await ctx.followup.send(msg)
-                        else:
-                            await ctx.send(msg)
-                            ctx.command.reset_cooldown(ctx)
+                        await ctx.send(msg)
+                        ctx.command.reset_cooldown(ctx)
                         return
                     elif entity == "everyone":
                         members = ctx.guild.members
