@@ -1124,6 +1124,12 @@ class ServerStats(commands.GroupCog):
                         )
                         embed.add_field(name=_("Shared Servers"), value=em)
                         embed_list.append(embed)
+                    for number, em in enumerate(embed_list, start=1):
+                        em.set_footer(
+                            text=_("Page {number}/{total}").format(
+                                number=number, total=len(embed_list)
+                            )
+                        )
                 else:
                     for page in pagify(msg, ["\n"]):
                         embed_list.append(page)
