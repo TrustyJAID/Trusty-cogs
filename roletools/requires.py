@@ -1,5 +1,6 @@
 from typing import Union
 
+import discord
 from discord import Interaction
 from red_commons.logging import getLogger
 from redbot.core import commands
@@ -54,7 +55,7 @@ class RoleToolsRequires(RoleToolsMixin):
         self,
         ctx: Union[Context, Interaction],
         role: RoleHierarchyConverter,
-        required: commands.Greedy[RoleHierarchyConverter],
+        required: commands.Greedy[discord.Role],
     ) -> None:
         """
         Add role requirements
@@ -86,7 +87,7 @@ class RoleToolsRequires(RoleToolsMixin):
         self,
         ctx: Union[Context, Interaction],
         role: RoleHierarchyConverter,
-        required: commands.Greedy[RoleHierarchyConverter],
+        required: commands.Greedy[discord.Role],
     ) -> None:
         """
         Remove role requirements
