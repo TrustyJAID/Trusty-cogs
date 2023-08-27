@@ -169,6 +169,12 @@ class EventMixin:
             return True
         if channel.category and channel.category.id in ignored_channels:
             return True
+        if (
+            isinstance(channel, discord.Thread)
+            and channel.parent
+            and channel.parent.id in ignored_channels
+        ):
+            return True
         return False
 
     async def modlog_channel(self, guild: discord.Guild, event: str) -> discord.TextChannel:
@@ -1367,7 +1373,7 @@ class EventMixin:
             channel = await self.modlog_channel(guild, "message_edit")
         except RuntimeError:
             return
-        if await self.is_ignored_channel(guild, after.channel.id):
+        if await self.is_ignored_channel(guild, after.channel):
             return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
