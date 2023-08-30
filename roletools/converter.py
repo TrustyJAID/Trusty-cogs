@@ -380,7 +380,7 @@ class SelectMenuFlags(commands.FlagConverter, case_insensitive=True):
 
 
 class SelectOptionFlags(commands.FlagConverter, case_insensitive=True):
-    label: Optional[commands.Range[str, 0, 100]] = commands.flag(name="label", default=None)
+    label: commands.Range[str, 1, 100] = commands.flag(name="label", default=None)
     description: Optional[commands.Range[str, 0, 100]] = commands.flag(
         name="description", aliases=["desc"], default=None
     )

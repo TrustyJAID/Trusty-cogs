@@ -44,6 +44,8 @@ class RoleToolsSelect(RoleToolsMixin):
                         if emoji is not None:
                             emoji = discord.PartialEmoji.from_str(option_data["emoji"])
                         label = option_data["label"]
+                        if not label:
+                            label = "\u200b"
                         option = SelectRoleOption(
                             name=option_name,
                             label=label,
@@ -264,7 +266,7 @@ class RoleToolsSelect(RoleToolsMixin):
                 emoji_id = f"{extras.emoji.name}:{extras.emoji.id}"
                 if extras.emoji.animated:
                     emoji_id = f"a:{emoji_id}"
-        label = extras.label or ""
+        label = extras.label or "\u200b"
         # ensure that there's at least an emoji on this
         if not emoji_id and not extras.label:
             label = f"@{role.name}"

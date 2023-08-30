@@ -166,7 +166,7 @@ class SelectRoleOption(discord.SelectOption):
     def __init__(
         self,
         name: str,
-        label: Optional[str],
+        label: str,
         value: str,
         role_id: int,
         description: Optional[str],
@@ -210,6 +210,8 @@ class SelectRole(discord.ui.Select):
             role = guild.get_role(int(role_id))
             original = self._original_labels[option.value]
             if role is not None:
+                if not original["label"]:
+                    original["label"] = "\u200b"
                 if original["label"]:
                     option.label = original["label"].replace("{count}", str(len(role.members)))
                 if original["description"]:
