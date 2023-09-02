@@ -87,13 +87,21 @@ class AutoModTriggerConverter(discord.app_commands.Transformer):
         async with cog.config.guild(ctx.guild).triggers() as triggers:
             if argument.lower() in triggers:
                 kwargs = triggers[argument.lower()].copy()
-                presets = discord.AutoModPresets.none()
-                # as far as I can tell this is the sanest way to manage
-                # this until d.py adds a better method of dealing with
-                # these awful flags
-                for p in kwargs.pop("presets", []):
-                    presets.value |= p
-                return discord.AutoModTrigger(**kwargs, presets=presets)
+
+                passed_args = {}
+                if kwargs.get("presets") is not None:
+                    # as far as I can tell this is the sanest way to manage
+                    # this until d.py adds a better method of dealing with
+                    # these awful flags
+                    presets = discord.AutoModPresets.none()
+                    saved_presets = kwargs.pop("presets", []) or []
+                    for p in saved_presets:
+                        presets.value |= p
+                    passed_args["presets"] = presets
+                for key, value in kwargs.items():
+                    if value is not None:
+                        passed_args[key] = value
+                return discord.AutoModTrigger(**kwargs)
             else:
                 raise commands.BadArgument(
                     ("Trigger with name `{name}` does not exist.").format(name=argument.lower())
@@ -186,7 +194,7 @@ class AutoModRuleFlags(FlagConverter, case_insensitive=True):
     actions: AutoModActionConverter = flag(
         name="actions",
         aliases=[],
-        default=None,
+        default=[],
         description="The name(s) of the action(s) you have setup.",
     )
     enabled: bool = flag(

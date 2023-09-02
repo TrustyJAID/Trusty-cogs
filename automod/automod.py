@@ -20,7 +20,7 @@ class AutoMod(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -130,10 +130,12 @@ class AutoMod(commands.Cog):
             Will create an automod rule with the saved trigger `mytrigger` and
             the saved actions `timeoutuser` and `notifymods`.
         """
+        log.debug(f"{rule.to_args()}")
+        rule_args = rule.to_args()
+        if "reason" in rule_args:
+            rule_args["reason"] = f"Created by {ctx.author}\n" + rule_args["reason"]
         try:
-            rule = await ctx.guild.create_automod_rule(
-                name=name, **rule.to_args(), reason=f"Created by {ctx.author}"
-            )
+            rule = await ctx.guild.create_automod_rule(name=name, **rule_args)
         except Exception as e:
             await ctx.send(e)
         pages = AutoModRulePages([rule], guild=ctx.guild)
