@@ -207,7 +207,7 @@ class Starboard(StarboardEvents, commands.Cog):
             embed_perms = _("I don't have permission to embed links in ")
             await ctx.send(embed_perms + channel.mention)
             return
-        if guild.id not in self.starboards:
+        if len(self.starboards.get(guild.id, [])) < 1:
             self.starboards[guild.id] = {}
         starboards = self.starboards[guild.id]
         if name in starboards:
@@ -227,7 +227,7 @@ class Starboard(StarboardEvents, commands.Cog):
         Cleanup stored deleted channels or roles in the blocklist/allowlist
         """
         guild = ctx.guild
-        if guild.id not in self.starboards:
+        if len(self.starboards.get(guild.id, [])) < 1:
             await ctx.send(_("There are no Starboards setup on this server."))
             return
         channels = 0
@@ -269,7 +269,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -309,7 +309,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -370,7 +370,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -446,7 +446,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -492,7 +492,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -535,7 +535,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -581,7 +581,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -641,7 +641,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -682,7 +682,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -727,7 +727,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -758,7 +758,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -789,7 +789,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -828,7 +828,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -870,7 +870,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
@@ -907,7 +907,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         if not starboard:
-            if guild.id not in self.starboards:
+            if len(self.starboards.get(guild.id, [])) < 1:
                 await ctx.send(_("There are no starboards setup on this server!"))
                 return
             if len(self.starboards[guild.id]) > 1:
