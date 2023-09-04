@@ -132,7 +132,7 @@ class AutoMod(commands.Cog):
         """
         log.debug(f"{rule.to_args()}")
         rule_args = rule.to_args()
-        if "reason" in rule_args:
+        if rule_args.get("reason") is not None:
             rule_args["reason"] = f"Created by {ctx.author}\n" + rule_args["reason"]
         try:
             rule = await ctx.guild.create_automod_rule(name=name, **rule_args)
