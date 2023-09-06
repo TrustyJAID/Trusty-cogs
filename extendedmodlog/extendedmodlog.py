@@ -465,7 +465,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
         guild = ctx.message.guild
-        msg = _("Ignore deleted command messages {enabled_or_disalbled}.")
+        msg = _("Ignore deleted command messages {enabled_or_disabled}.")
         if not await self.config.guild(guild).message_delete.cached_only():
             self.settings[ctx.guild.id]["message_delete"]["ignore_commands"] = False
             verb = _("disabled")

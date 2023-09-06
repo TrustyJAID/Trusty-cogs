@@ -11,6 +11,7 @@ from red_commons.logging import getLogger
 from redbot.core import Config, commands, i18n, modlog
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import (
+    box,
     format_perms_list,
     humanize_list,
     humanize_timedelta,
@@ -329,7 +330,7 @@ class EventMixin:
                 member=message.author, m_id=message.author.id
             )
             embed.set_author(name=author_title, icon_url=message.author.display_avatar)
-            embed.add_field(name=_("Member ID"), value=inline(str(message.author.id)))
+            embed.add_field(name=_("Member ID"), value=box(str(message.author.id)))
             await channel.send(embed=embed, allowed_mentions=self.allowed_mentions)
         else:
             infomessage = _(
@@ -391,7 +392,7 @@ class EventMixin:
                 )
                 embed.add_field(name=_("Channel"), value=message_channel.mention)
                 embed.set_author(name=_("Deleted Message"))
-                embed.add_field(name=_("Message ID"), value=inline(str(payload.message_id)))
+                embed.add_field(name=_("Message ID"), value=box(str(payload.message_id)))
                 await channel.send(embed=embed, allowed_mentions=self.allowed_mentions)
             else:
                 infomessage = _(
@@ -399,7 +400,7 @@ class EventMixin:
                 ).format(
                     emoji=settings["emoji"],
                     time=datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M:%S"),
-                    message_id=inline(str(payload.message_id)),
+                    message_id=box(str(payload.message_id)),
                     channel=message_channel.mention,
                 )
                 await channel.send(
@@ -497,7 +498,7 @@ class EventMixin:
             if replying:
                 embed.add_field(name=_("Replying to:"), value=replying)
 
-            embed.add_field(name=_("Message ID"), value=inline(str(message.id)))
+            embed.add_field(name=_("Message ID"), value=box(str(message.id)))
             embed.set_author(
                 name=_("{member} ({m_id}) - Deleted Message").format(
                     member=author, m_id=author.id
@@ -727,7 +728,7 @@ class EventMixin:
                 else datetime.datetime.now(datetime.timezone.utc),
             )
             embed.add_field(name=_("Member"), value=member.mention)
-            embed.add_field(name=_("Member ID"), value=inline(str(member.id)))
+            embed.add_field(name=_("Member ID"), value=box(str(member.id)))
             embed.add_field(name=_("Total Users:"), value=str(users))
             embed.add_field(name=_("Account created on:"), value=created_on)
             embed.set_author(
@@ -798,7 +799,7 @@ class EventMixin:
                 timestamp=time,
             )
             embed.add_field(name=_("Member"), value=member.mention)
-            embed.add_field(name=_("Member ID"), value=inline(str(member.id)))
+            embed.add_field(name=_("Member ID"), value=box(str(member.id)))
             embed.add_field(name=_("Total Users:"), value=str(len(guild.members)))
 
             if perp:
@@ -959,7 +960,7 @@ class EventMixin:
         if reason:
             perp_msg += _(" Reason: {reason}").format(reason=reason)
             embed.add_field(name=_("Reason "), value=reason, inline=False)
-        embed.add_field(name=_("Channel ID"), value=inline(str(new_channel.id)))
+        embed.add_field(name=_("Channel ID"), value=box(str(new_channel.id)))
         msg = _("{emoji} {time} {chan_type} channel created {perp_msg} {channel}").format(
             emoji=self.settings[guild.id]["channel_create"]["emoji"],
             time=discord.utils.format_dt(time),
@@ -1021,7 +1022,7 @@ class EventMixin:
         if reason:
             perp_msg += _(" Reason: {reason}").format(reason=reason)
             embed.add_field(name=_("Reason "), value=reason, inline=False)
-        embed.add_field(name=_("Channel ID"), value=inline(str(old_channel.id)))
+        embed.add_field(name=_("Channel ID"), value=box(str(old_channel.id)))
         msg = _("{emoji} {time} {chan_type} channel deleted {perp_msg} {channel}").format(
             emoji=self.settings[guild.id]["channel_delete"]["emoji"],
             time=discord.utils.format_dt(time),
@@ -1160,7 +1161,7 @@ class EventMixin:
         if reason:
             msg += _("Reason ") + reason + "\n"
             embed.add_field(name=_("Reason "), value=reason, inline=False)
-        embed.add_field(name=_("Channel ID"), value=inline(str(after.id)))
+        embed.add_field(name=_("Channel ID"), value=box(str(after.id)))
         if not worth_updating:
             return
         if embed_links:
@@ -1245,7 +1246,7 @@ class EventMixin:
             worth_updating = True
             msg += _("Permissions Changed: ") + p_msg
             embed.add_field(name=_("Permissions"), value=p_msg[:1024])
-        embed.add_field(name=_("Role ID"), value=inline(str(after.id)))
+        embed.add_field(name=_("Role ID"), value=box(str(after.id)))
         if not worth_updating:
             return
         if embed_links:
@@ -1296,7 +1297,7 @@ class EventMixin:
         if reason:
             msg += _("Reason ") + reason + "\n"
             embed.add_field(name=_("Reason "), value=reason, inline=False)
-        embed.add_field(name=_("Role ID"), value=inline(str(role.id)))
+        embed.add_field(name=_("Role ID"), value=box(str(role.id)))
         if embed_links:
             await channel.send(embed=embed, allowed_mentions=self.allowed_mentions)
         else:
@@ -1345,7 +1346,7 @@ class EventMixin:
         if reason:
             msg += _("Reason ") + reason + "\n"
             embed.add_field(name=_("Reason "), value=reason, inline=False)
-        embed.add_field(name=_("Role ID"), value=inline(str(role.id)))
+        embed.add_field(name=_("Role ID"), value=box(str(role.id)))
         if embed_links:
             await channel.send(embed=embed, allowed_mentions=self.allowed_mentions)
         else:
@@ -1412,7 +1413,7 @@ class EventMixin:
                 ),
                 icon_url=str(before.author.display_avatar),
             )
-            embed.add_field(name=_("Message ID"), value=inline(str(after.id)))
+            embed.add_field(name=_("Message ID"), value=box(str(after.id)))
             await channel.send(embed=embed, allowed_mentions=self.allowed_mentions)
         else:
             msg = _(
@@ -1912,7 +1913,7 @@ class EventMixin:
         if reason:
             msg += _("Reason: ") + f"{reason}\n"
             embed.add_field(name=_("Reason"), value=reason, inline=False)
-        embed.add_field(name=_("Member ID"), value=inline(str(after.id)))
+        embed.add_field(name=_("Member ID"), value=box(str(after.id)))
         if embed_links:
             await channel.send(embed=embed, allowed_mentions=self.allowed_mentions)
         else:
@@ -2110,7 +2111,7 @@ class EventMixin:
         if reason:
             perp_msg += _(" Reason: {reason}").format(reason=reason)
             embed.add_field(name=_("Reason "), value=reason, inline=False)
-        embed.add_field(name=_("Thread ID"), value=inline(str(thread.id)))
+        embed.add_field(name=_("Thread ID"), value=box(str(thread.id)))
         msg = _("{emoji} {time} {chan_type} channel created {perp_msg} {channel}").format(
             emoji=self.settings[guild.id]["thread_create"]["emoji"],
             time=discord.utils.format_dt(time),
@@ -2181,7 +2182,7 @@ class EventMixin:
         if reason:
             perp_msg += _(" Reason: {reason}").format(reason=reason)
             embed.add_field(name=_("Reason "), value=reason, inline=False)
-        embed.add_field(name=_("Thread ID"), value=inline(str(payload.thread_id)))
+        embed.add_field(name=_("Thread ID"), value=box(str(payload.thread_id)))
         msg = _("{emoji} {time} {chan_type} channel deleted {perp_msg} {channel}").format(
             emoji=self.settings[guild.id]["thread_delete"]["emoji"],
             time=discord.utils.format_dt(time),
@@ -2280,7 +2281,7 @@ class EventMixin:
         if reason:
             msg += _("Reason ") + reason + "\n"
             embed.add_field(name=_("Reason "), value=reason, inline=False)
-        embed.add_field(name=_("Thread ID"), value=inline(str(after.id)))
+        embed.add_field(name=_("Thread ID"), value=box(str(after.id)))
         if not worth_updating:
             return
         if embed_links:
