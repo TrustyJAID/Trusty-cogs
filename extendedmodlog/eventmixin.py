@@ -597,8 +597,8 @@ class EventMixin:
         invites = {}
         if not guild.me.guild_permissions.manage_guild:
             return False
-        for invite in await guild.invites():
-            try:
+        try:
+            for invite in await guild.invites():
                 created_at = getattr(
                     invite, "created_at", datetime.datetime.now(datetime.timezone.utc)
                 )
@@ -613,9 +613,12 @@ class EventMixin:
                     "inviter": getattr(inviter, "id", "Unknown"),
                     "channel": getattr(channel, "id", "Unknown"),
                 }
-            except Exception:
-                logger.exception("Error saving invites.")
-                pass
+        except discord.HTTPException:
+            logger.error("Error saving invites for guild %s. Discord Server Error.", guild.id)
+            return False
+        except Exception:
+            logger.exception("Error saving invites for guild %s.", guild.id)
+            return False
 
         self.settings[guild.id]["invite_links"] = invites
         await self.save(guild)
