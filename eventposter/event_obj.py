@@ -39,6 +39,27 @@ TIME_RE_STRING = r"|".join(
 TIME_RE = re.compile(TIME_RE_STRING, re.I)
 
 
+class WrongView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=180)
+        self.approved = True
+        self.message: Optional[discord.Message] = None
+
+    async def on_timeout(self):
+        if self.message is not None:
+            await self.message.edit(view=None)
+
+    @discord.ui.button(label=_("This looks wrong"), style=discord.ButtonStyle.red)
+    async def end_event(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.stop()
+        self.approved = False
+        if self.message is not None:
+            await self.message.edit(view=None)
+        await interaction.response.send_message(
+            _("This event has been cancelled. Feel free to try again.")
+        )
+
+
 class ApproveButton(discord.ui.Button):
     def __init__(self, label: str):
         super().__init__(style=discord.ButtonStyle.green, label=label)

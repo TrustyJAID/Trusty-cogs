@@ -11,7 +11,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
 from redbot.core.utils.views import SimpleMenu
 
-from .event_obj import ApproveView, ConfirmView, Event, ValidImage
+from .event_obj import ApproveView, ConfirmView, Event, ValidImage, WrongView
 
 log = getLogger("red.trusty-cogs.EventPoster")
 
@@ -28,8 +28,9 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "2.1.2"
+    __version__ = "2.1.3"
     __author__ = "TrustyJAID"
+    __flavor__ = "Admins are sleep deprived :)"
 
     def __init__(self, bot):
         self.bot = bot
@@ -359,16 +360,23 @@ class EventPoster(commands.Cog):
             return await self.post_event(ctx, event)
 
         view = ApproveView(self, ctx)
+        wrongview = WrongView()
 
         em = await event.make_event_embed(ctx)
         msg = _(
             "Please wait for someone to approve your event request. "
             "In the mean time here's how your event will look. "
-            "If this doesn't look right make a new event."
         )
-        await ctx.send(msg, embed=em)
+        wrongview.message = await ctx.send(msg, embed=em, view=wrongview)
         admin_msg = await approval_channel.send(embed=em, view=view)
         self.waiting_approval[admin_msg.id] = {"event": event, "ctx": ctx}
+        await wrongview.wait()
+        if not wrongview.approved:
+            del self.waiting_approval[admin_msg.id]
+            try:
+                await admin_msg.delete()
+            except Exception:
+                pass
 
     async def post_event(self, ctx: commands.Context, event: Event):
         em = await event.make_event_embed(ctx)
