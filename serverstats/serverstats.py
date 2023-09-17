@@ -660,29 +660,36 @@ class ServerStats(commands.GroupCog):
         `[roles_or_users...]` the roles or users you want to edit this setting for.
 
         `<permission>` Must be one of the following:
-         - add_reactions
-         - attach_files
-         - connect
          - create_instant_invite
-         - deafen_members
-         - embed_links
-         - external_emojis
-         - manage_messages
-         - manage_permissions
-         - manage_roles
-         - manage_webhooks
-         - move_members
-         - mute_members
+         - manage_channels
+         - add_reactions
          - priority_speaker
-         - read_message_history
+         - stream
          - read_messages
          - send_messages
          - send_tts_messages
+         - manage_messages
+         - embed_links
+         - attach_files
+         - read_message_history
+         - mention_everyone
+         - external_emojis
+         - connect
          - speak
-         - stream
-         - use_external_emojis
-         - use_slash_commands
+         - mute_members
+         - deafen_members
+         - move_members
          - use_voice_activation
+         - manage_roles
+         - manage_webhooks
+         - use_application_commands
+         - request_to_speak
+         - manage_threads
+         - create_public_threads
+         - create_private_threads
+         - external_stickers
+         - send_messages_in_threads
+         - use_soundboard
         """
         if channel is None:
             channel = ctx.channel

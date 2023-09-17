@@ -142,13 +142,18 @@ class PermissionConverter(IDConverter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> str:
         valid_perms = dict(discord.Permissions.all_channel())
+        error_string = "\n".join(f"- {i}" for i, v in valid_perms.items() if v)
         match = re.match(
             r"|".join(i for i, allowed in valid_perms.items() if allowed), argument, flags=re.I
         )
         if not match:
-            raise BadArgument(f"Permission `{argument}` not found")
+            raise BadArgument(
+                f"Permission `{argument}` not found. Please pick from:\n{error_string}"
+            )
         result = match.group(0)
 
         if not result:
-            raise BadArgument(f"Permission `{argument}` not found")
+            raise BadArgument(
+                f"Permission `{argument}` not found. Please pick from:\n{error_string}"
+            )
         return result
