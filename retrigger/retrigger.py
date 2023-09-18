@@ -94,7 +94,7 @@ class ReTrigger(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.26.0"
+    __version__ = "2.26.1"
 
     def __init__(self, bot):
         super().__init__()
@@ -753,7 +753,7 @@ class ReTrigger(
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
 
-        trigger.ocr_search = not trigger.ocr_search
+        # trigger.ocr_search = not trigger.ocr_search
         trigger.modify("ocr_search", not trigger.ocr_search, ctx.author, ctx.message.id)
         # trigger.modify(ctx.author, ctx.message.id, _("OCR"))
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -863,7 +863,7 @@ class ReTrigger(
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
 
-        trigger.read_filenames = not trigger.read_filenames
+        # trigger.read_filenames = not trigger.read_filenames
         trigger.modify("read_filenames", not trigger.read_filenames, ctx.author, ctx.message.id)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
@@ -973,7 +973,7 @@ class ReTrigger(
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
 
-        trigger.tts = set_to
+        # trigger.tts = set_to
         trigger.modify("tts", set_to, ctx.author, ctx.message.id)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
@@ -1003,7 +1003,7 @@ class ReTrigger(
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
 
-        trigger.user_mention = set_to
+        # trigger.user_mention = set_to
         trigger.modify("user_mention", set_to, ctx.author, ctx.message.id)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
@@ -1034,7 +1034,7 @@ class ReTrigger(
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
 
-        trigger.everyone_mention = set_to
+        # trigger.everyone_mention = set_to
         trigger.modify("everyone_mention", set_to, ctx.author, ctx.message.id)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
@@ -1064,7 +1064,7 @@ class ReTrigger(
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
 
-        trigger.role_mention = set_to
+        # trigger.role_mention = set_to
         trigger.modify("role_mention", set_to, ctx.author, ctx.message.id)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
@@ -1125,7 +1125,7 @@ class ReTrigger(
             return await self._no_multi(ctx)
         if TriggerResponse.text not in trigger.response_type:
             return await self._no_edit(ctx)
-        trigger.text = text
+        # trigger.text = text
         trigger.modify("text", text, ctx.author, ctx.message.id)
         trigger._last_modified = _("text")
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -1157,7 +1157,7 @@ class ReTrigger(
 
         if chance < 0:
             chance = 0
-        trigger.chance = chance
+        # trigger.chance = chance
         trigger.modify("chance", chance, ctx.author, ctx.message.id)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
@@ -1270,7 +1270,7 @@ class ReTrigger(
             return
         if TriggerResponse.command not in trigger.response_type:
             return await self._no_edit(ctx)
-        trigger.text = command
+        # trigger.text = command
         trigger.modify("text", command, ctx.author, ctx.message.id)
         trigger._last_modified = _("command")
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
