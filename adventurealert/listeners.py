@@ -123,7 +123,7 @@ class AdventureAlertListeners(MixinMeta):
                 + style.get_message()
             )
             for page in pagify(msg):
-                await ctx.send(
+                await ctx.channel.send(
                     page, allowed_mentions=discord.AllowedMentions(users=True, roles=True)
                 )
 
