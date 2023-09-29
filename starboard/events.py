@@ -135,7 +135,7 @@ class StarboardEvents:
                             name="Attachment",
                             value=f"||[{attachment.filename}]({attachment.url})||",
                         )
-                    elif not attachment.url.lower().endswith(
+                    elif not attachment.filename.lower().endswith(
                         ("png", "jpeg", "jpg", "gif", "webp")
                     ):
                         new_em.add_field(
