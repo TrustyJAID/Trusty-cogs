@@ -1970,7 +1970,7 @@ class EventMixin:
             "max_age": _("Max Age:"),
             "temporary": _("Temporary:"),
         }
-        invite_time = getattr(invite, "created_at", datetime.datetime.now(datetime.timezone.utc))
+        invite_time = invite.created_at or datetime.datetime.now(datetime.timezone.utc)
         msg = _("{emoji} {time} Invite created ").format(
             emoji=self.settings[guild.id]["invite_created"]["emoji"],
             time=discord.utils.format_dt(invite_time),
@@ -2033,7 +2033,7 @@ class EventMixin:
             "max_age": _("Max Age:"),
             "temporary": _("Temporary:"),
         }
-        invite_time = getattr(invite, "created_at", datetime.datetime.now(datetime.timezone.utc))
+        invite_time = invite.created_at or datetime.datetime.now(datetime.timezone.utc)
         msg = _("{emoji} {time} Invite deleted ").format(
             emoji=self.settings[guild.id]["invite_deleted"]["emoji"],
             time=discord.utils.format_dt(invite_time),
