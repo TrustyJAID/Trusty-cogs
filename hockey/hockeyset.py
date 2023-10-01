@@ -625,14 +625,13 @@ class HockeySetCommands(HockeyMixin):
         Removes a teams goal updates from a channel
         defaults to the current channel
         """
+        if channel is None:
+            channel = ctx.channel
+        msg = _("No teams are currently being posted in {channel}.").format(
+            channel=channel.mention
+        )
         async with ctx.typing():
-            if channel is None:
-                channel = ctx.channel
             cur_teams = await self.config.channel(channel).team()
-            if not cur_teams:
-                msg = _("No teams are currently being posted in {channel}.").format(
-                    channel=channel.mention
-                )
             if team is None:
                 await self.config.channel(channel).clear()
                 msg = _("No game updates will be posted in {channel}.").format(
