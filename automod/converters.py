@@ -133,7 +133,11 @@ class AutoModActionConverter(discord.app_commands.Transformer):
         actions = await cog.config.guild(ctx.guild).actions()
         for a in argument.split(" "):
             if a.lower() in actions:
-                ret.append(discord.AutoModRuleAction(**actions[a.lower()]))
+                action_args = actions[a.lower()]
+                duration = action_args.pop("duration", None)
+                if duration:
+                    duration = timedelta(seconds=duration)
+                ret.append(discord.AutoModRuleAction(**action_args, duration=duration))
         if not ret:
             raise commands.BadArgument(
                 ("Action with name `{name}` does not exist.").format(name=argument.lower())

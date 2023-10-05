@@ -20,7 +20,7 @@ class AutoMod(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.2"
+    __version__ = "1.0.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -132,12 +132,14 @@ class AutoMod(commands.Cog):
         """
         log.debug(f"{rule.to_args()}")
         rule_args = rule.to_args()
+        name = name.lower()
         if rule_args.get("reason") is not None:
             rule_args["reason"] = f"Created by {ctx.author}\n" + rule_args["reason"]
         try:
             rule = await ctx.guild.create_automod_rule(name=name, **rule_args)
         except Exception as e:
             await ctx.send(e)
+            return
         pages = AutoModRulePages([rule], guild=ctx.guild)
         await BaseMenu(pages, self).start(ctx)
 
@@ -166,6 +168,7 @@ class AutoMod(commands.Cog):
             # d.py errors here are concise enough to explain the issue.
             await ctx.send(e)
             return
+        name = name.lower()
         async with self.config.guild(ctx.guild).actions() as actions:
             if name in actions:
                 pred = ConfirmView(ctx.author)
@@ -206,6 +209,7 @@ class AutoMod(commands.Cog):
             # d.py errors here are concise enough to explain the issue.
             await ctx.send(e)
             return
+        name = name.lower()
         async with self.config.guild(ctx.guild).triggers() as triggers:
             if name in triggers:
                 pred = ConfirmView(ctx.author)
