@@ -182,6 +182,7 @@ class HockeySetCommands(HockeyMixin):
                 if broadcasts:
                     description += f"\nBroadcasts: {broadcasts}"
                 game_id = str(game["gamePk"])
+                description += f"\n\n{game_id}"
                 if game_id in existing_events:
                     try:
                         if existing_events[game_id].start_time != start:
@@ -196,7 +197,6 @@ class HockeySetCommands(HockeyMixin):
                         # I don't care if these don't edit properly
                         pass
                     continue
-                description += f"\n\n{game_id}"
                 try:
                     await ctx.guild.create_scheduled_event(
                         name=f"{away} @ {home}",
