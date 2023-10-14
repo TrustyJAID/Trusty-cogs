@@ -423,11 +423,17 @@ class TeamRecord:
 
     @property
     def gaa(self):
-        return self.goals_against / self.games_played
+        try:
+            return self.goals_against / self.games_played
+        except ZeroDivisionError:
+            return 0.0
 
     @property
     def gpg(self):
-        return self.goals_scored / self.games_played
+        try:
+            return self.goals_scored / self.games_played
+        except ZeroDivisionError:
+            return 0.0
 
     @classmethod
     def from_json(cls, data: dict, division: Division, conference: Conference) -> TeamRecord:
