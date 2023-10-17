@@ -147,6 +147,8 @@ class Events:
             em.timestamp = datetime.now(timezone.utc)
         if EMBED_DATA["author"] and isinstance(member, discord.Member):
             em.set_author(name=username, icon_url=str(member.display_avatar))
+        elif:
+            em.set_author(name=guild.name, icon_url=url)
         return em
 
     @commands.Cog.listener()
