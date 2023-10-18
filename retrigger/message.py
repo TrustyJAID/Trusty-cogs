@@ -62,4 +62,5 @@ class ReTriggerMessage(discord.Message):
         self.role_mentions: List[discord.Role] = list(
             filter(None, [self.guild.get_role(idx) for idx in self.raw_role_mentions])
         )
+        self.webhook_id = None
         self.retrigger = True
