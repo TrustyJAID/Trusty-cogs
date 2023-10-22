@@ -77,6 +77,7 @@ class AutoMod(commands.Cog):
         await BaseMenu(pages, self).start(ctx)
 
     @automod.command(name="actions", aliases=["action"])
+    @commands.mod_or_permissions(manage_guild=True)
     async def view_automod_actions(self, ctx: commands.Context):
         """View the servers saved automod actions"""
         actions_dict = await self.config.guild(ctx.guild).actions()
@@ -91,6 +92,7 @@ class AutoMod(commands.Cog):
         await BaseMenu(pages, self).start(ctx)
 
     @automod.command(name="triggers", aliases=["trigger"])
+    @commands.mod_or_permissions(manage_guild=True)
     async def view_automod_triggers(self, ctx: commands.Context):
         """View the servers saved automod triggers"""
         triggers_dict = await self.config.guild(ctx.guild).triggers()
@@ -111,6 +113,7 @@ class AutoMod(commands.Cog):
 
     @create.command(name="rule")
     @commands.bot_has_permissions(manage_guild=True)
+    @commands.admin_or_permissions(manage_guild=True)
     async def create_automod_rule(
         self, ctx: commands.Context, name: str, *, rule: AutoModRuleFlags
     ):
@@ -144,6 +147,7 @@ class AutoMod(commands.Cog):
         await BaseMenu(pages, self).start(ctx)
 
     @create.command(name="action", aliases=["a"])
+    @commands.admin_or_permissions(manage_guild=True)
     async def create_automod_action(
         self, ctx: commands.Context, name: str, *, action: AutoModActionFlags
     ):
@@ -184,6 +188,7 @@ class AutoMod(commands.Cog):
         await ctx.send(f"Saving action `{name}` with the following settings:\n{action.to_str()}")
 
     @create.command(name="trigger")
+    @commands.admin_or_permissions(manage_guild=True)
     async def create_automod_trigger(
         self, ctx: commands.Context, name: str, *, trigger: AutoModTriggerFlags
     ):
