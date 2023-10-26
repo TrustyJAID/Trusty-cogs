@@ -45,7 +45,7 @@ class NewsArticles:
     ResultCountThisPage: int
     NewsArticles: List[NewsArticle]
     PagerAction: str
-    CategoryFilter: Optional[str]
+    CategoryFilter: Optional[str] = None
 
     @classmethod
     def from_json(cls, data: dict) -> NewsArticles:
