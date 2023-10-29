@@ -1524,7 +1524,7 @@ class SpotifyCommands(SpotifyMixin):
 
     @spotify_com.command(name="volume", aliases=["vol"])
     @commands.bot_has_permissions(embed_links=True)
-    async def spotify_volume(self, ctx: commands.Context, volume: app_commands.Range[int, 0, 100]):
+    async def spotify_volume(self, ctx: commands.Context, volume: commands.Range[int, 0, 100]):
         """
         Set your spotify volume percentage
 
