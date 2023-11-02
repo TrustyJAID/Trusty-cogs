@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any, List, NamedTuple, Optional, Union
 
 import discord
@@ -10,6 +9,8 @@ from redbot.vendored.discord.ext import menus
 from .data import IMAGES, LATTICES, UNITS
 
 log = getLogger("red.trusty-cogs.elements")
+
+ELEMENTS = mendeleev.get_all_elements()
 
 
 class ElementConverter(discord.app_commands.Transformer):
@@ -45,7 +46,7 @@ class ElementConverter(discord.app_commands.Transformer):
             discord.app_commands.Choice(
                 name=f"{element.atomic_number} - {element.name}", value=str(element.atomic_number)
             )
-            for element in mendeleev.get_all_elements()
+            for element in ELEMENTS
         ]
         choices = [i for i in all_choices if current.lower() in i.name.lower()]
         return choices[:25]
@@ -419,14 +420,11 @@ class Elements(commands.Cog):
 
         if measurement is None or element is None:
             async with ctx.typing():
-                loop = asyncio.get_running_loop()
-                task = loop.run_in_executor(None, mendeleev.get_all_elements)
-                elements = await task
                 page_start = 0
                 if element is not None:
                     page_start = element.atomic_number - 1
 
-                source = ElementPages(elements)
+                source = ElementPages(ELEMENTS)
             await BaseView(
                 source=source,
                 cog=self,
