@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
+import aiohttp
 import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
@@ -141,7 +142,14 @@ class GameDayChannels(HockeyMixin):
             await ctx.send(_("No team was setup for game day channels in this server."))
             return
         if await self.config.guild(ctx.guild).create_channels():
-            await self.create_gdc(ctx.guild)
+            try:
+                await self.create_gdc(ctx.guild)
+            except aiohttp.ClientConnectorError:
+                await ctx.send(
+                    _("There's an issue accessing the NHL API at the moment. Try again later.")
+                )
+                log.exception("Error accessing NHL API")
+                return
         else:
             await ctx.send(
                 _("You need to first toggle channel creation with `{prefix}gdc toggle`.").format(
@@ -258,11 +266,25 @@ class GameDayChannels(HockeyMixin):
         await self.config.guild(guild).delete_gdc.set(delete_gdc)
         await self.config.guild(guild).create_channels.set(True)
         if team.lower() != "all":
-            await self.create_gdc(guild)
+            try:
+                await self.create_gdc(guild)
+            except aiohttp.ClientConnectorError:
+                await ctx.send(
+                    _("There's an issue accessing the NHL API at the moment. Try again later.")
+                )
+                log.exception("Error accessing NHL API")
+                return
         else:
             game_list = await Game.get_games(session=self.session)
             for game in game_list:
-                await self.create_gdc(guild, game)
+                try:
+                    await self.create_gdc(guild, game)
+                except aiohttp.ClientConnectorError:
+                    await ctx.send(
+                        _("There's an issue accessing the NHL API at the moment. Try again later.")
+                    )
+                    log.exception("Error accessing NHL API")
+                    return
         await ctx.send(_("Game Day Channels for ") + team + _(" setup in ") + category.name)
 
     #######################################################################

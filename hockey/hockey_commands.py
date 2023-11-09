@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import List, Literal, Optional
 from urllib.parse import quote
 
+import aiohttp
 import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
@@ -126,7 +127,14 @@ class HockeyCommands(HockeyMixin):
         separated by division
         """
         await ctx.defer()
-        standings = await Standings.get_team_standings(session=self.session)
+        try:
+            standings = await Standings.get_team_standings(session=self.session)
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
         await StandingsMenu(standings=standings, start=search).start(ctx=ctx)
 
     @hockey_commands.command(aliases=["score"])
@@ -155,13 +163,20 @@ class HockeyCommands(HockeyMixin):
         teams = []
         if team is not None:
             teams = [team]
-        await GamesMenu(
-            source=Schedule(team=teams, date=date, session=self.session),
-            cog=self,
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=180,
-        ).start(ctx=ctx)
+        try:
+            await GamesMenu(
+                source=Schedule(team=teams, date=date, session=self.session),
+                cog=self,
+                delete_message_after=False,
+                clear_reactions_after=True,
+                timeout=180,
+            ).start(ctx=ctx)
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
 
     @hockey_commands.command()
     @commands.bot_has_permissions(read_message_history=True, embed_links=True)
@@ -199,8 +214,14 @@ class HockeyCommands(HockeyMixin):
                     await ctx.send(_("Please select a year prior to now."))
                     return
                 season_str = int(season.group(1)) - 1
-
-        await PlayoffsView(start_date=season_str).start(ctx=ctx)
+        try:
+            await PlayoffsView(start_date=season_str).start(ctx=ctx)
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
 
     @hockey_commands.command()
     @commands.bot_has_permissions(read_message_history=True, embed_links=True)
@@ -234,20 +255,27 @@ class HockeyCommands(HockeyMixin):
         teams = []
         if team is not None:
             teams = [team]
-        await GamesMenu(
-            source=Schedule(
-                team=teams,
-                date=date,
-                session=self.session,
-                include_goals=False,
-                include_heatmap=True,
-                style=style,
-            ),
-            cog=self,
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=180,
-        ).start(ctx=ctx)
+        try:
+            await GamesMenu(
+                source=Schedule(
+                    team=teams,
+                    date=date,
+                    session=self.session,
+                    include_goals=False,
+                    include_heatmap=True,
+                    style=style,
+                ),
+                cog=self,
+                delete_message_after=False,
+                clear_reactions_after=True,
+                timeout=180,
+            ).start(ctx=ctx)
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
 
     @hockey_commands.command()
     @commands.bot_has_permissions(read_message_history=True, embed_links=True)
@@ -283,21 +311,28 @@ class HockeyCommands(HockeyMixin):
         teams = []
         if team is not None:
             teams = [team]
-        await GamesMenu(
-            source=Schedule(
-                team=teams,
-                date=date,
-                session=self.session,
-                include_goals=False,
-                include_gameflow=True,
-                corsi=corsi,
-                strength=strength,
-            ),
-            cog=self,
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=180,
-        ).start(ctx=ctx)
+        try:
+            await GamesMenu(
+                source=Schedule(
+                    team=teams,
+                    date=date,
+                    session=self.session,
+                    include_goals=False,
+                    include_gameflow=True,
+                    corsi=corsi,
+                    strength=strength,
+                ),
+                cog=self,
+                delete_message_after=False,
+                clear_reactions_after=True,
+                timeout=180,
+            ).start(ctx=ctx)
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
 
     @hockey_commands.command()
     @commands.bot_has_permissions(read_message_history=True, embed_links=True)
@@ -322,13 +357,20 @@ class HockeyCommands(HockeyMixin):
         teams = []
         if team is not None:
             teams = [team]
-        await GamesMenu(
-            source=ScheduleList(team=teams, date=date, session=self.session),
-            cog=self,
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=180,
-        ).start(ctx=ctx)
+        try:
+            await GamesMenu(
+                source=ScheduleList(team=teams, date=date, session=self.session),
+                cog=self,
+                delete_message_after=False,
+                clear_reactions_after=True,
+                timeout=180,
+            ).start(ctx=ctx)
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
 
     @hockey_commands.command()
     @commands.bot_has_permissions(read_message_history=True, embed_links=True)
@@ -353,13 +395,20 @@ class HockeyCommands(HockeyMixin):
         teams = []
         if team is not None:
             teams = [team]
-        await GamesMenu(
-            source=ScheduleList(team=teams, date=date, session=self.session, get_recap=True),
-            cog=self,
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=180,
-        ).start(ctx=ctx)
+        try:
+            await GamesMenu(
+                source=ScheduleList(team=teams, date=date, session=self.session, get_recap=True),
+                cog=self,
+                delete_message_after=False,
+                clear_reactions_after=True,
+                timeout=180,
+            ).start(ctx=ctx)
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
 
     @hockey_commands.command(hidden=True, with_app_command=False)
     @commands.bot_has_permissions(read_message_history=True, embed_links=True)
@@ -393,8 +442,15 @@ class HockeyCommands(HockeyMixin):
         log.verbose("season team: %s", team)
         log.verbose("season team id: %s", TEAMS[team]["id"])
         log.verbose("season team url: %s", url)
-        async with self.session.get(url) as resp:
-            data = await resp.json()
+        try:
+            async with self.session.get(url) as resp:
+                data = await resp.json()
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
         games = [game for date in data["dates"] for game in date["games"]]
         msg = ""
         for game in games:
@@ -453,13 +509,20 @@ class HockeyCommands(HockeyMixin):
         if not player:
             await ctx.send(_("No player could be found by that name."))
             return
-        await BaseMenu(
-            source=PlayerPages(pages=player, season=season_str),
-            cog=self,
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=180,
-        ).start(ctx=ctx)
+        try:
+            await BaseMenu(
+                source=PlayerPages(pages=player, season=season_str),
+                cog=self,
+                delete_message_after=False,
+                clear_reactions_after=True,
+                timeout=180,
+            ).start(ctx=ctx)
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
 
     @hockey_commands.command()
     @commands.bot_has_permissions(read_message_history=True, embed_links=True)
@@ -504,8 +567,15 @@ class HockeyCommands(HockeyMixin):
             return
         players = []
         url = f"{BASE_URL}/api/v1/teams/{TEAMS[team]['id']}/roster{season_url}"
-        async with self.session.get(url) as resp:
-            data = await resp.json()
+        try:
+            async with self.session.get(url) as resp:
+                data = await resp.json()
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
         if "roster" in data:
             for player in data["roster"]:
                 players.append(
@@ -581,8 +651,15 @@ class HockeyCommands(HockeyMixin):
             if not new_season.isdigit() and len(new_season) != 8:
                 await ctx.send(f"`{season}` is not a valid season.", ephemeral=True)
                 return
-        view = LeaderView(category, season, limit, self.session)
-        await view.start(ctx)
+        try:
+            view = LeaderView(category, season, limit, self.session)
+            await view.start(ctx)
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
 
     @hockey_commands.command(hidden=True, with_app_command=False)
     @commands.mod_or_permissions(manage_messages=True)

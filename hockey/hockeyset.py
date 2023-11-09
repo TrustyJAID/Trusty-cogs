@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import aiohttp
 import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
@@ -147,8 +148,15 @@ class HockeySetCommands(HockeyMixin):
         if team not in ["all", None]:
             # if a team is provided get just that TEAMS data
             params["teamId"] = ",".join(str(TEAMS[t]["id"]) for t in [team])
-        async with self.session.get(url, params=params) as resp:
-            data = await resp.json()
+        try:
+            async with self.session.get(url, params=params) as resp:
+                data = await resp.json()
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
         number_of_games = str(len(data.get("dates", [])))
         await ctx.send(f"Creating events for {number_of_games} games.")
         images_path = cog_data_path(self) / "teamlogos"
@@ -561,8 +569,14 @@ class HockeySetCommands(HockeyMixin):
             )
             await ctx.send(msg)
             return
-
-        standings = await Standings.get_team_standings(session=self.session)
+        try:
+            standings = await Standings.get_team_standings(session=self.session)
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
         if standings_type in [i.name.lower() for i in Divisions]:
             standing = Divisions(standings_type.title())
             em = await standings.make_division_standings_embed(standing)

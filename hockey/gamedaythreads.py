@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
+import aiohttp
 import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
@@ -163,7 +164,14 @@ class GameDayThreads(HockeyMixin):
             msg = _("No team was setup for game day threads in this server.")
             await ctx.send(msg)
         if await self.config.guild(ctx.guild).create_threads():
-            await self.create_gdt(ctx.guild)
+            try:
+                await self.create_gdt(ctx.guild)
+            except aiohttp.ClientConnectorError:
+                await ctx.send(
+                    _("There's an issue accessing the NHL API at the moment. Try again later.")
+                )
+                log.exception("Error accessing NHL API")
+                return
         else:
             msg = _("You need to first toggle thread creation with `{prefix}gdt toggle`.").format(
                 prefix=ctx.clean_prefix
@@ -254,9 +262,23 @@ class GameDayThreads(HockeyMixin):
         await self.config.guild(guild).gdt_team.set(team)
         await self.config.guild(guild).create_threads.set(True)
         if team.lower() != "all":
-            await self.create_gdt(guild)
+            try:
+                await self.create_gdt(guild)
+            except aiohttp.ClientConnectorError:
+                await ctx.send(
+                    _("There's an issue accessing the NHL API at the moment. Try again later.")
+                )
+                log.exception("Error accessing NHL API")
+                return
         else:
-            game_list = await Game.get_games(session=self.session)
+            try:
+                game_list = await Game.get_games(session=self.session)
+            except aiohttp.ClientConnectorError:
+                await ctx.send(
+                    _("There's an issue accessing the NHL API at the moment. Try again later.")
+                )
+                log.exception("Error accessing NHL API")
+                return
             for game in game_list:
                 if game.game_state == "Postponed":
                     continue
