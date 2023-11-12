@@ -4,7 +4,7 @@ import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
 
 import aiohttp
 import discord
@@ -25,24 +25,12 @@ from .helper import (
 )
 from .standings import LeagueRecord, Playoffs, Standings
 
+if TYPE_CHECKING:
+    from .api import GameData
+
 _ = Translator("Hockey", __file__)
 
 log = getLogger("red.trusty-cogs.Hockey")
-
-
-class GameType(Enum):
-    pre_season = "PR"
-    regular_season = "R"
-    playoffs = "P"
-    allstars = "A"
-    allstars_women = "WA"
-    olympics = "O"
-    world_cup_exhibition = "WCOH_EXH"
-    world_cup_prelim = "WCOH_PRELIM"
-    world_cup_final = "WCOH_FINAL"
-
-    def __str__(self):
-        return str(self.value)
 
 
 @dataclass
@@ -340,96 +328,6 @@ class Game:
                     log.error("Error grabbing game data:", exc_info=True)
                     continue
         return return_games_list
-
-    @staticmethod
-    async def get_game_content(
-        game_id: int, session: Optional[aiohttp.ClientSession] = None
-    ) -> dict:
-        data = {}
-        if session is None:
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(CONTENT_URL.format(game_id)) as resp:
-                        data = await resp.json()
-            except Exception:
-                log.exception("error pulling game content")
-                pass
-        else:
-            try:
-                async with session.get(CONTENT_URL.format(game_id)) as resp:
-                    data = await resp.json()
-            except Exception:
-                log.exception("error pulling game content")
-                pass
-        return data
-
-    @staticmethod
-    async def get_game_recap_from_content(content: dict) -> Optional[str]:
-        recap_url = None
-        for _item in (
-            content.get("editorial", {"recap": {}}).get("recap", {"items": []}).get("items", [])
-        ):
-            if "playbacks" not in _item["media"]:
-                continue
-            for _playback in _item["media"]["playbacks"]:
-                if _playback["name"] == "FLASH_1800K_896x504":
-                    recap_url = _playback["url"]
-        return recap_url
-
-    @staticmethod
-    async def get_game_recap(
-        game_id: int, session: Optional[aiohttp.ClientSession] = None
-    ) -> Optional[str]:
-        content = await Game.get_game_content(game_id)
-        return await Game.get_game_recap_from_content(content)
-
-    @staticmethod
-    async def get_games_list(
-        team: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        session: Optional[aiohttp.ClientSession] = None,
-    ) -> List[dict]:
-        """
-        Get a specified days games, defaults to the current day
-        requires a datetime object
-        returns a list of game objects
-        if a start date and an end date are not provided to the url
-        it returns only todays games
-
-        returns a list of games
-        """
-        start_date_str = start_date.strftime("%Y-%m-%d") if start_date is not None else None
-        end_date_str = end_date.strftime("%Y-%m-%d") if end_date is not None else None
-        params = {}
-        url = BASE_URL + "/api/v1/schedule"
-        if start_date is None and end_date is not None:
-            # if no start date is provided start with today
-            params["startDate"] = datetime.now().strftime("%Y-%m-%d")
-            params["endDate"] = end_date_str
-            # url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
-        elif start_date is not None and end_date is None:
-            # if no end date is provided carry through to the following year
-            params["endDate"] = str(start_date.year + 1) + start_date.strftime("-%m-%d")
-            params["startDate"] = start_date_str
-            # url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
-        if start_date_str is not None:
-            params["startDate"] = start_date_str
-        if end_date_str is not None:
-            params["endDate"] = end_date_str
-        if team not in ["all", None]:
-            # if a team is provided get just that TEAMS data
-            # url += "&teamId={}".format(TEAMS[team]["id"])
-            params["teamId"] = TEAMS[team]["id"]
-        if session is None:
-            async with aiohttp.ClientSession() as new_session:
-                async with new_session.get(url, params=params) as resp:
-                    data = await resp.json()
-        else:
-            async with session.get(url, params=params) as resp:
-                data = await resp.json()
-        game_list = [game for date in data["dates"] for game in date["games"]]
-        return game_list
 
     def nst_url(self):
         return f"https://www.naturalstattrick.com/game.php?season={self.season}&game={str(self.game_id)[5:]}&view=limited#gameflow"
@@ -1142,112 +1040,6 @@ class Game:
             log.exception("Could not post goal in %s", repr(channel))
 
     @classmethod
-    async def from_gamepk(
-        cls, gamepk: int, session: Optional[aiohttp.ClientSession] = None
-    ) -> Optional[Game]:
-        url = f"{BASE_URL}/api/v1/game/{gamepk}/feed/live"
-        return await cls.from_url(url, session)
-
-    @classmethod
-    async def from_url(
-        cls, url: str, session: Optional[aiohttp.ClientSession] = None
-    ) -> Optional[Game]:
-        url = url.replace(BASE_URL, "")  # strip the base url incase we already have it
-        try:
-            if session is None:
-                # this should only happen in pickems objects
-                # since pickems don't have access to the full
-                # cogs session
-                async with aiohttp.ClientSession() as new_session:
-                    async with new_session.get(BASE_URL + url) as resp:
-                        data = await resp.json()
-            else:
-                async with session.get(BASE_URL + url) as resp:
-                    data = await resp.json()
-            return await cls.from_json(data)
-        except Exception:
-            log.exception("Error grabbing game data: ")
-            return None
-
-    @classmethod
-    async def from_json(cls, data: dict) -> Game:
-        event = data["liveData"]["plays"]["allPlays"]
-        home_team = data["gameData"]["teams"]["home"]["name"]
-        away_team = data["gameData"]["teams"]["away"]["name"]
-        away_roster = data["liveData"]["boxscore"]["teams"]["away"]["players"]
-        home_roster = data["liveData"]["boxscore"]["teams"]["home"]["players"]
-        players = {}
-        players.update(away_roster)
-        players.update(home_roster)
-        game_id = data["gameData"]["game"]["pk"]
-        season = data["gameData"]["game"]["season"]
-        period_starts = {}
-        for play in data["liveData"]["plays"]["allPlays"]:
-            if play["result"]["eventTypeId"] == "PERIOD_START":
-                dt = datetime.strptime(play["about"]["dateTime"], "%Y-%m-%dT%H:%M:%SZ")
-                dt = dt.replace(tzinfo=timezone.utc)
-                period_starts[play["about"]["ordinalNum"]] = dt
-
-        content = await Game.get_game_content(game_id)
-        try:
-            recap_url = await Game.get_game_recap_from_content(content)
-        except Exception:
-            log.error("Cannot get game recap url.")
-            recap_url = None
-        goals = [
-            await Goal.from_json(goal, players, content)
-            for goal in event
-            if goal["result"]["eventTypeId"] == "GOAL"
-            or (
-                goal["result"]["eventTypeId"] in ["SHOT", "MISSED_SHOT"]
-                and goal["about"]["ordinalNum"] == "SO"
-            )
-        ]
-        link = f"{BASE_URL}{data['link']}"
-        if "currentPeriodOrdinal" in data["liveData"]["linescore"]:
-            period_ord = data["liveData"]["linescore"]["currentPeriodOrdinal"]
-            period_time_left = data["liveData"]["linescore"]["currentPeriodTimeRemaining"]
-            events = data["liveData"]["plays"]["allPlays"]
-        else:
-            period_ord = "0"
-            period_time_left = "0"
-            events = ["."]
-        decisions = data["liveData"]["decisions"]
-        first_star = decisions.get("firstStar", {}).get("fullName")
-        second_star = decisions.get("secondStar", {}).get("fullName")
-        third_star = decisions.get("thirdStar", {}).get("fullName")
-        game_type = data["gameData"]["game"]["type"]
-        game_state = (
-            data["gameData"]["status"]["abstractGameState"]
-            if data["gameData"]["status"]["detailedState"] != "Postponed"
-            else data["gameData"]["status"]["detailedState"]
-        )
-        return cls(
-            game_id=game_id,
-            game_state=game_state,
-            home_team=home_team,
-            away_team=away_team,
-            period=data["liveData"]["linescore"]["currentPeriod"],
-            home_shots=data["liveData"]["linescore"]["teams"]["home"]["shotsOnGoal"],
-            away_shots=data["liveData"]["linescore"]["teams"]["away"]["shotsOnGoal"],
-            home_score=data["liveData"]["linescore"]["teams"]["home"]["goals"],
-            away_score=data["liveData"]["linescore"]["teams"]["away"]["goals"],
-            game_start=data["gameData"]["datetime"]["dateTime"],
-            goals=goals,
-            home_abr=data["gameData"]["teams"]["home"]["abbreviation"],
-            away_abr=data["gameData"]["teams"]["away"]["abbreviation"],
-            period_ord=period_ord,
-            period_time_left=period_time_left,
-            period_starts=period_starts,
-            plays=events,
-            first_star=first_star,
-            second_star=second_star,
-            third_star=third_star,
-            away_roster=away_roster,
-            home_roster=home_roster,
-            link=link,
-            game_type=game_type,
-            season=season,
-            recap_url=recap_url,
-            # data=data,
-        )
+    def from_data(cls, data: GameData):
+        goals = [Goal.from_data(**i) for i in data.pop("goals", [])]
+        return cls(**data, goals=goals)

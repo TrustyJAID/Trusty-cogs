@@ -8,7 +8,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.vendored.discord.ext import menus
 
-from .constants import BASE_URL, TEAMS
+from .constants import TEAMS
 from .errors import NoSchedule
 from .game import Game
 from .helper import utc_to_local
@@ -30,7 +30,6 @@ class Schedule(menus.PageSource):
         self.limit: int = kwargs.get("limit", 10)
         self.team: List[str] = kwargs.get("team", [])
         self._last_searched: str = ""
-        self._session: aiohttp.ClientSession = kwargs.get("session")
         self.select_options = []
         self.search_range = 30
         self.include_heatmap = kwargs.get("include_heatmap", False)
@@ -44,6 +43,7 @@ class Schedule(menus.PageSource):
         self.vs = False
         if kwargs.get("vs", False) and len(self.team) == 2:
             self.vs = True
+        self.api = kwargs["api"]
 
     @property
     def index(self) -> int:
@@ -95,14 +95,9 @@ class Schedule(menus.PageSource):
         return page
 
     async def format_page(self, menu: menus.MenuPages, game: dict) -> discord.Embed:
-        log.trace("%s%s", BASE_URL, game["link"])
-        if self._session is not None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(BASE_URL + game["link"]) as resp:
-                    data = await resp.json()
-        else:
-            async with self._session.get(BASE_URL + game["link"]) as resp:
-                data = await resp.json()
+        log.trace("%s%s", self.api.base_url, game["link"])
+
+        data = await self.api.get_game_from_id(game["gamePk"])
         game_obj = await Game.from_json(data)
         # return {"content": f"{self.index+1}/{len(self._cache)}", "embed": await game_obj.make_game_embed()}
         em = await game_obj.make_game_embed(
@@ -210,20 +205,10 @@ class Schedule(menus.PageSource):
             end_date_timestamp = int(
                 utc_to_local((self.date + timedelta(days=self.search_range)), "UTC").timestamp()
             )
-
-        url = f"{BASE_URL}/api/v1/schedule"
-        params = {
-            "startDate": date_str,
-            "endDate": end_date_str,
-            "expand": "schedule.teams,schedule.linescore,schedule.broadcasts",
-        }
-        if self.team not in ["all", None]:
-            # if a team is provided get just that TEAMS data
-            params["teamId"] = ",".join(str(TEAMS[t]["id"]) for t in self.team)
         # log.debug(url)
         self._last_searched = f"<t:{date_timestamp}> to <t:{end_date_timestamp}>"
-        async with self._session.get(url, params=params) as resp:
-            data = await resp.json()
+
+        data = await self.api.get_schedule(self.team, date_str, end_date_str)
         games = [game for date in data["dates"] for game in date["games"]]
         self.select_options = []
         # log.debug(games)
@@ -279,10 +264,10 @@ class ScheduleList(menus.PageSource):
         if self.team is None:
             self.team = []
         self._last_searched: str = ""
-        self._session: aiohttp.ClientSession = kwargs.get("session")
         self.timezone: Optional[str] = kwargs.get("timezone")
         self.get_recap: bool = kwargs.get("get_recap", False)
         self.show_broadcasts = kwargs.get("show_broadcasts", False)
+        self.api = kwargs["api"]
 
     @property
     def index(self) -> int:
@@ -519,20 +504,9 @@ class ScheduleList(menus.PageSource):
             end_date_timestamp = int(
                 utc_to_local((self.date + timedelta(days=days_to_check)), "UTC").timestamp()
             )
-
-        url = f"{BASE_URL}/api/v1/schedule"
-        params = {
-            "startDate": date_str,
-            "endDate": end_date_str,
-            "expand": "schedule.teams,schedule.linescore,schedule.broadcasts",
-        }
-        if self.team not in ["all", None]:
-            # if a team is provided get just that TEAMS data
-            params["teamId"] = ",".join(str(TEAMS[t]["id"]) for t in self.team)
         self._last_searched = f"<t:{date_timestamp}> to <t:{end_date_timestamp}>"
-        async with self._session.get(url, params=params) as resp:
-            log.verbose("_next_batch Response URL: %s", resp.url)
-            data = await resp.json()
+
+        data = await self.api.get_schedule(self.team, date_str, end_date_str)
         games = [game for date in data["dates"] for game in date["games"]]
         if not games:
             #      log.debug("No schedule, looking for more days")

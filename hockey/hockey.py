@@ -13,10 +13,10 @@ from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
 
+from .api import GameState, NewAPI, Schedule
 from .constants import BASE_URL, CONFIG_ID, CONTENT_URL, HEADSHOT_URL, TEAMS
 from .dev import HockeyDev
 from .errors import InvalidFileError
-from .game import Game
 from .gamedaychannels import GameDayChannels
 from .gamedaythreads import GameDayThreads
 from .helper import utc_to_local
@@ -155,6 +155,7 @@ class Hockey(
         # data from the wrong file location
         self._repo = ""
         self._commit = ""
+        self.api = NewAPI()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -318,20 +319,16 @@ class Hockey(
         await self._ready.wait()
         while True:
             try:
-                params = {"expand": "schedule.teams,schedule.linescore,schedule.broadcasts"}
-                async with self.session.get(f"{BASE_URL}/api/v1/schedule") as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                    else:
-                        log.info("Error checking schedule. %s", resp.status)
-                        await asyncio.sleep(30)
-                        continue
+                schedule = await self.api.get_schedule()
+                if schedule.games is None:
+                    await asyncio.sleep(30)
+                    continue
             except aiohttp.client_exceptions.ClientConnectorError:
                 # this will most likely happen if there's a temporary failure in name resolution
                 # this ends up calling the check_new_day earlier than expected causing
                 # game day channels and pickems to fail to update prpoperly
                 # continue after waiting 30 seconds should prevent that.
-                data = {"dates": []}
+                schedule = Schedule([])
                 await asyncio.sleep(30)
                 continue
             except Exception:
@@ -339,13 +336,13 @@ class Hockey(
                 data = {"dates": []}
                 await asyncio.sleep(60)
                 continue
-            if data["dates"] != []:
-                for game in data["dates"][0]["games"]:
-                    if game["status"]["abstractGameState"] == "Final":
+            if schedule.games != []:
+                for game in schedule.games:
+                    if game.game_state is GameState.final:
                         continue
-                    if game["status"]["detailedState"] == "Postponed":
+                    if game.schedule_state != "OK":
                         continue
-                    self.current_games[game["link"]] = {
+                    self.current_games[game.id] = {
                         "count": 0,
                         "game": None,
                         "disabled_buttons": False,
@@ -357,7 +354,7 @@ class Hockey(
                 await self.check_new_day()
             if self.TEST_LOOP:
                 self.current_games = {
-                    "https://statsapi.web.nhl.com/api/v1/game/2020020474/feed/live": {
+                    2020020474: {
                         "count": 0,
                         "game": None,
                         "disabled_buttons": False,
@@ -366,7 +363,7 @@ class Hockey(
             while self.current_games != {}:
                 self.games_playing = True
                 to_delete = []
-                for link, data in self.current_games.items():
+                for game_id, data in self.current_games.items():
                     if data["game"] is not None:
                         await self.fix_pickem_game_start(data["game"])
                     if data["game"] is not None and data["game"].game_start - timedelta(
@@ -378,30 +375,30 @@ class Hockey(
                             data["game"].home_team,
                         )
                         continue
-                    data = await self.get_game_data(link)
+                    data = await self.api.get_game_from_id(game_id)
                     if data is None:
                         continue
                     try:
-                        game = await Game.from_json(data)
-                        self.current_games[link]["game"] = game
+                        game = await self.api.get_game_from_id(game_id)
+                        self.current_games[game_id]["game"] = game
                     except Exception:
                         log.exception("Error creating game object from json.")
                         continue
                     try:
                         await self.check_new_day()
                         posted_final = await game.check_game_state(
-                            self.bot, self.current_games[link]["count"]
+                            self.bot, self.current_games[game_id]["count"]
                         )
                     except Exception:
                         log.exception("Error checking game state: ")
                         posted_final = False
                     if (
-                        game.game_state in ["Live"]
-                        and not self.current_games[link]["disabled_buttons"]
+                        game.game_state in [GameState.live]
+                        and not self.current_games[game_id]["disabled_buttons"]
                     ):
                         log.verbose("Disabling buttons for %r", game)
                         await self.disable_pickems_buttons(game)
-                        self.current_games[link]["disabled_buttons"] = True
+                        self.current_games[game_id]["disabled_buttons"] = True
 
                     log.trace(
                         "%s @ %s %s %s - %s",
@@ -412,14 +409,14 @@ class Hockey(
                         game.home_score,
                     )
 
-                    if game.game_state in ["Final", "Postponed"]:
-                        self.current_games[link]["count"] += 1
+                    if game.game_state in [GameState.live]:
+                        self.current_games[game_id]["count"] += 1
                         if posted_final:
                             try:
                                 await self.set_guild_pickem_winner(game, edit_message=True)
                             except Exception:
                                 log.exception("Pickems Set Winner error: ")
-                            self.current_games[link]["count"] = 21
+                            self.current_games[game_id]["count"] = 21
                     await asyncio.sleep(1)
 
                 for link in self.current_games:

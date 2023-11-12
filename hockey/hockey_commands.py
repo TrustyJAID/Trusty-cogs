@@ -165,7 +165,7 @@ class HockeyCommands(HockeyMixin):
             teams = [team]
         try:
             await GamesMenu(
-                source=Schedule(team=teams, date=date, session=self.session),
+                source=Schedule(team=teams, date=date, api=self.api),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,
@@ -260,10 +260,10 @@ class HockeyCommands(HockeyMixin):
                 source=Schedule(
                     team=teams,
                     date=date,
-                    session=self.session,
                     include_goals=False,
                     include_heatmap=True,
                     style=style,
+                    api=self.api,
                 ),
                 cog=self,
                 delete_message_after=False,
@@ -316,11 +316,11 @@ class HockeyCommands(HockeyMixin):
                 source=Schedule(
                     team=teams,
                     date=date,
-                    session=self.session,
                     include_goals=False,
                     include_gameflow=True,
                     corsi=corsi,
                     strength=strength,
+                    api=self.api,
                 ),
                 cog=self,
                 delete_message_after=False,
@@ -359,7 +359,7 @@ class HockeyCommands(HockeyMixin):
             teams = [team]
         try:
             await GamesMenu(
-                source=ScheduleList(team=teams, date=date, session=self.session),
+                source=ScheduleList(team=teams, date=date, api=self.api),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,
@@ -397,7 +397,7 @@ class HockeyCommands(HockeyMixin):
             teams = [team]
         try:
             await GamesMenu(
-                source=ScheduleList(team=teams, date=date, session=self.session, get_recap=True),
+                source=ScheduleList(team=teams, date=date, get_recap=True, api=self.api),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,

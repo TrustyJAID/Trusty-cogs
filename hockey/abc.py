@@ -8,6 +8,7 @@ import discord
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 
+from .api import HockeyAPI
 from .game import Game
 from .helper import (
     DateFinder,
@@ -39,6 +40,7 @@ class HockeyMixin(ABC):
         self.session: aiohttp.ClientSession
         self.pickems_config: Config
         self._ready: asyncio.Event
+        self.api: HockeyAPI
 
     #######################################################################
     # hockey_commands.py                                                  #

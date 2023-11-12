@@ -13,7 +13,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import HockeyMixin
-from .constants import BASE_URL, TEAMS
+from .constants import TEAMS
 from .helper import StandingsFinder, StateFinder, TeamFinder
 from .standings import Conferences, Divisions, Standings
 
@@ -137,20 +137,12 @@ class HockeySetCommands(HockeyMixin):
 
         This command can take a while to complete.
         """
-        url = f"{BASE_URL}/api/v1/schedule"
         start = datetime.now()
         end = start + timedelta(days=350)
-        params = {
-            "startDate": start.strftime("%Y-%m-%d"),
-            "endDate": end.strftime("%Y-%m-%d"),
-            "expand": "schedule.teams,schedule.linescore,schedule.broadcasts",
-        }
-        if team not in ["all", None]:
-            # if a team is provided get just that TEAMS data
-            params["teamId"] = ",".join(str(TEAMS[t]["id"]) for t in [team])
         try:
-            async with self.session.get(url, params=params) as resp:
-                data = await resp.json()
+            data = await self.api.get_schedule(
+                team, start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
+            )
         except aiohttp.ClientConnectorError:
             await ctx.send(
                 _("There's an issue accessing the NHL API at the moment. Try again later.")

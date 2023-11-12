@@ -541,7 +541,8 @@ class HockeyPickems(HockeyMixin):
             else:
                 save_data[new_channel.guild.id].append(new_channel.id)
 
-        games_list = await Game.get_games(None, day, day, self.session)
+        games_list = await self.api.get_games(None, day, day)
+        games_list = [await Game.from_json(i) for i in games_list]
 
         # msg_tasks = []
         for game in games_list:
@@ -711,7 +712,7 @@ class HockeyPickems(HockeyMixin):
         async for name, pickems in AsyncIter(pickems_list.items(), steps=10):
             # check for definitive winner here just incase
             if name not in self.pickems_games:
-                game = await pickems.get_game()
+                game = await pickems.get_game(self.api)
                 self.pickems_games[name] = game
                 await self.set_guild_pickem_winner(self.pickems_games[name])
                 # Go through all the current pickems for every server
@@ -1132,7 +1133,8 @@ class HockeyPickems(HockeyMixin):
                 return
         guild_message = await self.pickems_config.guild(ctx.guild).pickems_message()
         msg = _(PICKEMS_MESSAGE).format(guild_message=guild_message)
-        games_list = await Game.get_games(None, new_date, new_date, session=self.session)
+        games_list = await self.api.get_games(None, new_date, new_date)
+        games_list = [await Game.from_json(i) for i in games_list]
         for page in pagify(msg):
             await ctx.channel.send(page)
         for game in games_list:

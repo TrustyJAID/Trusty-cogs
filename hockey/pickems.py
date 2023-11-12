@@ -284,11 +284,12 @@ class Pickems(discord.ui.View):
             return True
         return False
 
-    async def get_game(self) -> Optional[Game]:
+    async def get_game(self, api) -> Optional[Game]:
         if self.link is not None:
-            return await Game.from_url(self.link)
-        url = f"https://statsapi.web.nhl.com/api/v1/game/{self.game_id}/feed/live"
-        return await Game.from_url(url)
+            game_data = await api.get_game_from_url(self.link)
+            return await Game.from_json(game_data)
+        game_data = await api.get_game_from_id(self.game_id)
+        return await Game.from_json(game_data)
 
     async def check_winner(self, game: Optional[Game] = None) -> bool:
         """
@@ -304,8 +305,8 @@ class Pickems(discord.ui.View):
             return True
         if game is not None:
             return await self.set_pickem_winner(game)
-        if self.link and after_game:
-            log.debug("Checking winner for %r", self)
-            game = await Game.from_url(self.link)
-            return await self.set_pickem_winner(game)
+        # if self.link and after_game:
+        # log.debug("Checking winner for %r", self)
+        # game = await Game.from_url(self.link)
+        # return await self.set_pickem_winner(game)
         return False

@@ -14,6 +14,7 @@ from .constants import HEADSHOT_URL, TEAMS
 from .helper import check_to_post, get_channel_obj, get_team
 
 if TYPE_CHECKING:
+    from .api import GoalData
     from .game import Game
 
 
@@ -90,6 +91,10 @@ class Goal:
             "home_shots": self.home_shots,
             "away_shots": self.away_shots,
         }
+
+    @classmethod
+    def from_data(cls, data: GoalData):
+        return cls(**data)
 
     @staticmethod
     def get_image_and_highlight_url(
