@@ -13,7 +13,7 @@ from redbot.core.utils.chat_formatting import pagify
 from hockey.helper import utc_to_local
 
 from .abc import HockeyMixin
-from .game import Game
+from .game import Game, GameType
 from .pickems import Pickems
 
 _ = Translator("Hockey", __file__)
@@ -91,7 +91,7 @@ class HockeyPickems(HockeyMixin):
                         log.trace("Saving pickem %r", pickem)
                         data[name] = pickem.to_json()
                     self.all_pickems[guild_id][name]._should_save = False
-                    if pickem.game_type in ["P", "PR"]:
+                    if pickem.game_type in [GameType.pre_season, GameType.playoffs]:
                         if (datetime.now(timezone.utc) - pickem.game_start) >= timedelta(days=7):
                             del data[name]
                             if guild_id not in to_del:
@@ -748,11 +748,11 @@ class HockeyPickems(HockeyMixin):
                                 await bank.deposit_credits(member, int(base_credits))
                             except Exception:
                                 log.debug("Could not deposit pickems credits for %r", member)
-                        if pickems.game_type == "P":
+                        if pickems.game_type is GameType.playoffs:
                             leaderboard[str(user)]["playoffs"] += 1
                             leaderboard[str(user)]["playoffs_weekly"] += 1
                             leaderboard[str(user)]["playoffs_total"] += 1
-                        elif pickems.game_type == "PR":
+                        elif pickems.game_type is GameType.pre_season:
                             leaderboard[str(user)]["pre-season"] += 1
                             leaderboard[str(user)]["pre-season_weekly"] += 1
                             leaderboard[str(user)]["pre-season_total"] += 1
@@ -763,9 +763,9 @@ class HockeyPickems(HockeyMixin):
                             # playoffs is finished
                             leaderboard[str(user)]["weekly"] += 1
                     else:
-                        if pickems.game_type == "P":
+                        if pickems.game_type is GameType.playoffs:
                             leaderboard[str(user)]["playoffs_total"] += 1
-                        elif pickems.game_type == "PR":
+                        elif pickems.game_type is GameType.pre_season:
                             leaderboard[str(user)]["pre-season_total"] += 1
                         else:
                             leaderboard[str(user)]["total"] += 1

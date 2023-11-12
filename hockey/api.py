@@ -10,7 +10,7 @@ from red_commons.logging import getLogger
 from redbot.core.i18n import Translator
 
 from .constants import TEAMS
-from .game import Game, GameState
+from .game import Game, GameState, GameType
 from .goal import Goal
 
 TEAM_IDS = {v["id"]: k for k, v in TEAMS.items()}
@@ -87,30 +87,6 @@ class GameData(TypedDict):
     away_roster: Optional[dict]
     home_roster: Optional[dict]
     link: Optional[str]
-
-
-class GameType(Enum):
-    unknown = "Unknown"
-    pre_season = "PR"
-    regular_season = "R"
-    playoffs = "P"
-    allstars = "A"
-    allstars_women = "WA"
-    olympics = "O"
-    world_cup_exhibition = "WCOH_EXH"
-    world_cup_prelim = "WCOH_PRELIM"
-    world_cup_final = "WCOH_FINAL"
-
-    def __str__(self):
-        return str(self.value)
-
-    @classmethod
-    def from_int(cls, value: int) -> GameType:
-        return {
-            1: GameType.pre_season,
-            2: GameType.regular_season,
-            3: GameType.playoffs,
-        }.get(value, GameType.unknown)
 
 
 class GameEventTypeCode(Enum):
@@ -353,7 +329,9 @@ class Schedule:
 
 class HockeyAPI:
     def __init__(self):
-        self.session = aiohttp.ClientSession()
+        self.session = aiohttp.ClientSession(
+            headers={"User-Agent": "Red-DiscordBot Trusty-cogs Hockey"}
+        )
         self.base_url = None
 
     async def close(self):

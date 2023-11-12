@@ -179,6 +179,7 @@ class Hockey(
         if self.loop is not None:
             self.loop.cancel()
         await self.session.close()
+        await self.api.close()
         self.pickems_loop.cancel()
         await self.after_pickems_loop()
 

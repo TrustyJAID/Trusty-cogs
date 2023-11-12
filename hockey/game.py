@@ -96,6 +96,30 @@ class GameState(Enum):
         }.get(game_state, GameState.unknown)
 
 
+class GameType(Enum):
+    unknown = "Unknown"
+    pre_season = "PR"
+    regular_season = "R"
+    playoffs = "P"
+    allstars = "A"
+    allstars_women = "WA"
+    olympics = "O"
+    world_cup_exhibition = "WCOH_EXH"
+    world_cup_prelim = "WCOH_PRELIM"
+    world_cup_final = "WCOH_FINAL"
+
+    def __str__(self):
+        return str(self.value)
+
+    @classmethod
+    def from_int(cls, value: int) -> GameType:
+        return {
+            1: GameType.pre_season,
+            2: GameType.regular_season,
+            3: GameType.playoffs,
+        }.get(value, GameType.unknown)
+
+
 @dataclass
 class GameStatus:
     abstractGameState: str
@@ -294,7 +318,7 @@ class Game:
         self.third_star = kwargs.get("third_star")
         self.away_roster = kwargs.get("away_roster")
         self.home_roster = kwargs.get("home_roster")
-        self.game_type: str = kwargs.get("game_type", "")
+        self.game_type: GameType = kwargs.get("game_type", GameType.unknown)
         self.link = kwargs.get("link")
         self.season = kwargs.get("season")
         self._recap_url: Optional[str] = kwargs.get("recap_url", None)
@@ -326,7 +350,11 @@ class Game:
         return int(self.game_start.timestamp())
 
     def game_type_str(self):
-        game_types = {"PR": _("Pre Season"), "R": _("Regular Season"), "P": _("Post Season")}
+        game_types = {
+            GameType.pre_season: _("Pre Season"),
+            GameType.regular_season: _("Regular Season"),
+            GameType.playoffs: _("Post Season"),
+        }
         return game_types.get(self.game_type, _("Unknown"))
 
     def to_json(self) -> dict:
@@ -353,7 +381,7 @@ class Game:
             "first_star": self.first_star,
             "second_star": self.second_star,
             "third_star": self.third_star,
-            "game_type": self.game_type,
+            "game_type": self.game_type.value,
             "link": self.link,
         }
 
@@ -603,7 +631,7 @@ class Game:
         home_str = _("GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n")
         away_str = _("GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n")
         desc = None
-        if self.game_type != "P":
+        if self.game_type is GameType.playoffs:
             msg = _(
                 "GP:**{gp}** W:**{wins}** L:**{losses}\n**OT:**{ot}** PTS:**{pts}** S:**{streak}**\n"
             )
@@ -874,7 +902,7 @@ class Game:
                 allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
             else:
                 allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
-            if self.game_type == "R" and "OT" in self.period_ord:
+            if self.game_type is GameType.regular_season and "OT" in self.period_ord:
                 if not guild_settings["ot_notifications"]:
                     allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
             if "SO" in self.period_ord:
