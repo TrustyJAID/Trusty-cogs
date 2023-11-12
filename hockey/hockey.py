@@ -25,7 +25,6 @@ from .hockeypickems import HockeyPickems
 from .hockeyset import HockeySetCommands
 from .pickems import Pickems
 from .standings import Standings
-from .teamentry import TeamEntry
 
 _ = Translator("Hockey", __file__)
 
@@ -320,7 +319,7 @@ class Hockey(
         while True:
             try:
                 schedule = await self.api.get_schedule()
-                if schedule.games is None:
+                if schedule.days == []:
                     await asyncio.sleep(30)
                     continue
             except aiohttp.client_exceptions.ClientConnectorError:
@@ -336,8 +335,8 @@ class Hockey(
                 data = {"dates": []}
                 await asyncio.sleep(60)
                 continue
-            if schedule.games != []:
-                for game in schedule.games:
+            if schedule.days != []:
+                for game in schedule.days[0]:
                     if game.game_state is GameState.final:
                         continue
                     if game.schedule_state != "OK":
@@ -409,7 +408,7 @@ class Hockey(
                         game.home_score,
                     )
 
-                    if game.game_state in [GameState.live]:
+                    if game.game_state is GameState.final:
                         self.current_games[game_id]["count"] += 1
                         if posted_final:
                             try:

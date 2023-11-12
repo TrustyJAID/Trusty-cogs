@@ -542,7 +542,6 @@ class HockeyPickems(HockeyMixin):
                 save_data[new_channel.guild.id].append(new_channel.id)
 
         games_list = await self.api.get_games(None, day, day)
-        games_list = [await Game.from_json(i) for i in games_list]
 
         # msg_tasks = []
         for game in games_list:
@@ -1123,10 +1122,11 @@ class HockeyPickems(HockeyMixin):
         if not await self.check_pickems_req(ctx):
             return
         if date is None:
-            new_date = datetime.now()
+            new_date = datetime.now(timezone.utc)
         else:
             try:
                 new_date = datetime.strptime(date, "%Y-%m-%d")
+                new_date.replace(tzinfo=timezone.utc)
             except ValueError:
                 msg = _("`date` must be in the format `YYYY-MM-DD`.")
                 await ctx.send(msg)
@@ -1134,7 +1134,6 @@ class HockeyPickems(HockeyMixin):
         guild_message = await self.pickems_config.guild(ctx.guild).pickems_message()
         msg = _(PICKEMS_MESSAGE).format(guild_message=guild_message)
         games_list = await self.api.get_games(None, new_date, new_date)
-        games_list = [await Game.from_json(i) for i in games_list]
         for page in pagify(msg):
             await ctx.channel.send(page)
         for game in games_list:

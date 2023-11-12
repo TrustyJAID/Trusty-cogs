@@ -285,11 +285,7 @@ class Pickems(discord.ui.View):
         return False
 
     async def get_game(self, api) -> Optional[Game]:
-        if self.link is not None:
-            game_data = await api.get_game_from_url(self.link)
-            return await Game.from_json(game_data)
-        game_data = await api.get_game_from_id(self.game_id)
-        return await Game.from_json(game_data)
+        return await api.get_game_from_id(self.game_id)
 
     async def check_winner(self, game: Optional[Game] = None) -> bool:
         """
