@@ -611,7 +611,6 @@ async def get_team(bot: Red, team: str, game_start: str, game_id: int = 0) -> di
             game_start=game_start,
             game_id=game_id,
         )
-        log.info("This should be unreachable")
         team_list.append(team_entry.to_json())
         await config.teams.set(team_list)
     for teams in team_list:
@@ -620,7 +619,6 @@ async def get_team(bot: Red, team: str, game_start: str, game_id: int = 0) -> di
             and game_start == teams["game_start"]
             and game_id == teams["game_id"]
         ):
-            log.info("Returing already created Team Entry")
             return teams
     # Add unknown teams to the config to track stats
     return_team = TeamEntry(
@@ -633,7 +631,6 @@ async def get_team(bot: Red, team: str, game_start: str, game_id: int = 0) -> di
         game_start=game_start,
         game_id=game_id,
     )
-    log.info("Returing new team entry")
     team_list.append(return_team.to_json())
     await config.teams.set(team_list)
     return return_team.to_json()

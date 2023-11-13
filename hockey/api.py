@@ -12,6 +12,7 @@ from redbot.core.i18n import Translator
 from .constants import TEAMS
 from .game import Game, GameState, GameType
 from .goal import Goal
+from .standings import Standings
 
 TEAM_IDS = {v["id"]: k for k, v in TEAMS.items()}
 
@@ -713,11 +714,16 @@ class NewAPI(HockeyAPI):
             data = await resp.json()
         return Schedule.from_nhle(data)
 
-    async def club_schedule_week(self, team: str) -> Schedule:
+    async def club_schedule_week(self, team: str, date: Optional[datetime] = None) -> Schedule:
         team_abr = self.team_to_abbrev(team)
+        date_str = "now"
+        if date is not None:
+            date_str = date.strftime("%Y-%M-%d")
         if team_abr is None:
             raise HockeyAPIError("An unknown team name was provided")
-        async with self.session.get(f"{self.base_url}/club-schedule/{team_abr}/week/now") as resp:
+        async with self.session.get(
+            f"{self.base_url}/club-schedule/{team_abr}/week/{date_str}"
+        ) as resp:
             if resp.status != 200:
                 log.error("Error accessing the Club Schedule for the week. %s", resp.status)
                 raise HockeyAPIError("There was an error accessing the API.")
@@ -725,11 +731,18 @@ class NewAPI(HockeyAPI):
             data = await resp.json()
         return Schedule.from_nhle(data)
 
-    async def club_schedule_month(self, team: str) -> Schedule:
+    async def club_schedule_month(self, team: str, date: Optional[datetime] = None) -> Schedule:
         team_abr = self.team_to_abbrev(team)
+
         if team_abr is None:
             raise HockeyAPIError("An unknown team name was provided")
-        async with self.session.get(f"{self.base_url}/club-schedule/{team_abr}/month/now") as resp:
+
+        date_str = "now"
+        if date is not None:
+            date_str = date.strftime("%Y-%M")
+        async with self.session.get(
+            f"{self.base_url}/club-schedule/{team_abr}/month/{date_str}"
+        ) as resp:
             if resp.status != 200:
                 log.error("Error accessing the Club Schedule for the month. %s", resp.status)
                 raise HockeyAPIError("There was an error accessing the API.")
@@ -781,11 +794,15 @@ class NewAPI(HockeyAPI):
     ) -> Schedule:
         if team:
             if start_date is not None:
-                return await self.club_schedule_week(team)
+                return await self.club_schedule_week(team, start_date)
             return await self.club_schedule_season(team)
         if start_date is not None:
             return await self.schedule(start_date)
         return await self.schedule_now()
+
+    async def get_standings(self) -> Standings:
+        data = await self.standings_now()
+        return Standings.from_nhle(data)
 
     async def get_games_list(
         self,
@@ -884,5 +901,6 @@ class NewAPI(HockeyAPI):
             game_type=game_type,
             season=data.get("season", 0),
             recap_url=None,
+            api=self,
             # data=data,
         )

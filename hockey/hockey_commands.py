@@ -25,7 +25,7 @@ from .helper import (
 from .menu import BaseMenu, GamesMenu, LeaderboardPages, PlayerPages, SimplePages
 from .player import SimplePlayer
 from .schedule import Schedule, ScheduleList
-from .standings import PlayoffsView, Standings, StandingsMenu
+from .standings import PlayoffsView, StandingsMenu
 from .stats import LeaderCategories, LeaderView
 
 _ = Translator("Hockey", __file__)
@@ -128,7 +128,7 @@ class HockeyCommands(HockeyMixin):
         """
         await ctx.defer()
         try:
-            standings = await Standings.get_team_standings(session=self.session)
+            standings = await self.api.get_standings()
         except aiohttp.ClientConnectorError:
             await ctx.send(
                 _("There's an issue accessing the NHL API at the moment. Try again later.")
@@ -216,7 +216,7 @@ class HockeyCommands(HockeyMixin):
                 season_str = int(season.group(1)) - 1
         try:
             await PlayoffsView(start_date=season_str).start(ctx=ctx)
-        except aiohttp.ClientConnectorError:
+        except Exception:
             await ctx.send(
                 _("There's an issue accessing the NHL API at the moment. Try again later.")
             )

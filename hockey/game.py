@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
 
-import aiohttp
 import discord
 from red_commons.logging import getLogger
 from redbot.core.bot import Red
@@ -14,16 +13,10 @@ from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import pagify
 
-from .constants import BASE_URL, CONTENT_URL, TEAMS
+from .constants import TEAMS
 from .goal import Goal
-from .helper import (
-    check_to_post,
-    get_channel_obj,
-    get_team,
-    get_team_role,
-    utc_to_local,
-)
-from .standings import LeagueRecord, Playoffs, Standings
+from .helper import check_to_post, get_channel_obj, get_team, get_team_role
+from .standings import LeagueRecord, Playoffs
 
 if TYPE_CHECKING:
     from .api import GameData
@@ -323,6 +316,7 @@ class Game:
         self.season = kwargs.get("season")
         self._recap_url: Optional[str] = kwargs.get("recap_url", None)
         self.data = kwargs.get("data", {})
+        self.api = kwargs.get("api", None)
 
     def __repr__(self):
         return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
@@ -631,12 +625,12 @@ class Game:
         home_str = _("GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n")
         away_str = _("GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n")
         desc = None
-        if self.game_type is GameType.playoffs:
+        if self.game_type is not GameType.playoffs:
             msg = _(
                 "GP:**{gp}** W:**{wins}** L:**{losses}\n**OT:**{ot}** PTS:**{pts}** S:**{streak}**\n"
             )
             try:
-                standings = await Standings.get_team_standings()
+                standings = await self.api.get_standings()
                 for name, record in standings.all_records.items():
                     if record.team.name == self.away_team:
                         away_str = msg.format(
