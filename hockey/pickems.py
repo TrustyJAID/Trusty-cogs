@@ -9,7 +9,7 @@ from redbot.core.i18n import Translator
 
 from .constants import TEAMS
 from .errors import NotAValidTeamError, UserHasVotedError, VotingHasEndedError
-from .game import Game
+from .game import Game, GameState, GameType
 
 _ = Translator("Hockey", __file__)
 log = getLogger("red.trusty-cogs.Hockey")
@@ -103,7 +103,7 @@ class Pickems(discord.ui.View):
     def __init__(
         self,
         game_id: int,
-        game_state: str,
+        game_state: GameState,
         messages: List[str],
         guild: int,
         game_start: datetime,
@@ -113,7 +113,7 @@ class Pickems(discord.ui.View):
         name: str,
         winner: Optional[str],
         link: Optional[str],
-        game_type: str,
+        game_type: GameType,
         should_edit: bool,
     ):
         self.game_id = game_id
@@ -222,7 +222,7 @@ class Pickems(discord.ui.View):
     def to_json(self) -> Dict[str, Any]:
         return {
             "game_id": self.game_id,
-            "game_state": self.game_state,
+            "game_state": self.game_state.value,
             "messages": self.messages,
             "guild": self.guild,
             "game_start": self.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -232,7 +232,7 @@ class Pickems(discord.ui.View):
             "name": self.name,
             "winner": self.winner,
             "link": self.link,
-            "game_type": self.game_type,
+            "game_type": self.game_type.value,
             "should_edit": self.should_edit,
         }
 
@@ -243,7 +243,7 @@ class Pickems(discord.ui.View):
         game_start = game_start.replace(tzinfo=timezone.utc)
         return cls(
             game_id=data["game_id"],
-            game_state=data["game_state"],
+            game_state=GameState(data["game_state"]),
             messages=data.get("messages", []),
             guild=data["guild"],
             game_start=game_start,
@@ -253,7 +253,7 @@ class Pickems(discord.ui.View):
             name=data.get("name", ""),
             winner=data.get("winner", None),
             link=data.get("link", None),
-            game_type=data.get("game_type", "R"),
+            game_type=GameType(data.get("game_type", "R")),
             should_edit=data.get("should_edit", True),
         )
 
@@ -284,11 +284,8 @@ class Pickems(discord.ui.View):
             return True
         return False
 
-    async def get_game(self) -> Optional[Game]:
-        if self.link is not None:
-            return await Game.from_url(self.link)
-        url = f"https://statsapi.web.nhl.com/api/v1/game/{self.game_id}/feed/live"
-        return await Game.from_url(url)
+    async def get_game(self, api) -> Optional[Game]:
+        return await api.get_game_from_id(self.game_id)
 
     async def check_winner(self, game: Optional[Game] = None) -> bool:
         """
@@ -304,8 +301,8 @@ class Pickems(discord.ui.View):
             return True
         if game is not None:
             return await self.set_pickem_winner(game)
-        if self.link and after_game:
-            log.debug("Checking winner for %r", self)
-            game = await Game.from_url(self.link)
-            return await self.set_pickem_winner(game)
+        # if self.link and after_game:
+        # log.debug("Checking winner for %r", self)
+        # game = await Game.from_url(self.link)
+        # return await self.set_pickem_winner(game)
         return False

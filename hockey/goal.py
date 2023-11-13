@@ -14,6 +14,7 @@ from .constants import HEADSHOT_URL, TEAMS
 from .helper import check_to_post, get_channel_obj, get_team
 
 if TYPE_CHECKING:
+    from .api import GoalData
     from .game import Game
 
 
@@ -90,6 +91,10 @@ class Goal:
             "home_shots": self.home_shots,
             "away_shots": self.away_shots,
         }
+
+    @classmethod
+    def from_data(cls, data: GoalData):
+        return cls(**data)
 
     @staticmethod
     def get_image_and_highlight_url(
@@ -214,7 +219,9 @@ class Goal:
                 continue
             if channel.guild.me.is_timed_out():
                 continue
-            should_post = await check_to_post(bot, channel, data, post_state, "Goal")
+            should_post = await check_to_post(
+                bot, channel, data, post_state, game_data.game_state, True
+            )
             if should_post:
                 post_data.append(
                     await self.actually_post_goal(bot, channel, goal_embed, goal_text)
@@ -500,9 +507,9 @@ class Goal:
         url = TEAMS[self.team_name]["team_url"] if self.team_name in TEAMS else "https://nhl.com"
         logo = TEAMS[self.team_name]["logo"] if self.team_name in TEAMS else "https://nhl.com"
         if not shootout:
-            em = discord.Embed(description=f"{self.description}\n<t:{self.timestamp}:T>")
+            em = discord.Embed(description=f"{self.description}")
             if self.link:
-                em.description = f"[{self.description}]({self.link})\n<t:{self.timestamp}:T>"
+                em.description = f"[{self.description}]({self.link})"
             if colour is not None:
                 em.colour = colour
             em.set_author(name=title, url=url, icon_url=logo)
@@ -544,7 +551,7 @@ class Goal:
                 + _(" period"),
                 icon_url=logo,
             )
-            em.timestamp = self.time
+            # em.timestamp = self.time
         return em
 
     async def goal_post_text(self, game: Game) -> str:

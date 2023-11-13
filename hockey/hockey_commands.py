@@ -25,7 +25,7 @@ from .helper import (
 from .menu import BaseMenu, GamesMenu, LeaderboardPages, PlayerPages, SimplePages
 from .player import SimplePlayer
 from .schedule import Schedule, ScheduleList
-from .standings import PlayoffsView, Standings, StandingsMenu
+from .standings import PlayoffsView, StandingsMenu
 from .stats import LeaderCategories, LeaderView
 
 _ = Translator("Hockey", __file__)
@@ -128,7 +128,7 @@ class HockeyCommands(HockeyMixin):
         """
         await ctx.defer()
         try:
-            standings = await Standings.get_team_standings(session=self.session)
+            standings = await self.api.get_standings()
         except aiohttp.ClientConnectorError:
             await ctx.send(
                 _("There's an issue accessing the NHL API at the moment. Try again later.")
@@ -165,7 +165,7 @@ class HockeyCommands(HockeyMixin):
             teams = [team]
         try:
             await GamesMenu(
-                source=Schedule(team=teams, date=date, session=self.session),
+                source=Schedule(team=teams, date=date, api=self.api),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,
@@ -216,7 +216,7 @@ class HockeyCommands(HockeyMixin):
                 season_str = int(season.group(1)) - 1
         try:
             await PlayoffsView(start_date=season_str).start(ctx=ctx)
-        except aiohttp.ClientConnectorError:
+        except Exception:
             await ctx.send(
                 _("There's an issue accessing the NHL API at the moment. Try again later.")
             )
@@ -260,10 +260,10 @@ class HockeyCommands(HockeyMixin):
                 source=Schedule(
                     team=teams,
                     date=date,
-                    session=self.session,
                     include_goals=False,
                     include_heatmap=True,
                     style=style,
+                    api=self.api,
                 ),
                 cog=self,
                 delete_message_after=False,
@@ -316,11 +316,11 @@ class HockeyCommands(HockeyMixin):
                 source=Schedule(
                     team=teams,
                     date=date,
-                    session=self.session,
                     include_goals=False,
                     include_gameflow=True,
                     corsi=corsi,
                     strength=strength,
+                    api=self.api,
                 ),
                 cog=self,
                 delete_message_after=False,
@@ -359,7 +359,7 @@ class HockeyCommands(HockeyMixin):
             teams = [team]
         try:
             await GamesMenu(
-                source=ScheduleList(team=teams, date=date, session=self.session),
+                source=ScheduleList(team=teams, date=date, api=self.api),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,
@@ -397,7 +397,7 @@ class HockeyCommands(HockeyMixin):
             teams = [team]
         try:
             await GamesMenu(
-                source=ScheduleList(team=teams, date=date, session=self.session, get_recap=True),
+                source=ScheduleList(team=teams, date=date, get_recap=True, api=self.api),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,

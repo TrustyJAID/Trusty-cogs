@@ -275,7 +275,7 @@ class GameDayChannels(HockeyMixin):
                 log.exception("Error accessing NHL API")
                 return
         else:
-            game_list = await Game.get_games(session=self.session)
+            game_list = await self.api.get_games()
             for game in game_list:
                 try:
                     await self.create_gdc(guild, game)
@@ -292,9 +292,7 @@ class GameDayChannels(HockeyMixin):
     #######################################################################
 
     async def check_new_gdc(self) -> None:
-        game_list = await Game.get_games(
-            session=self.session
-        )  # Do this once so we don't spam the api
+        game_list = await self.api.get_games()  # Do this once so we don't spam the api
         for guilds in await self.config.all_guilds():
             guild = self.bot.get_guild(guilds)
             if guild is None:
@@ -305,10 +303,10 @@ class GameDayChannels(HockeyMixin):
                 continue
             team = await self.config.guild(guild).gdc_team()
             if team != "all":
-                next_games = await Game.get_games_list(team, datetime.now(), session=self.session)
+                next_games = await self.api.get_games(team, datetime.now())
                 next_game = None
                 if next_games != []:
-                    next_game = await Game.from_url(next_games[0]["link"], session=self.session)
+                    next_game = next_games[0]
                 if next_game is None:
                     continue
                 cur_channels = await self.config.guild(guild).gdc_chans()
@@ -346,9 +344,9 @@ class GameDayChannels(HockeyMixin):
         if game_data is None:
             team = await self.config.guild(guild).gdc_team()
 
-            next_games = await Game.get_games_list(team, datetime.now(), session=self.session)
+            next_games = await self.api.get_games(team, datetime.now())
             if next_games != []:
-                next_game = await Game.from_url(next_games[0]["link"], session=self.session)
+                next_game = next_games[0]
                 if next_game is None:
                     return
             else:

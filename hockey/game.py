@@ -4,9 +4,8 @@ import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
 
-import aiohttp
 import discord
 from red_commons.logging import getLogger
 from redbot.core.bot import Red
@@ -14,23 +13,84 @@ from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import pagify
 
-from .constants import BASE_URL, CONTENT_URL, TEAMS
+from .constants import TEAMS
 from .goal import Goal
-from .helper import (
-    check_to_post,
-    get_channel_obj,
-    get_team,
-    get_team_role,
-    utc_to_local,
-)
-from .standings import LeagueRecord, Playoffs, Standings
+from .helper import check_to_post, get_channel_obj, get_team, get_team_role
+from .standings import LeagueRecord, Playoffs
+
+if TYPE_CHECKING:
+    from .api import GameData
 
 _ = Translator("Hockey", __file__)
 
 log = getLogger("red.trusty-cogs.Hockey")
 
 
+class GameState(Enum):
+    unknown = 0
+    preview = 1
+    preview_60 = 2
+    preview_30 = 3
+    preview_10 = 4
+    live = 5
+    live_end_first = 6
+    live_end_second = 7
+    live_end_third = 8
+    final = 9
+
+    def is_preview(self):
+        return self in (
+            GameState.preview,
+            GameState.preview_60,
+            GameState.preview_30,
+            GameState.preview_10,
+        )
+
+    def is_live(self):
+        return self in (
+            GameState.live,
+            GameState.live_end_first,
+            GameState.live_end_second,
+            GameState.live_end_third,
+        )
+
+    @classmethod
+    def from_statsapi(cls, game_state: str) -> GameState:
+        return {
+            "Preview": GameState.preview,
+            "Preview60": GameState.preview_60,
+            "Preview30": GameState.preview_30,
+            "Preview10": GameState.preview_10,
+            "Live": GameState.live,
+            "Final": GameState.final,
+        }.get(game_state, GameState.unknown)
+
+    @classmethod
+    def from_nhle(cls, game_state: str, period: int) -> GameState:
+        if period == 2:
+            return GameState.live_end_first
+        elif period == 3 and game_state == "LIVE":
+            return GameState.live_end_second
+        if period > 3 and game_state in ["LIVE", "CRIT"]:
+            return GameState.live_end_third
+        return {
+            "FUT": GameState.preview,
+            "PRE": GameState.preview,
+            "Preview": GameState.preview,
+            "Preview60": GameState.preview_60,
+            "Preview30": GameState.preview_30,
+            "Preview10": GameState.preview_10,
+            # These previews are only my internal code, not sure if they'll be used
+            "LIVE": GameState.live,
+            "CRIT": GameState.live,
+            "OVER": GameState.final,
+            "FINAL": GameState.final,
+            "OFF": GameState.final,
+        }.get(game_state, GameState.unknown)
+
+
 class GameType(Enum):
+    unknown = "Unknown"
     pre_season = "PR"
     regular_season = "R"
     playoffs = "P"
@@ -43,6 +103,14 @@ class GameType(Enum):
 
     def __str__(self):
         return str(self.value)
+
+    @classmethod
+    def from_int(cls, value: int) -> GameType:
+        return {
+            1: GameType.pre_season,
+            2: GameType.regular_season,
+            3: GameType.playoffs,
+        }.get(value, GameType.unknown)
 
 
 @dataclass
@@ -170,7 +238,7 @@ class Game:
     """
 
     game_id: int
-    game_state: str
+    game_state: GameState
     home_team: str
     away_team: str
     period: int
@@ -243,11 +311,12 @@ class Game:
         self.third_star = kwargs.get("third_star")
         self.away_roster = kwargs.get("away_roster")
         self.home_roster = kwargs.get("home_roster")
-        self.game_type: str = kwargs.get("game_type", "")
+        self.game_type: GameType = kwargs.get("game_type", GameType.unknown)
         self.link = kwargs.get("link")
         self.season = kwargs.get("season")
         self._recap_url: Optional[str] = kwargs.get("recap_url", None)
         self.data = kwargs.get("data", {})
+        self.api = kwargs.get("api", None)
 
     def __repr__(self):
         return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
@@ -275,12 +344,16 @@ class Game:
         return int(self.game_start.timestamp())
 
     def game_type_str(self):
-        game_types = {"PR": _("Pre Season"), "R": _("Regular Season"), "P": _("Post Season")}
+        game_types = {
+            GameType.pre_season: _("Pre Season"),
+            GameType.regular_season: _("Regular Season"),
+            GameType.playoffs: _("Post Season"),
+        }
         return game_types.get(self.game_type, _("Unknown"))
 
     def to_json(self) -> dict:
         return {
-            "game_state": self.game_state,
+            "game_state": self.game_state.value,
             "home_team": self.home_team,
             "away_team": self.away_team,
             "home_shots": self.home_shots,
@@ -302,134 +375,9 @@ class Game:
             "first_star": self.first_star,
             "second_star": self.second_star,
             "third_star": self.third_star,
-            "game_type": self.game_type,
+            "game_type": self.game_type.value,
             "link": self.link,
         }
-
-    @staticmethod
-    async def get_games(
-        team: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        session: Optional[aiohttp.ClientSession] = None,
-    ) -> List[Game]:
-        """
-        Get a specified days games, defaults to the current day
-        requires a datetime object
-        returns a list of game objects
-        if a start date and an end date are not provided to the url
-        it returns only todays games
-
-        returns a list of game objects
-        """
-        games_list = await Game.get_games_list(team, start_date, end_date, session)
-        return_games_list = []
-        if games_list != []:
-            for games in games_list:
-                try:
-                    if session is None:
-                        async with aiohttp.ClientSession() as new_session:
-                            async with new_session.get(BASE_URL + games["link"]) as resp:
-                                data = await resp.json()
-                    else:
-                        async with session.get(BASE_URL + games["link"]) as resp:
-                            data = await resp.json()
-                    log.verbose("get_games, url: %s%s", BASE_URL, games["link"])
-                    return_games_list.append(await Game.from_json(data))
-                except Exception:
-                    log.error("Error grabbing game data:", exc_info=True)
-                    continue
-        return return_games_list
-
-    @staticmethod
-    async def get_game_content(
-        game_id: int, session: Optional[aiohttp.ClientSession] = None
-    ) -> dict:
-        data = {}
-        if session is None:
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(CONTENT_URL.format(game_id)) as resp:
-                        data = await resp.json()
-            except Exception:
-                log.exception("error pulling game content")
-                pass
-        else:
-            try:
-                async with session.get(CONTENT_URL.format(game_id)) as resp:
-                    data = await resp.json()
-            except Exception:
-                log.exception("error pulling game content")
-                pass
-        return data
-
-    @staticmethod
-    async def get_game_recap_from_content(content: dict) -> Optional[str]:
-        recap_url = None
-        for _item in (
-            content.get("editorial", {"recap": {}}).get("recap", {"items": []}).get("items", [])
-        ):
-            if "playbacks" not in _item["media"]:
-                continue
-            for _playback in _item["media"]["playbacks"]:
-                if _playback["name"] == "FLASH_1800K_896x504":
-                    recap_url = _playback["url"]
-        return recap_url
-
-    @staticmethod
-    async def get_game_recap(
-        game_id: int, session: Optional[aiohttp.ClientSession] = None
-    ) -> Optional[str]:
-        content = await Game.get_game_content(game_id)
-        return await Game.get_game_recap_from_content(content)
-
-    @staticmethod
-    async def get_games_list(
-        team: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        session: Optional[aiohttp.ClientSession] = None,
-    ) -> List[dict]:
-        """
-        Get a specified days games, defaults to the current day
-        requires a datetime object
-        returns a list of game objects
-        if a start date and an end date are not provided to the url
-        it returns only todays games
-
-        returns a list of games
-        """
-        start_date_str = start_date.strftime("%Y-%m-%d") if start_date is not None else None
-        end_date_str = end_date.strftime("%Y-%m-%d") if end_date is not None else None
-        params = {}
-        url = BASE_URL + "/api/v1/schedule"
-        if start_date is None and end_date is not None:
-            # if no start date is provided start with today
-            params["startDate"] = datetime.now().strftime("%Y-%m-%d")
-            params["endDate"] = end_date_str
-            # url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
-        elif start_date is not None and end_date is None:
-            # if no end date is provided carry through to the following year
-            params["endDate"] = str(start_date.year + 1) + start_date.strftime("-%m-%d")
-            params["startDate"] = start_date_str
-            # url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
-        if start_date_str is not None:
-            params["startDate"] = start_date_str
-        if end_date_str is not None:
-            params["endDate"] = end_date_str
-        if team not in ["all", None]:
-            # if a team is provided get just that TEAMS data
-            # url += "&teamId={}".format(TEAMS[team]["id"])
-            params["teamId"] = TEAMS[team]["id"]
-        if session is None:
-            async with aiohttp.ClientSession() as new_session:
-                async with new_session.get(url, params=params) as resp:
-                    data = await resp.json()
-        else:
-            async with session.get(url, params=params) as resp:
-                data = await resp.json()
-        game_list = [game for date in data["dates"] for game in date["games"]]
-        return game_list
 
     def nst_url(self):
         return f"https://www.naturalstattrick.com/game.php?season={self.season}&game={str(self.game_id)[5:]}&view=limited#gameflow"
@@ -469,7 +417,7 @@ class Game:
         )
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
         title = "{away} @ {home} {state}".format(
-            away=self.away_team, home=self.home_team, state=self.game_state
+            away=self.away_team, home=self.home_team, state=self.game_state.name
         )
         colour = (
             int(TEAMS[self.home_team]["home"].replace("#", ""), 16)
@@ -486,7 +434,7 @@ class Game:
             text=_("{game_type} Game start ").format(game_type=self.game_type_str()),
             icon_url=self.away_logo,
         )
-        if self.game_state == "Preview":
+        if self.game_state is GameState.preview:
             home_str, away_str, desc = await self.get_stats_msg()
             if desc is not None and em.description is None:
                 em.description = desc
@@ -503,7 +451,7 @@ class Game:
             em.set_image(url=self.gameflow_url())
             em.description = f"[Natural Stat Trick]({self.nst_url()})"
 
-        if self.game_state != "Preview":
+        if not self.game_state.is_preview():
             home_msg = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
                 home_score=self.home_score, home_shots=self.home_shots
             )
@@ -594,7 +542,7 @@ class Game:
             if self.first_star is not None:
                 stars = f"⭐ {self.first_star}\n⭐⭐ {self.second_star}\n⭐⭐⭐ {self.third_star}"
                 em.add_field(name=_("Stars of the game"), value=stars, inline=False)
-            if self.game_state == "Live":
+            if self.game_state.is_live():
                 period = self.period_ord
                 if self.period_time_left[0].isdigit():
                     msg = _("{time} Left in the {ordinal} period").format(
@@ -617,11 +565,11 @@ class Game:
         """
         # post_state = ["all", self.home_team, self.away_team]
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
-        title = f"{self.away_team} @ {self.home_team} {self.game_state}"
+        title = f"{self.away_team} @ {self.home_team} {self.game_state.name}"
         em = discord.Embed(timestamp=self.game_start)
         home_field = "{0} {1} {0}".format(self.home_emoji, self.home_team)
         away_field = "{0} {1} {0}".format(self.away_emoji, self.away_team)
-        if self.game_state != "Preview":
+        if not self.game_state.is_preview():
             home_str = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
                 home_score=self.home_score, home_shots=self.home_shots
             )
@@ -660,9 +608,9 @@ class Game:
         time_string = f"<t:{self.timestamp}>"
         em = (
             f"{self.away_emoji}{self.away_team} @ {self.home_emoji}{self.home_team} "
-            f"{self.game_state}\n({time_string})"
+            f"{self.game_state.name}\n({time_string})"
         )
-        if self.game_state != "Preview":
+        if not self.game_state.is_preview():
             em = (
                 _("**__Current Score__**\n")
                 + f"{self.home_emoji} {self.home_team}: {self.home_score}\n"
@@ -677,12 +625,12 @@ class Game:
         home_str = _("GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n")
         away_str = _("GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n")
         desc = None
-        if self.game_type != "P":
+        if self.game_type is not GameType.playoffs:
             msg = _(
                 "GP:**{gp}** W:**{wins}** L:**{losses}\n**OT:**{ot}** PTS:**{pts}** S:**{streak}**\n"
             )
             try:
-                standings = await Standings.get_team_standings()
+                standings = await self.api.get_standings()
                 for name, record in standings.all_records.items():
                     if record.team.name == self.away_team:
                         away_str = msg.format(
@@ -741,34 +689,38 @@ class Game:
     async def check_game_state(self, bot: Red, count: int = 0) -> bool:
         # post_state = ["all", self.home_team, self.away_team]
         home = await get_team(bot, self.home_team, self.game_start_str, self.game_id)
+        try:
+            old_game_state = GameState(home["game_state"])
+        except ValueError:
+            old_game_state = GameState.unknown
         # away = await get_team(self.away_team)
         # team_list = await self.config.teams()
         # Home team checking
-        end_first = self.period_time_left == "END" and self.period == 1
-        end_second = self.period_time_left == "END" and self.period == 2
-        end_third = self.period_time_left == "END" and self.period == 3
-        if self.game_state == "Preview":
+        end_first = self.period_time_left in ["END", "00:00"] and self.period == 1
+        end_second = self.period_time_left in ["END", "00:00"] and self.period == 2
+        end_third = self.period_time_left in ["END", "00:00"] and self.period == 3
+        if self.game_state.is_preview():
             """Checks if the the game state has changes from Final to Preview
             Could be unnecessary since after Game Final it will check for next game
             """
             time_now = datetime.now(tz=timezone.utc)
             # game_time = datetime.strptime(data.game_start, "%Y-%m-%dT%H:%M:%SZ")
             game_start = (self.game_start - time_now).total_seconds() / 60
-            if "Preview" not in home["game_state"]:
+            if old_game_state.value < GameState.preview.value:
                 await self.post_game_state(bot)
                 await self.save_game_state(bot)
                 bot.dispatch("hockey_preview", self)
-            if game_start < 60 and game_start > 30 and home["game_state"] != "Preview60":
+            if game_start < 60 and game_start > 30 and old_game_state is not GameState.preview_60:
                 # Post 60 minutes until game start
                 await self.post_time_to_game_start(bot, "60")
                 await self.save_game_state(bot, "60")
                 bot.dispatch("hockey_preview", self)
-            if game_start < 30 and game_start > 10 and home["game_state"] != "Preview30":
+            if game_start < 30 and game_start > 10 and old_game_state is not GameState.preview_30:
                 # Post 30 minutes until game start
                 await self.post_time_to_game_start(bot, "30")
                 await self.save_game_state(bot, "30")
                 bot.dispatch("hockey_preview", self)
-            if game_start < 10 and game_start > 0 and home["game_state"] != "Preview10":
+            if game_start < 10 and game_start > 0 and old_game_state is not GameState.preview_10:
                 # Post 10 minutes until game start
                 await self.post_time_to_game_start(bot, "10")
                 await self.save_game_state(bot, "10")
@@ -776,10 +728,10 @@ class Game:
 
                 # Create channel and look for game day thread
 
-        if self.game_state == "Live":
+        if self.game_state.is_live():
             # Checks what the period is and posts the game is starting in the appropriate channel
 
-            if home["period"] != self.period or "Preview" in home["game_state"]:
+            if home["period"] != self.period or old_game_state.is_preview():
                 log.debug(
                     "**%s Period starting %s at %s**",
                     self.period_ord,
@@ -793,20 +745,20 @@ class Game:
             if (self.home_score + self.away_score) != 0:
                 # Check if there's goals only if there are goals
                 await self.check_team_goals(bot)
-            if end_first and home["game_state"] != "LiveEND1st":
+            if end_first and old_game_state is not GameState.live_end_first:
                 log.debug("End of the first period")
                 await self.period_recap(bot, "1st")
                 await self.save_game_state(bot, "END1st")
-            if end_second and home["game_state"] != "LiveEND2nd":
+            if end_second and old_game_state is not GameState.live_end_second:
                 log.debug("End of the second period")
                 await self.period_recap(bot, "2nd")
                 await self.save_game_state(bot, "END2nd")
-            if end_third and home["game_state"] not in ["LiveEND3rd", "FinalEND3rd"]:
+            if end_third and old_game_state is not GameState.live_end_third:
                 log.debug("End of the third period")
                 await self.period_recap(bot, "3rd")
                 await self.save_game_state(bot, "END3rd")
 
-        if self.game_state == "Final":
+        if self.game_state is GameState.final:
             if (self.home_score + self.away_score) != 0:
                 # Check if there's goals only if there are goals
                 await self.check_team_goals(bot)
@@ -823,7 +775,7 @@ class Game:
                 and len(self.away_goals) == self.away_score
             ) or count >= 20:
                 """Final game state checks"""
-                if home["game_state"] != self.game_state and home["game_state"] != "Null":
+                if old_game_state is not self.game_state:
                     # Post game final data and check for next game
                     log.debug("Game Final %s @ %s", self.away_team, self.home_team)
                     await self.post_game_state(bot)
@@ -929,7 +881,7 @@ class Game:
         publish_states = []  # await config.channel(channel).publish_states()
         # can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
 
-        if self.game_state == "Live":
+        if self.game_state.is_live():
             guild_notifications = guild_settings["game_state_notifications"]
             channel_notifications = channel_settings["game_state_notifications"]
             state_notifications = guild_notifications or channel_notifications
@@ -944,7 +896,7 @@ class Game:
                 allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
             else:
                 allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
-            if self.game_type == "R" and "OT" in self.period_ord:
+            if self.game_type is GameType.regular_season and "OT" in self.period_ord:
                 if not guild_settings["ot_notifications"]:
                     allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
             if "SO" in self.period_ord:
@@ -974,7 +926,7 @@ class Game:
                 log.exception("Could not post goal in %s", repr(channel))
 
         else:
-            if self.game_state == "Preview":
+            if self.game_state.is_preview():
                 if game_day_channels is not None:
                     # Don't post the preview message twice in the channel
                     if channel.id in game_day_channels:
@@ -995,7 +947,7 @@ class Game:
                         pass
 
                 # Create new pickems object for the game
-                if self.game_state == "Preview":
+                if self.game_state.is_preview():
                     bot.dispatch("hockey_preview_message", channel, preview_msg, self)
                     return channel, preview_msg
             except Exception:
@@ -1026,7 +978,7 @@ class Game:
             # goal_id = str(goal["result"]["eventCode"])
             # team = goal["team"]["name"]
             # team_data = await get_team(bot, goal.team_name)
-            if goal.goal_id not in team_data[goal.team_name]["goal_id"]:
+            if str(goal.goal_id) not in team_data[goal.team_name]["goal_id"]:
                 # attempts to post the goal if there is a new goal
                 bot.dispatch("hockey_goal", self, goal)
                 goal.home_shots = self.home_shots
@@ -1040,18 +992,20 @@ class Game:
                 team_list.append(team_data[goal.team_name])
                 await bot.get_cog("Hockey").config.teams.set(team_list)
                 continue
-            if goal.goal_id in team_data[goal.team_name]["goal_id"]:
+            if str(goal.goal_id) in team_data[goal.team_name]["goal_id"]:
                 # attempts to edit the goal if the scorers have changed
-                old_goal = Goal(**team_data[goal.team_name]["goal_id"][goal.goal_id]["goal"])
+                old_goal = Goal(**team_data[goal.team_name]["goal_id"][str(goal.goal_id)]["goal"])
                 if goal.description != old_goal.description or goal.link != old_goal.link:
                     goal.home_shots = old_goal.home_shots
                     goal.away_shots = old_goal.away_shots
                     # This is to keep shots consistent between edits
                     # Shots should not update as the game continues
                     bot.dispatch("hockey_goal_edit", self, goal)
-                    old_msgs = team_data[goal.team_name]["goal_id"][goal.goal_id]["messages"]
+                    old_msgs = team_data[goal.team_name]["goal_id"][str(goal.goal_id)]["messages"]
                     team_list.remove(team_data[goal.team_name])
-                    team_data[goal.team_name]["goal_id"][goal.goal_id]["goal"] = goal.to_json()
+                    team_data[goal.team_name]["goal_id"][str(goal.goal_id)][
+                        "goal"
+                    ] = goal.to_json()
                     team_list.append(team_data[goal.team_name])
                     await bot.get_cog("Hockey").config.teams.set(team_list)
                     if old_msgs:
@@ -1075,33 +1029,33 @@ class Game:
         team_list = await bot.get_cog("Hockey").config.teams()
         team_list.remove(home)
         team_list.remove(away)
-        if self.game_state != "Final":
-            if self.game_state == "Preview" and time_to_game_start != "0":
-                home["game_state"] = self.game_state + time_to_game_start
-                away["game_state"] = self.game_state + time_to_game_start
-            elif self.game_state == "Live" and time_to_game_start != "0":
-                home["game_state"] = self.game_state + time_to_game_start
-                away["game_state"] = self.game_state + time_to_game_start
+        if self.game_state is not GameState.final:
+            if self.game_state.is_preview() and time_to_game_start != "0":
+                home["game_state"] = self.game_state.value
+                away["game_state"] = self.game_state.value
+            elif self.game_state.is_live() and time_to_game_start != "0":
+                home["game_state"] = self.game_state.value
+                away["game_state"] = self.game_state.value
             else:
-                home["game_state"] = self.game_state
-                away["game_state"] = self.game_state
+                home["game_state"] = self.game_state.value
+                away["game_state"] = self.game_state.value
             home["period"] = self.period
             away["period"] = self.period
-            home["game_start"] = self.game_start.strftime("%Y-%m-%dT%H:%M:%SZ")
-            away["game_start"] = self.game_start.strftime("%Y-%m-%dT%H:%M:%SZ")
+            home["game_start"] = self.game_start_str
+            away["game_start"] = self.game_start_str
         else:
             if time_to_game_start == "0":
-                home["game_state"] = "Null"
-                away["game_state"] = "Null"
+                home["game_state"] = 0
+                away["game_state"] = 0
                 home["period"] = 0
                 away["period"] = 0
                 home["goal_id"] = {}
                 away["goal_id"] = {}
                 home["game_start"] = ""
                 away["game_start"] = ""
-            elif self.game_state == "Final" and time_to_game_start != "0":
-                home["game_state"] = self.game_state + time_to_game_start
-                away["game_state"] = self.game_state + time_to_game_start
+            elif self.game_state is GameState.final and time_to_game_start != "0":
+                home["game_state"] = self.game_state.value
+                away["game_state"] = self.game_state.value
         team_list.append(home)
         team_list.append(away)
         await bot.get_cog("Hockey").config.teams.set(team_list)
@@ -1142,112 +1096,6 @@ class Game:
             log.exception("Could not post goal in %s", repr(channel))
 
     @classmethod
-    async def from_gamepk(
-        cls, gamepk: int, session: Optional[aiohttp.ClientSession] = None
-    ) -> Optional[Game]:
-        url = f"{BASE_URL}/api/v1/game/{gamepk}/feed/live"
-        return await cls.from_url(url, session)
-
-    @classmethod
-    async def from_url(
-        cls, url: str, session: Optional[aiohttp.ClientSession] = None
-    ) -> Optional[Game]:
-        url = url.replace(BASE_URL, "")  # strip the base url incase we already have it
-        try:
-            if session is None:
-                # this should only happen in pickems objects
-                # since pickems don't have access to the full
-                # cogs session
-                async with aiohttp.ClientSession() as new_session:
-                    async with new_session.get(BASE_URL + url) as resp:
-                        data = await resp.json()
-            else:
-                async with session.get(BASE_URL + url) as resp:
-                    data = await resp.json()
-            return await cls.from_json(data)
-        except Exception:
-            log.exception("Error grabbing game data: ")
-            return None
-
-    @classmethod
-    async def from_json(cls, data: dict) -> Game:
-        event = data["liveData"]["plays"]["allPlays"]
-        home_team = data["gameData"]["teams"]["home"]["name"]
-        away_team = data["gameData"]["teams"]["away"]["name"]
-        away_roster = data["liveData"]["boxscore"]["teams"]["away"]["players"]
-        home_roster = data["liveData"]["boxscore"]["teams"]["home"]["players"]
-        players = {}
-        players.update(away_roster)
-        players.update(home_roster)
-        game_id = data["gameData"]["game"]["pk"]
-        season = data["gameData"]["game"]["season"]
-        period_starts = {}
-        for play in data["liveData"]["plays"]["allPlays"]:
-            if play["result"]["eventTypeId"] == "PERIOD_START":
-                dt = datetime.strptime(play["about"]["dateTime"], "%Y-%m-%dT%H:%M:%SZ")
-                dt = dt.replace(tzinfo=timezone.utc)
-                period_starts[play["about"]["ordinalNum"]] = dt
-
-        content = await Game.get_game_content(game_id)
-        try:
-            recap_url = await Game.get_game_recap_from_content(content)
-        except Exception:
-            log.error("Cannot get game recap url.")
-            recap_url = None
-        goals = [
-            await Goal.from_json(goal, players, content)
-            for goal in event
-            if goal["result"]["eventTypeId"] == "GOAL"
-            or (
-                goal["result"]["eventTypeId"] in ["SHOT", "MISSED_SHOT"]
-                and goal["about"]["ordinalNum"] == "SO"
-            )
-        ]
-        link = f"{BASE_URL}{data['link']}"
-        if "currentPeriodOrdinal" in data["liveData"]["linescore"]:
-            period_ord = data["liveData"]["linescore"]["currentPeriodOrdinal"]
-            period_time_left = data["liveData"]["linescore"]["currentPeriodTimeRemaining"]
-            events = data["liveData"]["plays"]["allPlays"]
-        else:
-            period_ord = "0"
-            period_time_left = "0"
-            events = ["."]
-        decisions = data["liveData"]["decisions"]
-        first_star = decisions.get("firstStar", {}).get("fullName")
-        second_star = decisions.get("secondStar", {}).get("fullName")
-        third_star = decisions.get("thirdStar", {}).get("fullName")
-        game_type = data["gameData"]["game"]["type"]
-        game_state = (
-            data["gameData"]["status"]["abstractGameState"]
-            if data["gameData"]["status"]["detailedState"] != "Postponed"
-            else data["gameData"]["status"]["detailedState"]
-        )
-        return cls(
-            game_id=game_id,
-            game_state=game_state,
-            home_team=home_team,
-            away_team=away_team,
-            period=data["liveData"]["linescore"]["currentPeriod"],
-            home_shots=data["liveData"]["linescore"]["teams"]["home"]["shotsOnGoal"],
-            away_shots=data["liveData"]["linescore"]["teams"]["away"]["shotsOnGoal"],
-            home_score=data["liveData"]["linescore"]["teams"]["home"]["goals"],
-            away_score=data["liveData"]["linescore"]["teams"]["away"]["goals"],
-            game_start=data["gameData"]["datetime"]["dateTime"],
-            goals=goals,
-            home_abr=data["gameData"]["teams"]["home"]["abbreviation"],
-            away_abr=data["gameData"]["teams"]["away"]["abbreviation"],
-            period_ord=period_ord,
-            period_time_left=period_time_left,
-            period_starts=period_starts,
-            plays=events,
-            first_star=first_star,
-            second_star=second_star,
-            third_star=third_star,
-            away_roster=away_roster,
-            home_roster=home_roster,
-            link=link,
-            game_type=game_type,
-            season=season,
-            recap_url=recap_url,
-            # data=data,
-        )
+    def from_data(cls, data: GameData):
+        goals = [Goal.from_data(**i) for i in data.pop("goals", [])]
+        return cls(**data, goals=goals)

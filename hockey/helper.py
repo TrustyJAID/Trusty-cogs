@@ -537,8 +537,21 @@ class StandingsFinder(discord.app_commands.Transformer):
         return choices
 
 
+def game_states_to_int(states: List[str]) -> List[int]:
+    ret = []
+    options = {"Preview": [1, 2, 3, 4], "Live": [5], "Final": [9], "Goal": [], "Recap": [6, 7, 8]}
+    for state in states:
+        ret += options.get(state, [])
+    return ret
+
+
 async def check_to_post(
-    bot: Red, channel: discord.TextChannel, channel_data: dict, post_state: str, game_state: str
+    bot: Red,
+    channel: discord.TextChannel,
+    channel_data: dict,
+    post_state: str,
+    game_state: str,
+    is_goal: bool = False,
 ) -> bool:
     if channel is None:
         return False
@@ -547,7 +560,12 @@ async def check_to_post(
         await bot.get_cog("Hockey").config.channel(channel).team.clear()
         return False
     should_post = False
-    if game_state in channel_data["game_states"]:
+    state_ints = game_states_to_int(channel_data["game_states"])
+    if game_state.value in state_ints:
+        for team in channel_teams:
+            if team in post_state:
+                should_post = True
+    if is_goal and "Goal" in channel_data["game_states"]:
         for team in channel_teams:
             if team in post_state:
                 should_post = True
@@ -583,7 +601,16 @@ async def get_team(bot: Red, team: str, game_start: str, game_id: int = 0) -> di
     team_list = await config.teams()
     if team_list is None:
         team_list = []
-        team_entry = TeamEntry("Null", team, 0, [], {}, [], "", game_id)
+        team_entry = TeamEntry(
+            game_state=0,
+            team_name=team,
+            period=0,
+            channel=[],
+            goal_id={},
+            created_channel=[],
+            game_start=game_start,
+            game_id=game_id,
+        )
         team_list.append(team_entry.to_json())
         await config.teams.set(team_list)
     for teams in team_list:
@@ -594,7 +621,16 @@ async def get_team(bot: Red, team: str, game_start: str, game_id: int = 0) -> di
         ):
             return teams
     # Add unknown teams to the config to track stats
-    return_team = TeamEntry("Null", team, 0, [], {}, [], "", game_id)
+    return_team = TeamEntry(
+        game_state=0,
+        team_name=team,
+        period=0,
+        channel=[],
+        goal_id={},
+        created_channel=[],
+        game_start=game_start,
+        game_id=game_id,
+    )
     team_list.append(return_team.to_json())
     await config.teams.set(team_list)
     return return_team.to_json()

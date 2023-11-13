@@ -13,7 +13,7 @@ from redbot.core.utils.chat_formatting import pagify
 from hockey.helper import utc_to_local
 
 from .abc import HockeyMixin
-from .game import Game
+from .game import Game, GameType
 from .pickems import Pickems
 
 _ = Translator("Hockey", __file__)
@@ -91,7 +91,7 @@ class HockeyPickems(HockeyMixin):
                         log.trace("Saving pickem %r", pickem)
                         data[name] = pickem.to_json()
                     self.all_pickems[guild_id][name]._should_save = False
-                    if pickem.game_type in ["P", "PR"]:
+                    if pickem.game_type in [GameType.pre_season, GameType.playoffs]:
                         if (datetime.now(timezone.utc) - pickem.game_start) >= timedelta(days=7):
                             del data[name]
                             if guild_id not in to_del:
@@ -541,7 +541,7 @@ class HockeyPickems(HockeyMixin):
             else:
                 save_data[new_channel.guild.id].append(new_channel.id)
 
-        games_list = await Game.get_games(None, day, day, self.session)
+        games_list = await self.api.get_games(None, day, day)
 
         # msg_tasks = []
         for game in games_list:
@@ -711,7 +711,7 @@ class HockeyPickems(HockeyMixin):
         async for name, pickems in AsyncIter(pickems_list.items(), steps=10):
             # check for definitive winner here just incase
             if name not in self.pickems_games:
-                game = await pickems.get_game()
+                game = await pickems.get_game(self.api)
                 self.pickems_games[name] = game
                 await self.set_guild_pickem_winner(self.pickems_games[name])
                 # Go through all the current pickems for every server
@@ -748,11 +748,11 @@ class HockeyPickems(HockeyMixin):
                                 await bank.deposit_credits(member, int(base_credits))
                             except Exception:
                                 log.debug("Could not deposit pickems credits for %r", member)
-                        if pickems.game_type == "P":
+                        if pickems.game_type is GameType.playoffs:
                             leaderboard[str(user)]["playoffs"] += 1
                             leaderboard[str(user)]["playoffs_weekly"] += 1
                             leaderboard[str(user)]["playoffs_total"] += 1
-                        elif pickems.game_type == "PR":
+                        elif pickems.game_type is GameType.pre_season:
                             leaderboard[str(user)]["pre-season"] += 1
                             leaderboard[str(user)]["pre-season_weekly"] += 1
                             leaderboard[str(user)]["pre-season_total"] += 1
@@ -763,9 +763,9 @@ class HockeyPickems(HockeyMixin):
                             # playoffs is finished
                             leaderboard[str(user)]["weekly"] += 1
                     else:
-                        if pickems.game_type == "P":
+                        if pickems.game_type is GameType.playoffs:
                             leaderboard[str(user)]["playoffs_total"] += 1
-                        elif pickems.game_type == "PR":
+                        elif pickems.game_type is GameType.pre_season:
                             leaderboard[str(user)]["pre-season_total"] += 1
                         else:
                             leaderboard[str(user)]["total"] += 1
@@ -1122,17 +1122,18 @@ class HockeyPickems(HockeyMixin):
         if not await self.check_pickems_req(ctx):
             return
         if date is None:
-            new_date = datetime.now()
+            new_date = datetime.now(timezone.utc)
         else:
             try:
                 new_date = datetime.strptime(date, "%Y-%m-%d")
+                new_date.replace(tzinfo=timezone.utc)
             except ValueError:
                 msg = _("`date` must be in the format `YYYY-MM-DD`.")
                 await ctx.send(msg)
                 return
         guild_message = await self.pickems_config.guild(ctx.guild).pickems_message()
         msg = _(PICKEMS_MESSAGE).format(guild_message=guild_message)
-        games_list = await Game.get_games(None, new_date, new_date, session=self.session)
+        games_list = await self.api.get_games(None, new_date, new_date)
         for page in pagify(msg):
             await ctx.channel.send(page)
         for game in games_list:

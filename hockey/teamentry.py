@@ -1,7 +1,7 @@
 class TeamEntry:
     def __init__(
         self,
-        game_state: str,
+        game_state: int,
         team_name: str,
         period: int,
         channel: list,
