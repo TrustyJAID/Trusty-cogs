@@ -792,7 +792,7 @@ class NewAPI(HockeyAPI):
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
     ) -> Schedule:
-        if team:
+        if team is not None and team not in ["all"]:
             if start_date is not None:
                 return await self.club_schedule_week(team, start_date)
             return await self.club_schedule_season(team)
