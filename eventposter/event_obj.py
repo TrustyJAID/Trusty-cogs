@@ -97,6 +97,7 @@ class ApproveView(discord.ui.View):
         await interaction.response.defer()
         event = self.cog.waiting_approval[interaction.message.id]["event"]
         ctx = self.cog.waiting_approval[interaction.message.id]["ctx"]
+        self.cog.waiting_approval[interaction.message.id]["wrongview"].stop()
         event.approver = interaction.user.id
         try:
             await self.cog.post_event(ctx, event)

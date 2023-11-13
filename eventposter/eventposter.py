@@ -369,7 +369,7 @@ class EventPoster(commands.Cog):
         )
         wrongview.message = await ctx.send(msg, embed=em, view=wrongview)
         admin_msg = await approval_channel.send(embed=em, view=view)
-        self.waiting_approval[admin_msg.id] = {"event": event, "ctx": ctx}
+        self.waiting_approval[admin_msg.id] = {"event": event, "ctx": ctx, "wrongview": wrongview}
         await wrongview.wait()
         if not wrongview.approved:
             del self.waiting_approval[admin_msg.id]

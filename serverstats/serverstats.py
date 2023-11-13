@@ -446,7 +446,7 @@ class ServerStats(commands.GroupCog):
             )
             em.add_field(name="Events Waiting", value=f"Total: {len(event_tasks)}")
 
-            memory_usage = self.process.memory_full_info().uss / 1024 ** 2
+            memory_usage = self.process.memory_full_info().uss / 1024**2
             cpu_usage = self.process.cpu_percent() / psutil.cpu_count()
             em.add_field(name="Process", value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU")
 

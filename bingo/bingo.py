@@ -222,7 +222,7 @@ class Bingo(commands.Cog):
         """
         if member is None:
             await self.config.clear_all_members(guild=ctx.guild)
-            await ctx.send("Reseting everyone's bingo card.")
+            await ctx.send("Resetting everyone's bingo card.")
         else:
             await self.config.member(member).clear()
             await ctx.send(

@@ -91,7 +91,6 @@ class Welcome(Events, commands.Cog):
         # log.debug("Checking for new welcomes")
         clear_guilds = []
         for guild_id, members in self.joined.items():
-
             if members:
                 last_time_id = await self.config.guild_from_id(guild_id).LAST_GREETING()
                 if last_time_id is not None:
