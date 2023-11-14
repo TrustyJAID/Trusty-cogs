@@ -371,16 +371,19 @@ class ScheduleList(menus.PageSource):
                         f"{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
                         f"**{home_score}** {home_emoji} {home_abr} \n{broadcast_str}\n"
                     )
-                    # game_recap = await Game.get_game_recap(game["gamePk"], session=self._session)
-                    # msg += (
-                    #     f"[{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
-                    #     f"**{home_score}** {home_emoji} {home_abr}]({game_recap}) \n{broadcast_str}\n"
-                    # )
+
                 else:
-                    msg += (
-                        f"{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
-                        f"**{home_score}** {home_emoji} {home_abr} \n{broadcast_str}\n"
-                    )
+                    game_recap = await self.api.get_game_recap(game.id)
+                    if game_recap is not None:
+                        msg += (
+                            f"[{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
+                            f"**{home_score}** {home_emoji} {home_abr}]({game_recap}) \n{broadcast_str}\n"
+                        )
+                    else:
+                        msg += (
+                            f"{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
+                            f"**{home_score}** {home_emoji} {home_abr} \n{broadcast_str}\n"
+                        )
             else:
                 time_str = f"<t:{int(game_start.timestamp())}:t>"
                 msg += (

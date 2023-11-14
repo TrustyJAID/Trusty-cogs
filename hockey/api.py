@@ -20,7 +20,9 @@ log = getLogger("red.trusty-cogs.Hockey")
 
 _ = Translator("Hockey", __file__)
 
-
+VIDEO_URL = (
+    "https://players.brightcove.net/6415718365001/EXtG1xJ7H_default/index.html?videoId={clip_id}"
+)
 ORDINALS = {
     1: _("1st"),
     2: _("2nd"),
@@ -228,7 +230,30 @@ class Event:
 
         return description
 
-    def to_goal(self, data: dict) -> Goal:
+    def get_highlight(self, content: Optional[dict]) -> Optional[str]:
+        log.debug("Looking for highlight for goal")
+        if content is None:
+            return None
+        clip_id = None
+        scoring = content.get("summary", {}).get("scoring", [])
+        for period in scoring:
+            if period.get("period", 0) != self.period:
+                log.debug("ignoring period because it doesn't match.")
+                continue
+            for goal in period.get("goals", []):
+                log.debug(
+                    "Checking if goal time in period matches. landing: %s - current %s",
+                    goal.get("timeInPeriod", ""),
+                    self.time_in_period,
+                )
+                if goal.get("timeInPeriod", "") == self.time_in_period:
+                    clip_id = goal.get("highlightClip", None)
+                    log.debug("Found highlight clip")
+        if clip_id is not None:
+            return VIDEO_URL.format(clip_id=clip_id)
+        return None
+
+    def to_goal(self, data: dict, content: Optional[dict] = None) -> Goal:
         scorer_id = self.details.get("scoringPlayerId", 0)
         jersey_no = self.get_player(scorer_id, data).get("sweaterNumber", 0)
 
@@ -254,7 +279,7 @@ class Event:
             strength_code=self.situation.code,
             empty_net=self.situation.empty_net(home),
             event="",
-            link="",
+            link=self.get_highlight(content),
         )
 
 
@@ -830,12 +855,16 @@ class NewAPI(HockeyAPI):
 
     async def get_game_from_id(self, game_id: int) -> Game:
         data = await self.gamecenter_pbp(game_id)
-        return await self.to_game(data)
+        try:
+            landing = await self.gamecenter_landing(game_id)
+        except Exception:
+            landing = None
+        return await self.to_game(data, content=landing)
 
     async def get_game_from_url(self, game_url: str) -> dict:
         raise NotImplementedError
 
-    async def to_goal(self, data: dict, players: dict, media_content: Optional[dict]) -> Goal:
+    async def to_goal(self, data: dict, players: dict, content: Optional[dict]) -> Goal:
         # scorer = scorer_id[0]
         return Goal(
             goal_id=data["result"]["eventCode"],
@@ -859,6 +888,13 @@ class NewAPI(HockeyAPI):
             away_shots=data.get("away_shots", 0),
         )
 
+    async def get_game_recap(self, game_id: int) -> Optional[str]:
+        landing = await self.gamecenter_landing(game_id)
+        recap_id = landing.get("summary", {}).get("gameVideo", {}).get("condensedGame", None)
+        if recap_id is not None:
+            return VIDEO_URL.format(clip_id=recap_id)
+        return None
+
     async def to_game(self, data: dict, content: Optional[dict] = None) -> Game:
         game_id = data["id"]
         period = data.get("period", -1)
@@ -871,7 +907,11 @@ class NewAPI(HockeyAPI):
 
         period_ord = ORDINALS.get(period, "")
         events = [Event.from_json(i) for i in data["plays"]]
-        goals = [e.to_goal(data) for e in events if e.type_code is GameEventTypeCode.GOAL]
+        goals = [
+            e.to_goal(data, content=content)
+            for e in events
+            if e.type_code is GameEventTypeCode.GOAL
+        ]
         home_roster = [p for p in data["rosterSpots"] if p["teamId"] == home_id]
         away_roster = [p for p in data["rosterSpots"] if p["teamId"] == away_id]
         game_type = GameType.from_int(data["gameType"])
@@ -879,6 +919,20 @@ class NewAPI(HockeyAPI):
         second_star = None
         third_star = None
         period_time_left = data.get("clock", {}).get("timeRemaining")
+        recap_url = None
+        if content:
+            recap = content.get("summary", {}).get("gameVideo", {}).get("condensedGame")
+            if recap is not None:
+                recap_url = VIDEO_URL.format(clip_id=recap)
+            for star in content.get("summary", {}).get("threeStars", []):
+                first_name = star.get("firstName", "")
+                last_name = star.get("lastName", "")
+                if star.get("star", 0) == 1:
+                    first_star = f"{first_name} {last_name}"
+                if star.get("star", 0) == 2:
+                    second_star = f"{first_name} {last_name}"
+                if star.get("star", 0) == 3:
+                    third_star = f"{first_name} {last_name}"
         return Game(
             game_id=game_id,
             game_state=game_state,
@@ -905,7 +959,7 @@ class NewAPI(HockeyAPI):
             link="",
             game_type=game_type,
             season=data.get("season", 0),
-            recap_url=None,
+            recap_url=recap_url,
             api=self,
             # data=data,
         )
