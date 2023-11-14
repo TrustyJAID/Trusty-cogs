@@ -13,7 +13,7 @@ from redbot.core.utils.chat_formatting import pagify
 from hockey.helper import utc_to_local
 
 from .abc import HockeyMixin
-from .game import Game, GameType
+from .game import Game, GameState, GameType
 from .pickems import Pickems
 
 _ = Translator("Hockey", __file__)
@@ -206,7 +206,7 @@ class HockeyPickems(HockeyMixin):
             if not await pickem.check_winner(game):
                 # log.debug("Game %r does not have a winner yet.", game)
                 continue
-            if game.game_state == pickem.game_state:
+            if game.game_state is pickem.game_state:
                 # log.debug("Game state %s not equal to pickem game state %s", game.game_state, pickem.game_state)
                 continue
             pickem.game_state = game.game_state
@@ -486,7 +486,7 @@ class HockeyPickems(HockeyMixin):
 
     async def make_pickems_msg(self, guild: discord.Guild, game: Game) -> str:
         winner = ""
-        if game.game_state == "Final":
+        if game.game_state.value > GameState.over.value:
             team = game.home_team if game.home_score > game.away_score else game.away_team
             team_emoji = game.home_emoji if game.home_score > game.away_score else game.away_emoji
             winner = _("**WINNER:** {team_emoji} {team}").format(team_emoji=team_emoji, team=team)

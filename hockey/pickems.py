@@ -241,9 +241,13 @@ class Pickems(discord.ui.View):
         log.trace("Pickems from_json data: %s", data)
         game_start = datetime.strptime(data["game_start"], "%Y-%m-%dT%H:%M:%SZ")
         game_start = game_start.replace(tzinfo=timezone.utc)
+        try:
+            game_state = GameState(data["game_state"])
+        except ValueError:
+            game_state = GameState.from_statsapi(data["game_state"])
         return cls(
             game_id=data["game_id"],
-            game_state=GameState(data["game_state"]),
+            game_state=game_state,
             messages=data.get("messages", []),
             guild=data["guild"],
             game_start=game_start,
