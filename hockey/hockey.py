@@ -338,7 +338,7 @@ class Hockey(
                 continue
             if schedule.days != []:
                 for game in schedule.days[0]:
-                    if game.game_state is GameState.final:
+                    if game.game_state.value >= GameState.final.value:
                         continue
                     if game.schedule_state != "OK":
                         continue
@@ -393,7 +393,7 @@ class Hockey(
                         log.exception("Error checking game state: ")
                         posted_final = False
                     if (
-                        game.game_state in [GameState.live]
+                        game.game_state.is_live()
                         and not self.current_games[game_id]["disabled_buttons"]
                     ):
                         log.verbose("Disabling buttons for %r", game)
@@ -409,7 +409,7 @@ class Hockey(
                         game.home_score,
                     )
 
-                    if game.game_state is GameState.final:
+                    if game.game_state.value > GameState.over.value:
                         self.current_games[game_id]["count"] += 1
                         if posted_final:
                             try:
@@ -424,7 +424,7 @@ class Hockey(
                         to_delete.append(link)
                 for link in to_delete:
                     del self.current_games[link]
-                if not self.TEST_LOOP:
+                if not self.api.testing:
                     await asyncio.sleep(60)
                 else:
                     await asyncio.sleep(10)

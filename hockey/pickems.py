@@ -133,7 +133,7 @@ class Pickems(discord.ui.View):
         self.link = link
         self._should_save: bool = True
         # Start true so we save instantiated pickems
-        self.game_type: str = game_type
+        self.game_type: GameType = game_type
         super().__init__(timeout=None)
         disabled_buttons = datetime.now(tz=timezone.utc) > self.game_start
         self.home_button = PickemsButton(

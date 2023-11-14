@@ -539,7 +539,13 @@ class StandingsFinder(discord.app_commands.Transformer):
 
 def game_states_to_int(states: List[str]) -> List[int]:
     ret = []
-    options = {"Preview": [1, 2, 3, 4], "Live": [5], "Final": [9], "Goal": [], "Recap": [6, 7, 8]}
+    options = {
+        "Preview": [1, 2, 3, 4],
+        "Live": [5],
+        "Final": [9, 10, 11],
+        "Goal": [],
+        "Periodrecap": [6, 7, 8],
+    }
     for state in states:
         ret += options.get(state, [])
     return ret
@@ -549,7 +555,7 @@ async def check_to_post(
     bot: Red,
     channel: discord.TextChannel,
     channel_data: dict,
-    post_state: str,
+    post_state: List[str],
     game_state: str,
     is_goal: bool = False,
 ) -> bool:

@@ -36,7 +36,12 @@ class GameState(Enum):
     live_end_first = 6
     live_end_second = 7
     live_end_third = 8
-    final = 9
+    over = 9
+    final = 10
+    official_final = 11
+
+    def __str__(self):
+        return self.name.replace("_", " ").title()
 
     def is_preview(self):
         return self in (
@@ -66,13 +71,14 @@ class GameState(Enum):
         }.get(game_state, GameState.unknown)
 
     @classmethod
-    def from_nhle(cls, game_state: str, period: int) -> GameState:
-        if period == 2:
-            return GameState.live_end_first
-        elif period == 3 and game_state == "LIVE":
-            return GameState.live_end_second
-        if period > 3 and game_state in ["LIVE", "CRIT"]:
-            return GameState.live_end_third
+    def from_nhle(cls, game_state: str, period: int, remaining: Optional[str] = None) -> GameState:
+        if remaining and game_state not in ["CRIT", "OVER", "FINAL", "OFF"]:
+            if period == 1 and remaining == "00:00":
+                return GameState.live_end_first
+            elif period == 2 and remaining == "00:00":
+                return GameState.live_end_second
+            elif period == 3 and remaining == "00:00":
+                return GameState.live_end_third
         return {
             "FUT": GameState.preview,
             "PRE": GameState.preview,
@@ -83,9 +89,9 @@ class GameState(Enum):
             # These previews are only my internal code, not sure if they'll be used
             "LIVE": GameState.live,
             "CRIT": GameState.live,
-            "OVER": GameState.final,
+            "OVER": GameState.over,
             "FINAL": GameState.final,
-            "OFF": GameState.final,
+            "OFF": GameState.official_final,
         }.get(game_state, GameState.unknown)
 
 
@@ -248,8 +254,6 @@ class Game:
     away_score: int
     game_start: datetime
     goals: List[Goal]
-    home_goals: list
-    away_goals: list
     home_abr: str
     away_abr: str
     period_ord: str
@@ -324,11 +328,11 @@ class Game:
         )
 
     @property
-    def home_goals(self):
+    def home_goals(self) -> List[Goal]:
         return [g for g in self.goals if g.team_name == self.home_team]
 
     @property
-    def away_goals(self):
+    def away_goals(self) -> List[Goal]:
         return [g for g in self.goals if g.team_name == self.away_team]
 
     @property
@@ -417,7 +421,7 @@ class Game:
         )
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
         title = "{away} @ {home} {state}".format(
-            away=self.away_team, home=self.home_team, state=self.game_state.name
+            away=self.away_team, home=self.home_team, state=str(self.game_state)
         )
         colour = (
             int(TEAMS[self.home_team]["home"].replace("#", ""), 16)
@@ -565,7 +569,7 @@ class Game:
         """
         # post_state = ["all", self.home_team, self.away_team]
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
-        title = f"{self.away_team} @ {self.home_team} {self.game_state.name}"
+        title = f"{self.away_team} @ {self.home_team} {str(self.game_state)}"
         em = discord.Embed(timestamp=self.game_start)
         home_field = "{0} {1} {0}".format(self.home_emoji, self.home_team)
         away_field = "{0} {1} {0}".format(self.away_emoji, self.away_team)
@@ -608,7 +612,7 @@ class Game:
         time_string = f"<t:{self.timestamp}>"
         em = (
             f"{self.away_emoji}{self.away_team} @ {self.home_emoji}{self.home_team} "
-            f"{self.game_state.name}\n({time_string})"
+            f"{str(self.game_state)}\n({time_string})"
         )
         if not self.game_state.is_preview():
             em = (
@@ -691,6 +695,9 @@ class Game:
         home = await get_team(bot, self.home_team, self.game_start_str, self.game_id)
         try:
             old_game_state = GameState(home["game_state"])
+            log.trace(
+                "Old Game State for %s @ %s is %r", self.away_team, self.home_team, old_game_state
+            )
         except ValueError:
             old_game_state = GameState.unknown
         # away = await get_team(self.away_team)
@@ -749,34 +756,38 @@ class Game:
                 # Check if there's goals only if there are goals
                 await self.check_team_goals(bot)
             if end_first and old_game_state is not GameState.live_end_first:
-                log.debug("End of the first period")
+                log.debug("End of the first period %s @ %s", self.away_team, self.home_team)
                 await self.period_recap(bot, "1st")
                 await self.save_game_state(bot, "END1st")
             if end_second and old_game_state is not GameState.live_end_second:
-                log.debug("End of the second period")
+                log.debug("End of the second period %s @ %s", self.away_team, self.home_team)
                 await self.period_recap(bot, "2nd")
                 await self.save_game_state(bot, "END2nd")
             if end_third and old_game_state is not GameState.live_end_third:
-                log.debug("End of the third period")
+                log.debug("End of the third period %s @ %s", self.away_team, self.home_team)
                 await self.period_recap(bot, "3rd")
                 await self.save_game_state(bot, "END3rd")
 
-        if self.game_state is GameState.final:
+        if self.game_state.value > GameState.over.value:
             if (self.home_score + self.away_score) != 0:
                 # Check if there's goals only if there are goals
                 await self.check_team_goals(bot)
-            if end_third and home["game_state"] not in ["LiveEND3rd", "FinalEND3rd"]:
-                log.debug("End of the third period")
+            if end_third and old_game_state not in [GameState.final]:
+                log.debug("End of the third period %s @ %s", self.away_team, self.home_team)
                 await self.period_recap(bot, "3rd")
                 await self.save_game_state(bot, "END3rd")
 
             if (
-                self.first_star is not None
-                and self.second_star is not None
-                and self.third_star is not None
-                and len(self.home_goals) == self.home_score
-                and len(self.away_goals) == self.away_score
-            ) or count >= 20:
+                (
+                    self.first_star is not None
+                    and self.second_star is not None
+                    and self.third_star is not None
+                    and len(self.home_goals) == self.home_score
+                    and len(self.away_goals) == self.away_score
+                )
+                or count >= 20
+                or self.game_state is GameState.official_final
+            ):
                 """Final game state checks"""
                 if old_game_state is not self.game_state:
                     # Post game final data and check for next game

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, TypedDict
 
 import aiohttp
@@ -231,7 +233,6 @@ class Event:
         return description
 
     def get_highlight(self, content: Optional[dict]) -> Optional[str]:
-        log.debug("Looking for highlight for goal")
         if content is None:
             return None
         clip_id = None
@@ -241,14 +242,8 @@ class Event:
                 log.debug("ignoring period because it doesn't match.")
                 continue
             for goal in period.get("goals", []):
-                log.debug(
-                    "Checking if goal time in period matches. landing: %s - current %s",
-                    goal.get("timeInPeriod", ""),
-                    self.time_in_period,
-                )
                 if goal.get("timeInPeriod", "") == self.time_in_period:
                     clip_id = goal.get("highlightClip", None)
-                    log.debug("Found highlight clip")
         if clip_id is not None:
             return VIDEO_URL.format(clip_id=clip_id)
         return None
@@ -358,11 +353,12 @@ class Schedule:
 
 
 class HockeyAPI:
-    def __init__(self):
+    def __init__(self, testing: bool = False):
         self.session = aiohttp.ClientSession(
             headers={"User-Agent": "Red-DiscordBot Trusty-cogs Hockey"}
         )
         self.base_url = None
+        self.testing = testing
 
     async def close(self):
         await self.session.close()
@@ -375,7 +371,7 @@ class HockeyAPI:
         team: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-    ) -> dict:
+    ) -> Schedule:
         raise NotImplementedError
 
     async def get_games_list(
@@ -383,7 +379,7 @@ class HockeyAPI:
         team: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-    ) -> List[dict]:
+    ) -> List[Game]:
         raise NotImplementedError
 
     async def get_games(
@@ -391,19 +387,19 @@ class HockeyAPI:
         team: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-    ) -> List[dict]:
+    ) -> List[Game]:
         raise NotImplementedError
 
-    async def get_game_from_id(self, game_id: int) -> dict:
+    async def get_game_from_id(self, game_id: int) -> Game:
         raise NotImplementedError
 
-    async def get_game_from_url(self, game_url: str) -> dict:
+    async def get_game_from_url(self, game_url: str) -> Game:
         raise NotImplementedError
 
 
 class StatsAPI(HockeyAPI):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, testing: bool = False):
+        super().__init__(testing)
         self.base_url = "https://statsapi.web.nhl.com"
 
     async def get_game_content(self, game_id: int):
@@ -495,7 +491,7 @@ class StatsAPI(HockeyAPI):
                     continue
         return return_games_list
 
-    async def get_game_from_id(self, game_id: int) -> dict:
+    async def get_game_from_id(self, game_id: int) -> Game:
         url = f"{self.base_url}/api/v1/game/{game_id}/feed/live"
         async with self.session.get(url) as resp:
             data = await resp.json()
@@ -694,8 +690,8 @@ class StatsAPI(HockeyAPI):
 
 
 class NewAPI(HockeyAPI):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, testing: bool = False):
+        super().__init__(testing)
         self.base_url = "https://api-web.nhle.com/v1"
 
     async def get_game_content(self, game_id: int):
@@ -711,6 +707,9 @@ class NewAPI(HockeyAPI):
         return TEAMS.get(team_name, {}).get("tri_code", None)
 
     async def schedule_now(self) -> Schedule:
+        if self.testing:
+            data = await self.load_testing_data("testschedule.json")
+            return Schedule.from_nhle(data)
         async with self.session.get(f"{self.base_url}/schedule/now") as resp:
             if resp.status != 200:
                 log.error("Error accessing the Schedule for now. %s", resp.status)
@@ -853,7 +852,16 @@ class NewAPI(HockeyAPI):
             return [await self.get_game_from_id(g.id) for g in schedule.days[0]]
         return []
 
+    async def load_testing_data(self, file_name: str) -> dict:
+        path = Path(__file__).parent.resolve() / file_name
+        with path.open("r") as infile:
+            data = json.loads(infile.read())
+        return data
+
     async def get_game_from_id(self, game_id: int) -> Game:
+        if self.testing:
+            data = await self.load_testing_data("testgame.json")
+            return await self.to_game(data)
         data = await self.gamecenter_pbp(game_id)
         try:
             landing = await self.gamecenter_landing(game_id)
@@ -898,7 +906,8 @@ class NewAPI(HockeyAPI):
     async def to_game(self, data: dict, content: Optional[dict] = None) -> Game:
         game_id = data["id"]
         period = data.get("period", -1)
-        game_state = GameState.from_nhle(data["gameState"], period)
+        period_time_left = data.get("clock", {}).get("timeRemaining")
+        game_state = GameState.from_nhle(data["gameState"], period, period_time_left)
         home_id = data.get("homeTeam", {}).get("id", -1)
         home_team = TEAM_IDS.get(home_id, "Unknown Team")
         away_id = data.get("awayTeam", {}).get("id", -1)
@@ -918,7 +927,7 @@ class NewAPI(HockeyAPI):
         first_star = None
         second_star = None
         third_star = None
-        period_time_left = data.get("clock", {}).get("timeRemaining")
+
         recap_url = None
         if content:
             recap = content.get("summary", {}).get("gameVideo", {}).get("condensedGame")
