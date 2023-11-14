@@ -713,15 +713,18 @@ class Game:
             if game_start < 60 and game_start > 30 and old_game_state is not GameState.preview_60:
                 # Post 60 minutes until game start
                 await self.post_time_to_game_start(bot, "60")
+                self.game_state = GameState.preview_60
                 await self.save_game_state(bot, "60")
                 bot.dispatch("hockey_preview", self)
             if game_start < 30 and game_start > 10 and old_game_state is not GameState.preview_30:
                 # Post 30 minutes until game start
+                self.game_state = GameState.preview_30
                 await self.post_time_to_game_start(bot, "30")
                 await self.save_game_state(bot, "30")
                 bot.dispatch("hockey_preview", self)
             if game_start < 10 and game_start > 0 and old_game_state is not GameState.preview_10:
                 # Post 10 minutes until game start
+                self.game_state = GameState.preview_10
                 await self.post_time_to_game_start(bot, "10")
                 await self.save_game_state(bot, "10")
                 bot.dispatch("hockey_preview", self)

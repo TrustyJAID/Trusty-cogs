@@ -511,15 +511,18 @@ class ScheduleList(menus.PageSource):
         if self.team:
             team = self.team[0]
         data = await self.api.get_schedule(team, date, end_date)
-        days = data.days
-        if not days:
-            #      log.debug("No schedule, looking for more days")
-            if self._checks < self.limit:
-                self._checks += 1
-                games = await self._next_batch(date=self.date, _next=_next, _prev=_prev)
-            else:
-                raise NoSchedule
-        games = days[0]
+        if team is None:
+            days = data.days
+            if not days:
+                #      log.debug("No schedule, looking for more days")
+                if self._checks < self.limit:
+                    self._checks += 1
+                    games = await self._next_batch(date=self.date, _next=_next, _prev=_prev)
+                else:
+                    raise NoSchedule
+            games = days[0]
+        else:
+            games = data.games
         if not games:
             #      log.debug("No schedule, looking for more days")
             if self._checks < self.limit:

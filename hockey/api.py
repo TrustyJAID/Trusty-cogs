@@ -320,6 +320,10 @@ class Schedule:
     @classmethod
     def from_nhle(cls, data: dict) -> Schedule:
         days = []
+        if "games" in data:
+            for g in data.get("games", []):
+                days.append([ScheduledGame.from_nhle(g)])
+
         for day in data.get("gameWeek", []):
             games = []
             for game in day.get("games", []):
@@ -718,14 +722,15 @@ class NewAPI(HockeyAPI):
         team_abr = self.team_to_abbrev(team)
         date_str = "now"
         if date is not None:
-            date_str = date.strftime("%Y-%M-%d")
+            date_str = date.strftime("%Y-%m-%d")
         if team_abr is None:
             raise HockeyAPIError("An unknown team name was provided")
-        async with self.session.get(
-            f"{self.base_url}/club-schedule/{team_abr}/week/{date_str}"
-        ) as resp:
+        url = f"{self.base_url}/club-schedule/{team_abr}/week/{date_str}"
+        async with self.session.get(url) as resp:
             if resp.status != 200:
-                log.error("Error accessing the Club Schedule for the week. %s", resp.status)
+                log.error(
+                    "Error accessing the Club Schedule for the week. %s: %s", resp.status, url
+                )
                 raise HockeyAPIError("There was an error accessing the API.")
 
             data = await resp.json()
@@ -739,7 +744,7 @@ class NewAPI(HockeyAPI):
 
         date_str = "now"
         if date is not None:
-            date_str = date.strftime("%Y-%M")
+            date_str = date.strftime("%Y-%m")
         async with self.session.get(
             f"{self.base_url}/club-schedule/{team_abr}/month/{date_str}"
         ) as resp:
