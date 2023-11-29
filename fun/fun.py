@@ -161,8 +161,8 @@ class Fun(commands.Cog):
         # this is the string that will hold all our unicode converted characters from msg
 
         # replace all custom server emoji <:emoji:123456789> with "<" and add emoji ids to non_unicode_emoji_list
-        emotes = re.findall(r"<a?:(?:[a-zA-Z0-9]+?):(?:[0-9]+?)>", msg.lower())
-        react_me = re.sub(r"<a?:([a-zA-Z0-9]+?):([0-9]+?)>", "", msg.lower())
+        emotes = re.findall(r"<a?:(?:[a-zA-Z0-9\_]+?):(?:[0-9]+?)>", msg.lower())
+        react_me = re.sub(r"<a?:([a-zA-Z0-9\_]+?):([0-9]+?)>", "", msg.lower())
 
         for emote in emotes:
             reactions.append(discord.utils.get(self.bot.emojis, id=int(emote.split(":")[-1][:-1])))
