@@ -562,7 +562,7 @@ class HockeySetCommands(HockeyMixin):
             await ctx.send(msg)
             return
         try:
-            standings = await Standings.get_team_standings(session=self.session)
+            standings = await self.api.get_standings()
         except aiohttp.ClientConnectorError:
             await ctx.send(
                 _("There's an issue accessing the NHL API at the moment. Try again later.")

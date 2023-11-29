@@ -50,7 +50,10 @@ class HockeyCommands(HockeyMixin):
         """
         Display the current version
         """
-        await ctx.send(_("Hockey version ") + self.__version__)
+        ret = _("Hockey version ") + self.__version__
+        if self._commit:
+            ret += f"\n- Commit: [{self._commit[:9]}]({self._repo}/tree/{self._commit})"
+        await ctx.send(ret)
 
     @commands.command()
     async def hockeyhub(self, ctx: commands.Context, *, search: str) -> None:

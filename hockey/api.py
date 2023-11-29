@@ -113,6 +113,9 @@ class GameEventTypeCode(Enum):
     DELAYED_PENALTY = 535
     FAILED_SHOT_ATTEMPT = 537
 
+    def __str__(self):
+        return self.name.title().replace("_", " ")
+
 
 class Situation:
     def __init__(self, code: str):
@@ -140,9 +143,13 @@ class Situation:
         if self.home_skaters == self.away_skaters == 3:
             return _("3v3")
         if home and self.home_skaters > self.away_skaters:
+            if self.away_skaters == 0:
+                return _("Shootout")
             return _("Power Play")
         if not home and self.home_skaters > self.away_skaters:
-            return _("Shorthanded Goal")
+            if self.away_skaters == 0:
+                return _("Shootout")
+            return _("Shorthanded")
 
     def empty_net(self, home: bool) -> str:
         """
@@ -156,6 +163,35 @@ class Situation:
         if (home and self.away_goalie == 0) or (not home and self.home_goalie == 0):
             return _("Empty Net")
         return ""
+
+
+@dataclass
+class Player:
+    teamId: int
+    playerId: int
+    firstName: dict
+    lastName: dict
+    sweaterNumber: int
+    positionCode: str
+    headshot: str
+
+    @property
+    def name(self) -> str:
+        first = self.firstName.get("default", _("Unknown"))
+        last = self.lastName.get("default", _("Unknown"))
+        return f"{first} {last}"
+
+    @classmethod
+    def from_json(cls, data: dict) -> Player:
+        return cls(
+            teamId=data.get("teamId"),
+            playerId=data.get("playerId"),
+            firstName=data.get("firstName"),
+            lastName=data.get("lastName"),
+            sweaterNumber=data.get("sweaterNumber", 0),
+            positionCode=data.get("positionCode"),
+            headshot=data.get("headshot"),
+        )
 
 
 @dataclass
@@ -211,14 +247,14 @@ class Event:
                 first_name = player.get("firstName", {}).get("default", "")
                 last_name = player.get("lastName", {}).get("default", "")
                 total = self.details.get("scoringPlayerTotal", 0)
-                description += f"{first_name} {last_name} ({total}) {shot_type}, "
+                description += f"{first_name} {last_name} ({total}) {shot_type}"
 
             if key == "assist1PlayerId":
                 player = self.get_player(value, data)
                 first_name = player.get("firstName", {}).get("default", "")
                 last_name = player.get("lastName", {}).get("default", "")
                 total = self.details.get("assist1PlayerTotal", 0)
-                description += _("assists: {first_name} {last_name} ({total}), ").format(
+                description += _(" assists: {first_name} {last_name} ({total})").format(
                     first_name=first_name, last_name=last_name, total=total
                 )
             if key == "assist2PlayerId":
@@ -226,7 +262,7 @@ class Event:
                 first_name = player.get("firstName", {}).get("default", "")
                 last_name = player.get("lastName", {}).get("default", "")
                 total = self.details.get("assist1PlayerTotal", 0)
-                description += _("{first_name} {last_name} ({total})").format(
+                description += _(", {first_name} {last_name} ({total})").format(
                     first_name=first_name, last_name=last_name, total=total
                 )
 
@@ -273,7 +309,7 @@ class Event:
             strength=self.situation.strength(home),
             strength_code=self.situation.code,
             empty_net=self.situation.empty_net(home),
-            event="",
+            event=str(self.type_code),
             link=self.get_highlight(content),
         )
 
@@ -365,6 +401,9 @@ class HockeyAPI:
 
     async def get_game_content(self, game_id: int):
         raise NotImplementedError()
+
+    async def get_standings(self) -> Standings:
+        raise NotImplementedError
 
     async def get_schedule(
         self,
@@ -915,14 +954,25 @@ class NewAPI(HockeyAPI):
         game_start = data["startTimeUTC"]
 
         period_ord = ORDINALS.get(period, "")
+        period_descriptor = data.get("periodDescriptor", {}).get("periodType", "REG")
+        if period_descriptor != "REG":
+            period_ord = period_descriptor
         events = [Event.from_json(i) for i in data["plays"]]
         goals = [
             e.to_goal(data, content=content)
             for e in events
             if e.type_code is GameEventTypeCode.GOAL
         ]
-        home_roster = [p for p in data["rosterSpots"] if p["teamId"] == home_id]
-        away_roster = [p for p in data["rosterSpots"] if p["teamId"] == away_id]
+        home_roster = {
+            p["playerId"]: Player.from_json(p)
+            for p in data["rosterSpots"]
+            if p["teamId"] == home_id
+        }
+        away_roster = {
+            p["playerId"]: Player.from_json(p)
+            for p in data["rosterSpots"]
+            if p["teamId"] == away_id
+        }
         game_type = GameType.from_int(data["gameType"])
         first_star = None
         second_star = None

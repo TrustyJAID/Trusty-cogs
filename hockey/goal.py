@@ -458,15 +458,14 @@ class Goal:
         away_msg = ""
         score = "☑ {scorer}\n"
         miss = "❌ {scorer}\n"
-        players = game.home_roster
-        players.update(game.away_roster)
+
         for goal in game.home_goals:
             scorer = ""
             scorer_num = ""
             if goal.time > self.time:
                 break
-            if f"ID{goal.scorer_id}" in players:
-                scorer = players[f"ID{goal.scorer_id}"]["person"]["fullName"]
+            if goal.scorer_id in game.home_roster:
+                scorer = game.home_roster[goal.scorer_id].name
             if goal.event in ["Shot", "Missed Shot"] and goal.period_ord == "SO":
                 home_msg += miss.format(scorer=scorer)
             if goal.event in ["Goal"] and goal.period_ord == "SO":
@@ -479,8 +478,8 @@ class Goal:
                 # is in the shootout and we reach a goal that happened *after*
                 # this goal object, we break for a cleaner looking shootout display.
                 break
-            if f"ID{goal.scorer_id}" in players:
-                scorer = players[f"ID{goal.scorer_id}"]["person"]["fullName"]
+            if goal.scorer_id in game.away_roster:
+                scorer = game.away_roster[goal.scorer_id].name
             if goal.event in ["Shot", "Missed Shot"] and goal.period_ord == "SO":
                 away_msg += miss.format(scorer=scorer)
             if goal.event in ["Goal"] and goal.period_ord == "SO":

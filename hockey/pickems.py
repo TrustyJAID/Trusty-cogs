@@ -194,9 +194,9 @@ class Pickems(discord.ui.View):
         time_now = datetime.now(timezone.utc)
 
         team_choice = None
-        if str(team.id) in self.home_emoji:
+        if str(team.id) in str(self.home_emoji):
             team_choice = self.home_team
-        if str(team.id) in self.away_emoji:
+        if str(team.id) in str(self.away_emoji):
             team_choice = self.away_team
         if team_choice is None:
             raise NotAValidTeamError()

@@ -19,7 +19,7 @@ from .helper import check_to_post, get_channel_obj, get_team, get_team_role
 from .standings import LeagueRecord, Playoffs
 
 if TYPE_CHECKING:
-    from .api import GameData
+    from .api import GameData, Player
 
 _ = Translator("Hockey", __file__)
 
@@ -263,8 +263,8 @@ class Game:
     first_star: Optional[str]
     second_star: Optional[str]
     third_star: Optional[str]
-    away_roster: Optional[dict]
-    home_roster: Optional[dict]
+    away_roster: Dict[int, Player]
+    home_roster: Dict[int, Player]
     link: Optional[str]
 
     def __init__(self, **kwargs):
@@ -313,8 +313,8 @@ class Game:
         self.first_star = kwargs.get("first_star")
         self.second_star = kwargs.get("second_star")
         self.third_star = kwargs.get("third_star")
-        self.away_roster = kwargs.get("away_roster")
-        self.home_roster = kwargs.get("home_roster")
+        self.away_roster = kwargs.get("away_roster", {})
+        self.home_roster = kwargs.get("home_roster", {})
         self.game_type: GameType = kwargs.get("game_type", GameType.unknown)
         self.link = kwargs.get("link")
         self.season = kwargs.get("season")
