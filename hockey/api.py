@@ -142,13 +142,12 @@ class Situation:
             return _("4v4")
         if self.home_skaters == self.away_skaters == 3:
             return _("3v3")
-        if home and self.home_skaters > self.away_skaters:
-            if self.away_skaters == 0:
-                return _("Shootout")
+        if self.home_skaters == 0 or self.away_skaters == 0:
+            return _("Shootout")
+
+        if home is True and self.home_skaters > self.away_skaters:
             return _("Power Play")
-        if not home and self.home_skaters > self.away_skaters:
-            if self.away_skaters == 0:
-                return _("Shootout")
+        if home is False and self.home_skaters > self.away_skaters:
             return _("Shorthanded")
 
     def empty_net(self, home: bool) -> str:
@@ -224,6 +223,16 @@ class Event:
             details=data.get("details", {}),
         )
 
+    def is_goal_or_shot(self) -> bool:
+        if self.type_code is GameEventTypeCode.GOAL:
+            return True
+        elif (
+            self.type_code is GameEventTypeCode.MISSED_SHOT
+            and self.period_descriptor.get("periodType", None) == "SO"
+        ):
+            return True
+        return False
+
     @property
     def situation(self):
         return Situation(self.situation_code)
@@ -242,7 +251,7 @@ class Event:
         for key, value in self.details.items():
             if key == "shotType":
                 shot_type = value
-            if key == "scoringPlayerId":
+            if key in ["scoringPlayerId", "shootingPlayerId"]:
                 player = self.get_player(value, data)
                 first_name = player.get("firstName", {}).get("default", "")
                 last_name = player.get("lastName", {}).get("default", "")
@@ -275,7 +284,6 @@ class Event:
         scoring = content.get("summary", {}).get("scoring", [])
         for period in scoring:
             if period.get("period", 0) != self.period:
-                log.debug("ignoring period because it doesn't match.")
                 continue
             for goal in period.get("goals", []):
                 if goal.get("timeInPeriod", "") == self.time_in_period:
@@ -286,13 +294,17 @@ class Event:
 
     def to_goal(self, data: dict, content: Optional[dict] = None) -> Goal:
         scorer_id = self.details.get("scoringPlayerId", 0)
+        if scorer_id == 0:
+            scorer_id = self.details.get("shootingPlayerId", 0)
         jersey_no = self.get_player(scorer_id, data).get("sweaterNumber", 0)
 
         home_score = self.details.get("homeScore", 0)
         away_score = self.details.get("awayScore", 0)
         team_id = self.details.get("eventOwnerTeamId")
         team_name = TEAM_IDS.get(team_id)
-        period_ord = ORDINALS.get(self.period)
+        period_ord = self.period_descriptor.get("periodType", "REG")
+        if period_ord == "REG":
+            period_ord = ORDINALS.get(self.period)
         home = data["homeTeam"]["id"] == team_id
         return Goal(
             goal_id=self.id,
@@ -819,6 +831,9 @@ class NewAPI(HockeyAPI):
         return Schedule.from_nhle(data)
 
     async def gamecenter_landing(self, game_id: int):
+        if self.testing:
+            data = await self.load_testing_data("test-landing.json")
+            return data
         async with self.session.get(f"{self.base_url}/gamecenter/{game_id}/landing") as resp:
             if resp.status != 200:
                 log.error("Error accessing the games landing page. %s", resp.status)
@@ -900,7 +915,8 @@ class NewAPI(HockeyAPI):
     async def get_game_from_id(self, game_id: int) -> Game:
         if self.testing:
             data = await self.load_testing_data("testgame.json")
-            return await self.to_game(data)
+            landing = await self.gamecenter_landing(game_id)
+            return await self.to_game(data, content=landing)
         data = await self.gamecenter_pbp(game_id)
         try:
             landing = await self.gamecenter_landing(game_id)
@@ -958,11 +974,7 @@ class NewAPI(HockeyAPI):
         if period_descriptor != "REG":
             period_ord = period_descriptor
         events = [Event.from_json(i) for i in data["plays"]]
-        goals = [
-            e.to_goal(data, content=content)
-            for e in events
-            if e.type_code is GameEventTypeCode.GOAL
-        ]
+        goals = [e.to_goal(data, content=content) for e in events if e.is_goal_or_shot()]
         home_roster = {
             p["playerId"]: Player.from_json(p)
             for p in data["rosterSpots"]

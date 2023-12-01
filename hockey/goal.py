@@ -456,33 +456,40 @@ class Goal:
         """
         home_msg = ""
         away_msg = ""
-        score = "☑ {scorer}\n"
-        miss = "❌ {scorer}\n"
+        score = "\N{WHITE HEAVY CHECK MARK} {scorer}\n"
+        miss = "\N{CROSS MARK} {scorer}\n"
 
         for goal in game.home_goals:
             scorer = ""
             scorer_num = ""
-            if goal.time > self.time:
-                break
+            if goal.period_ord != "SO":
+                continue
+            if goal.goal_id > self.goal_id:
+                continue
             if goal.scorer_id in game.home_roster:
                 scorer = game.home_roster[goal.scorer_id].name
-            if goal.event in ["Shot", "Missed Shot"] and goal.period_ord == "SO":
+            if goal.event in ["Shot", "Missed Shot"]:
                 home_msg += miss.format(scorer=scorer)
-            if goal.event in ["Goal"] and goal.period_ord == "SO":
+            if goal.event in ["Goal"]:
                 home_msg += score.format(scorer=scorer)
 
         for goal in game.away_goals:
             scorer = ""
-            if goal.time > self.time:
+            if goal.period_ord != "SO":
+                continue
+            if goal.goal_id > self.goal_id:
                 # if the goal object building this shootout display
                 # is in the shootout and we reach a goal that happened *after*
                 # this goal object, we break for a cleaner looking shootout display.
-                break
+
+                # addendum, the new API removed timestamps so for this to work
+                # we have to assume that goal ID's increment
+                continue
             if goal.scorer_id in game.away_roster:
                 scorer = game.away_roster[goal.scorer_id].name
-            if goal.event in ["Shot", "Missed Shot"] and goal.period_ord == "SO":
+            if goal.event in ["Shot", "Missed Shot"]:
                 away_msg += miss.format(scorer=scorer)
-            if goal.event in ["Goal"] and goal.period_ord == "SO":
+            if goal.event in ["Goal"]:
                 away_msg += score.format(scorer=scorer)
 
         return home_msg, away_msg
@@ -494,7 +501,7 @@ class Goal:
         # h_emoji = game.home_emoji
         # a_emoji = game.away_emoji
         shootout = False
-        if game.period_ord == "SO":
+        if self.period_ord == "SO":
             shootout = True
         colour = (
             int(TEAMS[self.team_name]["home"].replace("#", ""), 16)
@@ -544,10 +551,9 @@ class Goal:
             if away_msg:
                 em.add_field(name=game.away_team, value=away_msg)
             em.set_footer(
-                text=str(game.period_time_left)
-                + _(" left in the ")
-                + str(game.period_ord)
-                + _(" period"),
+                text=_("{time} left in the {ordinal} period").format(
+                    time=str(game.period_time_left), ordinal=str(self.period_ord)
+                ),
                 icon_url=logo,
             )
             # em.timestamp = self.time

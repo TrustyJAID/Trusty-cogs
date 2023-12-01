@@ -31,7 +31,7 @@ class Schedule(menus.PageSource):
         self.team: List[str] = kwargs.get("team", [])
         self._last_searched: str = ""
         self.select_options = []
-        self.search_range = 30
+        self.search_range = 7
         self.include_heatmap = kwargs.get("include_heatmap", False)
         self.include_gameflow = kwargs.get("include_gameflow", False)
         self.include_plays = kwargs.get("include_plays", False)

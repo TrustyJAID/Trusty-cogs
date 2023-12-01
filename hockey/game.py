@@ -772,7 +772,7 @@ class Game:
             if (self.home_score + self.away_score) != 0:
                 # Check if there's goals only if there are goals
                 await self.check_team_goals(bot)
-            if end_third and old_game_state not in [GameState.final]:
+            if end_third and old_game_state not in [GameState.final, GameState.official_final]:
                 log.debug("End of the third period %s @ %s", self.away_team, self.home_team)
                 await self.period_recap(bot, "3rd")
                 await self.save_game_state(bot, "END3rd")
