@@ -118,7 +118,7 @@ class HockeyPickems(HockeyMixin):
     @pickems_loop.before_loop
     async def before_pickems_loop(self) -> None:
         log.trace("Waiting for Red to be ready")
-        await self.bot.wait_until_ready()
+        await self.bot.wait_until_red_ready()
         log.trace("Waiting for the cog to finish migrating")
         await self._ready.wait()
         # wait until migration if necessary

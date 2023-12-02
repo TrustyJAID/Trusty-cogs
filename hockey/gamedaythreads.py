@@ -320,7 +320,7 @@ class GameDayThreads(HockeyMixin):
                             cur_channel = await guild.fetch_channel(chan_id)
                         except Exception:
                             cur_channel = None
-                            await self.config.guild(guild).gdt_chan.clear()
+                            await self.config.guild(guild).gdt_chans.clear()
                             # clear the config data so that this always contains at most
                             # 1 game day thread when only one team is specified
                             # fetch_channel is used as a backup incase the thread
