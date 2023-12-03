@@ -880,14 +880,14 @@ class Destiny(DestinyAPI, commands.Cog):
         bnet_display_name = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayName"]
         bnet_code = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayNameCode"]
         bnet_name = f"{bnet_display_name}#{bnet_code}"
-        embed.set_author(name=bnet_name, icon_url=user.avatar.url)
+        embed.set_author(name=bnet_name, icon_url=user.display_avatar)
         # if "emblemPath" in char:
         # embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
         if "emblemBackgroundPath" in char:
             embed.set_image(url=IMAGE_URL + char["emblemBackgroundPath"])
         if titles:
             # embed.add_field(name=_("Titles"), value=titles)
-            embed.set_author(name=f"{bnet_name} ({title_name})", icon_url=user.avatar.url)
+            embed.set_author(name=f"{bnet_name} ({title_name})", icon_url=user.display_avatar)
         # log.debug(data)
         stats_str = ""
         if chars["profileCommendations"]:
@@ -2312,12 +2312,14 @@ class Destiny(DestinyAPI, commands.Cog):
                     except KeyError:
                         pass
                 embed = discord.Embed(title=info)
-                embed.set_author(name=bnet_name, icon_url=user.avatar.url)
+                embed.set_author(name=bnet_name, icon_url=user.display_avatar)
                 if "emblemPath" in char:
                     embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
                 if titles:
                     # embed.add_field(name=_("Titles"), value=titles)
-                    embed.set_author(name=f"{bnet_name} ({title_name})", icon_url=user.avatar.url)
+                    embed.set_author(
+                        name=f"{bnet_name} ({title_name})", icon_url=user.display_avatar
+                    )
                 char_items = chars["characterEquipment"]["data"][char_id]["items"]
                 item_list = [i["itemHash"] for i in char_items]
                 # log.debug(item_list)
@@ -2509,7 +2511,7 @@ class Destiny(DestinyAPI, commands.Cog):
                         )
                     if activity_data.get("pgcrImage", None) is not None:
                         embed.set_image(url=IMAGE_URL + activity_data["pgcrImage"])
-                    embed.set_author(name=char_info, icon_url=user.avatar.url)
+                    embed.set_author(name=char_info, icon_url=user.display_avatar)
                     for attr, name in RAID.items():
                         if activities["values"][attr]["basic"]["value"] < 0:
                             continue
@@ -2655,7 +2657,7 @@ class Destiny(DestinyAPI, commands.Cog):
         if raid_names:
             description = "\n".join(n for n in raid_names)
             embed.description = _("__**Raids Completed:**__\n") + description
-        embed.set_author(name=f"{user.display_name} - {char_info}", icon_url=user.avatar.url)
+        embed.set_author(name=f"{user.display_name} - {char_info}", icon_url=user.display_avatar)
         kills = data[stat_type]["allTime"]["kills"]["basic"]["displayValue"]
         deaths = data[stat_type]["allTime"]["deaths"]["basic"]["displayValue"]
         assists = data[stat_type]["allTime"]["assists"]["basic"]["displayValue"]
@@ -2714,7 +2716,7 @@ class Destiny(DestinyAPI, commands.Cog):
             "winLossRatio": _("Win Loss Ratio"),
         }
         embed = discord.Embed(title=_("Gambit") + f" - {char_info}")
-        embed.set_author(name=f"{user.display_name} - {char_info}", icon_url=user.avatar.url)
+        embed.set_author(name=f"{user.display_name} - {char_info}", icon_url=user.display_avatar)
         kills = data["kills"]["basic"]["displayValue"]
         deaths = data["deaths"]["basic"]["displayValue"]
         assists = data["assists"]["basic"]["displayValue"]
