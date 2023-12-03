@@ -573,7 +573,7 @@ class Event(discord.ui.View):
         hoster = ctx.guild.get_member(self.hoster)
         em = discord.Embed()
         em.set_author(
-            name=_("{hoster} is hosting").format(hoster=hoster), icon_url=hoster.avatar.url
+            name=_("{hoster} is hosting").format(hoster=hoster), icon_url=hoster.display_avatar
         )
         try:
             prefixes = await self.bot.get_valid_prefixes(ctx.guild)
@@ -637,7 +637,7 @@ class Event(discord.ui.View):
             approver = ctx.guild.get_member(self.approver)
             em.set_footer(
                 text=_("Approved by {approver}").format(approver=approver),
-                icon_url=approver.avatar.url,
+                icon_url=approver.display_avatar,
             )
         start = await self.start_time()
         if start is not None:
