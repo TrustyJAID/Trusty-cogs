@@ -453,7 +453,7 @@ class SpotifyPlaylistsPages(menus.ListPageSource):
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
             name=_("{user}'s Spotify Playlists").format(user=view.author.display_name),
-            icon_url=view.author.avatar.url,
+            icon_url=view.author.display_avatar,
         )
         msg = ""
         for playlist in playlists:
@@ -480,7 +480,7 @@ class SpotifyTopTracksPages(menus.ListPageSource):
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
             name=_("{user}'s Top Tracks").format(user=view.author.display_name),
-            icon_url=view.author.avatar.url,
+            icon_url=view.author.display_avatar,
         )
         msg = ""
         for track in tracks:
@@ -505,7 +505,7 @@ class SpotifyTopArtistsPages(menus.ListPageSource):
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
             name=_("{user}'s Top Artists").format(user=view.author.display_name),
-            icon_url=view.author.avatar.url,
+            icon_url=view.author.display_avatar,
         )
         msg = ""
         for artist in artists:
@@ -569,7 +569,7 @@ class SpotifyPages(menus.PageSource):
             album = f"[{album.name}](https://open.spotify.com/album/{album.id})"
         em.set_author(
             name=f"{view.author.display_name}" + _(" is currently listening to"),
-            icon_url=view.author.avatar.url,
+            icon_url=view.author.display_avatar,
             url=url,
         )
         repeat = (

@@ -534,7 +534,7 @@ class SpotifyCommands(SpotifyMixin):
             is_slash = ctx.interaction is not None
             em = discord.Embed(color=discord.Colour(0x1DB954))
             em.set_author(
-                name=author.display_name + _(" Spotify Profile"), icon_url=author.avatar.url
+                name=author.display_name + _(" Spotify Profile"), icon_url=author.display_avatar
             )
             msg = ""
             cog_settings = await self.config.user(author).all()
