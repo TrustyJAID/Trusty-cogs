@@ -411,7 +411,7 @@ class Hockey(
 
                     if game.game_state.value > GameState.over.value:
                         self.current_games[game_id]["count"] += 1
-                        if posted_final:
+                        if posted_final or game.game_state is GameState.official_final:
                             try:
                                 await self.set_guild_pickem_winner(game, edit_message=True)
                             except Exception:

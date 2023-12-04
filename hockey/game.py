@@ -782,8 +782,6 @@ class Game:
                     self.first_star is not None
                     and self.second_star is not None
                     and self.third_star is not None
-                    and len(self.home_goals) == self.home_score
-                    and len(self.away_goals) == self.away_score
                 )
                 or count >= 20
                 or self.game_state is GameState.official_final
@@ -1043,16 +1041,19 @@ class Game:
         team_list = await bot.get_cog("Hockey").config.teams()
         team_list.remove(home)
         team_list.remove(away)
-        if self.game_state is not GameState.final:
+        game_state = self.game_state.value
+        if time_to_game_start == "END3rd":
+            game_state = GameState.live_end_third.value
+        if self.game_state not in [GameState.final, GameState.official_final]:
             if self.game_state.is_preview() and time_to_game_start != "0":
-                home["game_state"] = self.game_state.value
-                away["game_state"] = self.game_state.value
+                home["game_state"] = game_state
+                away["game_state"] = game_state
             elif self.game_state.is_live() and time_to_game_start != "0":
-                home["game_state"] = self.game_state.value
-                away["game_state"] = self.game_state.value
+                home["game_state"] = game_state
+                away["game_state"] = game_state
             else:
-                home["game_state"] = self.game_state.value
-                away["game_state"] = self.game_state.value
+                home["game_state"] = game_state
+                away["game_state"] = game_state
             home["period"] = self.period
             away["period"] = self.period
             home["game_start"] = self.game_start_str
@@ -1067,9 +1068,12 @@ class Game:
                 away["goal_id"] = {}
                 home["game_start"] = ""
                 away["game_start"] = ""
-            elif self.game_state is GameState.final and time_to_game_start != "0":
-                home["game_state"] = self.game_state.value
-                away["game_state"] = self.game_state.value
+            elif (
+                self.game_state in [GameState.final, GameState.official_final]
+                and time_to_game_start != "0"
+            ):
+                home["game_state"] = game_state
+                away["game_state"] = game_state
         team_list.append(home)
         team_list.append(away)
         await bot.get_cog("Hockey").config.teams.set(team_list)
