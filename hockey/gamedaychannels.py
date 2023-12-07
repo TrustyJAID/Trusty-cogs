@@ -253,7 +253,7 @@ class GameDayChannels(HockeyMixin):
             return
         if category is None and ctx.channel.category is not None:
             category = guild.get_channel(ctx.channel.category_id)
-        else:
+        if category is None:
             await ctx.send(
                 _("You must specify a channel category for game day channels to be created under.")
             )
