@@ -257,7 +257,14 @@ class EventMixin:
         try:
             com = ctx.command
             privs = com.requires.privilege_level
-            user_perms = com.requires.user_perms
+            user_perms = com.requires.user_perms or discord.Permissions.none()
+            # If a subcommand requires only an exclusive privilege level check but its
+            # parent checks either privilege level or permissions extendedmodlog could fail
+            # to detect a commands required permissions and not log the usage.
+            # This is fixed by setting the permission value to a default of None
+            # then oring the values together to get the total requirements on the command.
+            # This appears more prominently with owner only subcommands with a top level
+            # command with permission requirements.
             my_perms = com.requires.bot_perms
             for p in com.parents:
                 if p.requires.privilege_level is not None:
