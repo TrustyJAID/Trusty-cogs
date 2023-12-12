@@ -2001,15 +2001,6 @@ class SpotifyCommands(SpotifyMixin):
             user_token = await self.get_user_auth(ctx)
             if not user_token:
                 return await self.no_user_token(ctx)
-            if ctx.interaction:
-                try:
-                    to_add = await SpotifyURIConverter().convert(ctx, to_add)
-                except commands.BadArgument as e:
-                    await ctx.send(e, ephemeral=True)
-                    return
-                if not ctx.response.is_done():
-                    await ctx.response.defer(ephemeral=True)
-                is_slash = True
             tracks = []
             new_uri = ""
             for match in to_add:
@@ -2070,12 +2061,6 @@ class SpotifyCommands(SpotifyMixin):
             user_token = await self.get_user_auth(ctx)
             if not user_token:
                 return await self.no_user_token(ctx)
-            if ctx.interaction:
-                try:
-                    to_remove = await SpotifyURIConverter().convert(ctx, to_remove)
-                except commands.BadArgument as e:
-                    await ctx.send(e, ephemeral=True)
-                    return
             tracks = []
             new_uri = ""
             for match in to_remove:
@@ -2132,12 +2117,6 @@ class SpotifyCommands(SpotifyMixin):
             user_token = await self.get_user_auth(ctx)
             if not user_token:
                 return await self.no_user_token(ctx)
-            if ctx.interaction:
-                try:
-                    to_follow = await SpotifyURIConverter().convert(ctx, to_follow)
-                except commands.BadArgument as e:
-                    await ctx.send(e, ephemeral=True)
-                    return
             tracks = []
             for match in to_follow:
                 if match.group(2) == "playlist":
@@ -2178,12 +2157,6 @@ class SpotifyCommands(SpotifyMixin):
             user_token = await self.get_user_auth(ctx)
             if not user_token:
                 return await self.no_user_token(ctx)
-            if ctx.interaction:
-                try:
-                    to_follow = await SpotifyURIConverter().convert(ctx, to_follow)
-                except commands.BadArgument as e:
-                    await ctx.send(e, ephemeral=True)
-                    return
             tracks = []
             for match in to_follow:
                 if match.group(2) == "artist":
@@ -2222,12 +2195,6 @@ class SpotifyCommands(SpotifyMixin):
             user_token = await self.get_user_auth(ctx)
             if not user_token:
                 return await self.no_user_token(ctx)
-            if ctx.interaction:
-                try:
-                    to_follow = await SpotifyURIConverter().convert(ctx, to_follow)
-                except commands.BadArgument as e:
-                    await ctx.send(e, ephemeral=True)
-                    return
 
             tracks = []
             for match in to_follow:
