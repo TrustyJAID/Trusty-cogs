@@ -496,7 +496,7 @@ class Game:
 
                     for goal in list_goals[ordinal]:
                         try:
-                            emoji = f"<:{TEAMS[goal.team_name]['emoji']}>"
+                            emoji = discord.PartialEmoji.from_str(TEAMS[goal.team_name]["emoji"])
                         except KeyError:
                             emoji = ""
                         left = ""
@@ -504,17 +504,27 @@ class Game:
                             left = _("\n{time} left in the {ord} period").format(
                                 time=goal.time_remaining, ord=goal.period_ord
                             )
-                        goal_msg += _(
-                            "{emoji} [{team} {empty_net}{strength} Goal By {description} {left}]({link})\n\n"
-                        ).format(
-                            emoji=emoji,
-                            team=goal.team_name,
-                            empty_net="EN " if goal.empty_net else "",
-                            strength=goal.strength_code,
-                            description=goal.description,
-                            link=goal.link,
-                            left=left,
-                        )
+                        if goal.link:
+                            goal_msg += _(
+                                "{emoji} [{team} {strength} Goal By {description} {left}]({link})\n\n"
+                            ).format(
+                                emoji=emoji,
+                                team=goal.team_name,
+                                strength=goal.strength,
+                                description=goal.description,
+                                link=goal.link,
+                                left=left,
+                            )
+                        else:
+                            goal_msg += _(
+                                "{emoji} {team} {strength} Goal By {description} {left}\n\n"
+                            ).format(
+                                emoji=emoji,
+                                team=goal.team_name,
+                                strength=goal.strength,
+                                description=goal.description,
+                                left=left,
+                            )
 
                     count = 0
                     continued = _("(Continued)")
@@ -774,7 +784,8 @@ class Game:
                 await self.check_team_goals(bot)
             if end_third and old_game_state not in [GameState.final, GameState.official_final]:
                 log.debug("End of the third period %s @ %s", self.away_team, self.home_team)
-                await self.period_recap(bot, "3rd")
+                if old_game_state is not GameState.live_end_third:
+                    await self.period_recap(bot, "3rd")
                 await self.save_game_state(bot, "END3rd")
 
             if (

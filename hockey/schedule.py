@@ -14,7 +14,7 @@ from .game import GameState
 from .helper import utc_to_local
 
 _ = Translator("Hockey", __file__)
-log = getLogger("red.trusty-cogs.hockey")
+log = getLogger("red.trusty-cogs.Hockey")
 
 
 class Schedule(menus.PageSource):

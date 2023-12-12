@@ -135,20 +135,44 @@ class Situation:
         ----------
             home: bool
                 Whether the situation represents the home team or not
-        """
-        if self.home_skaters == self.away_skaters == 5:
-            return _("Even Strength")
-        if self.home_skaters == self.away_skaters == 4:
-            return _("4v4")
-        if self.home_skaters == self.away_skaters == 3:
-            return _("3v3")
-        if self.home_skaters == 0 or self.away_skaters == 0:
-            return _("Shootout")
 
-        if home is True and self.home_skaters > self.away_skaters:
-            return _("Power Play")
-        if home is False and self.home_skaters > self.away_skaters:
-            return _("Shorthanded")
+        1551 - Even Strength
+        0651 - Pulled away goalie
+        1560 - Pulled home goalie
+        1451 - Home power play
+        1541 - Away power play
+        1441 - 4v4
+        1331 - 3v3
+        1010 - Shootout Home shot
+        0101 - Shootout Away shot
+        """
+        situations = []
+        if self.home_skaters == 0 or self.away_skaters == 0:
+            # Special case return for shootout situations
+            return _("Shootout")
+        if home and self.home_goalie == 0 or not home and self.away_goalie == 0:
+            situations.append(_("Pulled Goalie"))
+        elif home and self.away_goalie == 0 or not home and self.home_goalie == 0:
+            situations.append(_("Empty Net"))
+
+        if (self.away_skaters + self.away_goalie) != (self.home_skaters + self.home_goalie):
+            if home:
+                if self.home_skaters < self.away_skaters:
+                    situations.append(_("Shorthanded"))
+                else:
+                    situations.append(_("Power Play"))
+            else:
+                if self.away_skaters < self.home_skaters:
+                    situations.append(_("Shorthanded"))
+                else:
+                    situations.append(_("Power Play"))
+
+        uneven = self.home_skaters < 5 or self.away_skaters < 5
+        if not uneven and (self.home_goalie != 0 and self.away_goalie != 0):
+            situations.append(_("Even Strength"))
+        situations.append(f"({self.away_skaters}v{self.home_skaters})")
+
+        return " ".join(s for s in situations)
 
     def empty_net(self, home: bool) -> str:
         """
@@ -323,6 +347,7 @@ class Event:
             empty_net=self.situation.empty_net(home),
             event=str(self.type_code),
             link=self.get_highlight(content),
+            situation=self.situation,
         )
 
 
