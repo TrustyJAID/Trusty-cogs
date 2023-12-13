@@ -294,7 +294,7 @@ class Event:
                 player = self.get_player(value, data)
                 first_name = player.get("firstName", {}).get("default", "")
                 last_name = player.get("lastName", {}).get("default", "")
-                total = self.details.get("assist1PlayerTotal", 0)
+                total = self.details.get("assist2PlayerTotal", 0)
                 description += _(", {first_name} {last_name} ({total})").format(
                     first_name=first_name, last_name=last_name, total=total
                 )
