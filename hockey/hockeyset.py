@@ -616,7 +616,7 @@ class HockeySetCommands(HockeyMixin):
         Toggle 60, 30, and 10 minute countdown updates for games in a specified channel
         """
         current = await self.config.channel(channel).countdown()
-        await self.config.channel(channel).set(not current)
+        await self.config.channel(channel).countdown.set(not current)
         if current:
             await ctx.send(
                 _(
