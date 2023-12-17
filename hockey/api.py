@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TypedDict
+from typing import Dict, List, Literal, Optional, Tuple, TypedDict
 
 import aiohttp
 from red_commons.logging import getLogger
@@ -14,6 +14,7 @@ from redbot.core.i18n import Translator
 from .constants import TEAMS
 from .game import Game, GameState, GameType
 from .goal import Goal
+from .player import PlayerStats, SearchPlayer
 from .standings import Standings
 
 TEAM_IDS = {v["id"]: k for k, v in TEAMS.items()}
@@ -790,9 +791,35 @@ class NewAPI(HockeyAPI):
             if resp.status != 200:
                 log.error("Error accessing the Schedule for now. %s", resp.status)
                 raise HockeyAPIError("There was an error accessing the API.")
-
+            log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
         return Schedule.from_nhle(data)
+
+    async def search_player(
+        self,
+        search: str,
+        *,
+        culture: str = "en-us",
+        active: Literal["true", "false"] = "true",
+        limit: int = 20,
+    ) -> List[SearchPlayer]:
+        params = {"q": search, "culture": culture, "limit": limit}
+        url = "https://search.d3.nhle.com/api/v1/search/player"
+        async with self.session.get(url, params=params) as resp:
+            if resp.status != 200:
+                log.error("Error accessing the Schedule for now. %s", resp.status)
+                raise HockeyAPIError("There was an error accessing the API.")
+            data = await resp.json()
+        return [SearchPlayer.from_json(i) for i in data]
+
+    async def get_player(self, player_id: int) -> PlayerStats:
+        url = f"https://api-web.nhle.com/v1/player/{player_id}/landing"
+        async with self.session.get(url) as resp:
+            if resp.status != 200:
+                log.error("Error accessing the Schedule for now. %s", resp.status)
+                raise HockeyAPIError("There was an error accessing the API.")
+            data = await resp.json()
+        return PlayerStats.from_json(data)
 
     async def schedule(self, date: datetime) -> Schedule:
         date_str = date.strftime("%Y-%m-%d")
@@ -800,7 +827,7 @@ class NewAPI(HockeyAPI):
             if resp.status != 200:
                 log.error("Error accessing the Schedule for now. %s", resp.status)
                 raise HockeyAPIError("There was an error accessing the API.")
-
+            log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
         return Schedule.from_nhle(data)
 
@@ -832,7 +859,7 @@ class NewAPI(HockeyAPI):
                     "Error accessing the Club Schedule for the week. %s: %s", resp.status, url
                 )
                 raise HockeyAPIError("There was an error accessing the API.")
-
+            log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
         return Schedule.from_nhle(data)
 
@@ -851,7 +878,7 @@ class NewAPI(HockeyAPI):
             if resp.status != 200:
                 log.error("Error accessing the Club Schedule for the month. %s", resp.status)
                 raise HockeyAPIError("There was an error accessing the API.")
-
+            log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
         return Schedule.from_nhle(data)
 
@@ -863,7 +890,7 @@ class NewAPI(HockeyAPI):
             if resp.status != 200:
                 log.error("Error accessing the games landing page. %s", resp.status)
                 raise HockeyAPIError("There was an error accessing the API.")
-
+            log.trace("Hockey GC landing headers %s", resp.headers)
             data = await resp.json()
         return data
 
@@ -872,7 +899,7 @@ class NewAPI(HockeyAPI):
             if resp.status != 200:
                 log.error("Error accessing the games play-by-play. %s", resp.status)
                 raise HockeyAPIError("There was an error accessing the API.")
-
+            log.trace("Hockey GC pbp headers %s", resp.headers)
             data = await resp.json()
         return data
 
@@ -881,7 +908,7 @@ class NewAPI(HockeyAPI):
             if resp.status != 200:
                 log.error("Error accessing the games play-by-play. %s", resp.status)
                 raise HockeyAPIError("There was an error accessing the API.")
-
+            log.trace("Hockey GC boxscore headers %s", resp.headers)
             data = await resp.json()
         return data
 
@@ -890,7 +917,7 @@ class NewAPI(HockeyAPI):
             if resp.status != 200:
                 log.error("Error accessing the standings. %s", resp.status)
                 raise HockeyAPIError("There was an error accessing the API.")
-
+            log.trace("Hockey standings headers %s", resp.headers)
             data = await resp.json()
         return data
 

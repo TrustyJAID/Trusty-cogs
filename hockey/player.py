@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Literal, Optional, Union
+from dataclasses import dataclass, field
+from datetime import date, datetime
+from typing import List, Literal, Optional, Union
 
 import aiohttp
 import discord
@@ -136,6 +136,402 @@ FLAG_LOOKUP = {
     "ISR": ":flag_il:",
     None: "",
 }
+
+
+@dataclass
+class SearchPlayer:
+    playerId: str
+    name: str
+    positionCode: str
+    teamId: Optional[str]
+    teamAbbrev: Optional[str]
+    lastTeamId: Optional[str]
+    lastTeamAbbrev: Optional[str]
+    lastSeasonId: Optional[str]
+    sweaterNumber: Optional[int]
+    active: bool
+    height: str
+    heightInCentimeters: int
+    weightInPounds: int
+    weightInKilograms: int
+    birthCity: str
+    birthStateProvince: str
+    birthCountry: str
+
+    @property
+    def id(self) -> int:
+        return int(self.playerId)
+
+    @classmethod
+    def from_json(cls, data: dict) -> SearchPlayer:
+        return cls(**data)
+
+
+@dataclass
+class Stats:
+    # All player stats
+    # Shared full data
+    # this data appears in player subseason data and goalie career totals
+    goals: Optional[int] = None
+    assists: Optional[int] = None
+    pim: Optional[int] = None
+    # Skater stats
+    shootingPctg: Optional[float] = None
+    powerPlayGoals: Optional[int] = None
+    powerPlayPoints: Optional[int] = None
+    shorthandedGoals: Optional[int] = None
+    shorthandedPoints: Optional[int] = None
+    shots: Optional[int] = None
+    otGoals: Optional[int] = None
+    gameWinningGoals: Optional[int] = None
+    plusMinus: Optional[int] = None
+    points: Optional[int] = None
+    faceoffWinningPctg: Optional[float] = None
+    avgToi: Optional[str] = None
+    # Goalie stats
+    gamesStarted: Optional[int] = None
+    wins: Optional[int] = None
+    losses: Optional[int] = None
+    ties: Optional[int] = None
+    otLosses: Optional[int] = None
+    shotsAgainst: Optional[int] = None
+    goalsAgainst: Optional[int] = None
+    goalsAgainstAvg: Optional[float] = None
+    savePctg: Optional[float] = None
+    shutouts: Optional[int] = None
+    timeOnIce: Optional[str] = None
+    gamesPlayed: Optional[int] = None
+
+
+@dataclass
+class FeaturedStats:
+    season: int
+    regularSeason: Stats
+    career: Stats
+
+    @classmethod
+    def from_json(cls, data: dict) -> FeaturedStats:
+        return cls(
+            season=data.get("season"),
+            regularSeason=Stats(**data.get("regularSeason", {}).get("subSeason")),
+            career=Stats(**data.get("regularSeason", {}).get("career")),
+        )
+
+    def get_str(self):
+        season_str = str(self.season)
+        style = f"{season_str[:4]}-{season_str[:-4]}"
+        post_data = []
+        keys = {
+            _("GP"): "gamesPlayed",
+            _("Shots"): "shots",
+            _("Goals"): "goals",
+            _("Assists"): "assists",
+            _("Hits"): "hits",
+            _("Faceoff %"): "faceoffWinningPctg",
+            _("+/-"): "plusMinus",
+            _("Blocked Shots"): "blocked",
+            _("PIM"): "pim",
+            _("Avg. TOI"): "avgToi",
+            _("SO"): "shutouts",
+            _("Save %"): "savePctg",
+            _("GAA"): "goalsAgainstAvg",
+            _("Started"): "gamesStarted",
+        }
+        for key, value in keys.items():
+            season_value = getattr(self.regularSeason, value, None)
+            career_value = getattr(self.career, value, None)
+            if season_value and career_value:
+                post_data.append([key, f"[ {season_value} ]", f"[ {career_value} ]"])
+        return tabulate(post_data, headers=[_("Stats"), style, _("Career")])
+
+
+@dataclass
+class CareerStats:
+    regularSeason: Stats
+    playoffs: Stats
+
+    @classmethod
+    def from_json(cls, data: dict) -> CareerStats:
+        return cls(
+            regularSeason=Stats(**data.get("regularSeason", {})),
+            playoffs=Stats(**data.get("playoffs", {})),
+        )
+
+
+@dataclass
+class SeasonStats(Stats):
+    season: Optional[int] = None
+    gameTypeId: Optional[int] = None
+    leagueAbbrev: Optional[str] = None
+    teamName: Optional[dict] = field(default_factory=dict)
+    sequence: Optional[int] = None
+
+    def get_str(self):
+        season_str = str(self.season)
+        style = f"{season_str[:4]}-{season_str[:-4]}"
+        post_data = []
+        keys = {
+            _("GP"): "gamesPlayed",
+            _("Shots"): "shots",
+            _("Goals"): "goals",
+            _("Assists"): "assists",
+            _("Hits"): "hits",
+            _("Faceoff %"): "faceoffWinningPctg",
+            _("+/-"): "plusMinus",
+            _("Blocked Shots"): "blocked",
+            _("PIM"): "pim",
+            _("Avg. TOI"): "avgToi",
+            _("SO"): "shutouts",
+            _("Save %"): "savePctg",
+            _("GAA"): "goalsAgainstAvg",
+            _("Started"): "gamesStarted",
+        }
+        for key, value in keys.items():
+            season_value = getattr(self, value, None)
+            if season_value is not None:
+                post_data.append([key, f"[ {season_value} ]"])
+        return tabulate(post_data, headers=[_("Stats"), style])
+
+
+@dataclass
+class PlayerStats:
+    playerId: int
+    isActive: bool
+    firstName: dict
+    lastName: dict
+    position: Optional[str]
+    headshot: Optional[str]
+    heroImage: Optional[str]
+    heightInInches: int
+    heightInCentimeters: int
+    weightInPounds: int
+    weightInKilograms: int
+    birthDate: str
+    birthCity: dict
+    birthStateProvince: dict
+    birthCountry: str
+    draftDetails: dict
+    playerSlug: str
+    inTop100AllTime: int
+    inHHOF: int
+    featuredStats: Optional[FeaturedStats]
+    careerTotals: Optional[CareerStats]
+    shopLink: str
+    twitterLink: str
+    watchLink: str
+    last5Games: List[dict]
+    seasonTotals: List[dict]
+    awards: List[dict]
+    currentTeamRoster: List[dict]
+    currentTeamId: Optional[int] = None
+    currentTeamAbbrev: Optional[str] = None
+    fullTeamName: dict = field(default_factory=dict)
+    teamLogo: Optional[str] = None
+    sweaterNumber: Optional[int] = None
+    shootsCatches: Optional[str] = None
+
+    @classmethod
+    def from_json(cls, data: dict) -> PlayerStats:
+        featured_stats = data.pop("featuredStats", None)
+        featured = None
+        if featured_stats:
+            featured = FeaturedStats.from_json(featured_stats)
+        career = None
+        career_stats = data.pop("careerTotals", None)
+        if career_stats:
+            career = CareerStats.from_json(career_stats)
+        awards = data.pop("awards", [])
+        seasons = [SeasonStats(**i) for i in data.pop("seasonTotals", [])]
+        last5 = data.pop("last5Games", [])
+        current_team = data.pop("currentTeamRoster", [])
+        draft = data.pop("draftDetails", {})
+        return cls(
+            draftDetails=draft,
+            featuredStats=featured,
+            careerTotals=career,
+            seasonTotals=seasons,
+            awards=awards,
+            last5Games=last5,
+            currentTeamRoster=current_team,
+            **data,
+        )
+
+    @property
+    def id(self) -> int:
+        return self.playerId
+
+    @property
+    def first_name(self) -> str:
+        return self.firstName.get("default", "")
+
+    @property
+    def last_name(self) -> str:
+        return self.lastName.get("default", "")
+
+    @property
+    def full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}"
+
+    @property
+    def full_name_url(self) -> str:
+        return self.full_name.replace(" ", "-")
+
+    @property
+    def sweater_number(self) -> Optional[int]:
+        return self.sweaterNumber
+
+    @property
+    def birth_date(self) -> date:
+        return date.fromisoformat(self.birthDate)
+
+    @property
+    def birth_country(self) -> str:
+        return self.birthCountry
+
+    @property
+    def birth_city(self) -> str:
+        return self.birthCity.get("default", "")
+
+    @property
+    def birth_state_province(self) -> str:
+        return self.birthStateProvince.get("default", "")
+
+    @property
+    def nationality(self) -> str:
+        return self.birthCountry
+
+    @property
+    def height(self) -> int:
+        return self.heightInInches
+
+    @property
+    def weight(self) -> int:
+        return self.weightInPounds
+
+    @property
+    def shoots_catches(self) -> str:
+        return self.shootsCatches
+
+    @property
+    def ep_url(self) -> str:
+        return f"https://www.eliteprospects.com/player/{self.id}/{self.full_name_url}"
+
+    @property
+    def cap_friendly_url(self) -> str:
+        return f"https://www.capfriendly.com/players/{self.full_name_url}"
+
+    def __str__(self) -> str:
+        return f"{self.full_name}, born {self.birth_date}"
+
+    def __repr__(self) -> str:
+        return f"<Player name={self.full_name} id={self.id} number={self.sweater_number}>"
+
+    def description(self) -> str:
+        desc = {
+            "birth_date": _("Born: "),
+            # "birth_city": _("Hometown: "),
+            "position": _("Position: "),
+            "height": _("Height: "),
+            "weight": _("Weight: "),
+            "is_rookie": _("Rookie"),
+            "is_junior": _("Junior"),
+            "is_suspended": _("Suspended"),
+        }
+
+        msg = ""
+        for attr, name in desc.items():
+            if getattr(self, attr, None):
+                if attr == "height" and self.height:
+                    msg += (
+                        name
+                        + f"{self.height//12}' {self.height%12}\" / {int(self.height * 2.54)} cm\n"
+                    )
+                elif attr == "birth_date" and self.birth_date is not None:
+                    years = int(
+                        (datetime.now() - datetime.strptime(str(self.birth_date), "%Y-%m-%d")).days
+                        / 365.25
+                    )
+                    msg += name + f"{getattr(self, attr)} ({years})\n"
+                    flag = FLAG_LOOKUP[self.birth_country]
+                    msg += (
+                        ", ".join(
+                            [
+                                i
+                                for i in [self.birth_city, self.birth_state_province]
+                                if i is not None
+                            ]
+                        )
+                        + f" {flag}\n"
+                    )
+                elif attr == "weight" and self.weight:
+                    msg += name + f"{self.weight} lbs / {int(self.weight * 0.453592)} kg\n"
+                elif attr == "home_town":
+                    flag = FLAG_LOOKUP[self.nationality]
+                    msg += name + f"{getattr(self, attr)} {flag}\n"
+                elif attr == "position":
+                    shoots = f"({getattr(self, 'shoots_catches', '')})"
+                    ir = (
+                        "\N{ADHESIVE BANDAGE}"
+                        if getattr(self, "long_term_injury", "N") == "Y"
+                        else ""
+                    )
+                    msg += name + f"{getattr(self, attr)} {shoots if shoots != '()' else ''}{ir}\n"
+                elif attr == "deceased":
+                    death_date = getattr(self, "date_of_death", "")
+                    msg += f"{name} {death_date}\n" if getattr(self, attr) else ""
+                elif attr in ["is_rookie", "is_junior", "is_suspended"]:
+                    if getattr(self, attr, "N") == "Y":
+                        msg += f"{name}\n"
+                elif attr == "dda_id":
+                    msg += name.format(dda_id=self.dda_id) + "\n"
+                else:
+                    msg += name + f"{getattr(self, attr, '')}\n"
+        links = [
+            # _("[Elite Prospects]({ep_url})").format(ep_url=self.ep_url),
+            _("[Cap Friendly]({cf_url})").format(cf_url=self.cap_friendly_url),
+        ]
+        if getattr(self, "dda_id", None):
+            links.append(
+                _(
+                    "[HHOF]( https://www.hhof.com/LegendsOfHockey/jsp/SearchPlayer.jsp?player={dda_id})"
+                ).format(dda_id=self.dda_id)
+            )
+        msg += " | ".join(links)
+        return msg
+
+    def get_embed(self) -> discord.Embed:
+        try:
+            team_id = self.currentTeamId
+            log.verbose("SimplePlayer team_id: %s", team_id)
+            team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
+            colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
+            logo = TEAMS[team_name]["logo"]
+            emoji = discord.PartialEmoji.from_str(TEAMS[team_name]["emoji"])
+        except IndexError:
+            team_name = _("No Team")
+            colour = 0xFFFFFF
+            logo = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
+            emoji = ""
+
+        em = discord.Embed(colour=colour)
+        em.description = self.description()
+        em.set_thumbnail(url=self.headshot)
+        number = f"#{self.sweater_number}" if self.sweater_number else ""
+        em.set_author(name=f"{self.full_name} {number}", icon_url=logo)
+        em.description = self.description()
+        if self.heroImage:
+            em.set_image(url=self.heroImage)
+
+        if self.featuredStats:
+            stats_md = self.featuredStats.get_str()
+            stats_str = f"{emoji} {team_name} {emoji}\n{box(stats_md, lang='apache')}"
+            em.add_field(name=_("Stats"), value=stats_str)
+        return em
+
+
+################################################################################################
+#                                         Old API data
+################################################################################################
 
 
 @dataclass

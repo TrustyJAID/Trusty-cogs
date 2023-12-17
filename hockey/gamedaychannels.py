@@ -6,7 +6,7 @@ import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.chat_formatting import bold, humanize_list
 
 from .abc import HockeyMixin
 from .game import Game
@@ -57,6 +57,7 @@ class GameDayChannels(HockeyMixin):
             category = guild.get_channel(await self.config.guild(guild).category())
             delete_gdc = await self.config.guild(guild).delete_gdc()
             game_states = await self.config.guild(guild).gdc_state_updates()
+            countdown = await self.config.guild(guild).gdc_countdown()
             if category is not None:
                 category = category.name
             if channels is not None:
@@ -75,7 +76,8 @@ class GameDayChannels(HockeyMixin):
                 msg = _(
                     "```GDC settings for {guild}\nCreate Game Day Channels: {create_channels}"
                     "\nDelete Game Day Channels: {delete_gdc}\nTeam: {team}\n"
-                    "Current Channels: {created_channels}\nDefault Game State: {game_states}\n```"
+                    "Current Threads: {created_threads}\nDefault Game State: {game_states}\n"
+                    "Game Start Countdown: {countdown}\n```"
                 ).format(
                     guild=guild.name,
                     create_channels=create_channels,
@@ -83,6 +85,7 @@ class GameDayChannels(HockeyMixin):
                     team=team,
                     created_channels=created_channels,
                     game_states=humanize_list(game_states),
+                    countdown=countdown,
                 )
 
                 await ctx.send(msg)
@@ -96,6 +99,7 @@ class GameDayChannels(HockeyMixin):
                 if not game_states:
                     game_states = ["None"]
                 em.add_field(name=_("Default Game States"), value=humanize_list(game_states))
+                em.add_field(name=_("Game Start Countdown"), value=str(countdown))
                 await ctx.send(embed=em)
 
     @gdc.command(name="delete")
@@ -119,19 +123,53 @@ class GameDayChannels(HockeyMixin):
         `goal` is all the goal updates.
         """
         cur_state = await self.config.guild(ctx.guild).gdt_state_updates()
+        added = []
+        removed = []
         if state.value in cur_state:
+            removed.append(state.value)
             cur_state.remove(state.value)
         else:
+            added.append(state.value)
             cur_state.append(state.value)
         await self.config.guild(ctx.guild).gdt_state_updates.set(cur_state)
         if cur_state:
             msg = _("GDT game updates set to {states}").format(
                 states=humanize_list(list(set(cur_state)))
             )
+            if added:
+                msg += "\n" + _("{states} was added.").format(states=bold(humanize_list(added)))
+            if removed:
+                msg += "\n" + _("{states} was removed.").format(
+                    states=bold(humanize_list(removed))
+                )
             await ctx.send(msg)
         else:
             msg = _("GDC game updates not set")
             await ctx.send(msg)
+
+    @gdc.command(name="countdown")
+    @commands.mod_or_permissions(manage_channels=True)
+    async def set_game_countdown_updates(
+        self,
+        ctx: commands.Context,
+    ) -> None:
+        """
+        Toggle 60, 30, and 10 minute countdown updates in game day channels
+        """
+        current = await self.config.guild(ctx.guild).gdc_countdown()
+        await self.config.guild(ctx.guild).gdc_countdown.set(not current)
+        if current:
+            await ctx.send(
+                _(
+                    "60, 30, and 10 minute countdown messages have been disabled in future game day channels."
+                )
+            )
+        else:
+            await ctx.send(
+                _(
+                    "60, 30, and 10 minute countdown messages have been enabled in future game day channels."
+                )
+            )
 
     @gdc.command(name="create")
     async def gdc_create(self, ctx: commands.Context) -> None:
@@ -373,6 +411,8 @@ class GameDayChannels(HockeyMixin):
         await self.config.channel(new_chn).to_delete.set(delete_gdc)
         gdc_state_updates = await self.config.guild(guild).gdc_state_updates()
         await self.config.channel(new_chn).game_states.set(gdc_state_updates)
+        gdc_countdown = await self.config.guild(guild).gdc_countdown()
+        await self.config.channel(new_chn).countdown.set(gdc_countdown)
         # Gets the timezone to use for game day channel topic
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")
         # guild_team = await config.guild(guild).gdc_team()

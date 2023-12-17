@@ -23,7 +23,7 @@ from .helper import (
     YearFinder,
 )
 from .menu import BaseMenu, GamesMenu, LeaderboardPages, PlayerPages, SimplePages
-from .player import SimplePlayer
+from .player import SearchPlayer
 from .schedule import Schedule, ScheduleList
 from .standings import PlayoffsView, StandingsMenu
 from .stats import LeaderCategories, LeaderView
@@ -478,9 +478,8 @@ class HockeyCommands(HockeyMixin):
     async def player(
         self,
         ctx: commands.Context,
-        season: Optional[YearFinder],
         *,
-        player: discord.app_commands.Transform[List[SimplePlayer], PlayerFinder],
+        player: discord.app_commands.Transform[List[SearchPlayer], PlayerFinder],
     ) -> None:
         """
         Lookup information about a specific player
@@ -490,31 +489,12 @@ class HockeyCommands(HockeyMixin):
         """
         log.verbose("player %s", player)
         await ctx.defer()
-        season_str = None
-        if season:
-            if season.group(3):
-                if (int(season.group(3)) - int(season.group(1))) > 1:
-                    await ctx.send(_("Dates must be only 1 year apart."))
-                    return
-                if (int(season.group(3)) - int(season.group(1))) <= 0:
-                    await ctx.send(_("Dates must be only 1 year apart."))
-                    return
-                if int(season.group(1)) > datetime.now().year:
-                    await ctx.send(_("Please select a year prior to now."))
-                    return
-                season_str = f"{season.group(1)}{season.group(3)}"
-            else:
-                if int(season.group(1)) > datetime.now().year:
-                    await ctx.send(_("Please select a year prior to now."))
-                    return
-                year = int(season.group(1)) + 1
-                season_str = f"{season.group(1)}{year}"
         if not player:
             await ctx.send(_("No player could be found by that name."))
             return
         try:
             await BaseMenu(
-                source=PlayerPages(pages=player, season=season_str),
+                source=PlayerPages(pages=player),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,

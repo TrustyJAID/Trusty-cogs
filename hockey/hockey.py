@@ -55,7 +55,7 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "4.0.0"
+    __version__ = "4.1.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -97,10 +97,13 @@ class Hockey(
             "so_notifications": True,
             "timezone": None,
             "include_goal_image": False,
+            "gdt_countdown": True,
+            "gdc_countdown": True,
         }
         default_channel = {
             "team": [],
             "game_states": ["Preview", "Live", "Final", "Goal"],
+            "countdown": True,
             "to_delete": False,
             "update": True,
             "publish_states": [],

@@ -363,5 +363,6 @@ class HockeySelectPlayer(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         player_id = int(self.values[0])
-        index = self.view.source.pages.index(player_id)
+        player = self.view.source.players.get(player_id)
+        index = self.view.source.pages.index(player)
         await self.view.show_page(index, interaction)

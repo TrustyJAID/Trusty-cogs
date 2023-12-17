@@ -10,7 +10,7 @@ from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.chat_formatting import bold, humanize_list
 
 from .abc import HockeyMixin
 from .constants import TEAMS
@@ -605,6 +605,31 @@ class HockeySetCommands(HockeyMixin):
         await self.config.guild(guild).post_standings.set(cur_state)
         await ctx.send(msg)
 
+    @hockeyset_commands.command(name="countdown")
+    @commands.mod_or_permissions(manage_channels=True)
+    async def set_game_countdown_updates(
+        self,
+        ctx: commands.Context,
+        channel: discord.TextChannel,
+    ) -> None:
+        """
+        Toggle 60, 30, and 10 minute countdown updates for games in a specified channel
+        """
+        current = await self.config.channel(channel).countdown()
+        await self.config.channel(channel).set(not current)
+        if current:
+            await ctx.send(
+                _(
+                    "60, 30, and 10 minute countdown messages have been disabled in {channel}"
+                ).format(channel=channel.mention)
+            )
+        else:
+            await ctx.send(
+                _(
+                    "60, 30, and 10 minute countdown messages have been enabled in {channel}"
+                ).format(channel=channel.mention)
+            )
+
     @hockeyset_commands.command(name="stateupdates")
     @commands.mod_or_permissions(manage_channels=True)
     async def set_game_state_updates(
@@ -629,15 +654,23 @@ class HockeySetCommands(HockeyMixin):
         `periodrecap` is a recap of the period at the intermission.
         """
         cur_states = []
+        added = []
+        removed = []
         async with self.config.channel(channel).game_states() as game_states:
             if state.value in game_states:
+                removed.append(state.value)
                 game_states.remove(state.value)
             else:
+                added.append(state.value)
                 game_states.append(state.value)
             cur_states = game_states
         msg = _("{channel} game updates set to {states}").format(
             channel=channel.mention, states=humanize_list(cur_states) if cur_states else _("None")
         )
+        if added:
+            msg += "\n" + _("{states} was added.").format(states=bold(humanize_list(added)))
+        if removed:
+            msg += "\n" + _("{states} was removed.").format(states=bold(humanize_list(removed)))
         await ctx.send(msg)
         if not await self.config.channel(channel).team():
             await ctx.channel.send(

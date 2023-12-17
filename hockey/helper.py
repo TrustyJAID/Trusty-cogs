@@ -32,7 +32,7 @@ from .player import SimplePlayer
 from .teamentry import TeamEntry
 
 if TYPE_CHECKING:
-    from .game import Game
+    from .game import Game, GameState
     from .hockey import Hockey
 
 
@@ -195,46 +195,7 @@ class PlayerFinder(discord.app_commands.Transformer):
     @classmethod
     async def convert(cls, ctx: Context, argument: str) -> List[SimplePlayer]:
         cog = ctx.bot.get_cog("Hockey")
-        path = cog_data_path(cog) / "players.json"
-        await cls().check_and_download(cog)
-        with path.open(encoding="utf-8", mode="r") as f:
-            players = []
-            async for player in AsyncIter(json.loads(f.read())["data"], steps=100):
-                if argument.lower() in player["fullName"].lower():
-                    player = SimplePlayer(
-                        birth_city=player.pop("birthCity"),
-                        birth_country=player.pop("birthCountry"),
-                        birth_state_province=player.pop("birthStateProvince"),
-                        birth_date=player.pop("birthDate"),
-                        current_team_id=player.pop("currentTeamId"),
-                        full_name=player.pop("fullName"),
-                        home_town=player.pop("homeTown"),
-                        last_nhl_team_id=player.pop("lastNHLTeamId"),
-                        on_roster=player.pop("onRoster"),
-                        sweater_number=player.pop("sweaterNumber"),
-                        id=player.pop("id"),
-                        position=player.pop("position"),
-                        height=player.pop("height"),
-                        weight=player.pop("weight"),
-                        is_rookie=player.pop("isRookie"),
-                        is_retired=player.pop("isRetired"),
-                        is_junior=player.pop("isJunior"),
-                        is_suspended=player.pop("isSuspended"),
-                        deceased=player.pop("deceased"),
-                        date_of_death=player.pop("dateOfDeath"),
-                        nationality=player.pop("nationality"),
-                        long_term_injury=player.pop("longTermInjury"),
-                        shoots_catches=player.pop("shootsCatches"),
-                        ep_player_id=player.pop("epPlayerId"),
-                        dda_id=player.pop("ddaId", None),
-                    )
-                    if player.on_roster == "N":
-                        players.append(player)
-                    else:
-                        players.insert(
-                            0,
-                            player,
-                        )
+        players = await cog.api.search_player(argument)
         return players
 
     async def transform(
@@ -283,18 +244,10 @@ class PlayerFinder(discord.app_commands.Transformer):
         self, interaction: discord.Interaction, current: str
     ) -> List[discord.app_commands.Choice]:
         cog = interaction.client.get_cog("Hockey")
-        path = cog_data_path(cog) / "players.json"
+        players = await cog.api.search_player(current)
         ret = []
-        await self.check_and_download(cog)
-        with path.open(encoding="utf-8", mode="r") as f:
-            data = json.loads(f.read())["data"]
-            for player in data:
-                if current.lower() in player["fullName"].lower():
-                    ret.append(
-                        discord.app_commands.Choice(
-                            name=player["fullName"], value=player["fullName"]
-                        )
-                    )
+        for player in players:
+            ret.append(discord.app_commands.Choice(name=player.name, value=player.name))
         return ret[:25]
 
 
@@ -556,7 +509,7 @@ async def check_to_post(
     channel: discord.TextChannel,
     channel_data: dict,
     post_state: List[str],
-    game_state: str,
+    game_state: GameState,
     is_goal: bool = False,
 ) -> bool:
     if channel is None:
@@ -564,6 +517,10 @@ async def check_to_post(
     channel_teams = channel_data.get("team", [])
     if channel_teams is None:
         await bot.get_cog("Hockey").config.channel(channel).team.clear()
+        return False
+    is_countdown = game_state.value in [2, 3, 4]
+    channel_countdown = channel_data["countdown"]
+    if is_countdown and channel_countdown is False:
         return False
     should_post = False
     state_ints = game_states_to_int(channel_data["game_states"])
