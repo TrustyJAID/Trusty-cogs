@@ -270,20 +270,13 @@ class TriggerHandler(ReTriggerMixin):
         if not any(t.check_edits for t in self.triggers[guild.id].values()):
             # log.debug(f"No triggers in {guild=} have check_edits enabled")
             return
-        if "bot" in payload.data.get("author", []):
+        if "bot" in payload.data.get("author", {}):
             return
         channel = guild.get_channel(int(payload.data["channel_id"]))
-        try:
-            message = await channel.fetch_message(int(payload.data["id"]))
-        except (discord.errors.Forbidden, discord.errors.NotFound):
-            log.debug(
-                "I don't have permission to read channel history or cannot find the message."
-            )
-            return
-        except Exception:
-            log.info("Could not find channel or message")
-            # If we can't find the channel ignore it
-            return
+        if payload.cached_message is not None:
+            message = payload.cached_message
+        else:
+            message = discord.Message(state=channel._state, channel=channel, data=payload.data)
         if message.author.bot:
             # somehow we got a bot through the previous check :thonk:
             return
