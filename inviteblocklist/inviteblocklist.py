@@ -78,7 +78,7 @@ class ChannelUserRole(IDConverter):
 
 class InviteBlocklist(commands.Cog):
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.3"
+    __version__ = "1.1.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -127,11 +127,14 @@ class InviteBlocklist(commands.Cog):
             or guild_settings["whitelist"]
             or guild_settings["all_invites"]
         ):
-            try:
-                msg = await chan.fetch_message(payload.message_id)
-            except (discord.errors.Forbidden, discord.errors.NotFound):
-                return
-            await self._handle_message_search(msg)
+            if payload.cached_message is not None:
+                await self._handle_message_search(payload.cached_message)
+            else:
+                msg = discord.Message(state=chan._state, channel=chan, data=payload.data)
+                # construct the message object regardless of cache state
+                # d.py will normally ignore these edits and not build the full object
+                # so we manually construct it here for simplicity
+                await self._handle_message_search(msg)
 
     async def check_immunity_list(self, message: discord.Message) -> bool:
         is_immune = False
