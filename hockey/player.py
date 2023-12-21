@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from typing import List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 import aiohttp
 import discord
@@ -98,6 +98,7 @@ FLAG_LOOKUP = {
     "POL": ":flag_pl:",
     "LBN": ":flag_lb:",
     "DEU": ":flag_de:",
+    "GER": ":flag_de:",  # why they have both for this I have no clue
     "BRA": ":flag_gi:",
     "CHE": ":flag_ch:",
     "DNK": ":flag_dk:",
@@ -143,20 +144,20 @@ class SearchPlayer:
     playerId: str
     name: str
     positionCode: str
-    teamId: Optional[str]
-    teamAbbrev: Optional[str]
-    lastTeamId: Optional[str]
-    lastTeamAbbrev: Optional[str]
-    lastSeasonId: Optional[str]
-    sweaterNumber: Optional[int]
     active: bool
     height: str
     heightInCentimeters: int
     weightInPounds: int
     weightInKilograms: int
     birthCity: str
-    birthStateProvince: str
     birthCountry: str
+    birthStateProvince: Optional[str] = None
+    teamId: Optional[str] = None
+    teamAbbrev: Optional[str] = None
+    lastTeamId: Optional[str] = None
+    lastTeamAbbrev: Optional[str] = None
+    lastSeasonId: Optional[str] = None
+    sweaterNumber: Optional[int] = None
 
     @property
     def id(self) -> int:
@@ -165,6 +166,64 @@ class SearchPlayer:
     @classmethod
     def from_json(cls, data: dict) -> SearchPlayer:
         return cls(**data)
+
+
+@dataclass
+class RosterPlayer:
+    id: int
+    headshot: str
+    firstName: dict
+    lastName: dict
+
+    positionCode: str
+    shootsCatches: str
+    heightInInches: int
+    weightInPounds: int
+    heightInCentimeters: int
+    weightInKilograms: int
+    birthDate: str
+    birthCity: dict
+    birthCountry: str
+    sweaterNumber: Optional[int] = None
+    birthStateProvince: dict = field(default_factory=dict)
+
+    @property
+    def playerId(self) -> int:
+        return self.id
+
+    # why they alternate the data between id and playerId I don't know
+
+    @property
+    def first_name(self) -> str:
+        return self.firstName.get("default", "")
+
+    @property
+    def last_name(self) -> str:
+        return self.lastName.get("default", "")
+
+    @property
+    def name(self) -> str:
+        return f"{self.first_name} {self.last_name}"
+
+    @classmethod
+    def from_json(cls, data: dict) -> RosterPlayer:
+        return cls(**data)
+
+
+@dataclass
+class Roster:
+    forwards: Dict[int, RosterPlayer]
+    goalies: Dict[int, RosterPlayer]
+
+    @property
+    def players(self) -> List[RosterPlayer]:
+        return [p for p in self.forwards.values()] + [p for p in self.goalies.values()]
+
+    @classmethod
+    def from_json(cls, data: dict) -> Roster:
+        forwards = {p["id"]: RosterPlayer.from_json(p) for p in data.get("forwards", [])}
+        goalies = {p["id"]: RosterPlayer.from_json(p) for p in data.get("goalies", [])}
+        return cls(forwards=forwards, goalies=goalies)
 
 
 @dataclass
@@ -202,6 +261,44 @@ class Stats:
     timeOnIce: Optional[str] = None
     gamesPlayed: Optional[int] = None
 
+    def to_data(self):
+        keys = {
+            _("GP"): "gamesPlayed",
+            _("Shots"): "shots",
+            _("Goals"): "goals",
+            _("OT Goals"): "otGoals",
+            _("PPG"): "powerPlayGoals",
+            _("SHG"): "shorthandedGoals",
+            _("GWG"): "gameWinningGoals",
+            _("Points"): "points",
+            _("Avg. TOI"): "avgToi",
+            _("Assists"): "assists",
+            _("Hits"): "hits",
+            _("Faceoff %"): "faceoffWinningPctg",
+            _("+/-"): "plusMinus",
+            _("Blocked Shots"): "blocked",
+            _("PIM"): "pim",
+            _("Avg. TOI"): "avgToi",
+            _("SO"): "shutouts",
+            _("Save %"): "savePctg",
+            _("Goals Against"): "goalsAgainst",
+            _("Shots Against"): "shotsAgainst",
+            _("GAA"): "goalsAgainstAvg",
+            _("Started"): "gamesStarted",
+            _("Wins"): "wins",
+            _("Losses"): "losses",
+            _("OT Losses"): "otLosses",
+            _("Shutouts"): "shutouts",
+            _("Time on Ice"): "timeOnIce",
+            # _("Ties"): "ties",
+        }
+        ret = {}
+        for key, value in keys.items():
+            data = getattr(self, value, None)
+            if data is not None:
+                ret[key] = data
+        return ret
+
 
 @dataclass
 class FeaturedStats:
@@ -221,28 +318,16 @@ class FeaturedStats:
         season_str = str(self.season)
         style = f"{season_str[:4]}-{season_str[:-4]}"
         post_data = []
-        keys = {
-            _("GP"): "gamesPlayed",
-            _("Shots"): "shots",
-            _("Goals"): "goals",
-            _("Assists"): "assists",
-            _("Hits"): "hits",
-            _("Faceoff %"): "faceoffWinningPctg",
-            _("+/-"): "plusMinus",
-            _("Blocked Shots"): "blocked",
-            _("PIM"): "pim",
-            _("Avg. TOI"): "avgToi",
-            _("SO"): "shutouts",
-            _("Save %"): "savePctg",
-            _("GAA"): "goalsAgainstAvg",
-            _("Started"): "gamesStarted",
-        }
-        for key, value in keys.items():
-            season_value = getattr(self.regularSeason, value, None)
-            career_value = getattr(self.career, value, None)
+        season_data = self.regularSeason.to_data()
+        career_data = self.career.to_data()
+        for key, season_value in season_data.items():
+            career_value = career_data.get(key, None)
             if season_value and career_value:
-                post_data.append([key, f"[ {season_value} ]", f"[ {career_value} ]"])
-        return tabulate(post_data, headers=[_("Stats"), style, _("Career")])
+                if isinstance(career_value, float):
+                    post_data.append([key, f"[ {career_value:.2} ]", f"[ {season_value:.2} ]"])
+                else:
+                    post_data.append([key, f"[ {career_value} ]", f"[ {season_value} ]"])
+        return tabulate(post_data, headers=[_("Stats"), _("Career"), style])
 
 
 @dataclass
@@ -259,6 +344,15 @@ class CareerStats:
 
 
 @dataclass
+class TeamData:
+    id: int
+    name: str
+    emoji: Union[discord.PartialEmoji, str]
+    logo: str
+    colour: int
+
+
+@dataclass
 class SeasonStats(Stats):
     season: Optional[int] = None
     gameTypeId: Optional[int] = None
@@ -268,26 +362,11 @@ class SeasonStats(Stats):
 
     def get_str(self):
         season_str = str(self.season)
-        style = f"{season_str[:4]}-{season_str[:-4]}"
+        style = f"{season_str[:4]}-{season_str[4:]}"
         post_data = []
-        keys = {
-            _("GP"): "gamesPlayed",
-            _("Shots"): "shots",
-            _("Goals"): "goals",
-            _("Assists"): "assists",
-            _("Hits"): "hits",
-            _("Faceoff %"): "faceoffWinningPctg",
-            _("+/-"): "plusMinus",
-            _("Blocked Shots"): "blocked",
-            _("PIM"): "pim",
-            _("Avg. TOI"): "avgToi",
-            _("SO"): "shutouts",
-            _("Save %"): "savePctg",
-            _("GAA"): "goalsAgainstAvg",
-            _("Started"): "gamesStarted",
-        }
-        for key, value in keys.items():
-            season_value = getattr(self, value, None)
+        keys = self.to_data()
+        for key, season_value in keys.items():
+            # season_value = getattr(self, value, None)
             if season_value is not None:
                 post_data.append([key, f"[ {season_value} ]"])
         return tabulate(post_data, headers=[_("Stats"), style])
@@ -308,7 +387,6 @@ class PlayerStats:
     weightInKilograms: int
     birthDate: str
     birthCity: dict
-    birthStateProvince: dict
     birthCountry: str
     draftDetails: dict
     playerSlug: str
@@ -320,11 +398,12 @@ class PlayerStats:
     twitterLink: str
     watchLink: str
     last5Games: List[dict]
-    seasonTotals: List[dict]
+    seasonTotals: List[SeasonStats]
     awards: List[dict]
     currentTeamRoster: List[dict]
     currentTeamId: Optional[int] = None
     currentTeamAbbrev: Optional[str] = None
+    birthStateProvince: dict = field(default_factory=dict)
     fullTeamName: dict = field(default_factory=dict)
     teamLogo: Optional[str] = None
     sweaterNumber: Optional[int] = None
@@ -452,7 +531,7 @@ class PlayerStats:
                         / 365.25
                     )
                     msg += name + f"{getattr(self, attr)} ({years})\n"
-                    flag = FLAG_LOOKUP[self.birth_country]
+                    flag = FLAG_LOOKUP.get(self.birth_country, "")
                     msg += (
                         ", ".join(
                             [
@@ -499,33 +578,67 @@ class PlayerStats:
         msg += " | ".join(links)
         return msg
 
-    def get_embed(self) -> discord.Embed:
+    def get_team_data(self, *, team_name: Optional[str] = None) -> TeamData:
         try:
             team_id = self.currentTeamId
-            log.verbose("SimplePlayer team_id: %s", team_id)
-            team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
+            if team_name is None:
+                log.verbose("SimplePlayer team_id: %s", team_id)
+                team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
+            else:
+                team_id = TEAMS[team_name]["id"]
             colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
             logo = TEAMS[team_name]["logo"]
             emoji = discord.PartialEmoji.from_str(TEAMS[team_name]["emoji"])
-        except IndexError:
+        except (IndexError, KeyError):
             team_name = _("No Team")
+            team_id = 0
             colour = 0xFFFFFF
             logo = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
             emoji = ""
+        return TeamData(id=team_id, name=team_name, emoji=emoji, logo=logo, colour=colour)
 
-        em = discord.Embed(colour=colour)
+    def get_embed(self, season: Optional[str] = None) -> discord.Embed:
+        team_data = self.get_team_data()
+        em = discord.Embed()
         em.description = self.description()
         em.set_thumbnail(url=self.headshot)
         number = f"#{self.sweater_number}" if self.sweater_number else ""
-        em.set_author(name=f"{self.full_name} {number}", icon_url=logo)
+
         em.description = self.description()
         if self.heroImage:
             em.set_image(url=self.heroImage)
 
-        if self.featuredStats:
+        stats_md = None
+        if season is not None and self.seasonTotals is not None:
+            career_stats = {}
+            stats_dict = {}
+            if self.careerTotals is not None:
+                career_stats = self.careerTotals.regularSeason.to_data()
+            for stats in self.seasonTotals:
+                if str(stats.season) == season and stats.gameTypeId == 2:
+                    team_data = self.get_team_data(team_name=stats.teamName.get("default"))
+                    stats_dict = stats.to_data()
+                    break
+            post_data = []
+            style = f"{season[:4]}-{season[4:]}"
+            for key, season_value in stats_dict.items():
+                career_value = career_stats.get(key, "None")
+                if season_value and career_value:
+                    if isinstance(season_value, float):
+                        post_data.append([key, f"[ {career_value:.2} ]", f"[ {season_value:.2} ]"])
+                    else:
+                        post_data.append([key, f"[ {career_value} ]", f"[ {season_value} ]"])
+            stats_md = tabulate(post_data, headers=[_("Stats"), _("Career"), style])
+
+        if self.featuredStats and stats_md is None:
             stats_md = self.featuredStats.get_str()
-            stats_str = f"{emoji} {team_name} {emoji}\n{box(stats_md, lang='apache')}"
+
+        if stats_md is not None:
+            stats_str = "{emoji} {team_name} {emoji}\n{stats}".format(
+                emoji=team_data.emoji, team_name=team_data.name, stats=box(stats_md, lang="apache")
+            )
             em.add_field(name=_("Stats"), value=stats_str)
+        em.set_author(name=f"{self.full_name} {number}", icon_url=team_data.logo)
         return em
 
 

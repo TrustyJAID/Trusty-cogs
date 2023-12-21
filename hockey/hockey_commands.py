@@ -478,6 +478,7 @@ class HockeyCommands(HockeyMixin):
     async def player(
         self,
         ctx: commands.Context,
+        season: Optional[YearFinder],
         *,
         player: discord.app_commands.Transform[List[SearchPlayer], PlayerFinder],
     ) -> None:
@@ -488,13 +489,32 @@ class HockeyCommands(HockeyMixin):
         `<player>` The name of the player to search for
         """
         log.verbose("player %s", player)
+        season_str = None
+        if season:
+            if season.group(3):
+                if (int(season.group(3)) - int(season.group(1))) > 1:
+                    await ctx.send(_("Dates must be only 1 year apart."))
+                    return
+                if (int(season.group(3)) - int(season.group(1))) <= 0:
+                    await ctx.send(_("Dates must be only 1 year apart."))
+                    return
+                if int(season.group(1)) > datetime.now().year:
+                    await ctx.send(_("Please select a year prior to now."))
+                    return
+                season_str = f"{season.group(1)}{season.group(3)}"
+            else:
+                if int(season.group(1)) > datetime.now().year:
+                    await ctx.send(_("Please select a year prior to now."))
+                    return
+                year = int(season.group(1)) + 1
+                season_str = f"{season.group(1)}{year}"
         await ctx.defer()
         if not player:
             await ctx.send(_("No player could be found by that name."))
             return
         try:
             await BaseMenu(
-                source=PlayerPages(pages=player),
+                source=PlayerPages(pages=player, season=season_str),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,
@@ -524,7 +544,6 @@ class HockeyCommands(HockeyMixin):
         """
         await ctx.defer()
         season_str = None
-        season_url = ""
         if season:
             if season.group(3):
                 if (int(season.group(3)) - int(season.group(1))) > 1:
@@ -543,35 +562,13 @@ class HockeyCommands(HockeyMixin):
                     return
                 year = int(season.group(1)) + 1
                 season_str = f"{season.group(1)}{year}"
-        if season:
-            season_url = f"?season={season_str}"
         if team is None:
             await ctx.send(_("You must provide a valid current team."))
             return
-        players = []
-        url = f"{BASE_URL}/api/v1/teams/{TEAMS[team]['id']}/roster{season_url}"
-        try:
-            async with self.session.get(url) as resp:
-                data = await resp.json()
-        except aiohttp.ClientConnectorError:
-            await ctx.send(
-                _("There's an issue accessing the NHL API at the moment. Try again later.")
-            )
-            log.exception("Error accessing NHL API")
-            return
-        if "roster" in data:
-            for player in data["roster"]:
-                players.append(
-                    BasePlayer(
-                        id=player["person"]["id"],
-                        name=player["person"]["fullName"],
-                        on_roster="Y",
-                    )
-                )
-
-        if players:
+        roster = await self.api.get_roster(team=team, season=season_str)
+        if roster.players:
             await BaseMenu(
-                source=PlayerPages(pages=players, season=season_str),
+                source=PlayerPages(pages=roster.players, season=season_str),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,

@@ -196,7 +196,13 @@ class PlayerFinder(discord.app_commands.Transformer):
     async def convert(cls, ctx: Context, argument: str) -> List[SimplePlayer]:
         cog = ctx.bot.get_cog("Hockey")
         players = await cog.api.search_player(argument)
-        return players
+        ret = []
+        for player in players:
+            if player.name.lower() == argument.lower():
+                ret.insert(0, player)
+            else:
+                ret.append(player)
+        return ret
 
     async def transform(
         self, interaction: discord.Interaction, argument: str

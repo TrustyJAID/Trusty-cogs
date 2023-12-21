@@ -418,7 +418,7 @@ class HockeyMixin(ABC):
         self,
         ctx: commands.Context,
         team: TeamFinder,
-        channel: Optional[discord.TextChannel],
+        channel: Optional[discord.TextChannel] = None,
     ) -> None:
         raise NotImplementedError()
 

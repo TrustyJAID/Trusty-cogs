@@ -211,9 +211,10 @@ class LeaderboardPages(menus.ListPageSource):
 
 
 class PlayerPages(menus.ListPageSource):
-    def __init__(self, pages: list):
+    def __init__(self, pages: list, season: Optional[str] = None):
         super().__init__(pages, per_page=1)
         self.pages: List[int] = pages
+        self.season = season
         self.players = {p.id: p for p in pages}
         self.select_options = []
         for count, player in enumerate(pages):
@@ -232,8 +233,8 @@ class PlayerPages(menus.ListPageSource):
     async def format_page(self, view: BaseMenu, player: SearchPlayer) -> discord.Embed:
         # player = await Player.from_id(page, session=view.cog.session)
         log.trace("PlayerPages player: %s", player)
-        player = await view.cog.api.get_player(player.id)
-        em = player.get_embed()
+        player_stats = await view.cog.api.get_player(player.id)
+        em = player_stats.get_embed(self.season)
         em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return em
 
