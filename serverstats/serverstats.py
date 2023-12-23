@@ -1041,6 +1041,31 @@ class ServerStats(commands.GroupCog):
         if not is_cheater:
             await ctx.send(_("Not a cheater"))
 
+    async def make_whois_embed(self, ctx: commands.Context, member: discord.User):
+        embed = discord.Embed()
+        since_created = discord.utils.format_dt(member.created_at, "R")
+        user_created = discord.utils.format_dt(member.created_at, "D")
+        public_flags = ""
+        robot = "\N{ROBOT FACE}" if member.bot else ""
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            public_flags = "\n".join(
+                bold(i.replace("_", " ").title()) for i, v in member.public_flags if v
+            )
+        created_on = (
+            "Joined Discord on {user_created} ({since_created})\n"
+            "{public_flags}\nUser ID:\n{user_id}"
+        ).format(
+            user_created=user_created,
+            since_created=since_created,
+            public_flags=public_flags,
+            user_id=box(str(member.id)),
+        )
+        embed.description = created_on
+        embed.set_thumbnail(url=member.display_avatar)
+        embed.colour = await ctx.embed_colour()
+        embed.set_author(name=f"{member} {robot}", icon_url=member.display_avatar)
+        return embed
+
     @commands.hybrid_command()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def whois(self, ctx: commands.Context, *, user_id: discord.User) -> None:
@@ -1080,6 +1105,7 @@ class ServerStats(commands.GroupCog):
 
             embed_list = []
             robot = "\N{ROBOT FACE}" if member.bot else ""
+            base_embed = await self.make_whois_embed(ctx, member)
             if guild_list != []:
                 url = "https://discord.com/channels/{guild_id}"
                 msg = f"**{member}** ({member.id}) {robot}" + _("is on:\n\n")
@@ -1103,67 +1129,23 @@ class ServerStats(commands.GroupCog):
                         f"{is_owner}{nick} __[{m.guild.name}]({guild_url})__ {guild_join}\n\n"
                     )
                 if ctx.channel.permissions_for(ctx.me).embed_links:
-                    for em in pagify(embed_msg, ["\n"], page_length=1024):
-                        embed = discord.Embed()
-                        since_created = f"<t:{int(member.created_at.timestamp())}:R>"
-                        user_created = f"<t:{int(member.created_at.timestamp())}:D>"
-                        public_flags = ""
-                        if version_info >= VersionInfo.from_str("3.4.0"):
-                            public_flags = "\n".join(
-                                bold(i.replace("_", " ").title())
-                                for i, v in member.public_flags
-                                if v
-                            )
-                        created_on = _(
-                            "Joined Discord on {user_created}\n"
-                            "({since_created})\n"
-                            "{public_flags}"
-                        ).format(
-                            user_created=user_created,
-                            since_created=since_created,
-                            public_flags=public_flags,
-                        )
-                        embed.description = created_on
-                        embed.set_thumbnail(url=member.display_avatar)
-                        embed.colour = await ctx.embed_colour()
-                        embed.set_author(
-                            name=f"{member} ({member.id}) {robot}", icon_url=member.display_avatar
-                        )
+                    for number, em in enumerate(
+                        pagify(embed_msg, ["\n"], page_length=1024), start=1
+                    ):
+                        embed = base_embed.copy()
                         embed.add_field(name=_("Shared Servers"), value=em)
-                        embed_list.append(embed)
-                    for number, em in enumerate(embed_list, start=1):
-                        em.set_footer(
+                        embed.set_footer(
                             text=_("Page {number}/{total}").format(
                                 number=number, total=len(embed_list)
                             )
                         )
+                        embed_list.append(embed)
                 else:
                     for page in pagify(msg, ["\n"]):
                         embed_list.append(page)
             else:
                 if ctx.channel.permissions_for(ctx.me).embed_links:
-                    embed = discord.Embed()
-                    since_created = f"<t:{int(member.created_at.timestamp())}:R>"
-                    user_created = f"<t:{int(member.created_at.timestamp())}:D>"
-                    public_flags = ""
-                    if version_info >= VersionInfo.from_str("3.4.0"):
-                        public_flags = "\n".join(
-                            bold(i.replace("_", " ").title()) for i, v in member.public_flags if v
-                        )
-                    created_on = _(
-                        "Joined Discord on {user_created}\n" "({since_created})\n" "{public_flags}"
-                    ).format(
-                        user_created=user_created,
-                        since_created=since_created,
-                        public_flags=public_flags,
-                    )
-                    embed.description = created_on
-                    embed.set_thumbnail(url=member.display_avatar)
-                    embed.colour = await ctx.embed_colour()
-                    embed.set_author(
-                        name=f"{member} ({member.id}) {robot}", icon_url=member.display_avatar
-                    )
-                    embed_list.append(embed)
+                    embed_list.append(base_embed)
                 else:
                     msg = f"**{member}** ({member.id}) " + _("is not in any shared servers!")
                     embed_list.append(msg)
