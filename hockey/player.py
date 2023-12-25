@@ -12,6 +12,7 @@ from redbot.core.utils.chat_formatting import box
 from tabulate import tabulate
 
 from .constants import HEADSHOT_URL, TEAMS
+from .helper import Team
 
 _ = Translator("Hockey", __file__)
 
@@ -344,15 +345,6 @@ class CareerStats:
 
 
 @dataclass
-class TeamData:
-    id: int
-    name: str
-    emoji: Union[discord.PartialEmoji, str]
-    logo: str
-    colour: int
-
-
-@dataclass
 class SeasonStats(Stats):
     season: Optional[int] = None
     gameTypeId: Optional[int] = None
@@ -578,24 +570,15 @@ class PlayerStats:
         msg += " | ".join(links)
         return msg
 
-    def get_team_data(self, *, team_name: Optional[str] = None) -> TeamData:
+    def get_team_data(self, *, team_name: Optional[str] = None) -> Team:
         try:
             team_id = self.currentTeamId
             if team_name is None:
                 log.verbose("SimplePlayer team_id: %s", team_id)
                 team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
-            else:
-                team_id = TEAMS[team_name]["id"]
-            colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
-            logo = TEAMS[team_name]["logo"]
-            emoji = discord.PartialEmoji.from_str(TEAMS[team_name]["emoji"])
+            return Team.from_json(TEAMS[team_name])
         except (IndexError, KeyError):
-            team_name = _("No Team")
-            team_id = 0
-            colour = 0xFFFFFF
-            logo = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
-            emoji = ""
-        return TeamData(id=team_id, name=team_name, emoji=emoji, logo=logo, colour=colour)
+            return Team.from_json({})
 
     def get_embed(self, season: Optional[str] = None) -> discord.Embed:
         team_data = self.get_team_data()

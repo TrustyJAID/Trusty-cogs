@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import (
@@ -28,12 +29,12 @@ from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 
 from .constants import TEAMS
-from .player import SimplePlayer
 from .teamentry import TeamEntry
 
 if TYPE_CHECKING:
     from .game import Game, GameState
     from .hockey import Hockey
+    from .player import SearchPlayer
 
 
 _ = Translator("Hockey", __file__)
@@ -61,6 +62,52 @@ for team, data in TEAMS.items():
 ACTIVE_TEAM_RE = re.compile(ACTIVE_TEAM_RE_STR, flags=re.I)
 
 VERSUS_RE = re.compile(r"vs\.?|versus", flags=re.I)
+
+
+@dataclass
+class Team:
+    id: int
+    name: str
+    emoji: Union[discord.PartialEmoji, str]
+    logo: str
+    home_colour: str
+    away_colour: str
+    division: str
+    conference: str
+    tri_code: str
+    nickname: List[str]
+    team_url: str
+    timezone: str
+    active: bool
+    invite: Optional[str] = None
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def colour(self) -> int:
+        return int(self.home_colour.replace("#", ""), 16)
+
+    @classmethod
+    def from_json(cls, data: dict) -> Team:
+        return cls(
+            id=data.get("id", 0),
+            name=data.get("name", _("Unknown Team")),
+            emoji=discord.PartialEmoji.from_str(data.get("emoji", "")),
+            logo=data.get(
+                "logo", "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
+            ),
+            home_colour=data.get("home", "#000000"),
+            away_colour=data.get("away", "#ffffff"),
+            division=data.get("division", _("unknown")),
+            conference=data.get("conference", _("unknown")),
+            tri_code=data.get("tri_code", ""),
+            nickname=data.get("nickname", []),
+            team_url=data.get("team_url", ""),
+            timezone=data.get("timezone", "US/Pacific"),
+            active=data.get("active", False),
+            invite=data.get("invite"),
+        )
 
 
 class Broadcast(NamedTuple):
@@ -193,7 +240,7 @@ class TeamFinder(discord.app_commands.Transformer):
 
 class PlayerFinder(discord.app_commands.Transformer):
     @classmethod
-    async def convert(cls, ctx: Context, argument: str) -> List[SimplePlayer]:
+    async def convert(cls, ctx: Context, argument: str) -> List[SearchPlayer]:
         cog = ctx.bot.get_cog("Hockey")
         players = await cog.api.search_player(argument)
         ret = []
@@ -206,7 +253,7 @@ class PlayerFinder(discord.app_commands.Transformer):
 
     async def transform(
         self, interaction: discord.Interaction, argument: str
-    ) -> List[SimplePlayer]:
+    ) -> List[SearchPlayer]:
         ctx = await interaction.client.get_context(interaction)
         return await self.convert(ctx, argument)
 

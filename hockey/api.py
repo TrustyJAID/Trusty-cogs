@@ -411,6 +411,9 @@ class Schedule:
     def from_statsapi(cls, data: dict) -> Schedule:
         raise NotImplementedError
 
+    def remaining(self) -> List[ScheduledGame]:
+        return [g for g in self.games if g.game_state.value < GameState.live.value]
+
     @classmethod
     def from_nhle(cls, data: dict) -> Schedule:
         days = []

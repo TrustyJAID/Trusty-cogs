@@ -11,6 +11,7 @@ from redbot.core import commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import bold, humanize_list
+from redbot.core.utils.views import ConfirmView
 
 from .abc import HockeyMixin
 from .constants import TEAMS
@@ -131,26 +132,36 @@ class HockeySetCommands(HockeyMixin):
     @commands.admin_or_permissions(manage_guild=True)
     @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.cooldown(1, 3600, commands.BucketType.guild)
     async def set_team_events(self, ctx: commands.Context, team: TeamFinder):
         """
         Create a scheduled server event for all games in the season for one team.
 
         This command can take a while to complete.
         """
-        start = datetime.now()
-        end = start + timedelta(days=350)
         try:
-            data = await self.api.get_schedule(
-                team, start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
-            )
+            data = await self.api.club_schedule_season(team)
         except aiohttp.ClientConnectorError:
             await ctx.send(
                 _("There's an issue accessing the NHL API at the moment. Try again later.")
             )
             log.exception("Error accessing NHL API")
             return
-        number_of_games = str(len(data.get("dates", [])))
-        await ctx.send(f"Creating events for {number_of_games} games.")
+        games = data.remaining()
+        number_of_games = str(len(games))
+        view = ConfirmView(ctx.author)
+        view.message = await ctx.send(
+            _(
+                "This will create {number_of_games} discord events for the remaining {team} games."
+                "This can take a long time to complate. Are you sure you want to run this?"
+            ).format(number_of_games=number_of_games, team=team),
+            view=view,
+        )
+        await view.wait()
+        if not view.result:
+            ctx.command.reset_cooldown(ctx)
+            await ctx.send(_("Okay I will not create the events."))
+            return
         images_path = cog_data_path(self) / "teamlogos"
         if not os.path.isdir(images_path):
             os.mkdir(images_path)
@@ -159,62 +170,57 @@ class HockeySetCommands(HockeyMixin):
             event_id = re.search(r"\n(\d{6,})", event.description)
             existing_events[event_id.group(1)] = event
         async with ctx.typing():
-            for date in data["dates"]:
-                for game in date["games"]:
-                    start = datetime.strptime(game["gameDate"], "%Y-%m-%dT%H:%M:%SZ").replace(
-                        tzinfo=timezone.utc
-                    )
-                    end = start + timedelta(hours=3)
-                    away = game["teams"]["away"]["team"]["name"]
-                    home = game["teams"]["home"]["team"]["name"]
-                    image_team = away if team == home else home
-                    image_file = images_path / f"{image_team}.png"
-                    if not os.path.isfile(image_file):
-                        async with self.session.get(TEAMS[image_team]["logo"]) as resp:
-                            image = await resp.read()
-                        with image_file.open("wb") as outfile:
-                            outfile.write(image)
-                    image = open(image_file, "rb")
-                    name = f"{away} @ {home}"
-                    broadcasts = humanize_list(
-                        [b.get("name", "Unknown") for b in game.get("broadcasts", [])]
-                    )
-                    description = name
-                    if broadcasts:
-                        description += f"\nBroadcasts: {broadcasts}"
-                    game_id = str(game["gamePk"])
-                    description += f"\n\n{game_id}"
-                    if game_id in existing_events:
-                        try:
-                            if existing_events[game_id].start_time != start:
-                                await existing_events[game_id].edit(
-                                    start_time=start, end_time=end, reason="Start time changed"
-                                )
-                            if existing_events[game_id].description != description:
-                                await existing_events[game_id].edit(
-                                    description=description, reason="Description has changed"
-                                )
-                        except Exception:
-                            # I don't care if these don't edit properly
-                            pass
-                        continue
+            for game in games:
+                start = game.game_start
+                end = start + timedelta(hours=3)
+                home = game.home_team
+                away = game.away_team
+                image_team = away if team == home else home
+                image_file = images_path / f"{image_team}.png"
+                if not os.path.isfile(image_file):
+                    async with self.session.get(TEAMS[image_team]["logo"]) as resp:
+                        image = await resp.read()
+                    with image_file.open("wb") as outfile:
+                        outfile.write(image)
+                image = open(image_file, "rb")
+                name = f"{away} @ {home}"
+                broadcasts = humanize_list([b.get("network", "Unknown") for b in game.broadcasts])
+                description = name
+                if broadcasts:
+                    description += f"\nBroadcasts: {broadcasts}"
+                game_id = str(game.id)
+                description += f"\n\n{game_id}"
+                if game_id in existing_events:
                     try:
-                        await ctx.guild.create_scheduled_event(
-                            name=f"{away} @ {home}",
-                            description=description,
-                            start_time=start,
-                            location=game.get("venue", {}).get("name", "Unknown place"),
-                            end_time=end,
-                            entity_type=discord.EntityType.external,
-                            image=image.read(),
-                            privacy_level=discord.PrivacyLevel.guild_only,
-                        )
+                        if existing_events[game_id].start_time != start:
+                            await existing_events[game_id].edit(
+                                start_time=start, end_time=end, reason="Start time changed"
+                            )
+                        if existing_events[game_id].description != description:
+                            await existing_events[game_id].edit(
+                                description=description, reason="Description has changed"
+                            )
                     except Exception:
-                        log.exception(
-                            "Error creating scheduled event in %s for team %s", ctx.guild.id, team
-                        )
-                    image.close()
-                    await asyncio.sleep(1)
+                        # I don't care if these don't edit properly
+                        pass
+                    continue
+                try:
+                    await ctx.guild.create_scheduled_event(
+                        name=f"{away} @ {home}",
+                        description=description,
+                        start_time=start,
+                        location=game.venue,
+                        end_time=end,
+                        entity_type=discord.EntityType.external,
+                        image=image.read(),
+                        privacy_level=discord.PrivacyLevel.guild_only,
+                    )
+                except Exception:
+                    log.exception(
+                        "Error creating scheduled event in %s for team %s", ctx.guild.id, team
+                    )
+                image.close()
+                await asyncio.sleep(1)
         await ctx.send(f"Finished creating events for {number_of_games} games.")
 
     @hockey_slash.command(name="global")
