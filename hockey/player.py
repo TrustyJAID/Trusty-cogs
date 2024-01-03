@@ -317,7 +317,7 @@ class FeaturedStats:
 
     def get_str(self):
         season_str = str(self.season)
-        style = f"{season_str[:4]}-{season_str[:-4]}"
+        style = f"{season_str[:4]}-{season_str[4:]}"
         post_data = []
         season_data = self.regularSeason.to_data()
         career_data = self.career.to_data()
@@ -576,9 +576,9 @@ class PlayerStats:
             if team_name is None:
                 log.verbose("SimplePlayer team_id: %s", team_id)
                 team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
-            return Team.from_json(TEAMS[team_name])
+            return Team.from_json(TEAMS[team_name], team_name)
         except (IndexError, KeyError):
-            return Team.from_json({})
+            return Team.from_json({}, _("Unknown Team"))
 
     def get_embed(self, season: Optional[str] = None) -> discord.Embed:
         team_data = self.get_team_data()

@@ -89,10 +89,10 @@ class Team:
         return int(self.home_colour.replace("#", ""), 16)
 
     @classmethod
-    def from_json(cls, data: dict) -> Team:
+    def from_json(cls, data: dict, team_name: str) -> Team:
         return cls(
             id=data.get("id", 0),
-            name=data.get("name", _("Unknown Team")),
+            name=team_name,
             emoji=discord.PartialEmoji.from_str(data.get("emoji", "")),
             logo=data.get(
                 "logo", "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
