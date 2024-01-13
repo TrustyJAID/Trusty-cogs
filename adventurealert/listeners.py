@@ -65,7 +65,7 @@ class AlertTypes(Enum):
             AlertTypes.miniboss: _("A miniboss has appeared, come join!"),
             AlertTypes.possessed: _("A possessed has appeared!"),
             AlertTypes.ascended: _("An Ascended has appeared!"),
-            AlertTypes.transcended: _("An Transcended has appeared!"),
+            AlertTypes.transcended: _("A Transcended has appeared!"),
         }.get(self, _("An adventure has started, come join!"))
 
 
