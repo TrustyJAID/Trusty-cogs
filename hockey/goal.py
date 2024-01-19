@@ -214,7 +214,7 @@ class Goal:
         tasks = []
         all_channels = await bot.get_cog("Hockey").config.all_channels()
         post_data = []
-        async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
+        async for channel_id, data in AsyncIter(all_channels.items(), steps=5, delay=5):
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
                 continue
@@ -323,16 +323,16 @@ class Goal:
             return None
 
     @staticmethod
-    async def remove_goal_post(bot: Red, goal: str, team: str, data: Game) -> None:
+    async def remove_goal_post(bot: Red, goal_id: str, team: str, data: Game) -> None:
         """
         Attempt to delete a goal if it was pulled back
         """
         config = bot.get_cog("Hockey").config
         team_list = await config.teams()
         team_data = await get_team(bot, team, data.game_start_str)
-        if goal not in [goal.goal_id for goal in data.goals]:
+        if goal_id not in [goal.goal_id for goal in data.goals]:
             try:
-                old_msgs = team_data["goal_id"][goal]["messages"]
+                old_msgs = team_data["goal_id"][goal_id]["messages"]
             except KeyError:
                 return
             except Exception:
@@ -350,10 +350,13 @@ class Goal:
                         continue
                     except Exception:
                         log.exception(
-                            f"Error getting old goal for {str(team)} {str(goal)} in "
-                            f"{guild_id=} {channel_id=}"
+                            "Error getting old goal for %s %s in guild=%s channel=%s",
+                            team,
+                            goal_id,
+                            guild_id,
+                            channel_id,
                         )
-                        pass
+                        continue
                     if message is not None:
                         try:
                             await message.delete()
@@ -361,14 +364,17 @@ class Goal:
                             pass
                         except Exception:
                             log.exception(
-                                f"Error getting old goal for {str(team)} {str(goal)} in "
-                                f"{guild_id=} {channel_id=}"
+                                "Error getting old goal for %s %s in guild=%s channel=%s",
+                                team,
+                                goal_id,
+                                guild_id,
+                                channel_id,
                             )
                 else:
                     log.debug("Channel does not have permission to read history")
             try:
                 team_list.remove(team_data)
-                del team_data["goal_id"][goal]
+                del team_data["goal_id"][goal_id]
                 team_list.append(team_data)
                 await config.teams.set(team_list)
             except Exception:
@@ -387,7 +393,7 @@ class Goal:
         em = await self.goal_post_embed(game_data)
         if og_msg is None:
             return
-        async for guild_id, channel_id, message_id in AsyncIter(og_msg, steps=10):
+        async for guild_id, channel_id, message_id in AsyncIter(og_msg, steps=5, delay=5):
             guild = bot.get_guild(int(guild_id))
             if not guild:
                 continue

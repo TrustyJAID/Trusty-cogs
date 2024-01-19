@@ -373,10 +373,6 @@ class PlayerStats:
     position: Optional[str]
     headshot: Optional[str]
     heroImage: Optional[str]
-    heightInInches: int
-    heightInCentimeters: int
-    weightInPounds: int
-    weightInKilograms: int
     birthDate: str
     birthCity: dict
     birthCountry: str
@@ -393,6 +389,10 @@ class PlayerStats:
     seasonTotals: List[SeasonStats]
     awards: List[dict]
     currentTeamRoster: List[dict]
+    heightInInches: Optional[int] = None
+    heightInCentimeters: Optional[int] = None
+    weightInPounds: Optional[int] = None
+    weightInKilograms: Optional[int] = None
     currentTeamId: Optional[int] = None
     currentTeamAbbrev: Optional[str] = None
     birthStateProvince: dict = field(default_factory=dict)

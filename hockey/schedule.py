@@ -303,12 +303,6 @@ class ScheduleList(menus.PageSource):
     async def format_page(
         self, menu: menus.MenuPages, games: List[ScheduledGame]
     ) -> discord.Embed:
-        states = {
-            GameState.preview: "\N{LARGE RED CIRCLE}",
-            GameState.live: "\N{LARGE GREEN CIRCLE}",
-            "Intermission": "\N{LARGE YELLOW CIRCLE}",
-            GameState.final: "\N{CHEQUERED FLAG}",
-        }
         # log.debug(games)
         msg = humanize_list(self.team) + "\n"
         day = None
@@ -324,13 +318,12 @@ class ScheduleList(menus.PageSource):
             broadcast_str = ""
             log.verbose("ScheduleList game: %s", game)
             if game.broadcasts and self.show_broadcasts:
-                broadcasts = game.broadcasts
-                if broadcasts:
+                if game.broadcasts:
                     broadcast_str = (
-                        "- "
-                        + _("Broadcasts")
-                        + "\n"
-                        + humanize_list([f" - {b['name']}" for b in broadcasts])
+                        " - "
+                        + _("__Broadcasts__")
+                        + "\n   - "
+                        + humanize_list([b.get("network", "Unknown") for b in game.broadcasts])
                     )
             if home_team in TEAMS:
                 home_emoji = discord.PartialEmoji.from_str(TEAMS[home_team]["emoji"])
@@ -340,10 +333,7 @@ class ScheduleList(menus.PageSource):
                 away_abr = TEAMS[away_team]["tri_code"]
 
             postponed = game.schedule_state != "OK"
-            try:
-                game_state = states[game.game_state]
-            except KeyError:
-                game_state = "\N{LARGE RED CIRCLE}"
+            game_state = game.game_state.emoji()
             if start_time is None:
                 start_time = game_start
             if day is None:
@@ -356,40 +346,26 @@ class ScheduleList(menus.PageSource):
                 time = f"<t:{int(game_start.timestamp())}:D>"
                 game_str = _("Games") if self.team == [] else _("Game")
                 msg += f"**{game_str} {time}**\n"
-
+            time_str = f"<t:{int(game_start.timestamp())}:t>"
             if postponed:
-                time_str = _("Postponed")
-                msg += (
-                    f"{game_state} - {away_emoji} {away_abr} @ "
-                    f"{home_emoji} {home_abr} - {time_str}\n{broadcast_str}\n"
-                )
-            elif game_start < datetime.now(timezone.utc):
+                game_state = "\N{CROSS MARK}"
+            msg += (
+                f"- {away_emoji} {away_abr} @ "
+                f"{home_emoji} {home_abr} - {time_str} - {game_state}"
+            )
+
+            if game_start < datetime.now(timezone.utc):
                 home_score = game.home_score
                 away_score = game.away_score
-                if not self.get_recap:
-                    msg += (
-                        f"{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
-                        f"**{home_score}** {home_emoji} {home_abr} \n{broadcast_str}\n"
-                    )
-
-                else:
+                score_msg = f"{away_abr} **{away_score}** - " f"**{home_score}** {home_abr}"
+                if self.get_recap:
                     game_recap = await self.api.get_game_recap(game.id)
                     if game_recap is not None:
-                        msg += (
-                            f"[{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
-                            f"**{home_score}** {home_emoji} {home_abr}]({game_recap}) \n{broadcast_str}\n"
-                        )
-                    else:
-                        msg += (
-                            f"{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
-                            f"**{home_score}** {home_emoji} {home_abr} \n{broadcast_str}\n"
-                        )
-            else:
-                time_str = f"<t:{int(game_start.timestamp())}:t>"
-                msg += (
-                    f"{game_state} - {away_emoji} {away_abr} @ "
-                    f"{home_emoji} {home_abr} - {time_str}\n{broadcast_str}\n"
-                )
+                        score_msg = f"[{score_msg}]({game_recap})"
+                msg += f"\n  - {score_msg}"
+            msg += "\n"
+            if self.show_broadcasts:
+                msg += f"{broadcast_str}\n"
 
             count = 0
             em = discord.Embed()

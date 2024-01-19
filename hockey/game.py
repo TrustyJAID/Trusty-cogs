@@ -43,6 +43,17 @@ class GameState(Enum):
     def __str__(self):
         return self.name.replace("_", " ").title()
 
+    def emoji(self) -> str:
+        if 1 <= self.value < 5:
+            return "\N{LARGE RED CIRCLE}"
+        if self.value == 5:
+            return "\N{LARGE GREEN CIRCLE}"
+        if 5 < self.value < 9:
+            return "\N{LARGE YELLOW CIRCLE}"
+        if self.value >= 9:
+            return "\N{CHEQUERED FLAG}"
+        return str(self)
+
     def is_preview(self):
         return self in (
             GameState.preview,
@@ -817,7 +828,7 @@ class Game:
         post_state = ["all", self.home_team, self.away_team]
         config = bot.get_cog("Hockey").config
         all_channels = await bot.get_cog("Hockey").config.all_channels()
-        async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
+        async for channel_id, data in AsyncIter(all_channels.items(), steps=5, delay=5):
             await self.maybe_edit_gamedaythread_message(bot, channel_id, data)
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
@@ -871,7 +882,7 @@ class Game:
         state_text = await self.game_state_text()
         tasks = []
         all_channels = await bot.get_cog("Hockey").config.all_channels()
-        async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
+        async for channel_id, data in AsyncIter(all_channels.items(), steps=5, delay=5):
             await self.maybe_edit_gamedaythread_message(bot, channel_id, data)
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
@@ -994,8 +1005,10 @@ class Game:
         # home_goal_ids = [goal.goal_id for goal in self.home_goals]
         # away_goal_ids = [goal.goal_id for goal in self.away_goals]
 
-        home_goal_list = list(team_data[self.home_team]["goal_id"])
-        away_goal_list = list(team_data[self.away_team]["goal_id"])
+        home_goal_list = set(team_data[self.home_team]["goal_id"])
+        current_home_goals = set(goal.goal_id for goal in self.home_goals)
+        away_goal_list = set(team_data[self.away_team]["goal_id"])
+        current_away_goals = set(goal.goal_id for goal in self.away_goals)
 
         for goal in self.goals:
             # goal_id = str(goal["result"]["eventCode"])
@@ -1034,14 +1047,14 @@ class Game:
                     if old_msgs:
                         asyncio.create_task(goal.edit_team_goal(bot, self, old_msgs))
         # attempts to delete the goal if it was called back
-        home_diff = abs(len(home_goal_list) - len(self.home_goals))
-        away_diff = abs(len(away_goal_list) - len(self.away_goals))
-        if 1 < home_diff <= 2:
-            for goal_str in home_goal_list:
-                await Goal.remove_goal_post(bot, goal_str, self.home_team, self)
-        if 1 < away_diff <= 2:
-            for goal_str in away_goal_list:
-                await Goal.remove_goal_post(bot, goal_str, self.away_team, self)
+        home_diff = home_goal_list.difference(current_home_goals)
+        # the difference here from the saved data to the new data returns only goals
+        # that are missing from the old data and ignores new goals in the current data
+        away_diff = away_goal_list.difference(current_away_goals)
+        for goal_str in home_diff:
+            await Goal.remove_goal_post(bot, goal_str, self.home_team, self)
+        for goal_str in away_diff:
+            await Goal.remove_goal_post(bot, goal_str, self.away_team, self)
 
     async def save_game_state(self, bot: Red, time_to_game_start: str = "0") -> None:
         """
@@ -1104,7 +1117,7 @@ class Game:
         )
         tasks = []
         all_channels = await bot.get_cog("Hockey").config.all_channels()
-        async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
+        async for channel_id, data in AsyncIter(all_channels.items(), steps=5, delay=5):
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
                 continue
