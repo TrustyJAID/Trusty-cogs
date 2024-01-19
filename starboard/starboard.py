@@ -886,7 +886,9 @@ class Starboard(StarboardEvents, commands.Cog):
             if emoji not in guild.emojis:
                 await ctx.send(_("That emoji is not on this guild!"))
                 return
-        self.starboards[ctx.guild.id][starboard.name].emoji = str(emoji)
+        self.starboards[ctx.guild.id][starboard.name].emoji = discord.PartialEmoji.from_str(
+            str(emoji)
+        )
         await self._save_starboards(guild)
         msg = _("{emoji} set for starboard {name}").format(emoji=emoji, name=starboard.name)
         await ctx.send(msg)
