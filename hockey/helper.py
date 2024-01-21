@@ -667,7 +667,7 @@ async def get_channel_obj(
         if not channel:
             # await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
             # log.info(f"{channel_id} channel was removed because it no longer exists")
-            log.info("%s Could not be found", channel_id)
+            log.info("channel ID %s Could not be found", channel_id)
             return None
         guild = channel.guild
         await bot.get_cog("Hockey").config.channel(channel).guild_id.set(guild.id)
@@ -676,13 +676,13 @@ async def get_channel_obj(
     if not guild:
         # await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
         # log.info(f"{channel_id} channel was removed because it no longer exists")
-        log.info("%s Could not be found", channel_id)
+        log.info("guild ID %s Could not be found", channel_id)
         return None
     channel = guild.get_channel(channel_id)
     thread = guild.get_thread(channel_id)
     if channel is None and thread is None:
         # await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
         # log.info(f"{channel_id} channel was removed because it no longer exists")
-        log.info("%s Could not be found", channel_id)
+        log.info("thread or channel ID %s Could not be found", channel_id)
         return None
     return channel or thread

@@ -293,7 +293,7 @@ class HockeyPickems(HockeyMixin):
             return self.all_pickems[str(guild.id)][str(game.game_id)]
 
     async def fix_pickem_game_start(self, game: Game):
-        async for guild_id, data in AsyncIter(self.all_pickems.items(), steps=5, delay=10):
+        async for guild_id, data in AsyncIter(self.all_pickems.items(), steps=50, delay=10):
             guild = self.bot.get_guild(int(guild_id))
             if guild is None:
                 continue

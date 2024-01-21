@@ -357,7 +357,7 @@ class ScheduleList(menus.PageSource):
             if game_start < datetime.now(timezone.utc):
                 home_score = game.home_score
                 away_score = game.away_score
-                score_msg = f"{away_abr} **{away_score}** - " f"**{home_score}** {home_abr}"
+                score_msg = f"{away_abr} **{away_score}** - **{home_score}** {home_abr}"
                 if self.get_recap:
                     game_recap = await self.api.get_game_recap(game.id)
                     if game_recap is not None:

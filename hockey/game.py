@@ -828,7 +828,7 @@ class Game:
         post_state = ["all", self.home_team, self.away_team]
         config = bot.get_cog("Hockey").config
         all_channels = await bot.get_cog("Hockey").config.all_channels()
-        async for channel_id, data in AsyncIter(all_channels.items(), steps=5, delay=5):
+        async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
             await self.maybe_edit_gamedaythread_message(bot, channel_id, data)
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
@@ -882,7 +882,7 @@ class Game:
         state_text = await self.game_state_text()
         tasks = []
         all_channels = await bot.get_cog("Hockey").config.all_channels()
-        async for channel_id, data in AsyncIter(all_channels.items(), steps=5, delay=5):
+        async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
             await self.maybe_edit_gamedaythread_message(bot, channel_id, data)
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
@@ -1117,7 +1117,7 @@ class Game:
         )
         tasks = []
         all_channels = await bot.get_cog("Hockey").config.all_channels()
-        async for channel_id, data in AsyncIter(all_channels.items(), steps=5, delay=5):
+        async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
                 continue

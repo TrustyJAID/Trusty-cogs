@@ -214,7 +214,7 @@ class Goal:
         tasks = []
         all_channels = await bot.get_cog("Hockey").config.all_channels()
         post_data = []
-        async for channel_id, data in AsyncIter(all_channels.items(), steps=5, delay=5):
+        async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
                 continue
@@ -393,7 +393,7 @@ class Goal:
         em = await self.goal_post_embed(game_data)
         if og_msg is None:
             return
-        async for guild_id, channel_id, message_id in AsyncIter(og_msg, steps=5, delay=5):
+        async for guild_id, channel_id, message_id in AsyncIter(og_msg, steps=10):
             guild = bot.get_guild(int(guild_id))
             if not guild:
                 continue

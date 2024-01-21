@@ -84,7 +84,10 @@ class GamesMenu(discord.ui.View):
         self.author = None
 
     async def on_timeout(self):
-        await self.message.edit(view=None)
+        try:
+            await self.message.edit(view=None)
+        except Exception:
+            pass
 
     async def start(self, ctx: commands.Context):
         await self.source._prepare_once()
@@ -292,7 +295,10 @@ class BaseMenu(discord.ui.View):
         return self._source
 
     async def on_timeout(self):
-        await self.message.edit(view=None)
+        try:
+            await self.message.edit(view=None)
+        except Exception:
+            pass
 
     async def start(
         self, ctx: commands.Context, content: Optional[str] = None, ephemeral: bool = False
