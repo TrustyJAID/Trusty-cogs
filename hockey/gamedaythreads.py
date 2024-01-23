@@ -154,7 +154,7 @@ class GameDayThreads(HockeyMixin):
 
     @gdt.command(name="countdown")
     @commands.mod_or_permissions(manage_channels=True)
-    async def set_game_countdown_updates(
+    async def set_gdt_countdown_updates(
         self,
         ctx: commands.Context,
     ) -> None:

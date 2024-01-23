@@ -149,7 +149,7 @@ class GameDayChannels(HockeyMixin):
 
     @gdc.command(name="countdown")
     @commands.mod_or_permissions(manage_channels=True)
-    async def set_game_countdown_updates(
+    async def set_gdc_countdown_updates(
         self,
         ctx: commands.Context,
     ) -> None:
