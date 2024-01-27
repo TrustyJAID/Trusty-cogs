@@ -1034,30 +1034,31 @@ class TriggerHandler(ReTriggerMixin):
     ) -> str:
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/customcom/customcom.py
         # ctx = await self.bot.get_context(message)
-        results = RE_CTX.findall(raw_response)
-        for result in results:
+        ctx_results = RE_CTX.findall(raw_response)
+        content = message.content
+        if trigger.read_filenames and message.attachments:
+            content = message.content + " " + " ".join(f.filename for f in message.attachments)
+        search = trigger.regex.search(content)
+        named_groups = search.groupdict() if search else {}
+        for result in ctx_results:
             param = await self.transform_parameter(result, message)
             raw_response = raw_response.replace("{" + result + "}", param)
-        results = RE_POS.findall(raw_response)
-        if results:
-            for result in results:
-                content = message.content
-                if trigger.read_filenames and message.attachments:
-                    content = (
-                        message.content + " " + " ".join(f.filename for f in message.attachments)
-                    )
-                search = trigger.regex.search(content)
-                if not search:
-                    continue
-                try:
-                    arg = search.group(int(result[0]))
-                    raw_response = raw_response.replace("{" + result[0] + "}", arg)
-                except IndexError:
-                    log.error("Regex pattern is too broad and no matched groups were found.")
-                    continue
-                except Exception:
-                    log.exception("Retrigger encountered an error with trigger %r", trigger)
-                    continue
+            if result in named_groups:
+                raw_response = raw_response.replace("{" + result + "}", named_groups[result])
+
+        num_results = RE_POS.findall(raw_response)
+        for result in num_results:
+            if not search:
+                continue
+            try:
+                arg = search.group(int(result[0]))
+                raw_response = raw_response.replace("{" + result[0] + "}", arg)
+            except IndexError:
+                log.error("Regex pattern is too broad and no matched groups were found.")
+                continue
+            except Exception:
+                log.exception("Retrigger encountered an error with trigger %r", trigger)
+                continue
         raw_response = raw_response.replace("{count}", str(trigger.count))
         if hasattr(message.channel, "guild"):
             prefixes = await self.bot.get_prefix(message.channel)
