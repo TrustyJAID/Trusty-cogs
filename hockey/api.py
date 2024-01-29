@@ -14,6 +14,7 @@ from redbot.core.i18n import Translator
 from .constants import TEAMS
 from .game import Game, GameState, GameType
 from .goal import Goal
+from .helper import Team
 from .player import PlayerStats, Roster, SearchPlayer
 from .standings import Standings
 
@@ -199,6 +200,13 @@ class Player:
     positionCode: str
     headshot: str
 
+    def __str__(self):
+        return self.name
+
+    @property
+    def id(self):
+        return self.playerId
+
     @property
     def name(self) -> str:
         first = self.firstName.get("default", _("Unknown"))
@@ -262,42 +270,37 @@ class Event:
     def situation(self):
         return Situation(self.situation_code)
 
-    def get_player(self, player_id: int, data: dict) -> dict:
+    def get_player(self, player_id: int, data: dict) -> Optional[Player]:
         for player in data.get("rosterSpots", []):
             if player_id == player.get("playerId"):
-                return player
-        return {}
+                return Player.from_json(player)
+        return None
 
     def description(self, data: dict) -> str:
         description = ""
         shot_type = ""
-        first_name = ""
-        last_name = ""
         for key, value in self.details.items():
             if key == "shotType":
                 shot_type = value
             if key in ["scoringPlayerId", "shootingPlayerId"]:
                 player = self.get_player(value, data)
-                first_name = player.get("firstName", {}).get("default", "")
-                last_name = player.get("lastName", {}).get("default", "")
+                player_name = player.name if player else _("Unknown")
                 total = self.details.get("scoringPlayerTotal", 0)
-                description += f"{first_name} {last_name} ({total}) {shot_type}"
+                description += f"{player_name} ({total}) {shot_type}"
 
             if key == "assist1PlayerId":
                 player = self.get_player(value, data)
-                first_name = player.get("firstName", {}).get("default", "")
-                last_name = player.get("lastName", {}).get("default", "")
+                player_name = player.name if player else _("Unknown")
                 total = self.details.get("assist1PlayerTotal", 0)
-                description += _(" assists: {first_name} {last_name} ({total})").format(
-                    first_name=first_name, last_name=last_name, total=total
+                description += _(" assists: {player_name} ({total})").format(
+                    player_name=player_name, total=total
                 )
             if key == "assist2PlayerId":
                 player = self.get_player(value, data)
-                first_name = player.get("firstName", {}).get("default", "")
-                last_name = player.get("lastName", {}).get("default", "")
+                player_name = player.name if player else _("Unknown")
                 total = self.details.get("assist2PlayerTotal", 0)
-                description += _(", {first_name} {last_name} ({total})").format(
-                    first_name=first_name, last_name=last_name, total=total
+                description += _(", {player_name} ({total})").format(
+                    player_name=player_name, total=total
                 )
 
         return description
@@ -321,19 +324,25 @@ class Event:
         scorer_id = self.details.get("scoringPlayerId", 0)
         if scorer_id == 0:
             scorer_id = self.details.get("shootingPlayerId", 0)
-        jersey_no = self.get_player(scorer_id, data).get("sweaterNumber", 0)
-
+        scorer = self.get_player(scorer_id, data)
+        jersey_no = scorer.sweaterNumber if scorer else 0
+        assisters = []
+        if assist1 := self.get_player(self.details.get("assist1PlayerId", 0), data):
+            assisters.append(assist1)
+        if assist2 := self.get_player(self.details.get("assist2PlayerId", 0), data):
+            assisters.append(assist2)
         home_score = self.details.get("homeScore", 0)
         away_score = self.details.get("awayScore", 0)
         team_id = self.details.get("eventOwnerTeamId")
-        team_name = TEAM_IDS.get(team_id)
+        team_name = TEAM_IDS.get(team_id, _("Unknown Team"))
+        team = Team.from_json(TEAMS.get(team_name, {}), team_name)
         period_ord = self.period_descriptor.get("periodType", "REG")
         if period_ord == "REG":
             period_ord = ORDINALS.get(self.period)
         home = data["homeTeam"]["id"] == team_id
         return Goal(
             goal_id=self.id,
-            team_name=team_name,
+            team=team,
             scorer_id=scorer_id,
             jersey_no=jersey_no,
             description=self.description(data),
@@ -349,6 +358,8 @@ class Event:
             event=str(self.type_code),
             link=self.get_highlight(content),
             situation=self.situation,
+            scorer=scorer,
+            assisters=assisters,
         )
 
 
@@ -377,10 +388,16 @@ class ScheduledGame:
         venue = data["venue"].get("default", "Unknown")
         broadcasts = data["tvBroadcasts"]
         home_team_data = data["homeTeam"]
-        home_team = TEAM_IDS[home_team_data["id"]]
+        home_team = TEAM_IDS.get(
+            home_team_data["id"],
+            home_team_data.get("placeName", {}).get("default", _("Unknown Team")),
+        )
         home_score = home_team_data.get("score", 0)
         away_team_data = data["awayTeam"]
-        away_team = TEAM_IDS[away_team_data["id"]]
+        away_team = TEAM_IDS.get(
+            away_team_data["id"],
+            away_team_data.get("placeName", {}).get("default", _("Unknown Team")),
+        )
         away_score = away_team_data.get("score", 0)
         game_start = datetime.strptime(data["startTimeUTC"], "%Y-%m-%dT%H:%M:%SZ")
         game_start = game_start.replace(tzinfo=timezone.utc)
@@ -1038,10 +1055,21 @@ class NewAPI(HockeyAPI):
         period = data.get("period", -1)
         period_time_left = data.get("clock", {}).get("timeRemaining")
         game_state = GameState.from_nhle(data["gameState"], period, period_time_left)
-        home_id = data.get("homeTeam", {}).get("id", -1)
-        home_team = TEAM_IDS.get(home_id, "Unknown Team")
-        away_id = data.get("awayTeam", {}).get("id", -1)
-        away_team = TEAM_IDS.get(away_id, "Unknown Team")
+        home_data = data.get("homeTeam", {})
+        home_id = home_data.get("id", -1)
+        home_team = home_data.get("name", {}).get("default")
+        home = Team.from_nhle(home_data, home=True)
+        if home_id in TEAM_IDS:
+            home_team = TEAM_IDS.get(home_id, "Unknown Team")
+            home = Team.from_json(TEAMS.get(home_team, {}), home_team)
+
+        away_data = data.get("awayTeam", {})
+        away_id = away_data.get("id", -1)
+        away_team = away_data.get("name", {}).get("default")
+        away = Team.from_nhle(away_data, home=False)
+        if away_id in TEAM_IDS:
+            away_team = TEAM_IDS.get(away_id, "Unknown Team")
+            away = Team.from_json(TEAMS.get(away_team, {}), away_team)
         game_start = data["startTimeUTC"]
 
         period_ord = ORDINALS.get(period, "")
@@ -1082,8 +1110,8 @@ class NewAPI(HockeyAPI):
         return Game(
             game_id=game_id,
             game_state=game_state,
-            home_team=home_team,
-            away_team=away_team,
+            home=home,
+            away=away,
             period=period,
             home_shots=data["homeTeam"].get("sog", 0),
             away_shots=data["awayTeam"].get("sog", 0),

@@ -85,8 +85,8 @@ class Team:
         return self.name
 
     @property
-    def colour(self) -> int:
-        return int(self.home_colour.replace("#", ""), 16)
+    def colour(self) -> discord.Colour:
+        return discord.Colour.from_str(self.home_colour)
 
     @classmethod
     def from_json(cls, data: dict, team_name: str) -> Team:
@@ -102,6 +102,31 @@ class Team:
             division=data.get("division", _("unknown")),
             conference=data.get("conference", _("unknown")),
             tri_code=data.get("tri_code", ""),
+            nickname=data.get("nickname", []),
+            team_url=data.get("team_url", ""),
+            timezone=data.get("timezone", "US/Pacific"),
+            active=data.get("active", False),
+            invite=data.get("invite"),
+        )
+
+    @classmethod
+    def from_nhle(cls, data: dict, home: bool = False) -> Team:
+        name = data.get("name", {}).get("default")
+        team_id = data.get("id", -1)
+        tri_code = data.get("abbrev", "")
+        logo = data.get("logo", "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png")
+        home_emoji = discord.PartialEmoji.from_str("\N{HOUSE BUILDING}\N{VARIATION SELECTOR-16}")
+        away_emoji = discord.PartialEmoji.from_str("\N{AIRPLANE}\N{VARIATION SELECTOR-16}")
+        return cls(
+            id=team_id,
+            name=name,
+            emoji=home_emoji if home else away_emoji,
+            logo=logo,
+            home_colour=data.get("home", "#000000"),
+            away_colour=data.get("away", "#ffffff"),
+            division=data.get("division", _("unknown")),
+            conference=data.get("conference", _("unknown")),
+            tri_code=tri_code,
             nickname=data.get("nickname", []),
             team_url=data.get("team_url", ""),
             timezone=data.get("timezone", "US/Pacific"),

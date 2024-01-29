@@ -15,11 +15,11 @@ from redbot.core.utils.chat_formatting import pagify
 
 from .constants import TEAMS
 from .goal import Goal
-from .helper import check_to_post, get_channel_obj, get_team, get_team_role
-from .standings import LeagueRecord, Playoffs
+from .helper import Team, check_to_post, get_channel_obj, get_team, get_team_role
+from .standings import Playoffs
 
 if TYPE_CHECKING:
-    from .api import GameData, Player
+    from .api import Player
 
 _ = Translator("Hockey", __file__)
 
@@ -149,105 +149,6 @@ class GameStatus:
         )
 
 
-@dataclass
-class Team:
-    id: int
-    name: str
-    link: str
-
-
-@dataclass
-class GameTeam:
-    leagueRecord: LeagueRecord
-    score: int
-    team: Team
-
-    @classmethod
-    def sim(cls):
-        return cls(
-            leagueRecord=LeagueRecord(wins=0, losses=0, ot=0, type="league"),
-            score=0,
-            team=Team(id=22, name="Edmonton Oilers", link="/api/v1/teams/22"),
-        )
-
-    @classmethod
-    def from_json(cls, data: dict) -> GameTeam:
-        return cls(
-            leagueRecord=LeagueRecord(**data["leagueRecord"]),
-            score=int(data["score"]),
-            team=Team(**data["team"]),
-        )
-
-
-@dataclass
-class GameTeams:
-    away: GameTeam
-    home: GameTeam
-
-    @classmethod
-    def sim(cls):
-        return cls(
-            away=GameTeam.sim(),
-            home=GameTeam.sim(),
-        )
-
-    @classmethod
-    def from_json(cls, data: dict) -> GameTeams:
-        return cls(away=GameTeam.from_json(data["away"]), home=GameTeam.from_json(data["home"]))
-
-
-@dataclass
-class Venue:
-    id: Optional[int]
-    name: str
-    link: str
-
-    @classmethod
-    def sim(cls):
-        return cls(id=999999, name="Trusty's Bagel Barn", link="/api/v1/venues/99999999")
-
-
-@dataclass
-class ScheduleGame:
-    gamePk: int
-    link: str
-    gameType: str
-    gameDate: datetime
-    status: GameStatus
-    teams: GameTeams
-    venue: Venue
-    content: Dict[str, str]
-
-    @classmethod
-    def sim(cls):
-        return cls(
-            gamePk=2020020474,
-            link="/v1/game/2020020474/feed/live",
-            gameType="R",
-            gameDate=datetime.now(timezone.utc),
-            status=GameStatus.sim(),
-            teams=GameTeams.sim(),
-            venue=Venue.sim(),
-            content={"links": "/v1/game/2020020474/content"},
-        )
-
-    @classmethod
-    def from_json(cls, data: dict) -> ScheduleGame:
-        game_start_str = data.get("gameDate", "")
-        game_start = datetime.strptime(game_start_str, "%Y-%m-%dT%H:%M:%SZ")
-        game_start = game_start.replace(tzinfo=timezone.utc)
-        return cls(
-            gamePk=data["gamePk"],
-            link=data["link"],
-            gameType=data["gameType"],
-            gameDate=game_start,
-            status=GameStatus(**data["status"]),
-            teams=GameTeams.from_json(data["teams"]),
-            venue=Venue(id=data["venue"].pop("id", None), **data["venue"]),
-            content=data["content"],
-        )
-
-
 class Game:
     """
     This is the object that handles game information
@@ -256,8 +157,6 @@ class Game:
 
     game_id: int
     game_state: GameState
-    home_team: str
-    away_team: str
     period: int
     home_shots: int
     away_shots: int
@@ -282,12 +181,12 @@ class Game:
         super().__init__()
         self.game_id = kwargs.get("game_id")
         self.game_state = kwargs.get("game_state")
-        self.home_team = kwargs.get("home_team")
-        self.away_team = kwargs.get("away_team")
         self.home_shots = kwargs.get("home_shots")
         self.away_shots = kwargs.get("away_shots")
         self.home_score = kwargs.get("home_score")
         self.away_score = kwargs.get("away_score")
+        self.home: Team = kwargs.get("home")
+        self.away: Team = kwargs.get("away")
         self.goals = kwargs.get("goals")
         self.home_abr = kwargs.get("home_abr")
         self.away_abr = kwargs.get("away_abr")
@@ -299,28 +198,6 @@ class Game:
         self.game_start_str = kwargs.get("game_start", "")
         game_start = datetime.strptime(self.game_start_str, "%Y-%m-%dT%H:%M:%SZ")
         self.game_start = game_start.replace(tzinfo=timezone.utc)
-        home_team = kwargs.get("home_team")
-        away_team = kwargs.get("away_team")
-        self.home_logo = (
-            TEAMS[home_team]["logo"]
-            if home_team in TEAMS
-            else "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
-        )
-        self.away_logo = (
-            TEAMS[away_team]["logo"]
-            if away_team in TEAMS
-            else "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
-        )
-        self.home_emoji = (
-            "<:{}>".format(TEAMS[home_team]["emoji"])
-            if home_team in TEAMS
-            else "\N{HOUSE BUILDING}\N{VARIATION SELECTOR-16}"
-        )
-        self.away_emoji = (
-            "<:{}>".format(TEAMS[away_team]["emoji"])
-            if away_team in TEAMS
-            else "\N{AIRPLANE}\N{VARIATION SELECTOR-16}"
-        )
         self.first_star = kwargs.get("first_star")
         self.second_star = kwargs.get("second_star")
         self.third_star = kwargs.get("third_star")
@@ -337,6 +214,37 @@ class Game:
         return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
             self
         )
+
+    @property
+    def home_team(self) -> str:
+        return self.home.name
+
+    @property
+    def away_team(self) -> str:
+        return self.away.name
+
+    @property
+    def home_logo(self) -> str:
+        return self.home.logo
+
+    @property
+    def away_logo(self) -> str:
+        return self.away.logo
+
+    @property
+    def home_emoji(self) -> Union[discord.PartialEmoji, str]:
+        if str(self.home.emoji) == "_":
+            # d.py coerces empty strings to _ for client renderability.
+            # I don't entirely understand why but it breaks equality when expecting
+            # nothing as the emoji name making this a bit more convoluted than necessary.
+            return discord.PartialEmoji.from_str("\N{HOUSE BUILDING}\N{VARIATION SELECTOR-16}")
+        return self.home.emoji
+
+    @property
+    def away_emoji(self) -> Union[discord.PartialEmoji, str]:
+        if str(self.home.emoji) == "_":
+            return discord.PartialEmoji.from_str("\N{AIRPLANE}\N{VARIATION SELECTOR-16}")
+        return self.away.emoji
 
     @property
     def home_goals(self) -> List[Goal]:
@@ -400,11 +308,9 @@ class Game:
     def heatmap_url(self, style: Literal["all", "ev", "5v5", "sva", "home5v4", "away5v4"] = "all"):
         base_url = "https://www.naturalstattrick.com/heatmaps/games/"
         if style == "home5v4":
-            home = TEAMS[self.home_team]["tri_code"]
-            return f"{base_url}{self.season}/{self.season}-{str(self.game_id)[5:]}-{home}-5v4.png"
+            return f"{base_url}{self.season}/{self.season}-{str(self.game_id)[5:]}-{self.home.tri_code}-5v4.png"
         elif style == "away5v4":
-            away = TEAMS[self.away_team]["tri_code"]
-            return f"{base_url}{self.season}/{self.season}-{str(self.game_id)[5:]}-{away}-5v4.png"
+            return f"{base_url}{self.season}/{self.season}-{str(self.game_id)[5:]}-{self.away.tri_code}-5v4.png"
         else:
             return f"{base_url}{self.season}/{self.season}-{str(self.game_id)[5:]}-{style}.png"
 
@@ -427,18 +333,12 @@ class Game:
         Builds the game embed when the command is called
         provides as much data as possible
         """
-        team_url = (
-            TEAMS[self.home_team]["team_url"] if self.home_team in TEAMS else "https://nhl.com"
-        )
+        team_url = self.home.team_url
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
         title = "{away} @ {home} {state}".format(
             away=self.away_team, home=self.home_team, state=str(self.game_state)
         )
-        colour = (
-            int(TEAMS[self.home_team]["home"].replace("#", ""), 16)
-            if self.home_team in TEAMS
-            else None
-        )
+        colour = self.home.colour
 
         em = discord.Embed(timestamp=self.game_start)
         if colour is not None:
@@ -506,10 +406,7 @@ class Game:
                         period_start_str = f"(<t:{period_start_ts}:t>)"
 
                     for goal in list_goals[ordinal]:
-                        try:
-                            emoji = discord.PartialEmoji.from_str(TEAMS[goal.team_name]["emoji"])
-                        except KeyError:
-                            emoji = ""
+                        emoji = goal.emoji
                         left = ""
                         if goal.time_remaining:
                             left = _("\n{time} left in the {ord} period").format(
@@ -607,16 +504,10 @@ class Game:
                 em.description = desc
         em.add_field(name=home_field, value=home_str, inline=False)
         em.add_field(name=away_field, value=away_str, inline=True)
-        colour = (
-            int(TEAMS[self.home_team]["home"].replace("#", ""), 16)
-            if self.home_team in TEAMS
-            else None
-        )
+        colour = self.home.colour
         if colour is not None:
             em.colour = colour
-        home_url = (
-            TEAMS[self.home_team]["team_url"] if self.home_team in TEAMS else "https://nhl.com"
-        )
+        home_url = self.home.team_url
         if self.first_star is not None:
             stars = f"⭐ {self.first_star}\n⭐⭐ {self.second_star}\n⭐⭐⭐ {self.third_star}"
             em.add_field(name=_("Stars of the game"), value=stars)
@@ -1138,6 +1029,10 @@ class Game:
             log.exception("Could not post goal in %s", repr(channel))
 
     @classmethod
-    def from_data(cls, data: GameData):
+    def from_data(cls, data: dict):
         goals = [Goal.from_data(**i) for i in data.pop("goals", [])]
-        return cls(**data, goals=goals)
+        home_team = data.pop("home_team", "unknown team")
+        away_team = data.pop("away_team", "unknown team")
+        home = Team.from_json(TEAMS.get(home_team, {}), home_team)
+        away = Team.from_json(TEAMS.get(away_team, {}), away_team)
+        return cls(**data, home=home, away=away, goals=goals)

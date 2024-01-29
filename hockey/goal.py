@@ -10,11 +10,10 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 
-from .constants import HEADSHOT_URL, TEAMS
-from .helper import check_to_post, get_channel_obj, get_team
+from .helper import Team, check_to_post, get_channel_obj, get_team
 
 if TYPE_CHECKING:
-    from .api import GoalData
+    from .api import GoalData, Player
     from .game import Game
 
 
@@ -25,7 +24,6 @@ log = getLogger("red.trusty-cogs.Hockey")
 
 class Goal:
     goal_id: str
-    team_name: str
     scorer_id: int
     jersey_no: str
     description: str
@@ -44,9 +42,8 @@ class Goal:
     def __init__(self, **kwargs):
         super().__init__()
         self.goal_id = kwargs.get("goal_id")
-        self.team_name = kwargs.get("team_name")
+        self.team: Team = kwargs.get("team")
         self.scorer_id = kwargs.get("scorer_id")
-        self.headshot = HEADSHOT_URL.format(kwargs.get("scorer_id", ""))
         self.jersey_no = kwargs.get("jersey_no")
         self.description = kwargs.get("description")
         self.period = kwargs.get("period")
@@ -67,9 +64,19 @@ class Goal:
         self.home_shots: int = kwargs.get("home_shots", 0)
         self.away_shots: int = kwargs.get("away_shots", 0)
         self.situation = kwargs.get("situation")
+        self.scorer: Player = kwargs.get("scorer")
+        self.assisters: List[Player] = kwargs.get("assisters")
 
     def __repr__(self):
         return "<Hockey Goal team={0.team_name} id={0.goal_id} >".format(self)
+
+    @property
+    def team_name(self):
+        return self.team.name
+
+    @property
+    def emoji(self) -> Union[discord.PartialEmoji, str]:
+        return self.team.emoji
 
     def to_json(self) -> dict:
         return {
@@ -298,8 +305,8 @@ class Goal:
                         webhook = hook
                 if webhook is None:
                     webhook = await channel.create_webhook(name=guild.me.name)
-                url = TEAMS[self.team_name]["logo"]
-                await webhook.send(username=self.team_name, avatar_url=url, embed=goal_embed)
+                logo = self.team.logo
+                await webhook.send(username=self.team_name, avatar_url=logo, embed=goal_embed)
                 return None
 
             if not can_embed and not can_manage_webhooks:
@@ -510,15 +517,11 @@ class Goal:
         shootout = False
         if self.period_ord == "SO":
             shootout = True
-        colour = (
-            int(TEAMS[self.team_name]["home"].replace("#", ""), 16)
-            if self.team_name in TEAMS
-            else 0
-        )
+        colour = self.team.colour
         empty_net = _("Empty Net ") if self.empty_net else ""
         title = f"🚨 {self.team_name} #{self.jersey_no} {empty_net}{self.strength} {self.event} 🚨"
-        url = TEAMS[self.team_name]["team_url"] if self.team_name in TEAMS else "https://nhl.com"
-        logo = TEAMS[self.team_name]["logo"] if self.team_name in TEAMS else "https://nhl.com"
+        url = self.team.team_url
+        logo = self.team.logo
         if not shootout:
             em = discord.Embed(description=f"{self.description}")
             if self.link:
