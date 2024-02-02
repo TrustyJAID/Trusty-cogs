@@ -334,8 +334,19 @@ class Event:
         home_score = self.details.get("homeScore", 0)
         away_score = self.details.get("awayScore", 0)
         team_id = self.details.get("eventOwnerTeamId")
-        team_name = TEAM_IDS.get(team_id, _("Unknown Team"))
-        team = Team.from_json(TEAMS.get(team_name, {}), team_name)
+        home_team = data.get("homeTeam", {})
+        away_team = data.get("awayTeam", {})
+        if team_id == home_team.get("id", -1):
+            team_name = home_team.get("name", {}).get("default", _("Unknown Team"))
+            team = Team.from_nhle(home_team)
+        elif team_id == away_team.get("id", -1):
+            team_name = away_team.get("name", {}).get("default", _("Unknown Team"))
+            team = Team.from_nhle(away_team, home=False)
+
+        if team_id in TEAM_IDS:
+            team_name = TEAM_IDS.get(team_id, _("Unknown Team"))
+            team = Team.from_json(TEAMS.get(team_name, {}), team_name)
+
         period_ord = self.period_descriptor.get("periodType", "REG")
         if period_ord == "REG":
             period_ord = ORDINALS.get(self.period)
