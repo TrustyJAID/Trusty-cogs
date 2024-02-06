@@ -41,10 +41,10 @@ class NewsArticle:
 @dataclass
 class NewsArticles:
     CurrentPaginationToken: int
-    NextPaginationToken: int
     ResultCountThisPage: int
     NewsArticles: List[NewsArticle]
     PagerAction: str
+    NextPaginationToken: Optional[int] = None
     CategoryFilter: Optional[str] = None
 
     @classmethod

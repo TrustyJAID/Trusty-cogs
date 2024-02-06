@@ -170,6 +170,9 @@ class Destiny(DestinyAPI, commands.Cog):
         except Destiny2APIError as e:
             log.error("Error checking Destiny news sources: %s", e)
             return
+        except Exception:
+            log.exception("Error Checking Destiny news sources")
+            return
         if len(news.NewsArticles) < 1:
             return
         source = BungieNewsSource(news)
