@@ -236,13 +236,14 @@ class HockeySetCommands(HockeyMixin):
         else:
             self.bot.tree.remove_command("hockey")
 
-    async def check_notification_settings(self, guild: discord.Guild) -> str:
+    async def check_notification_settings(self, guild: discord.Guild, goal: bool = False) -> str:
         reply = ""
         mentionable_roles = []
         non_mention_roles = []
         no_role = []
         for team in TEAMS:
-            role = discord.utils.get(guild.roles, name=team)
+            team_name = team if not goal else f"{team} GOAL"
+            role = discord.utils.get(guild.roles, name=team_name)
             if not role:
                 no_role.append(team)
                 continue
@@ -294,7 +295,7 @@ class HockeySetCommands(HockeyMixin):
             cur_setting = await self.config.guild(ctx.guild).goal_notifications()
             verb = _("On") if cur_setting else _("Off")
             reply = _("__Game State Notifications:__ **{verb}**\n\n").format(verb=verb)
-            reply += await self.check_notification_settings(ctx.guild)
+            reply += await self.check_notification_settings(ctx.guild, goal=True)
             reply += _(
                 "No settings have been changed, run this command again "
                 "followed by `on` or `off` to enable/disable this setting."
@@ -304,7 +305,7 @@ class HockeySetCommands(HockeyMixin):
         if on_off:
             await self.config.guild(ctx.guild).goal_notifications.set(on_off)
             reply = _("__Goal Notifications:__ **On**\n\n")
-            reply += await self.check_notification_settings(ctx.guild)
+            reply += await self.check_notification_settings(ctx.guild, goal=True)
             if reply:
                 await ctx.maybe_send_embed(reply)
         else:
