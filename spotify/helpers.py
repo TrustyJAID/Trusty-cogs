@@ -479,10 +479,10 @@ class SpotifyURIConverter(Converter):
     Ensures that the argument is a valid spotify URL or URI
     """
 
-    async def convert(self, ctx: commands.Context, argument: str) -> re.Match:
+    async def convert(self, ctx: commands.Context, argument: str) -> List[re.Match]:
         match = SPOTIFY_RE.finditer(argument)
         if not match:
             raise BadArgument(
                 _("{argument} is not a valid Spotify URL or URI.").format(argument=argument)
             )
-        return match
+        return list(match)

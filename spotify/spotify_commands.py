@@ -640,6 +640,12 @@ class SpotifyCommands(SpotifyMixin):
         """
         Tell the bot to play the users current song in their current voice channel
         """
+        if not self.bot.get_cog("Audio"):
+            await ctx.send(
+                "Audio is not loaded so I cannot play your current Spotify track in a voice channel."
+            )
+            return
+
         async with ctx.typing():
             user_token = await self.get_user_auth(ctx)
             if not user_token:
@@ -654,9 +660,13 @@ class SpotifyCommands(SpotifyMixin):
                         return await ctx.send(_("I cannot play podcasts from spotify."))
                     elif cur.is_playing and not getattr(cur.item, "is_local", False):
                         msg = copy(ctx.message)
-                        msg.content = ctx.prefix + f"play {cur.item.uri}"
+                        prefixes = await self.bot.get_valid_prefixes(ctx.guild)
+                        msg.content = f"{prefixes[0]}play {cur.item.uri}"
                         self.bot.dispatch("message", msg)
-                        await ctx.tick()
+                        if not ctx.interaction:
+                            await ctx.tick()
+                        else:
+                            await ctx.send(_("Now playing your current track"))
                     else:
                         return await ctx.send(
                             _("You don't appear to be listening to something I can play in audio.")
@@ -2009,15 +2019,14 @@ class SpotifyCommands(SpotifyMixin):
                     tracks.append(new_uri)
             if not tracks:
                 msg = _("You did not provide any tracks for me to add to the playlist.")
-                if is_slash:
-                    await ctx.send(msg, ephemeral=True)
-                else:
-                    await ctx.send(msg)
+                await ctx.send(msg, ephemeral=True)
                 return
             try:
+                added = False
                 user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
                     cur = await user_spotify.followed_playlists(limit=50)
+                    full_tracks = await user_spotify.tracks([m.group(3) for m in to_add])
                     playlists = cur.items
                     while len(playlists) < cur.total:
                         new = await user_spotify.followed_playlists(
@@ -2028,9 +2037,21 @@ class SpotifyCommands(SpotifyMixin):
                     for playlist in playlists:
                         if name.lower() == playlist.name.lower():
                             await user_spotify.playlist_add(playlist.id, tracks)
-                            await ctx.tick()
-                            return
-                msg = _("I could not find a playlist matching {name}.").format(name=name)
+                            added = True
+                if not added:
+                    msg = _("I could not find a playlist matching {name}.").format(name=name)
+                else:
+                    track_names = ""
+                    for track in full_tracks:
+                        artists = humanize_list([a.name for a in track.artists])
+                        track_names += _("- [{track_name} by {artists}]({link})\n").format(
+                            track_name=track.name,
+                            artists=artists,
+                            link=track.external_urls.get("spotify"),
+                        )
+                    msg = _("I have added the following tracks to {playlist}:\n{tracks}").format(
+                        playlist=name, tracks=track_names
+                    )
                 await ctx.send(msg)
             except tekore.Unauthorised:
                 await self.not_authorized(ctx)
@@ -2071,9 +2092,11 @@ class SpotifyCommands(SpotifyMixin):
                 msg = _("You did not provide any tracks for me to add to the playlist.")
                 await ctx.send(msg)
             try:
+                added = False
                 user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
                     cur = await user_spotify.followed_playlists(limit=50)
+                    full_tracks = await user_spotify.tracks([m.group(3) for m in to_remove])
                     playlists = cur.items
                     while len(playlists) < cur.total:
                         new = await user_spotify.followed_playlists(
@@ -2084,9 +2107,22 @@ class SpotifyCommands(SpotifyMixin):
                     for playlist in playlists:
                         if name.lower() == playlist.name.lower():
                             await user_spotify.playlist_remove(playlist.id, tracks)
-                            await ctx.tick()
-                            return
-                msg = _("I could not find a playlist matching {name}.").format(name=name)
+                            added = True
+
+                if not added:
+                    msg = _("I could not find a playlist matching {name}.").format(name=name)
+                else:
+                    track_names = ""
+                    for track in full_tracks:
+                        artists = humanize_list([a.name for a in track.artists])
+                        track_names += _("- [{track_name} by {artists}]({link})\n").format(
+                            track_name=track.name,
+                            artists=artists,
+                            link=track.external_urls.get("spotify"),
+                        )
+                    msg = _(
+                        "I have removed the following tracks from {playlist}:\n{tracks}"
+                    ).format(playlist=name, tracks=track_names)
                 await ctx.send(msg)
             except tekore.Unauthorised:
                 await self.not_authorized(ctx)
@@ -2129,7 +2165,10 @@ class SpotifyCommands(SpotifyMixin):
                 with user_spotify.token_as(user_token):
                     for playlist in tracks:
                         await user_spotify.playlist_follow(playlist, public)
-                    await ctx.tick()
+                    if not ctx.interaction:
+                        await ctx.tick()
+                    else:
+                        await ctx.send(_("You are now following those playlists."))
             except tekore.Unauthorised:
                 await self.not_authorized(ctx)
             except tekore.NotFound:
