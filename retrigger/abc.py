@@ -52,6 +52,12 @@ class ReTriggerMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def save_attachment_location(
+        self, attachment: discord.Attachment, guild: discord.Guild
+    ) -> Optional[str]:
+        raise NotImplementedError()
+
+    @abstractmethod
     async def save_image_location(self, image_url: str, guild: discord.Guild) -> Optional[str]:
         raise NotImplementedError()
 

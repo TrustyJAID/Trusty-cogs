@@ -49,7 +49,7 @@ _ = Translator("ReTrigger", __file__)
 RE_CTX: re.Pattern = re.compile(r"{([^}]+)\}")
 RE_POS: re.Pattern = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")
 LINK_REGEX: re.Pattern = re.compile(
-    r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|mp3|mp4|webp))", flags=re.I
+    r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|mp3|mp4|webp)).*", flags=re.I
 )
 IMAGE_REGEX: re.Pattern = re.compile(
     r"(?:(?:https?):\/\/)?[\w\/\-?=%.]+\.(?:png|jpg|jpeg|webp)+", flags=re.I
@@ -108,6 +108,17 @@ class TriggerHandler(ReTriggerMixin):
             log.info("Creating guild folder")
             directory.mkdir(exist_ok=True, parents=True)
 
+    async def save_attachment_location(
+        self, attachment: discord.Attachment, guild: discord.Guild
+    ) -> Optional[str]:
+        seed = "".join(random.sample(string.ascii_uppercase + string.digits, k=5))
+        filename = "{}-{}".format(seed, attachment.filename)
+        directory = cog_data_path(self).joinpath(str(guild.id))
+        file_path = cog_data_path(self).joinpath(str(guild.id), str(filename))
+        await self.make_guild_folder(directory)
+        await attachment.save(file_path)
+        return filename
+
     async def save_image_location(self, image_url: str, guild: discord.Guild) -> Optional[str]:
         good_image_url = LINK_REGEX.search(image_url)
         if not good_image_url:
@@ -115,11 +126,11 @@ class TriggerHandler(ReTriggerMixin):
         seed = "".join(random.sample(string.ascii_uppercase + string.digits, k=5))
         filename = good_image_url.group(1).split("/")[-1]
         filename = "{}-{}".format(seed, filename)
-        directory = cog_data_path(self) / str(guild.id)
-        file_path = str(cog_data_path(self)) + f"/{guild.id}/{filename}"
+        directory = cog_data_path(self).joinpath(str(guild.id))
+        file_path = cog_data_path(self).joinpath(str(guild.id), str(filename))
         await self.make_guild_folder(directory)
         async with aiohttp.ClientSession() as session:
-            async with session.get(good_image_url.group(1)) as resp:
+            async with session.get(good_image_url.group(0)) as resp:
                 test = await resp.read()
                 with open(file_path, "wb") as f:
                     f.write(test)
