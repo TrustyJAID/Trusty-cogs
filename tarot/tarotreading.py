@@ -9,6 +9,7 @@ from typing import Optional
 import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
+from redbot.core.utils.views import SimpleMenu
 
 from .tarot_cards import card_list as tarot_cards
 
@@ -41,8 +42,22 @@ class TarotCard:
                 raise commands.BadArgument(f"`{argument}` is not an available Tarot card.")
         return None
 
+    def get_colour(self) -> int:
+        colour = "".join([choice("0123456789ABCDEF") for x in range(6)])
+        return int(colour, 16)
 
-TAROT_CARDS = {num: TarotCard(id=num, **data) for num, data in tarot_cards.items()}
+    def embed(self):
+        embed = discord.Embed(
+            title=self.card_name,
+            description=self.card_meaning,
+            colour=discord.Colour(value=self.get_colour()),
+            url=self.card_url,
+        )
+        embed.set_image(url=self.card_img)
+        return embed
+
+
+TAROT_CARDS = {num: TarotCard(id=int(num), **data) for num, data in tarot_cards.items()}
 
 
 class TarotReading(commands.Cog):
@@ -51,7 +66,7 @@ class TarotReading(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.1"
+    __version__ = "1.2.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -99,6 +114,7 @@ class TarotReading(commands.Cog):
         embed = discord.Embed(
             title="Tarot reading for {}".format(user.display_name),
             colour=discord.Colour(value=self.get_colour()),
+            url=TAROT_CARDS[str(cards[-1])].card_url,
         )
         embed.set_thumbnail(url=TAROT_CARDS[str(cards[-1])].card_img)
         embed.timestamp = ctx.message.created_at
@@ -110,7 +126,13 @@ class TarotReading(commands.Cog):
                 value=TAROT_CARDS[str(card)].card_meaning,
             )
             number += 1
-        await ctx.send(embed=embed)
+        embeds = []
+        for card_number in cards:
+            card = TAROT_CARDS[str(card_number)]
+            em = embed.copy()
+            em.set_image(url=card.card_img)
+            embeds.append(em)
+        await ctx.send(embeds=embeds)
 
     @tarot.command(name="reading")
     async def _reading(self, ctx: commands.Context, user: Optional[discord.Member] = None) -> None:
@@ -130,6 +152,7 @@ class TarotReading(commands.Cog):
         embed = discord.Embed(
             title="Tarot reading for {}".format(user.display_name),
             colour=discord.Colour(value=self.get_colour()),
+            url=TAROT_CARDS[str(cards[-1])].card_url,
         )
         embed.set_thumbnail(url=TAROT_CARDS[str(cards[-1])].card_img)
         embed.timestamp = ctx.message.created_at
@@ -141,7 +164,13 @@ class TarotReading(commands.Cog):
                 value=TAROT_CARDS[str(card)].card_meaning,
             )
             number += 1
-        await ctx.send(embed=embed)
+        embeds = []
+        for card_number in cards:
+            card = TAROT_CARDS[str(card_number)]
+            em = embed.copy()
+            em.set_image(url=card.card_img)
+            embeds.append(em)
+        await ctx.send(embeds=embeds)
 
     @tarot.command(name="card")
     async def _card(self, ctx: commands.Context, *, tarot_card: Optional[TarotCard]) -> None:
@@ -161,16 +190,19 @@ class TarotReading(commands.Cog):
         else:
             card = tarot_card
 
-        embed = discord.Embed(
-            title=card.card_name,
-            description=card.card_meaning,
-            colour=discord.Colour(value=self.get_colour()),
-            url=card.card_url,
-        )
-        embed.timestamp = ctx.message.created_at
-        embed.set_author(name=user.name, icon_url=user.display_avatar)
-        embed.set_image(url=card.card_img)
-        await ctx.send(embed=embed)
+        cards = []
+        for c in TAROT_CARDS.values():
+            embed = c.embed()
+            embed.timestamp = ctx.message.created_at
+            embed.set_author(name=user.name, icon_url=user.display_avatar)
+            cards.append(embed)
+        menu = SimpleMenu(cards, page_start=card.id, use_select_menu=True)
+        options = [
+            discord.SelectOption(label=c.card_name, description=c.id, value=str(c.id - 1))
+            for c in TAROT_CARDS.values()
+        ]
+        menu.select_options = options
+        await menu.start(ctx)
 
     @_card.autocomplete("tarot_card")
     async def tarot_autocomplete(self, interaction: discord.Interaction, current: str):
