@@ -1,4 +1,5 @@
-from typing import Union
+from collections import deque
+from typing import Dict, Union
 
 import discord
 from red_commons.logging import getLogger
@@ -62,7 +63,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.12.3"
+    __version__ = "2.12.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -73,6 +74,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         self._ban_cache = {}
         self.invite_links_loop.start()
         self.allowed_mentions = discord.AllowedMentions(users=False, roles=False, everyone=False)
+        self.audit_log: Dict[int, deque[discord.AuditLogEntry]] = {}
 
     def format_help_for_context(self, ctx: commands.Context):
         """
