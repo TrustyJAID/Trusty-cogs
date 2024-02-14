@@ -800,9 +800,9 @@ class EventMixin:
         # set guild level i18n
         time = datetime.datetime.now(datetime.timezone.utc)
         entry = await self.get_audit_log_entry(guild, member, discord.AuditLogAction.kick)
-        if entry is not None:
-            perp = entry.user
-            reason = entry.reason
+
+        perp = getattr(entry, "user", None)
+        reason = getattr(entry, "reason", None)
         if embed_links:
             embed = discord.Embed(
                 description=member,
@@ -2333,9 +2333,8 @@ class EventMixin:
             entry = await self.get_audit_log_entry(
                 guild, before, discord.AuditLogAction.channel_update
             )
-            if entry is not None:
-                perp = entry.user
-                reason = entry.reason
+        perp = getattr(entry, "user", None)
+        reason = getattr(entry, "reason", None)
 
         if perp:
             msg += _("Updated by ") + str(perp) + "\n"
