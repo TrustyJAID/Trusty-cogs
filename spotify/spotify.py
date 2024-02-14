@@ -413,11 +413,15 @@ class Spotify(
 
         user_spotify = tekore.Spotify(sender=self._sender)
         if not any(tracks + albums + playlists):
-            with user_spotify.token_as(user_token):
-                search = await user_spotify.search(
-                    message.content, ("track",), "from_token", limit=50
-                )
-                items = search[0].items
+            try:
+                with user_spotify.token_as(user_token):
+                    search = await user_spotify.search(
+                        message.content, ("track",), "from_token", limit=50
+                    )
+                    items = search[0].items
+            except Exception:
+                await ctx.send(_("No tracks found from that search."))
+                return
             if len(items) > 1:
                 x = SpotifySearchMenu(
                     source=SpotifyTrackPages(items=items, detailed=False),
