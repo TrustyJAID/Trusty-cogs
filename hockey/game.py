@@ -626,25 +626,25 @@ class Game:
             # game_time = datetime.strptime(data.game_start, "%Y-%m-%dT%H:%M:%SZ")
             game_start = (self.game_start - time_now).total_seconds() / 60
             if old_game_state.value < GameState.preview.value:
-                await self.post_game_state(bot)
+                asyncio.create_task(self.post_game_state(bot))
                 await self.save_game_state(bot)
                 bot.dispatch("hockey_preview", self)
             if game_start < 60 and game_start > 30 and old_game_state is not GameState.preview_60:
                 # Post 60 minutes until game start
-                await self.post_time_to_game_start(bot, "60")
+                asyncio.create_task(self.post_time_to_game_start(bot, "60"))
                 self.game_state = GameState.preview_60
                 await self.save_game_state(bot, "60")
                 bot.dispatch("hockey_preview", self)
             if game_start < 30 and game_start > 10 and old_game_state is not GameState.preview_30:
                 # Post 30 minutes until game start
                 self.game_state = GameState.preview_30
-                await self.post_time_to_game_start(bot, "30")
+                asyncio.create_task(self.post_time_to_game_start(bot, "30"))
                 await self.save_game_state(bot, "30")
                 bot.dispatch("hockey_preview", self)
             if game_start < 10 and game_start > 0 and old_game_state is not GameState.preview_10:
                 # Post 10 minutes until game start
                 self.game_state = GameState.preview_10
-                await self.post_time_to_game_start(bot, "10")
+                asyncio.create_task(self.post_time_to_game_start(bot, "10"))
                 await self.save_game_state(bot, "10")
                 bot.dispatch("hockey_preview", self)
 
@@ -660,7 +660,7 @@ class Game:
                     self.away_team,
                     self.home_team,
                 )
-                await self.post_game_state(bot)
+                asyncio.create_task(self.post_game_state(bot))
                 await self.save_game_state(bot)
                 bot.dispatch("hockey_period_start", self)
 
@@ -669,15 +669,15 @@ class Game:
                 await self.check_team_goals(bot)
             if end_first and old_game_state is not GameState.live_end_first:
                 log.debug("End of the first period %s @ %s", self.away_team, self.home_team)
-                await self.period_recap(bot, "1st")
+                asyncio.create_task(self.period_recap(bot, "1st"))
                 await self.save_game_state(bot, "END1st")
             if end_second and old_game_state is not GameState.live_end_second:
                 log.debug("End of the second period %s @ %s", self.away_team, self.home_team)
-                await self.period_recap(bot, "2nd")
+                asyncio.create_task(self.period_recap(bot, "2nd"))
                 await self.save_game_state(bot, "END2nd")
             if end_third and old_game_state is not GameState.live_end_third:
                 log.debug("End of the third period %s @ %s", self.away_team, self.home_team)
-                await self.period_recap(bot, "3rd")
+                asyncio.create_task(self.period_recap(bot, "3rd"))
                 await self.save_game_state(bot, "END3rd")
 
         if self.game_state.value > GameState.over.value:
@@ -703,7 +703,7 @@ class Game:
                 if old_game_state is not self.game_state:
                     # Post game final data and check for next game
                     log.debug("Game Final %s @ %s", self.away_team, self.home_team)
-                    await self.post_game_state(bot)
+                    asyncio.create_task(self.post_game_state(bot))
                     await self.save_game_state(bot)
                     bot.dispatch("hockey_final", self)
                     log.debug("Saving final")
@@ -729,7 +729,9 @@ class Game:
             should_post &= "Periodrecap" in await config.channel(channel).game_states()
             publish = "Periodrecap" in await config.channel(channel).publish_states()
             if should_post:
-                asyncio.create_task(self.post_period_recap(channel, em, publish))
+                tasks.append((channel, publish))
+        async for c, to_pub in AsyncIter(tasks, steps=5, delay=5):
+            await self.post_period_recap(c, em, to_pub)
 
     async def post_period_recap(
         self, channel: discord.TextChannel, embed: discord.Embed, publish: bool
@@ -782,9 +784,9 @@ class Game:
                 continue
             should_post = await check_to_post(bot, channel, data, post_state, self.game_state)
             if should_post:
-                asyncio.create_task(
-                    self.actually_post_state(bot, channel, state_embed, state_text)
-                )
+                tasks.append(channel)
+        async for channel in AsyncIter(tasks, steps=5, delay=5):
+            await self.actually_post_state(bot, channel, state_embed, state_text)
         # previews = await bounded_gather(*tasks)
 
     async def actually_post_state(
@@ -1016,7 +1018,9 @@ class Game:
             should_post = await check_to_post(bot, channel, data, post_state, self.game_state)
             team_to_post = await bot.get_cog("Hockey").config.channel(channel).team()
             if should_post and "all" not in team_to_post:
-                asyncio.create_task(self.post_game_start(channel, msg))
+                tasks.append(channel)
+        async for channel in AsyncIter(tasks, delay=5, steps=5):
+            await self.post_game_start(channel, msg)
         # await bounded_gather(*tasks)
 
     async def post_game_start(self, channel: discord.TextChannel, msg: str) -> None:

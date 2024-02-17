@@ -168,7 +168,8 @@ class HockeySetCommands(HockeyMixin):
         existing_events = {}
         for event in ctx.guild.scheduled_events:
             event_id = re.search(r"\n(\d{6,})", event.description)
-            existing_events[event_id.group(1)] = event
+            if event_id is not None:
+                existing_events[event_id.group(1)] = event
         async with ctx.typing():
             for game in games:
                 start = game.game_start
@@ -294,7 +295,7 @@ class HockeySetCommands(HockeyMixin):
         if on_off is None:
             cur_setting = await self.config.guild(ctx.guild).goal_notifications()
             verb = _("On") if cur_setting else _("Off")
-            reply = _("__Game State Notifications:__ **{verb}**\n\n").format(verb=verb)
+            reply = _("__Goal Notifications:__ **{verb}**\n\n").format(verb=verb)
             reply += await self.check_notification_settings(ctx.guild, goal=True)
             reply += _(
                 "No settings have been changed, run this command again "

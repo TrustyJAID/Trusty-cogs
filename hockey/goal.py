@@ -231,9 +231,9 @@ class Goal:
                 bot, channel, data, post_state, game_data.game_state, True
             )
             if should_post:
-                post_data.append(
-                    await self.actually_post_goal(bot, channel, goal_embed, goal_text)
-                )
+                tasks.append(channel)
+        async for channel in AsyncIter(tasks, delay=5, steps=5):
+            post_data.append(await self.actually_post_goal(bot, channel, goal_embed, goal_text))
         # data = await bounded_gather(*tasks)
         for channel in post_data:
             if channel is None:
@@ -398,9 +398,10 @@ class Goal:
         # scorer = self.headshots.format(goal["players"][0]["player"]["id"])
         # post_state = ["all", game_data.home_team, game_data.away_team]
         em = await self.goal_post_embed(game_data)
+        text = await self.goal_post_text(game_data)
         if og_msg is None:
             return
-        async for guild_id, channel_id, message_id in AsyncIter(og_msg, steps=10):
+        async for guild_id, channel_id, message_id in AsyncIter(og_msg, delay=5, steps=5):
             guild = bot.get_guild(int(guild_id))
             if not guild:
                 continue
@@ -408,9 +409,9 @@ class Goal:
             if channel is None:
                 continue
             if channel.is_news():
-                asyncio.create_task(self.edit_goal(bot, channel, message_id, em))
+                asyncio.create_task(self.edit_goal(bot, channel, message_id, em, text))
             else:
-                await self.edit_goal(bot, channel, message_id, em)
+                await self.edit_goal(bot, channel, message_id, em, text)
             # This is to prevent endlessly waiting incase someone
             # decided to publish one of our messages we want to edit
             # if we did bounded_gather here the gather would wait until
@@ -426,10 +427,10 @@ class Goal:
         channel: Union[discord.TextChannel, discord.Thread],
         message_id: int,
         em: discord.Embed,
+        text: str,
     ) -> None:
         try:
-            if not channel.permissions_for(channel.guild.me).embed_links:
-                return
+
             if channel.guild.me.is_timed_out():
                 return
             try:
@@ -454,10 +455,16 @@ class Goal:
             if game_day_threads is not None:
                 if channel.id in game_day_threads:
                     role = None
-            if role is None or "missed" in self.event.lower():
-                await message.edit(embed=send_em)
+            if channel.permissions_for(channel.guild.me).embed_links:
+                if role is None or "missed" in self.event.lower():
+                    await message.edit(embed=send_em)
+                else:
+                    await message.edit(content=role.mention, embed=send_em)
             else:
-                await message.edit(content=role.mention, embed=send_em)
+                if role is None or "missed" in self.event.lower():
+                    await message.edit(content=text)
+                else:
+                    await message.edit(content=f"{role.mention}\n{text}")
         except (discord.errors.NotFound, discord.errors.Forbidden):
             log.exception("Apparently could not edit a message")
             return
@@ -573,8 +580,16 @@ class Goal:
         """
         Gets the text to send for goal posts
         """
+        empty_net = _("Empty Net ") if self.empty_net else ""
         if game.period_ord != "SO":
             text = (
+                f"🚨 {self.team_name} #{self.jersey_no} {empty_net}{self.strength} {self.event} 🚨\n"
+            )
+            if self.link:
+                text += f"[{self.description}]({self.link})\n"
+            else:
+                text += f"{self.description}\n"
+            text += (
                 f"{game.home_emoji} {game.home_team}: {game.home_score}\n"
                 f"{game.away_emoji} {game.away_team}: {game.away_score}\n "
             )
