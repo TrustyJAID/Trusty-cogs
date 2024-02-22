@@ -910,8 +910,8 @@ class Game:
             if str(goal.goal_id) not in team_data[goal.team_name]["goal_id"]:
                 # attempts to post the goal if there is a new goal
                 bot.dispatch("hockey_goal", self, goal)
-                goal.home_shots = self.home_shots
-                goal.away_shots = self.away_shots
+                # goal.home_shots = self.home_shots
+                # goal.away_shots = self.away_shots
                 msg_list = await goal.post_team_goal(bot, self)
                 team_list.remove(team_data[goal.team_name])
                 team_data[goal.team_name]["goal_id"][goal.goal_id] = {
@@ -925,8 +925,8 @@ class Game:
                 # attempts to edit the goal if the scorers have changed
                 old_goal = Goal(**team_data[goal.team_name]["goal_id"][str(goal.goal_id)]["goal"])
                 if goal.description != old_goal.description or goal.link != old_goal.link:
-                    goal.home_shots = old_goal.home_shots
-                    goal.away_shots = old_goal.away_shots
+                    # goal.home_shots = old_goal.home_shots
+                    # goal.away_shots = old_goal.away_shots
                     # This is to keep shots consistent between edits
                     # Shots should not update as the game continues
                     bot.dispatch("hockey_goal_edit", self, goal)

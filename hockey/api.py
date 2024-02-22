@@ -320,6 +320,26 @@ class Event:
             return VIDEO_URL.format(clip_id=clip_id)
         return None
 
+    def get_sog(self, data: dict) -> Tuple[int, int]:
+        home_sog = 0
+        away_sog = 0
+        home_id = data.get("homeTeam", {}).get("id", 0)
+        away_id = data.get("awayTeam", {}).get("id", 0)
+
+        for e in data["plays"]:
+            if e["typeCode"] not in [
+                GameEventTypeCode.GOAL.value,
+                GameEventTypeCode.SHOT_ON_GOAL.value,
+            ]:
+                continue
+            if e["eventId"] == self.id:
+                break
+            if e.get("details", {}).get("eventOwnerTeamId", -1) == home_id:
+                home_sog += 1
+            if e.get("details", {}).get("eventOwnerTeamId", -1) == away_id:
+                away_sog += 1
+        return away_sog, home_sog
+
     def to_goal(self, data: dict, content: Optional[dict] = None) -> Goal:
         scorer_id = self.details.get("scoringPlayerId", 0)
         if scorer_id == 0:
@@ -351,6 +371,7 @@ class Event:
         if period_ord == "REG":
             period_ord = ORDINALS.get(self.period)
         home = data["homeTeam"]["id"] == team_id
+        away_sog, home_sog = self.get_sog(data)
         return Goal(
             goal_id=self.id,
             team=team,
@@ -371,6 +392,8 @@ class Event:
             situation=self.situation,
             scorer=scorer,
             assisters=assisters,
+            home_shots=home_sog,
+            away_shots=away_sog,
         )
 
 

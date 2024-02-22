@@ -711,7 +711,13 @@ class HockeyPickems(HockeyMixin):
         async for name, pickems in AsyncIter(pickems_list.items(), steps=10):
             # check for definitive winner here just incase
             if name not in self.pickems_games:
-                game = await pickems.get_game(self.api)
+                try:
+                    game = await pickems.get_game(self.api)
+                except Exception:
+                    log.exception(
+                        "Error getting game info for %s - %s", pickems.name, pickems.game_id
+                    )
+                    continue
                 self.pickems_games[name] = game
                 await self.set_guild_pickem_winner(self.pickems_games[name])
                 # Go through all the current pickems for every server
