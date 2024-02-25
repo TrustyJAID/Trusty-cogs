@@ -248,11 +248,11 @@ class Game:
 
     @property
     def home_goals(self) -> List[Goal]:
-        return [g for g in self.goals if g.team_name == self.home_team]
+        return [g for g in self.goals if g.team.id == self.home.id]
 
     @property
     def away_goals(self) -> List[Goal]:
-        return [g for g in self.goals if g.team_name == self.away_team]
+        return [g for g in self.goals if g.team.id == self.away.id]
 
     @property
     def recap_url(self):
@@ -320,6 +320,12 @@ class Game:
         base_url = "https://www.naturalstattrick.com/graphs/"
         diff = "cfdiff" if corsi else "xgdiff"
         return f"{base_url}{self.season}-{str(self.game_id)[5:]}-{diff}-{strength}.png"
+
+    def get_goal_from_id(self, goal_id: int) -> Optional[Goal]:
+        for goal in self.goals:
+            if goal.goal_id == goal_id:
+                return goal
+        return None
 
     async def make_game_embed(
         self,
@@ -894,7 +900,7 @@ class Game:
         # all_data = await get_team("all")
         team_list = await bot.get_cog("Hockey").config.teams()
         # post_state = ["all", self.home_team, self.away_team]
-
+        cog = bot.get_cog("Hockey")
         # home_goal_ids = [goal.goal_id for goal in self.home_goals]
         # away_goal_ids = [goal.goal_id for goal in self.away_goals]
 
@@ -912,14 +918,14 @@ class Game:
                 bot.dispatch("hockey_goal", self, goal)
                 # goal.home_shots = self.home_shots
                 # goal.away_shots = self.away_shots
-                msg_list = await goal.post_team_goal(bot, self)
                 team_list.remove(team_data[goal.team_name])
                 team_data[goal.team_name]["goal_id"][goal.goal_id] = {
                     "goal": goal.to_json(),
-                    "messages": msg_list,
+                    "messages": [],
                 }
                 team_list.append(team_data[goal.team_name])
                 await bot.get_cog("Hockey").config.teams.set(team_list)
+                asyncio.create_task(goal.post_team_goal(bot, self))
                 continue
             if str(goal.goal_id) in team_data[goal.team_name]["goal_id"]:
                 # attempts to edit the goal if the scorers have changed
@@ -931,12 +937,6 @@ class Game:
                     # Shots should not update as the game continues
                     bot.dispatch("hockey_goal_edit", self, goal)
                     old_msgs = team_data[goal.team_name]["goal_id"][str(goal.goal_id)]["messages"]
-                    team_list.remove(team_data[goal.team_name])
-                    team_data[goal.team_name]["goal_id"][str(goal.goal_id)][
-                        "goal"
-                    ] = goal.to_json()
-                    team_list.append(team_data[goal.team_name])
-                    await bot.get_cog("Hockey").config.teams.set(team_list)
                     if old_msgs:
                         asyncio.create_task(goal.edit_team_goal(bot, self, old_msgs))
         # attempts to delete the goal if it was called back

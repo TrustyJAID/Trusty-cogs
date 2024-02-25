@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import asyncio
 import json
 from abc import ABC
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
 import aiohttp
 import discord
@@ -25,6 +27,10 @@ from .hockeypickems import HockeyPickems
 from .hockeyset import HockeySetCommands
 from .pickems import Pickems
 from .standings import Standings
+
+if TYPE_CHECKING:
+    from .game import Game
+    from .goal import Goal
 
 _ = Translator("Hockey", __file__)
 
@@ -158,6 +164,7 @@ class Hockey(
         self._repo = ""
         self._commit = ""
         self.api = NewAPI()
+        self.saving_goals = {}
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -427,6 +434,7 @@ class Hockey(
                         to_delete.append(link)
                 for link in to_delete:
                     del self.current_games[link]
+                    del self.saving_goals[link]
                 if not self.api.testing:
                     await asyncio.sleep(60)
                 else:
@@ -525,6 +533,22 @@ class Hockey(
         constants_string = constants_string.replace("true", "True").replace("false", "False")
         with path.open("w") as outfile:
             outfile.write(constants_string)
+
+    def get_current_game_data(self, game_id: int) -> Optional[Game]:
+        return self.current_games.get(game_id, {}).get("game")
+
+    def get_current_goal(self, game_id: int, goal_id: int) -> Optional[Goal]:
+        game = self.get_current_game_data(game_id)
+        if game:
+            return game.get_goal_from_id(goal_id)
+        return None
+
+    def get_goal_save_event(self, game_id: int, goal_id: int) -> asyncio.Event:
+        if game_id not in self.saving_goals:
+            self.saving_goals[game_id] = {}
+        if goal_id not in self.saving_goals[game_id]:
+            self.saving_goals[game_id][goal_id] = asyncio.Event()
+        return self.saving_goals[game_id][goal_id]
 
     async def wait_for_file(self, ctx: commands.Context) -> None:
         """

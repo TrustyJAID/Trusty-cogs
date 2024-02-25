@@ -60,6 +60,7 @@ class GoalData(TypedDict):
     strength_code: str
     empty_net: bool
     event: str
+    game_id: int
     link: Optional[str]
 
 
@@ -260,7 +261,7 @@ class Event:
         if self.type_code is GameEventTypeCode.GOAL:
             return True
         elif (
-            self.type_code is GameEventTypeCode.MISSED_SHOT
+            self.type_code in [GameEventTypeCode.MISSED_SHOT, GameEventTypeCode.SHOT_ON_GOAL]
             and self.period_descriptor.get("periodType", None) == "SO"
         ):
             return True
@@ -285,22 +286,25 @@ class Event:
             if key in ["scoringPlayerId", "shootingPlayerId"]:
                 player = self.get_player(value, data)
                 player_name = player.name if player else _("Unknown")
+                player_num = f"#{player.sweaterNumber} " if player else ""
                 total = self.details.get("scoringPlayerTotal", 0)
-                description += f"{player_name} ({total}) {shot_type}"
+                description += f"{player_num}{player_name} ({total}) {shot_type}"
 
             if key == "assist1PlayerId":
                 player = self.get_player(value, data)
                 player_name = player.name if player else _("Unknown")
+                player_num = f"#{player.sweaterNumber} " if player else ""
                 total = self.details.get("assist1PlayerTotal", 0)
-                description += _(" assists: {player_name} ({total})").format(
-                    player_name=player_name, total=total
+                description += _(" assists: {player_num}{player_name} ({total})").format(
+                    player_num=player_num, player_name=player_name, total=total
                 )
             if key == "assist2PlayerId":
                 player = self.get_player(value, data)
                 player_name = player.name if player else _("Unknown")
+                player_num = f"#{player.sweaterNumber} " if player else ""
                 total = self.details.get("assist2PlayerTotal", 0)
-                description += _(", {player_name} ({total})").format(
-                    player_name=player_name, total=total
+                description += _(", {player_num}{player_name} ({total})").format(
+                    player_num=player_num, player_name=player_name, total=total
                 )
 
         return description
@@ -372,6 +376,7 @@ class Event:
             period_ord = ORDINALS.get(self.period)
         home = data["homeTeam"]["id"] == team_id
         away_sog, home_sog = self.get_sog(data)
+        game_id = data.get("id", -1)
         return Goal(
             goal_id=self.id,
             team=team,
@@ -394,6 +399,8 @@ class Event:
             assisters=assisters,
             home_shots=home_sog,
             away_shots=away_sog,
+            game_id=game_id,
+            type_code=self.type_code,
         )
 
 

@@ -13,8 +13,9 @@ from redbot.core.utils import AsyncIter
 from .helper import Team, check_to_post, get_channel_obj, get_team
 
 if TYPE_CHECKING:
-    from .api import GoalData, Player
+    from .api import GameEventTypeCode, GoalData, Player
     from .game import Game
+    from .hockey import Hockey
 
 
 _ = Translator("Hockey", __file__)
@@ -66,6 +67,8 @@ class Goal:
         self.situation = kwargs.get("situation")
         self.scorer: Player = kwargs.get("scorer")
         self.assisters: List[Player] = kwargs.get("assisters")
+        self.game_id: int = kwargs.get("game_id")
+        self.type_code: GameEventTypeCode = kwargs.get("type_code")
 
     def __repr__(self):
         return "<Hockey Goal team={0.team_name} id={0.goal_id} >".format(self)
@@ -98,6 +101,7 @@ class Goal:
             "image": self.image,
             "home_shots": self.home_shots,
             "away_shots": self.away_shots,
+            "game_id": self.game_id,
         }
 
     @classmethod
@@ -214,6 +218,8 @@ class Goal:
         Creates embed and sends message if a team has scored a goal
         """
         # scorer = self.headshots.format(goal["players"][0]["player"]["id"])
+        cog: Hockey = bot.get_cog("Hockey")
+        event = cog.get_goal_save_event(game_data.game_id, self.goal_id)
         post_state = ["all", game_data.home_team, game_data.away_team]
         msg_list = []
         goal_embed = await self.goal_post_embed(game_data)
@@ -240,6 +246,12 @@ class Goal:
                 continue
             else:
                 msg_list.append(channel)
+        config = cog.config
+        async with config.teams() as teams:
+            for team in teams:
+                if team["team_name"] == self.team_name and team["game_id"] == game_data.game_id:
+                    team["goal_id"][str(self.goal_id)]["messages"] = msg_list
+        event.set()
         return msg_list
 
     async def actually_post_goal(
@@ -397,8 +409,13 @@ class Goal:
         """
         # scorer = self.headshots.format(goal["players"][0]["player"]["id"])
         # post_state = ["all", game_data.home_team, game_data.away_team]
-        em = await self.goal_post_embed(game_data)
-        text = await self.goal_post_text(game_data)
+        cog: Hockey = bot.get_cog("Hockey")
+        event = cog.get_goal_save_event(game_data.game_id, self.goal_id)
+        await event.wait()
+        updated_goal = cog.get_current_goal(game_data.game_id, self.goal_id)
+        event.clear()
+        em = await updated_goal.goal_post_embed(game_data)
+        text = await updated_goal.goal_post_text(game_data)
         if og_msg is None:
             return
         async for guild_id, channel_id, message_id in AsyncIter(og_msg, delay=5, steps=5):
@@ -410,15 +427,20 @@ class Goal:
                 continue
             if channel.is_news():
                 asyncio.create_task(self.edit_goal(bot, channel, message_id, em, text))
+                # This is to prevent endlessly waiting incase someone
+                # decided to publish one of our messages we want to edit
+                # if we did bounded_gather here the gather would wait until
+                # rate limits are up for editing that one message
+                # in this case we can send off the task to do it's thing
+                # and forget about it. If one never finishes I don't care
             else:
                 await self.edit_goal(bot, channel, message_id, em, text)
-            # This is to prevent endlessly waiting incase someone
-            # decided to publish one of our messages we want to edit
-            # if we did bounded_gather here the gather would wait until
-            # rate limits are up for editing that one message
-            # in this case we can send off the task to do it's thing
-            # and forget about it. If one never finishes I don't care
-
+        config = cog.config
+        async with config.teams() as teams:
+            for team in teams:
+                if team["team_name"] == self.team_name and team["game_id"] == game_data.game_id:
+                    team["goal_id"][str(self.goal_id)]["goal"] = self.to_json()
+        event.set()
         return
 
     async def edit_goal(
@@ -430,7 +452,6 @@ class Goal:
         text: str,
     ) -> None:
         try:
-
             if channel.guild.me.is_timed_out():
                 return
             try:
@@ -489,13 +510,15 @@ class Goal:
                 continue
             if goal.scorer_id in game.home_roster:
                 scorer = game.home_roster[goal.scorer_id].name
-            if goal.event in ["Shot", "Missed Shot"]:
-                home_msg += miss.format(scorer=scorer)
-            if goal.event in ["Goal"]:
-                home_msg += score.format(scorer=scorer)
+                scorer_num = game.home_roster[goal.scorer_id].sweaterNumber
+            if goal.type_code.value in [506, 507]:  # Shots on Goal and Missed Shots
+                home_msg += miss.format(scorer=f"#{scorer_num} {scorer}")
+            if goal.type_code.value in [505]:
+                home_msg += score.format(scorer=f"#{scorer_num} {scorer}")
 
         for goal in game.away_goals:
             scorer = ""
+            scorer_num = ""
             if goal.period_ord != "SO":
                 continue
             if goal.goal_id > self.goal_id:
@@ -508,10 +531,11 @@ class Goal:
                 continue
             if goal.scorer_id in game.away_roster:
                 scorer = game.away_roster[goal.scorer_id].name
-            if goal.event in ["Shot", "Missed Shot"]:
-                away_msg += miss.format(scorer=scorer)
-            if goal.event in ["Goal"]:
-                away_msg += score.format(scorer=scorer)
+                scorer_num = game.away_roster[goal.scorer_id].sweaterNumber
+            if goal.type_code.value in [506, 507]:  # Shots on Goal and Missed Shots
+                away_msg += miss.format(scorer=f"#{scorer_num} {scorer}")
+            if goal.type_code.value in [505]:
+                away_msg += score.format(scorer=f"#{scorer_num} {scorer}")
 
         return home_msg, away_msg
 
