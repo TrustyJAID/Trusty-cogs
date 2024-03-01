@@ -112,7 +112,7 @@ class InviteBlocklist(commands.Cog):
         if payload.cached_message:
             guild = payload.cached_message.guild
         else:
-            guild = self.bot.get_guild(int(payload.data["guild_id"]))
+            guild = self.bot.get_guild(int(payload.data.get("guild_id")))
         if guild is None:
             return
         chan = guild.get_channel(payload.channel_id)
