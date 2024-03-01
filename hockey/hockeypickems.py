@@ -10,7 +10,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import pagify
 
-from hockey.helper import utc_to_local
+from hockey.helper import slow_send_task, utc_to_local
 
 from .abc import HockeyMixin
 from .game import Game, GameState, GameType
@@ -91,13 +91,22 @@ class HockeyPickems(HockeyMixin):
                         log.trace("Saving pickem %r", pickem)
                         data[name] = pickem.to_json()
                     self.all_pickems[guild_id][name]._should_save = False
-                    if pickem.game_type in [GameType.pre_season, GameType.playoffs]:
-                        if (datetime.now(timezone.utc) - pickem.game_start) >= timedelta(days=7):
-                            del data[name]
-                            if guild_id not in to_del:
-                                to_del[guild_id] = [name]
-                            else:
-                                to_del[guild_id].append(name)
+                    days_old = datetime.now(timezone.utc) - pickem.game_start
+                    if pickem.game_type in [
+                        GameType.pre_season,
+                        GameType.playoffs,
+                    ] and days_old >= timedelta(days=7):
+                        del data[name]
+                        if guild_id not in to_del:
+                            to_del[guild_id] = [name]
+                        else:
+                            to_del[guild_id].append(name)
+                    elif days_old >= timedelta(days=30):
+                        del data[name]
+                        if guild_id not in to_del:
+                            to_del[guild_id] = [name]
+                        else:
+                            to_del[guild_id].append(name)
 
         for guild_id, names in to_del.items():
             for name in names:
@@ -135,6 +144,8 @@ class HockeyPickems(HockeyMixin):
                 continue
             # pickems = [Pickems.from_json(p) for p in pickems_list]
             pickems = {name: Pickems.from_json(p) for name, p in pickems_list.items()}
+            if not pickems:
+                continue
             self.all_pickems[str(guild_id)] = pickems
             for name, pickem in pickems.items():
                 try:
@@ -194,6 +205,7 @@ class HockeyPickems(HockeyMixin):
     async def set_guild_pickem_winner(self, game: Game, edit_message: bool = False) -> None:
         all_pickems = self.all_pickems.copy()
         # log.debug("Setting winner for game %r", game)
+        tasks = []
         for guild_id, pickems in all_pickems.items():
             if str(game.game_id) not in pickems:
                 # log.debug("Game %r not in pickems list.", game)
@@ -230,9 +242,9 @@ class HockeyPickems(HockeyMixin):
                 if not channel:
                     # log.debug("Game %r missing channel", game)
                     continue
-                asyncio.create_task(
-                    self.edit_pickems_message(channel, int(message_id), game, pickem)
-                )
+                tasks.append(self.edit_pickems_message(channel, int(message_id), game, pickem))
+        if tasks:
+            asyncio.create_task(slow_send_task(tasks))
 
     async def edit_pickems_message(
         self, channel: discord.Thread, message_id: int, game: Game, pickem: Pickems
@@ -293,7 +305,8 @@ class HockeyPickems(HockeyMixin):
             return self.all_pickems[str(guild.id)][str(game.game_id)]
 
     async def fix_pickem_game_start(self, game: Game):
-        async for guild_id, data in AsyncIter(self.all_pickems.items(), steps=50, delay=10):
+        tasks = []
+        async for guild_id, data in AsyncIter(self.all_pickems.items(), steps=50):
             guild = self.bot.get_guild(int(guild_id))
             if guild is None:
                 continue
@@ -316,7 +329,7 @@ class HockeyPickems(HockeyMixin):
                         if channel is None:
                             # log.debug("Game %r missing channel", game)
                             continue
-                        asyncio.create_task(
+                        tasks.append(
                             self.edit_pickems_message(channel, int(message_id), game, pickem)
                         )
             else:
@@ -337,7 +350,9 @@ class HockeyPickems(HockeyMixin):
                     ):
                         thread = guild.get_thread(int(thread_id))
                 if thread is not None:
-                    await self.create_pickems_game_message(thread, game)
+                    tasks.append(self.create_pickems_game_message(thread, game))
+        if tasks:
+            asyncio.create_task(slow_send_task(tasks))
 
     async def reset_weekly(self) -> None:
         # Reset the weekly leaderboard for all servers

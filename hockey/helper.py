@@ -7,7 +7,9 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
+    Coroutine,
     Dict,
+    Iterable,
     List,
     Literal,
     NamedTuple,
@@ -711,3 +713,8 @@ async def get_channel_obj(
         log.info("thread or channel ID %s Could not be found", channel_id)
         return None
     return channel or thread
+
+
+async def slow_send_task(tasks: Iterable[Coroutine]):
+    async for task in AsyncIter(tasks, steps=5, delay=5):
+        await task

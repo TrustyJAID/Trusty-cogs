@@ -259,6 +259,10 @@ class Game:
         return self._recap_url
 
     @property
+    def short(self) -> str:
+        return f"{self.away.tri_code} @ {self.home.tri_code} {self.period_time_left} {self.period_ord}"
+
+    @property
     def timestamp(self) -> int:
         """
         This is just a helper property to access the game_start as
@@ -611,6 +615,8 @@ class Game:
     async def check_game_state(self, bot: Red, count: int = 0) -> bool:
         # post_state = ["all", self.home_team, self.away_team]
         home = await get_team(bot, self.home_team, self.game_start_str, self.game_id)
+        await get_team(bot, self.away_team, self.game_start_str, self.game_id)
+        # ensures that the TeamEntry gets created for both teams to save their data
         try:
             old_game_state = GameState(home["game_state"])
             log.trace(
@@ -898,7 +904,6 @@ class Game:
         # home_team_data = await get_team(bot, self.home_team)
         # away_team_data = await get_team(bot, self.away_team)
         # all_data = await get_team("all")
-        team_list = await bot.get_cog("Hockey").config.teams()
         # post_state = ["all", self.home_team, self.away_team]
         cog = bot.get_cog("Hockey")
         # home_goal_ids = [goal.goal_id for goal in self.home_goals]
@@ -918,13 +923,14 @@ class Game:
                 bot.dispatch("hockey_goal", self, goal)
                 # goal.home_shots = self.home_shots
                 # goal.away_shots = self.away_shots
-                team_list.remove(team_data[goal.team_name])
-                team_data[goal.team_name]["goal_id"][goal.goal_id] = {
-                    "goal": goal.to_json(),
-                    "messages": [],
-                }
-                team_list.append(team_data[goal.team_name])
-                await bot.get_cog("Hockey").config.teams.set(team_list)
+                async with cog.config.teams() as teams:
+                    for team in teams:
+                        if team["team_name"] != goal.team_name and team["game_id"] != goal.game_id:
+                            continue
+                        team["goal_id"][str(goal.goal_id)] = {
+                            "goal": goal.to_json(),
+                            "messages": [],
+                        }
                 asyncio.create_task(goal.post_team_goal(bot, self))
                 continue
             if str(goal.goal_id) in team_data[goal.team_name]["goal_id"]:
@@ -953,47 +959,37 @@ class Game:
         """
         Saves the data do the config to compare against new data
         """
-        home = await get_team(bot, self.home_team, self.game_start_str, self.game_id)
-        away = await get_team(bot, self.away_team, self.game_start_str, self.game_id)
-        team_list = await bot.get_cog("Hockey").config.teams()
-        team_list.remove(home)
-        team_list.remove(away)
         game_state = self.game_state.value
         if time_to_game_start == "END3rd":
             game_state = GameState.live_end_third.value
-        if self.game_state not in [GameState.final, GameState.official_final]:
-            if self.game_state.is_preview() and time_to_game_start != "0":
-                home["game_state"] = game_state
-                away["game_state"] = game_state
-            elif self.game_state.is_live() and time_to_game_start != "0":
-                home["game_state"] = game_state
-                away["game_state"] = game_state
-            else:
-                home["game_state"] = game_state
-                away["game_state"] = game_state
-            home["period"] = self.period
-            away["period"] = self.period
-            home["game_start"] = self.game_start_str
-            away["game_start"] = self.game_start_str
-        else:
-            if time_to_game_start == "0":
-                home["game_state"] = 0
-                away["game_state"] = 0
-                home["period"] = 0
-                away["period"] = 0
-                home["goal_id"] = {}
-                away["goal_id"] = {}
-                home["game_start"] = ""
-                away["game_start"] = ""
-            elif (
-                self.game_state in [GameState.final, GameState.official_final]
-                and time_to_game_start != "0"
-            ):
-                home["game_state"] = game_state
-                away["game_state"] = game_state
-        team_list.append(home)
-        team_list.append(away)
-        await bot.get_cog("Hockey").config.teams.set(team_list)
+        async with bot.get_cog("Hockey").config.teams() as teams:
+            for team in teams:
+                if team["team_name"] not in [self.home_team, self.away_team]:
+                    continue
+                if team["game_id"] != self.game_id:
+                    continue
+
+                if self.game_state not in [GameState.final, GameState.official_final]:
+                    if self.game_state.is_preview() and time_to_game_start != "0":
+                        team["game_state"] = game_state
+                    elif self.game_state.is_live() and time_to_game_start != "0":
+                        team["game_state"] = game_state
+                    else:
+                        team["game_state"] = game_state
+                    team["period"] = self.period
+                    team["game_start"] = self.game_start_str
+
+                else:
+                    if time_to_game_start == "0":
+                        team["game_state"] = 0
+                        team["period"] = 0
+                        team["goal_id"] = {}
+                        team["game_start"] = ""
+                    elif (
+                        self.game_state in [GameState.final, GameState.official_final]
+                        and time_to_game_start != "0"
+                    ):
+                        team["game_state"] = game_state
 
     async def post_time_to_game_start(self, bot: Red, time_left: str) -> None:
         """
