@@ -59,6 +59,13 @@ class RoleToolsMessages(RoleToolsMixin):
         Note: There is a maximum of 25 slots available on one message. Each menu
         uses up 5 slots while each button uses up 1 slot.
         """
+        if not channel.permissions_for(ctx.me).send_messages:
+            await ctx.send(
+                _("I do not have permission to send messages in {channel}.").format(
+                    channel=channel.mention
+                )
+            )
+            return
         if not await self.check_totals(ctx, buttons=len(buttons), menus=len(menus)):
             return
         if not menus:
@@ -179,6 +186,13 @@ class RoleToolsMessages(RoleToolsMixin):
         message up to a maximum of 5.
         `<message>` - The message to be included with the select menu.
         """
+        if not channel.permissions_for(ctx.me).send_messages:
+            await ctx.send(
+                _("I do not have permission to send messages in {channel}.").format(
+                    channel=channel.mention
+                )
+            )
+            return
         if not await self.check_totals(ctx, buttons=0, menus=len(menus)):
             return
         if ctx.guild.id not in self.views:
@@ -253,6 +267,13 @@ class RoleToolsMessages(RoleToolsMixin):
         message up to a maximum of 25.
         `<message>` - The message to be included with the buttons.
         """
+        if not channel.permissions_for(ctx.me).send_messages:
+            await ctx.send(
+                _("I do not have permission to send messages in {channel}.").format(
+                    channel=channel.mention
+                )
+            )
+            return
         if not await self.check_totals(ctx, buttons=len(buttons), menus=0):
             return
         if ctx.guild.id not in self.views:
