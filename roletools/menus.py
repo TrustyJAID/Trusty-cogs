@@ -212,6 +212,11 @@ class StickyToggleButton(discord.ui.Button):
         self.view: BaseMenu
 
     async def callback(self, interaction: discord.Interaction):
+        if not interaction.channel.permissions_for(interaction.user).manage_roles:
+            await interaction.response.send_message(
+                _("You are not authorized to use this button.")
+            )
+            return
         cog = interaction.client.get_cog("RoleTools")
         current = await cog.config.role(self.view._source.current_role).sticky()
         await cog.config.role(self.view._source.current_role).sticky.set(not current)
@@ -226,6 +231,11 @@ class AutoToggleButton(discord.ui.Button):
         self.view: BaseMenu
 
     async def callback(self, interaction: discord.Interaction):
+        if not interaction.channel.permissions_for(interaction.user).manage_roles:
+            await interaction.response.send_message(
+                _("You are not authorized to use this button.")
+            )
+            return
         cog = interaction.client.get_cog("RoleTools")
         current = await cog.config.role(self.view._source.current_role).auto()
         await cog.config.role(self.view._source.current_role).auto.set(not current)
@@ -240,6 +250,11 @@ class SelfAddToggleButton(discord.ui.Button):
         self.view: BaseMenu
 
     async def callback(self, interaction: discord.Interaction):
+        if not interaction.channel.permissions_for(interaction.user).manage_roles:
+            await interaction.response.send_message(
+                _("You are not authorized to use this button.")
+            )
+            return
         cog = interaction.client.get_cog("RoleTools")
         current = await cog.config.role(self.view._source.current_role).selfassignable()
         await cog.config.role(self.view._source.current_role).selfassignable.set(not current)
@@ -254,6 +269,11 @@ class SelfRemToggleButton(discord.ui.Button):
         self.view: BaseMenu
 
     async def callback(self, interaction: discord.Interaction):
+        if not interaction.channel.permissions_for(interaction.user).manage_roles:
+            await interaction.response.send_message(
+                _("You are not authorized to use this button.")
+            )
+            return
         cog = interaction.client.get_cog("RoleTools")
         current = await cog.config.role(self.view._source.current_role).selfremovable()
         await cog.config.role(self.view._source.current_role).selfremovable.set(not current)
@@ -461,8 +481,8 @@ class BaseMenu(discord.ui.View):
                     button.disabled = False
                 else:
                     button.disabled = (
-                        self.author.guild_permissions.manage_roles
-                        and self.source.current_role >= self.author.top_role
+                        not self.author.guild_permissions.manage_roles
+                        or self.source.current_role >= self.author.top_role
                     )
             button.disabled |= not self.source.current_role.is_assignable()
 
