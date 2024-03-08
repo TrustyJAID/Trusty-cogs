@@ -237,6 +237,8 @@ class ReTriggerPages(menus.ListPageSource):
                 pattern = trigger._raw_regex
         if trigger.read_embeds:
             info += _("__Read Embeds__: **Enabled**\n")
+        if trigger.suppress:
+            info += _("__Suppress Embeds__: **Enabled**\n")
         if embeds:
             # info += _("__Regex__: ") + box(trigger.regex.pattern, lang="bf")
             em = discord.Embed(

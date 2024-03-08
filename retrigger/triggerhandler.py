@@ -635,6 +635,14 @@ class TriggerHandler(ReTriggerMixin):
         reason = _("Trigger response: {trigger}").format(trigger=trigger.name)
         own_permissions = channel.permissions_for(guild.me)
         # is_thread_message = getattr(message, "is_thread", False)
+        if trigger.suppress and message.embeds and own_permissions.manage_messages:
+            try:
+                await message.edit(suppress=True)
+            except Exception:
+                log.exception(
+                    "Error suppressing embeds on a message: %r with trigger %r", message, trigger
+                )
+
         if isinstance(channel, discord.TextChannel):
             # currently only text channels are capable of creating threads from
             # a message being sent. Forum Chanels can't have sent messages by

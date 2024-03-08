@@ -265,6 +265,7 @@ class Trigger:
         "_last_modified_by",
         "_last_modified_at",
         "_last_modified",
+        "suppress",
     )
 
     def __init__(
@@ -314,6 +315,7 @@ class Trigger:
         self._last_modified_by: Optional[int] = kwargs.get("_last_modified_by", None)
         self._last_modified_at: Optional[int] = kwargs.get("_last_modified_at", None)
         self._last_modified: Optional[str] = kwargs.get("_last_modified", None)
+        self.suppress: bool = kwargs.get("suppress", False)
 
     def enable(self):
         """Explicitly enable this trigger"""
@@ -526,6 +528,7 @@ class Trigger:
             "_last_modified_by": self._last_modified_by,
             "_last_modified_at": self._last_modified_at,
             "_last_modified": self._last_modified,
+            "suppress": self.suppress,
         }
 
     @classmethod
