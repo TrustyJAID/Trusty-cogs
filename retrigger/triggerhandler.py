@@ -635,7 +635,7 @@ class TriggerHandler(ReTriggerMixin):
         reason = _("Trigger response: {trigger}").format(trigger=trigger.name)
         own_permissions = channel.permissions_for(guild.me)
         # is_thread_message = getattr(message, "is_thread", False)
-        if trigger.suppress and message.embeds and own_permissions.manage_messages:
+        if trigger.suppress and own_permissions.manage_messages:
             try:
                 await message.edit(suppress=True)
             except Exception:
