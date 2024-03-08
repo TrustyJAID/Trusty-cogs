@@ -2,7 +2,7 @@ import asyncio
 import datetime
 from collections import deque
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
+from typing import Any, Deque, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import discord
 from discord.ext import tasks
@@ -121,7 +121,7 @@ class EventMixin:
     settings: Dict[int, Any]
     _ban_cache: Dict[int, List[int]]
     allowed_mentions: discord.AllowedMentions
-    audit_log: Dict[int, deque[discord.AuditLogEntry]]
+    audit_log: Dict[int, Deque[discord.AuditLogEntry]]
 
     async def get_event_colour(
         self, guild: discord.Guild, event_type: str, changed_object: Optional[discord.Role] = None

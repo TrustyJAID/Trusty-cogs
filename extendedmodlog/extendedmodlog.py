@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Dict, Union
+from typing import Deque, Dict, Union
 
 import discord
 from red_commons.logging import getLogger
@@ -74,7 +74,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         self._ban_cache = {}
         self.invite_links_loop.start()
         self.allowed_mentions = discord.AllowedMentions(users=False, roles=False, everyone=False)
-        self.audit_log: Dict[int, deque[discord.AuditLogEntry]] = {}
+        self.audit_log: Dict[int, Deque[discord.AuditLogEntry]] = {}
 
     def format_help_for_context(self, ctx: commands.Context):
         """
