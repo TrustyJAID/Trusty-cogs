@@ -1093,7 +1093,7 @@ class NewAPI(HockeyAPI):
 
     async def to_game(self, data: dict, content: Optional[dict] = None) -> Game:
         game_id = data["id"]
-        period = data.get("period", -1)
+        period = data.get("periodDescriptor", {}).get("number", -1)
         period_time_left = data.get("clock", {}).get("timeRemaining")
         game_state = GameState.from_nhle(data["gameState"], period, period_time_left)
         home_data = data.get("homeTeam", {})
@@ -1176,5 +1176,6 @@ class NewAPI(HockeyAPI):
             season=data.get("season", 0),
             recap_url=recap_url,
             api=self,
+            url=f"{self.base_url}/gamecenter/{game_id}/play-by-play",
             # data=data,
         )

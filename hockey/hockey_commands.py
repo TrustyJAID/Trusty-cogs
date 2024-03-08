@@ -479,6 +479,7 @@ class HockeyCommands(HockeyMixin):
         self,
         ctx: commands.Context,
         season: Optional[YearFinder],
+        include_headshot: Optional[bool],
         *,
         player: discord.app_commands.Transform[List[SearchPlayer], PlayerFinder],
     ) -> None:
@@ -512,9 +513,15 @@ class HockeyCommands(HockeyMixin):
         if not player:
             await ctx.send(_("No player could be found by that name."))
             return
+        if include_headshot is None:
+            include_headshot = not ctx.author.is_on_mobile()
         try:
             await BaseMenu(
-                source=PlayerPages(pages=player, season=season_str),
+                source=PlayerPages(
+                    pages=player,
+                    season=season_str,
+                    include_headshot=include_headshot,
+                ),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,

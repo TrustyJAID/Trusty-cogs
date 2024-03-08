@@ -580,11 +580,14 @@ class PlayerStats:
         except (IndexError, KeyError):
             return Team.from_json({}, _("Unknown Team"))
 
-    def get_embed(self, season: Optional[str] = None) -> discord.Embed:
+    def get_embed(
+        self, season: Optional[str] = None, include_headshot: Optional[bool] = True
+    ) -> discord.Embed:
         team_data = self.get_team_data()
         em = discord.Embed()
         em.description = self.description()
-        em.set_thumbnail(url=self.headshot)
+        if include_headshot:
+            em.set_thumbnail(url=self.headshot)
         number = f"#{self.sweater_number}" if self.sweater_number else ""
 
         em.description = self.description()

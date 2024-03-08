@@ -214,12 +214,15 @@ class LeaderboardPages(menus.ListPageSource):
 
 
 class PlayerPages(menus.ListPageSource):
-    def __init__(self, pages: list, season: Optional[str] = None):
+    def __init__(
+        self, pages: list, season: Optional[str] = None, include_headshot: Optional[bool] = True
+    ):
         super().__init__(pages, per_page=1)
         self.pages: List[int] = pages
         self.season = season
         self.players = {p.id: p for p in pages}
         self.select_options = []
+        self.include_headshot = include_headshot
         for count, player in enumerate(pages):
             player_name = player.name
             self.select_options.append(
@@ -237,7 +240,7 @@ class PlayerPages(menus.ListPageSource):
         # player = await Player.from_id(page, session=view.cog.session)
         log.trace("PlayerPages player: %s", player)
         player_stats = await view.cog.api.get_player(player.id)
-        em = player_stats.get_embed(self.season)
+        em = player_stats.get_embed(self.season, self.include_headshot)
         em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return em
 

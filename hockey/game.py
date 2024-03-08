@@ -209,6 +209,7 @@ class Game:
         self._recap_url: Optional[str] = kwargs.get("recap_url", None)
         self.data = kwargs.get("data", {})
         self.api = kwargs.get("api", None)
+        self.url = kwargs.get("url", None)
 
     def __repr__(self):
         return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
