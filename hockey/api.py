@@ -245,7 +245,7 @@ class Event:
     def from_json(cls, data: dict) -> Event:
         return cls(
             id=data.get("eventId", 0),
-            period=data.get("period", 0),
+            period=data.get("periodDescriptor", {}).get("number"),
             period_descriptor=data.get("periodDescriptor", {}),
             time_in_period=data.get("timeInPeriod", ""),
             time_remaining=data.get("timeRemaining", ""),
@@ -315,7 +315,8 @@ class Event:
         clip_id = None
         scoring = content.get("summary", {}).get("scoring", [])
         for period in scoring:
-            if period.get("period", 0) != self.period:
+            period_number = period.get("periodDescriptor", {}).get("number", -1)
+            if period_number != self.period:
                 continue
             for goal in period.get("goals", []):
                 if goal.get("timeInPeriod", "") == self.time_in_period:
