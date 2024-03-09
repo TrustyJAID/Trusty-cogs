@@ -477,12 +477,12 @@ class Goal:
                 if channel.id in game_day_threads:
                     role = None
             if channel.permissions_for(channel.guild.me).embed_links:
-                if role is None or "missed" in self.event.lower():
+                if role is None or self.type_code is not GameEventTypeCode.GOAL:
                     await message.edit(embed=send_em)
                 else:
                     await message.edit(content=role.mention, embed=send_em)
             else:
-                if role is None or "missed" in self.event.lower():
+                if role is None or self.type_code is not GameEventTypeCode.GOAL:
                     await message.edit(content=text)
                 else:
                     await message.edit(content=f"{role.mention}\n{text}")
