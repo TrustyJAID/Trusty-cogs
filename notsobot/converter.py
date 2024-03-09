@@ -67,16 +67,17 @@ class ImageFinder(Converter):
             for attachment in attachments:
                 urls.append(attachment.url)
         if not urls:
-            for m in ctx.guild.members:
-                if argument.lower() in unidecode.unidecode(m.display_name.lower()):
-                    # display_name so we can get the nick of the user first
-                    # without being NoneType and then check username if that matches
-                    # what we're expecting
-                    urls.append(m.display_avatar.replace(format="png").url)
-                    continue
-                if argument.lower() in unidecode.unidecode(m.name.lower()):
-                    urls.append(m.display_avatar.replace(format="png").url)
-                    continue
+            if ctx.guild:
+                for m in ctx.guild.members:
+                    if argument.lower() in unidecode.unidecode(m.display_name.lower()):
+                        # display_name so we can get the nick of the user first
+                        # without being NoneType and then check username if that matches
+                        # what we're expecting
+                        urls.append(m.display_avatar.replace(format="png").url)
+                        continue
+                    if argument.lower() in unidecode.unidecode(m.name.lower()):
+                        urls.append(m.display_avatar.replace(format="png").url)
+                        continue
 
         if not urls:
             raise BadArgument("No images provided.")
