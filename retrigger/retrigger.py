@@ -94,7 +94,7 @@ class ReTrigger(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.28.0"
+    __version__ = "2.28.1"
 
     def __init__(self, bot):
         super().__init__()
@@ -824,6 +824,9 @@ class ReTrigger(
         This will cause the original message embeds to be disabled for everyone.
 
         Useful if you're wanting to remove the embed of a url and replace with a new url.
+
+        Note: This will disable checking edits for this trigger since it edits the original users
+        message.
         `<trigger>` is the name of the trigger.
         """
         if type(trigger) is str:
@@ -1112,6 +1115,8 @@ class ReTrigger(
         Toggle whether the bot will listen to edited messages as well as on_message for
         the specified trigger.
 
+        Note: This will disable suppress for this trigger since it edits the original users
+        message.
         `<trigger>` is the name of the trigger.
         """
 

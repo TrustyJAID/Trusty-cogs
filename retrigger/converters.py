@@ -373,6 +373,11 @@ class Trigger:
     def modify(
         self, attr: str, value: Any, author: Union[discord.Member, discord.User], message_id: int
     ):
+        if attr in ("suppress", "check_edits"):
+            other = "suppress" if attr == "check_edits" else "check_edits"
+            other_value = getattr(self, other)
+            if other_value is True:
+                setattr(self, other, not value)
         setattr(self, attr, value)
         self._last_modified_by = author.id
         self._last_modified_at = message_id
