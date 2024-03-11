@@ -334,9 +334,7 @@ class DestinyAPI:
             )
         url = AUTH_URL + f"?client_id={client_id}&response_type=code"
         msg = _(
-            "Go to the following url authorize "
-            "this application and provide "
-            "everything after `?code=` shown in the URL.\n"
+            "Go to the following url authorize " "this application and provide the final URL.\n"
         )
         if is_slash:
             await ctx.send(msg + url, ephemeral=True)
