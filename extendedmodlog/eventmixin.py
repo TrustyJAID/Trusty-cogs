@@ -2341,8 +2341,8 @@ class EventMixin:
             entry = await self.get_audit_log_entry(
                 guild, before, discord.AuditLogAction.channel_update
             )
-        perp = getattr(entry, "user", None)
-        reason = getattr(entry, "reason", None)
+            perp = getattr(entry, "user", None)
+            reason = getattr(entry, "reason", None)
 
         if perp:
             msg += _("Updated by ") + str(perp) + "\n"
