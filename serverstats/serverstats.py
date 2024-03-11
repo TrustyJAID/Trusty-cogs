@@ -199,8 +199,8 @@ class ServerStats(commands.GroupCog):
         for emoji, value in online_stats.items():
             try:
                 num = len([m for m in guild.members if value(m)])
-            except Exception as error:
-                print(error)
+            except Exception:
+                log.error("Error determining number of users")
                 continue
             else:
                 member_msg += f"{emoji} {bold(humanize_number(num))} " + (
@@ -470,32 +470,6 @@ class ServerStats(commands.GroupCog):
         else:
             await ctx.send("\n".join(description)[:2000])
 
-    @commands.hybrid_command()
-    @checks.mod_or_permissions(manage_channels=True)
-    @checks.bot_has_permissions(manage_channels=True)
-    async def topic(
-        self, ctx: commands.Context, channel: Optional[discord.TextChannel], *, topic: str = ""
-    ) -> None:
-        """
-        Sets a specified channels topic
-
-        - `channel` is optional and if not supplied will use the current channel
-         - Note: The maximum number of characters is 1024
-        """
-        if channel is None:
-            channel = ctx.channel
-        if not channel.permissions_for(ctx.author).manage_messages:
-            return
-        if not channel.permissions_for(ctx.me).manage_channels:
-            await ctx.send(
-                _('I require the "Manage Channels" permission to execute that command.')
-            )
-            return
-        await channel.edit(
-            topic=topic[:1024], reason=_("Requested by {author}").format(author=ctx.author)
-        )
-        await ctx.tick()
-
     @commands.hybrid_group()
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
@@ -516,10 +490,15 @@ class ServerStats(commands.GroupCog):
         """Edit a channels name"""
         if not channel:
             channel = ctx.channel
+        if not channel.permissions_for(ctx.me).manage_channels:
+            await ctx.send(
+                _('I require the "Manage Channels" permission to execute that command.')
+            )
+            return
         await channel.edit(
             name=name[:100], reason=_("Requested by {author}").format(author=ctx.author)
         )
-        await ctx.tick()
+        await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(name="position")
     @checks.mod_or_permissions(manage_channels=True)
@@ -533,14 +512,19 @@ class ServerStats(commands.GroupCog):
         """Edit a channels position"""
         if not channel:
             channel = ctx.channel
+        if not channel.permissions_for(ctx.me).manage_channels:
+            await ctx.send(
+                _('I require the "Manage Channels" permission to execute that command.')
+            )
+            return
         try:
             await channel.edit(
                 position=position, reason=_("Requested by {author}").format(author=ctx.author)
             )
-        except Exception as e:
-            print(e)
+        except Exception:
+            log.exception("Error editing channel position on %s", channel)
             return
-        await ctx.tick()
+        await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(name="sync")
     @checks.mod_or_permissions(manage_channels=True)
@@ -554,10 +538,15 @@ class ServerStats(commands.GroupCog):
         """Set whether or not to sync permissions with the channels Category"""
         if not channel:
             channel = ctx.channel
+        if not channel.permissions_for(ctx.me).manage_channels:
+            await ctx.send(
+                _('I require the "Manage Channels" permission to execute that command.')
+            )
+            return
         await channel.edit(
             sync_permissions=toggle, reason=_("Requested by {author}").format(author=ctx.author)
         )
-        await ctx.tick()
+        await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(name="nsfw")
     @checks.mod_or_permissions(manage_channels=True)
@@ -568,10 +557,15 @@ class ServerStats(commands.GroupCog):
         """Set whether or not a channel is NSFW"""
         if not channel:
             channel = ctx.channel
+        if not channel.permissions_for(ctx.me).manage_channels:
+            await ctx.send(
+                _('I require the "Manage Channels" permission to execute that command.')
+            )
+            return
         await channel.edit(
             nsfw=toggle, reason=_("Requested by {author}").format(author=ctx.author)
         )
-        await ctx.tick()
+        await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(name="topic")
     @checks.mod_or_permissions(manage_channels=True)
@@ -582,10 +576,15 @@ class ServerStats(commands.GroupCog):
         """Edit a channels topic"""
         if not channel:
             channel = ctx.channel
+        if not channel.permissions_for(ctx.me).manage_channels:
+            await ctx.send(
+                _('I require the "Manage Channels" permission to execute that command.')
+            )
+            return
         await channel.edit(
             topic=topic[:1024], reason=_("Requested by {author}").format(author=ctx.author)
         )
-        await ctx.tick()
+        await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(name="bitrate")
     @checks.mod_or_permissions(manage_channels=True)
@@ -598,6 +597,11 @@ class ServerStats(commands.GroupCog):
         - `<channel>` The voice channel you want to change.
         - `<bitrate>` The new bitrate between 8000 and 96000.
         """
+        if not channel.permissions_for(ctx.me).manage_channels:
+            await ctx.send(
+                _('I require the "Manage Channels" permission to execute that command.')
+            )
+            return
         try:
             await channel.edit(
                 bitrate=bitrate, reason=_("Requested by {author}").format(author=ctx.author)
@@ -610,7 +614,7 @@ class ServerStats(commands.GroupCog):
                 ).format(bitrate=bitrate)
             )
             return
-        await ctx.tick()
+        await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(name="userlimit")
     @checks.mod_or_permissions(manage_channels=True)
@@ -623,6 +627,11 @@ class ServerStats(commands.GroupCog):
         - `<channel>` The voice channel you want to change the limit on.
         - `<limit>` The limt on number of users between 0 and 99.
         """
+        if not channel.permissions_for(ctx.me).manage_channels:
+            await ctx.send(
+                _('I require the "Manage Channels" permission to execute that command.')
+            )
+            return
         try:
             await channel.edit(
                 user_limit=limit, reason=_("Requested by {author}").format(author=ctx.author)
@@ -635,7 +644,7 @@ class ServerStats(commands.GroupCog):
                 ).format(limit=limit)
             )
             return
-        await ctx.tick()
+        await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(
         name="permissions", aliases=["perms", "permission"], with_app_command=False
