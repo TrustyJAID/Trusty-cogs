@@ -110,17 +110,20 @@ class AdventureAlertListeners(MixinMeta):
         user_config = style.get_user_config(self.config.guild(ctx.guild))
         roles = {f"<@&{rid}>" for rid in await role_config()}
         users = {f"<@{uid}>" for uid in await user_config()}
-        guild_members = [m.id for m in ctx.guild.members]
+        # guild_members = [m.id for m in ctx.guild.members]
         all_users = await self.config.all_users()
         for u_id, data in all_users.items():
-            user_mention = f"<@{u_id}>"
-            if u_id in guild_members and data.get(style.get_users_global(), False):
-                users.add(user_mention)
+            user = ctx.guild.get_member(u_id)
+            if not user:
+                continue
+            if data.get(style.get_users_global(), False):
+                users.add(user.mention)
+        jump_url = ctx.message.jump_url
         if roles or users:
             msg = (
                 f"{humanize_list(list(roles)) if roles else ''} "
                 + f"{humanize_list(list(users)) if users else ''} "
-                + style.get_message()
+                + f"[{style.get_message()}]({jump_url})"
             )
             for page in pagify(msg):
                 await ctx.channel.send(
