@@ -717,7 +717,7 @@ class OneCall:
         *,
         session: Optional[aiohttp.ClientSession] = None,
     ) -> OneCall:
-        url = "https://api.openweathermap.org/data/2.5/onecall"
+        url = "http://api.openweathermap.org/data/2.5/onecall"
         params = {"appid": appid, "exclude": "minutely"}
         if lang:
             params["lang"] = lang
