@@ -14,6 +14,7 @@ from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
+from redbot.core.utils.chat_formatting import box
 
 from .api import GameState, NewAPI, Schedule
 from .constants import BASE_URL, CONFIG_ID, CONTENT_URL, HEADSHOT_URL, TEAMS
@@ -73,6 +74,8 @@ class Hockey(
             "print": False,
             "last_day": 0,
             "enable_slash": False,
+            "loop_error_channel": None,
+            "loop_error_guild": None,
         }
         default_global["player_db"] = 0
         default_guild = {
@@ -227,9 +230,35 @@ class Hockey(
                 pass
         await self._get_commit()
 
+    def hockey_loop_error(self, future: asyncio.Future):
+        try:
+            if not future.done():
+                message = "Hockey encountered an error: `{exception}`\n{stack}".format(
+                    exception=future.exception(), stack=box(str(future.get_stack()))
+                )
+                log.exception(message)
+                asyncio.create_task(self.hockey_send_error_task(message))
+        except asyncio.CancelledError:
+            # we ignore cancelled errors
+            pass
+
+    async def hockey_send_error_task(self, message: str):
+        guild = None
+        channel = None
+        if guild_id := await self.config.loop_error_guild():
+            guild = self.bot.get_guild(guild_id)
+        if guild is None:
+            return
+        if channel_id := await self.config.loop_error_channel():
+            channel = guild.get_channel(channel_id)
+        if channel is None:
+            return
+        await channel.send(message)
+
     async def cog_load(self) -> None:
         asyncio.create_task(self.add_cog_to_dev_env())
         self.loop = asyncio.create_task(self.game_check_loop())
+        self.loop.add_done_callback(self.hockey_loop_error)
         await self.migrate_settings()
 
     async def migrate_settings(self) -> None:

@@ -111,13 +111,6 @@ class HockeySetCommands(HockeyMixin):
     # All Hockey setup commands                                           #
     #######################################################################
 
-    @commands.group(name="hockeyslash")
-    async def hockey_slash(self, ctx: commands.Context):
-        """
-        commands for enabling/disabling slash commands
-        """
-        pass
-
     @commands.group(name="hockeyevents", aliases=["nhlevents"])
     @commands.bot_has_permissions(manage_events=True)
     @commands.admin_or_permissions(manage_guild=True)
@@ -223,19 +216,6 @@ class HockeySetCommands(HockeyMixin):
                 image.close()
                 await asyncio.sleep(1)
         await ctx.send(f"Finished creating events for {number_of_games} games.")
-
-    @hockey_slash.command(name="global")
-    @commands.is_owner()
-    async def hockey_global_slash(self, ctx: commands.Context):
-        """Toggle this cog to register slash commands"""
-        current = await self.config.enable_slash()
-        await self.config.enable_slash.set(not current)
-        verb = _("enabled") if not current else _("disabled")
-        await ctx.send(_("Slash commands are {verb}.").format(verb=verb))
-        if not current:
-            self.bot.tree.add_command(self.hockey_commands.app_command)
-        else:
-            self.bot.tree.remove_command("hockey")
 
     async def check_notification_settings(self, guild: discord.Guild, goal: bool = False) -> str:
         reply = ""

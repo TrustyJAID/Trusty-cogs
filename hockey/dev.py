@@ -51,6 +51,22 @@ class HockeyDev(HockeyMixin):
         """
         pass
 
+    @hockeydev.command(name="errorchannel")
+    async def set_loop_error_channel(self, ctx: commands.Context, channel: discord.TextChannel):
+        """
+        Specify an error channel for the hockey loop.
+        """
+        if not channel.permissions_for(ctx.me).send_messages:
+            await ctx.send(
+                "I need permission to send messages in {channel}".format(channel=channel.mention)
+            )
+            return
+        await self.config.loop_error_channel.set(channel.id)
+        await self.config.loop_error_guild.set(channel.guild.id)
+        await ctx.send(
+            "I will attempt to send error messages in {channel}.".format(channel=channel.mention)
+        )
+
     @hockeydev.command(name="resetpickemsweekly", with_app_command=False)
     async def reset_weekly_pickems_data(self, ctx: commands.Context) -> None:
         """
