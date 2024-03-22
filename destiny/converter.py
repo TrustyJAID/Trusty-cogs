@@ -22,6 +22,34 @@ STRING_VAR_RE = re.compile(r"{var:(?P<hash>\d+)}")
 
 
 @dataclass
+class BungieTweet:
+    id: str
+    created_at: str
+    user: str
+    user_id: str
+    text: str
+    raw_text: str
+    lang: str
+    in_reply_to: Optional[str]
+    is_quote_status: bool
+    quote: str
+    possibly_sensitive: Optional[bool]
+    possibly_sensitive_editable: Optional[bool]
+    quote_count: int
+    reply_count: int
+    favorite_count: int
+    favorited: bool
+    view_count: str
+    retweet_count: int
+    editable_until_msecs: Optional[str]
+    is_translatable: bool
+    is_edit_eligible: bool
+    edits_remaining: Optional[str]
+    unix: float
+    url: str
+
+
+@dataclass
 class NewsArticle:
     Title: str
     Link: str

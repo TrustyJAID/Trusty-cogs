@@ -39,6 +39,7 @@ from .menus import (
     BaseMenu,
     BasePages,
     BungieNewsSource,
+    BungieTweetsSource,
     ClanPendingView,
     LoadoutPages,
     PostmasterPages,
@@ -64,7 +65,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.9.0"
+    __version__ = "1.9.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -82,12 +83,20 @@ class Destiny(DestinyAPI, commands.Cog):
         self.config = Config.get_conf(self, 35689771456)
         self.config.register_global(**default_global)
         self.config.register_user(oauth={}, account={}, characters={})
-        self.config.register_guild(clan_id=None, commands={}, news_channel=None, posted_news=[])
+        self.config.register_guild(
+            clan_id=None,
+            commands={},
+            news_channel=None,
+            posted_news=[],
+            posted_tweets=[],
+            tweets_channel=None,
+        )
         self.throttle: float = 0
         self.dashboard_authed: Dict[int, dict] = {}
         self.session = aiohttp.ClientSession(headers={"User-Agent": "Red-TrustyCogs-DestinyCog"})
         self.manifest_check_loop.start()
         self.news_checker.start()
+        self.tweet_checker.start()
         self._manifest: dict = {}
         self._loadout_temp: dict = {}
         self._repo = ""
@@ -162,6 +171,42 @@ class Destiny(DestinyAPI, commands.Cog):
             log.error("Received Destiny OAuth without a code parameter %s - %s", user_id, payload)
             return
         self.dashboard_authed[int(user_id)] = payload
+
+    @tasks.loop(seconds=300)
+    async def tweet_checker(self):
+        try:
+            tweets = await self.bungie_help()
+        except Exception:
+            log.exception("Error Checking bungiehelp.org")
+            return
+        if len(tweets) < 1:
+            return
+
+        guilds = await self.config.all_guilds()
+        article_keys = [a.id for a in tweets]
+        for guild_id, data in guilds.items():
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                continue
+            channel = guild.get_channel(data["tweets_channel"])
+            if channel is None:
+                continue
+            if not channel.permissions_for(guild.me).send_messages:
+                continue
+            for tweet in tweets:
+                if tweet.id in data["posted_tweets"]:
+                    continue
+                await channel.send(content=tweet.url)
+                data["posted_tweets"].append(tweet.id)
+            if len(data["posted_tweets"]) > 25:
+                for old in data["posted_tweets"].copy():
+                    if old not in article_keys and len(data["posted_tweets"]) > 25:
+                        data["posted_tweets"].remove(old)
+            await self.config.guild(guild).posted_news.set(data["posted_tweets"])
+
+    @tweet_checker.before_loop
+    async def before_tweet_checker(self):
+        await self.bot.wait_until_red_ready()
 
     @tasks.loop(seconds=300)
     async def news_checker(self):
@@ -296,6 +341,44 @@ class Destiny(DestinyAPI, commands.Cog):
             await self.config.guild(ctx.guild).posted_news.clear()
             await self.config.guild(ctx.guild).news_channel.clear()
             await ctx.send(_("I will no longer automaticall post news articles in this server."))
+
+    @destiny_set.command(name="tweets")
+    @commands.mod_or_permissions(manage_messages=True)
+    async def destiny_set_tweets(
+        self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
+    ):
+        """
+        Setup a channel to receive Bungie Help tweets automatically
+
+        - `<channel>` The channel you want tweets posted in.
+        """
+        if channel is not None:
+            if not channel.permissions_for(ctx.me).send_messages:
+                await ctx.send(
+                    _("I don't have permission to send messages in {channel}.").format(
+                        channel=channel.mention
+                    )
+                )
+                return
+            try:
+                tweets = await self.bungie_help()
+            except Destiny2APIError:
+                await ctx.send(
+                    _("There was an error getting the current news posts. Please try again later.")
+                )
+                return
+            current = [a.id for a in tweets]
+            await self.config.guild(ctx.guild).posted_tweets.set(current)
+            await self.config.guild(ctx.guild).tweets_channel.set(channel.id)
+            await ctx.send(
+                _("I will now post new Bungie Help tweets in {channel}.").format(
+                    channel=channel.mention
+                )
+            )
+        else:
+            await self.config.guild(ctx.guild).posted_tweets.clear()
+            await self.config.guild(ctx.guild).tweets_channel.clear()
+            await ctx.send(_("I will no longer automaticall post Bungie Help in this server."))
 
     async def send_error_msg(self, ctx: commands.Context, error: Exception):
         if isinstance(error, ServersUnavailable):
@@ -792,6 +875,20 @@ class Destiny(DestinyAPI, commands.Cog):
             except Destiny2APIError as e:
                 return await self.send_error_msg(ctx, e)
             source = BungieNewsSource(news)
+        await BaseMenu(source=source, cog=self).start(ctx=ctx)
+
+    @destiny.command(name="tweets")
+    @commands.bot_has_permissions(embed_links=True)
+    async def destiny_tweets(self, ctx: commands.Context) -> None:
+        """
+        Get the latest news articles from Bungie.net
+        """
+        async with MyTyping(ctx, ephemeral=False):
+            try:
+                tweets = await self.bungie_help()
+            except Destiny2APIError as e:
+                return await self.send_error_msg(ctx, e)
+            source = BungieTweetsSource(tweets)
         await BaseMenu(source=source, cog=self).start(ctx=ctx)
 
     async def get_seal_icon(self, record: dict) -> str:
