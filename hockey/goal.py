@@ -439,7 +439,8 @@ class Goal:
         async with config.teams() as teams:
             for team in teams:
                 if team["team_name"] == self.team_name and team["game_id"] == game_data.game_id:
-                    team["goal_id"][str(self.goal_id)]["goal"] = self.to_json()
+                    team["goal_id"][str(self.goal_id)]["goal"] = updated_goal.to_json()
+                    # Save the most recent version we just sent, not the current goal object
         event.set()
         return
 

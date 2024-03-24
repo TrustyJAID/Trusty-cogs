@@ -18,14 +18,6 @@ from .menu import BaseMenu, SimplePages
 from .pickems import Pickems
 from .standings import Standings
 
-try:
-    from .oilers import Oilers
-
-    LIGHTS_SET = True
-except ImportError:
-    LIGHTS_SET = False
-    pass
-
 _ = Translator("Hockey", __file__)
 
 log = getLogger("red.trusty-cogs.hockey")
@@ -586,19 +578,6 @@ class HockeyDev(HockeyMixin):
                     await self.config.guild(guild).gdc.clear()
 
         await ctx.send(_("Saved servers the bot is no longer on have been removed."))
-
-    @hockeydev.command(hidden=True, with_app_command=False)
-    async def lights(self, ctx: commands.Context) -> None:
-        """
-        Tests the philips Hue light integration
-        This is hard coded at the moment with no plans to make work generally
-        this will be safely ignored.
-        """
-        if LIGHTS_SET:
-            hue = Oilers(self.bot)
-            hue.goal_lights()
-            print("done")
-        await ctx.tick()
 
     @hockeydev.command(hidden=True, with_app_command=False)
     async def testloop(self, ctx: commands.Context) -> None:

@@ -700,10 +700,6 @@ class HockeyMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def lights(self, ctx: commands.Context) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
     async def testloop(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
