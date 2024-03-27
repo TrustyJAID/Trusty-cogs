@@ -926,12 +926,11 @@ class Game:
                 # goal.away_shots = self.away_shots
                 async with cog.config.teams() as teams:
                     for team in teams:
-                        if team["team_name"] != goal.team_name and team["game_id"] != goal.game_id:
-                            continue
-                        team["goal_id"][str(goal.goal_id)] = {
-                            "goal": goal.to_json(),
-                            "messages": [],
-                        }
+                        if team["team_name"] == goal.team_name and team["game_id"] == goal.game_id:
+                            team["goal_id"][str(goal.goal_id)] = {
+                                "goal": goal.to_json(),
+                                "messages": [],
+                            }
                 asyncio.create_task(goal.post_team_goal(bot, self))
                 continue
             if str(goal.goal_id) in team_data[goal.team_name]["goal_id"]:
@@ -943,9 +942,14 @@ class Game:
                     # This is to keep shots consistent between edits
                     # Shots should not update as the game continues
                     bot.dispatch("hockey_goal_edit", self, goal)
-                    old_msgs = team_data[goal.team_name]["goal_id"][str(goal.goal_id)]["messages"]
-                    if old_msgs:
-                        asyncio.create_task(goal.edit_team_goal(bot, self, old_msgs))
+                    asyncio.create_task(goal.edit_team_goal(bot, self))
+                    async with cog.config.teams() as teams:
+                        for team in teams:
+                            if (
+                                team["team_name"] == goal.team_name
+                                and team["game_id"] == goal.game_id
+                            ):
+                                team["goal_id"][str(goal.goal_id)]["goal"] = goal.to_json()
         # attempts to delete the goal if it was called back
         home_diff = home_goal_list.difference(current_home_goals)
         # the difference here from the saved data to the new data returns only goals

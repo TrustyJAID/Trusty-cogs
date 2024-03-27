@@ -347,9 +347,8 @@ class Goal:
         Attempt to delete a goal if it was pulled back
         """
         config = bot.get_cog("Hockey").config
-        team_list = await config.teams()
-        team_data = await get_team(bot, team, data.game_start_str)
-        if goal_id not in [goal.goal_id for goal in data.goals]:
+        team_data = await get_team(bot, team, data.game_start_str, data.game_id)
+        if str(goal_id) not in [str(goal.goal_id) for goal in data.goals]:
             try:
                 old_msgs = team_data["goal_id"][goal_id]["messages"]
             except KeyError:
@@ -362,11 +361,28 @@ class Goal:
                 if not guild:
                     continue
                 channel = await get_channel_obj(bot, int(channel_id), {"guild_id": int(guild_id)})
-                if channel and channel.permissions_for(channel.guild.me).read_message_history:
+                if not channel:
+                    continue
+                if not channel.permissions_for(channel.guild.me).read_message_history:
+                    continue
+                try:
+                    message = channel.get_partial_message(message_id)
+                except (discord.errors.NotFound, discord.errors.Forbidden):
+                    continue
+                except Exception:
+                    log.exception(
+                        "Error getting old goal for %s %s in guild=%s channel=%s",
+                        team,
+                        goal_id,
+                        guild_id,
+                        channel_id,
+                    )
+                    continue
+                if message is not None:
                     try:
-                        message = channel.get_partial_message(message_id)
+                        await message.delete()
                     except (discord.errors.NotFound, discord.errors.Forbidden):
-                        continue
+                        pass
                     except Exception:
                         log.exception(
                             "Error getting old goal for %s %s in guild=%s channel=%s",
@@ -375,35 +391,22 @@ class Goal:
                             guild_id,
                             channel_id,
                         )
-                        continue
-                    if message is not None:
-                        try:
-                            await message.delete()
-                        except (discord.errors.NotFound, discord.errors.Forbidden):
-                            pass
-                        except Exception:
-                            log.exception(
-                                "Error getting old goal for %s %s in guild=%s channel=%s",
-                                team,
-                                goal_id,
-                                guild_id,
-                                channel_id,
-                            )
                 else:
                     log.debug("Channel does not have permission to read history")
             try:
-                team_list.remove(team_data)
-                del team_data["goal_id"][goal_id]
-                team_list.append(team_data)
-                await config.teams.set(team_list)
+                async with config.teams() as team_entries:
+                    for team_entry in team_entries:
+                        if (
+                            team_entry["team_name"] == team
+                            and team_entry["game_id"] == data.game_id
+                        ):
+                            del team_entry["goal_id"][goal_id]
             except Exception:
                 log.exception("Error removing teams goals")
                 return
         return
 
-    async def edit_team_goal(
-        self, bot: Red, game_data: Game, og_msg: List[Tuple[int, ...]]
-    ) -> None:
+    async def edit_team_goal(self, bot: Red, game_data: Game) -> None:
         """
         When a goal scorer has changed we want to edit the original post
         """
@@ -412,8 +415,11 @@ class Goal:
         cog: Hockey = bot.get_cog("Hockey")
         event = cog.get_goal_save_event(game_data.game_id, self.goal_id)
         await event.wait()
+        # Wait until the initial posting has fully completed before continuing to edit
+        og_msg = []
+        old_data = await get_team(bot, self.team_name, game_data.game_start_str, self.game_id)
+        og_msg = old_data["goal_id"].get(str(self.goal_id), {}).get("messages")
         updated_goal = cog.get_current_goal(game_data.game_id, self.goal_id)
-        event.clear()
         em = await updated_goal.goal_post_embed(game_data)
         text = await updated_goal.goal_post_text(game_data)
         if og_msg is None:
@@ -435,13 +441,6 @@ class Goal:
                 # and forget about it. If one never finishes I don't care
             else:
                 await self.edit_goal(bot, channel, message_id, em, text)
-        config = cog.config
-        async with config.teams() as teams:
-            for team in teams:
-                if team["team_name"] == self.team_name and team["game_id"] == game_data.game_id:
-                    team["goal_id"][str(self.goal_id)]["goal"] = updated_goal.to_json()
-                    # Save the most recent version we just sent, not the current goal object
-        event.set()
         return
 
     async def edit_goal(
