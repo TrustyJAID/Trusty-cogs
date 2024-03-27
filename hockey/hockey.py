@@ -461,9 +461,12 @@ class Hockey(
                 for link in self.current_games:
                     if self.current_games[link]["count"] == 21:
                         to_delete.append(link)
-                for link in to_delete:
-                    del self.current_games[link]
-                    del self.saving_goals[link]
+                try:
+                    for link in to_delete:
+                        del self.current_games[link]
+                        del self.saving_goals[link]
+                except KeyError:
+                    pass
                 if not self.api.testing:
                     await asyncio.sleep(60)
                 else:
