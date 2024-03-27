@@ -47,6 +47,21 @@ class BungieTweet:
     edits_remaining: Optional[str]
     unix: float
     url: str
+    media: List[dict]
+
+    @property
+    def time(self) -> datetime:
+        return datetime.fromtimestamp(self.unix, tz=timezone.utc)
+
+
+class BungieXAccount(Enum):
+    BungieHelp = "BungieHelp"
+    DestinyTheGame = "DestinyTheGame"
+    Destiny2Team = "Destiny2Team"
+
+    @property
+    def path(self):
+        return f"{self.value}.json"
 
 
 @dataclass

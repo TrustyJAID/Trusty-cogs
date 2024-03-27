@@ -23,6 +23,7 @@ from tabulate import tabulate
 
 from .api import DestinyAPI, MyTyping
 from .converter import (
+    BungieXAccount,
     DestinyActivity,
     DestinyCharacter,
     DestinyClassType,
@@ -174,16 +175,19 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @tasks.loop(seconds=300)
     async def tweet_checker(self):
-        try:
-            tweets = await self.bungie_help()
-        except Exception:
-            log.exception("Error Checking bungiehelp.org")
-            return
-        if len(tweets) < 1:
+        all_tweets = []
+        for account in BungieXAccount:
+            try:
+                all_tweets.extend(await self.bungie_tweets(account))
+            except Exception:
+                log.exception("Error Checking bungiehelp.org")
+                continue
+        all_tweets.sort(key=lambda x: x.time)
+        if len(all_tweets) < 1:
             return
 
         guilds = await self.config.all_guilds()
-        article_keys = [a.id for a in tweets]
+        article_keys = [a.id for a in all_tweets]
         for guild_id, data in guilds.items():
             guild = self.bot.get_guild(guild_id)
             if guild is None:
@@ -193,7 +197,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 continue
             if not channel.permissions_for(guild.me).send_messages:
                 continue
-            for tweet in tweets:
+            for tweet in all_tweets:
                 if tweet.id in data["posted_tweets"]:
                     continue
                 await channel.send(content=tweet.url)
@@ -361,7 +365,9 @@ class Destiny(DestinyAPI, commands.Cog):
                 )
                 return
             try:
-                tweets = await self.bungie_help()
+                tweets = []
+                for account in BungieXAccount:
+                    tweets.extend(await self.bungie_tweets(account))
             except Destiny2APIError:
                 await ctx.send(
                     _("There was an error getting the current news posts. Please try again later.")
@@ -879,16 +885,24 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command(name="tweets")
     @commands.bot_has_permissions(embed_links=True)
-    async def destiny_tweets(self, ctx: commands.Context) -> None:
+    async def destiny_tweets(
+        self, ctx: commands.Context, account: Optional[BungieXAccount] = None
+    ) -> None:
         """
         Get the latest news articles from Bungie.net
         """
         async with MyTyping(ctx, ephemeral=False):
             try:
-                tweets = await self.bungie_help()
+                if account is None:
+                    all_tweets = []
+                    for account in BungieXAccount:
+                        all_tweets.extend(await self.bungie_tweets(account))
+                    all_tweets.sort(key=lambda x: x.time, reverse=True)
+                else:
+                    all_tweets = await self.bungie_tweets(account)
             except Destiny2APIError as e:
                 return await self.send_error_msg(ctx, e)
-            source = BungieTweetsSource(tweets)
+            source = BungieTweetsSource(all_tweets)
         await BaseMenu(source=source, cog=self).start(ctx=ctx)
 
     async def get_seal_icon(self, record: dict) -> str:
