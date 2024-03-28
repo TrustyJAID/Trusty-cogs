@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum, EnumMeta
-from typing import List, Optional, Union
+from typing import List, NamedTuple, Optional, Union
 
 import discord
 from discord.ext.commands.converter import Converter
@@ -21,33 +21,39 @@ log = getLogger("red.trusty-cogs.Destiny")
 STRING_VAR_RE = re.compile(r"{var:(?P<hash>\d+)}")
 
 
-@dataclass
 class BungieTweet:
-    id: str
-    created_at: str
-    user: str
-    user_id: str
-    text: str
-    raw_text: str
-    lang: str
-    in_reply_to: Optional[str]
-    is_quote_status: bool
-    quote: str
-    possibly_sensitive: Optional[bool]
-    possibly_sensitive_editable: Optional[bool]
-    quote_count: int
-    reply_count: int
-    favorite_count: int
-    favorited: bool
-    view_count: str
-    retweet_count: int
-    editable_until_msecs: Optional[str]
-    is_translatable: bool
-    is_edit_eligible: bool
-    edits_remaining: Optional[str]
-    unix: float
-    url: str
-    media: List[dict]
+    def __init__(self, **kwargs):
+        self.id: str = kwargs.pop("id", "")
+        self.created_at: str = kwargs.pop("created_at", datetime.now(timezone.utc).isoformat())
+        self.user: str = kwargs.pop("user", "")
+        self.user_id: str = kwargs.pop("user_id", "")
+        self.text: str = kwargs.pop("text", "")
+        self.raw_text: str = kwargs.pop("raw_text", "")
+        self.thread_text: str = kwargs.pop("thread_text", "")
+        self.thread_raw_text: str = kwargs.pop("thread_raw_text", "")
+        self.lang: str = kwargs.pop("lang", "en")
+        self.in_reply_to: Optional[str] = kwargs.pop("in_reply_to", "")
+        self.is_quote_status: bool = kwargs.pop("is_quote_status", "")
+        self.quote: str = kwargs.pop("quote", "")
+        self.possibly_sensitive: Optional[bool] = kwargs.pop("possibly_sensitive", False)
+        self.possibly_sensitive_editable: Optional[bool] = kwargs.pop(
+            "possibly_sensitive_editable", True
+        )
+        self.quote_count: int = kwargs.pop("quote_count", 0)
+        self.reply_count: int = kwargs.pop("reply_count", 0)
+        self.favorite_count: int = kwargs.pop("favorite_count", 0)
+        self.favorited: bool = kwargs.pop("favorited", False)
+        self.view_count: str = kwargs.pop("view_count", "")
+        self.retweet_count: int = kwargs.pop("retweet_count", 0)
+        self.editable_until_msecs: Optional[str] = kwargs.pop("editable_until_msecs", "")
+        self.is_translatable: bool = kwargs.pop("is_translatable", False)
+        self.is_edit_eligible: bool = kwargs.pop("is_edit_eligible", True)
+        self.edits_remaining: Optional[str] = kwargs.pop("edits_remaining", "")
+        self.unix: float = kwargs.pop("unix", 0.0)
+        self.url: str = kwargs.pop("url", "")
+        self.media: List[dict] = kwargs.pop("media", [])
+        self._kwargs = kwargs
+        # For everything else that may be added in the future
 
     @property
     def time(self) -> datetime:

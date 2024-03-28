@@ -200,6 +200,8 @@ class Destiny(DestinyAPI, commands.Cog):
             for tweet in all_tweets:
                 if tweet.id in data["posted_tweets"]:
                     continue
+                if not tweet.url:
+                    continue
                 await channel.send(content=tweet.url)
                 data["posted_tweets"].append(tweet.id)
             if len(data["posted_tweets"]) > 25:
