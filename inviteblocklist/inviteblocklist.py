@@ -109,10 +109,12 @@ class InviteBlocklist(commands.Cog):
         """
         Handle messages edited with links
         """
+        if not payload.guild_id:
+            return
         if payload.cached_message:
             guild = payload.cached_message.guild
         else:
-            guild = self.bot.get_guild(int(payload.data.get("guild_id")))
+            guild = self.bot.get_guild(int(payload.guild_id))
         if guild is None:
             return
         chan = guild.get_channel(payload.channel_id)
