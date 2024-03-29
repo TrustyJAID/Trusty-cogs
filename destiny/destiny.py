@@ -113,6 +113,7 @@ class Destiny(DestinyAPI, commands.Cog):
             await self.session.close()
         self.manifest_check_loop.cancel()
         self.news_checker.cancel()
+        self.tweet_checker.cancel()
 
     async def cog_load(self):
         if self.bot.user.id in DEV_BOTS:
