@@ -57,7 +57,6 @@ class Starboard(StarboardEvents, commands.Cog):
 
     async def cog_unload(self) -> None:
         self.ready.clear()
-        self.init_task.cancel()
         if self.cleanup_loop:
             self.cleanup_loop.cancel()
 
