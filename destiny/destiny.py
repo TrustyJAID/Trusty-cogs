@@ -205,9 +205,9 @@ class Destiny(DestinyAPI, commands.Cog):
                     continue
                 await channel.send(content=tweet.url)
                 data["posted_tweets"].append(tweet.id)
-            if len(data["posted_tweets"]) > 25:
+            if len(data["posted_tweets"]) > 100:
                 for old in data["posted_tweets"].copy():
-                    if old not in article_keys and len(data["posted_tweets"]) > 25:
+                    if old not in article_keys and len(data["posted_tweets"]) > 100:
                         data["posted_tweets"].remove(old)
             await self.config.guild(guild).posted_tweets.set(data["posted_tweets"])
 
