@@ -956,9 +956,9 @@ class Game:
         # that are missing from the old data and ignores new goals in the current data
         away_diff = away_goal_list.difference(current_away_goals)
         for goal_str in home_diff:
-            await Goal.remove_goal_post(bot, goal_str, self.home_team, self)
+            asyncio.create_task(Goal.remove_goal_post(bot, goal_str, self.home_team, self))
         for goal_str in away_diff:
-            await Goal.remove_goal_post(bot, goal_str, self.away_team, self)
+            asyncio.create_task(Goal.remove_goal_post(bot, goal_str, self.away_team, self))
 
     async def save_game_state(self, bot: Red, time_to_game_start: str = "0") -> None:
         """

@@ -250,7 +250,10 @@ class Goal:
         async with config.teams() as teams:
             for team in teams:
                 if team["team_name"] == self.team_name and team["game_id"] == game_data.game_id:
-                    team["goal_id"][str(self.goal_id)]["messages"] = msg_list
+                    try:
+                        team["goal_id"][str(self.goal_id)]["messages"] = msg_list
+                    except KeyError:
+                        log.error("Error saving message list for goal %r", self)
         event.set()
         return msg_list
 
@@ -346,7 +349,10 @@ class Goal:
         """
         Attempt to delete a goal if it was pulled back
         """
-        config = bot.get_cog("Hockey").config
+        cog: Hockey = bot.get_cog("Hockey")
+        config = cog.config
+        event = cog.get_goal_save_event(data.game_id, goal_id)
+        await event.wait()
         team_data = await get_team(bot, team, data.game_start_str, data.game_id)
         if str(goal_id) not in [str(goal.goal_id) for goal in data.goals]:
             try:
@@ -356,6 +362,7 @@ class Goal:
             except Exception:
                 log.exception("Error iterating saved goals")
                 return
+            msgs = []
             for guild_id, channel_id, message_id in old_msgs:
                 guild = bot.get_guild(int(guild_id))
                 if not guild:
@@ -365,45 +372,30 @@ class Goal:
                     continue
                 if not channel.permissions_for(channel.guild.me).read_message_history:
                     continue
+                msgs.append(channel.get_partial_message(message_id))
+
+            async for message in AsyncIter(msgs, delay=5, steps=5):
                 try:
-                    message = channel.get_partial_message(message_id)
+                    await message.delete()
                 except (discord.errors.NotFound, discord.errors.Forbidden):
-                    continue
+                    pass
                 except Exception:
                     log.exception(
                         "Error getting old goal for %s %s in guild=%s channel=%s",
                         team,
                         goal_id,
-                        guild_id,
-                        channel_id,
+                        message.guild.id,
+                        message.channel.id,
                     )
-                    continue
-                if message is not None:
-                    try:
-                        await message.delete()
-                    except (discord.errors.NotFound, discord.errors.Forbidden):
-                        pass
-                    except Exception:
-                        log.exception(
-                            "Error getting old goal for %s %s in guild=%s channel=%s",
-                            team,
-                            goal_id,
-                            guild_id,
-                            channel_id,
-                        )
-                else:
-                    log.debug("Channel does not have permission to read history")
-            try:
-                async with config.teams() as team_entries:
-                    for team_entry in team_entries:
-                        if (
-                            team_entry["team_name"] == team
-                            and team_entry["game_id"] == data.game_id
-                        ):
+
+            async with config.teams() as team_entries:
+                for team_entry in team_entries:
+                    if team_entry["team_name"] == team and team_entry["game_id"] == data.game_id:
+                        try:
                             del team_entry["goal_id"][goal_id]
-            except Exception:
-                log.exception("Error removing teams goals")
-                return
+                        except KeyError:
+                            log.exception("Error removing teams goals")
+                            continue
         return
 
     async def edit_team_goal(self, bot: Red, game_data: Game) -> None:
