@@ -2,7 +2,7 @@ import re
 from typing import Pattern, Union
 
 import discord
-from discord.ext.commands.converter import IDConverter, InviteConverter
+from discord.ext.commands.converter import IDConverter
 from discord.ext.commands.errors import BadArgument
 from red_commons.logging import getLogger
 from redbot.core import Config, VersionInfo, commands, version_info
@@ -17,15 +17,6 @@ INVITE_RE: Pattern = re.compile(
     r"(?:https?\:\/\/)?discord(?:\.gg|(?:app)?\.com\/invite)\/(.+)", re.I
 )
 # https://github.com/Rapptz/discord.py/blob/master/discord/utils.py#L448
-
-
-class ValidServerID(IDConverter):
-    async def convert(self, ctx: commands.Context, argument: str):
-        match = self._get_id_match(argument)
-        if not match:
-            raise BadArgument("The ID provided does not appear to be valid.")
-        guild_id = int(match.group(1))
-        return guild_id
 
 
 class ChannelUserRole(IDConverter):
@@ -78,7 +69,7 @@ class ChannelUserRole(IDConverter):
 
 class InviteBlocklist(commands.Cog):
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.4"
+    __version__ = "1.1.5"
 
     def __init__(self, bot):
         self.bot = bot
@@ -225,14 +216,14 @@ class InviteBlocklist(commands.Cog):
         """
         pass
 
-    @invite_block.group(name="blocklist", aliases=["blacklist", "bl"])
+    @invite_block.group(name="blocklist", aliases=["blacklist", "bl", "block"])
     async def invite_blocklist(self, ctx: commands.Context):
         """
         Commands for setting the blocklist
         """
         pass
 
-    @invite_block.group(name="allowlist", aliases=["whitelist", "wl", "al"])
+    @invite_block.group(name="allowlist", aliases=["whitelist", "wl", "al", "allow"])
     async def invite_allowlist(self, ctx: commands.Context):
         """
         Commands for setting the blocklist
@@ -269,7 +260,9 @@ class InviteBlocklist(commands.Cog):
 
     @invite_blocklist.command(name="add")
     async def add_to_blocklist(
-        self, ctx: commands.Context, *invite_or_guild_id: Union[InviteConverter, ValidServerID]
+        self,
+        ctx: commands.Context,
+        *invite_or_guild_id: Union[discord.Invite, discord.Guild, int],
     ):
         """
         Add a guild ID to the blocklist, providing an invite link will also work
@@ -284,12 +277,12 @@ class InviteBlocklist(commands.Cog):
                     if i not in blacklist:
                         blacklist.append(i)
                         guilds_blocked.append(str(i))
-                if isinstance(i, discord.Invite):
+                elif isinstance(i, discord.Invite):
                     if i.guild and i.guild.id not in blacklist:
-                        blacklist.append(i.guild.id)
                         guilds_blocked.append(f"{i.guild.name} - {i.guild.id}")
-                else:
-                    if i.id in blacklist:
+                        blacklist.append(i.guild.id)
+                elif isinstance(i, discord.Guild):
+                    if i.id not in blacklist:
                         guilds_blocked.append(f"{i.name} - {i.id}")
                         blacklist.append(i.id)
         if guilds_blocked:
@@ -299,11 +292,11 @@ class InviteBlocklist(commands.Cog):
         else:
             await ctx.send(_("None of the provided invite links or guild ID's are new."))
 
-    @invite_blocklist.group(name="remove", aliases=["del", "rem"])
+    @invite_blocklist.command(name="remove", aliases=["del", "rem"])
     async def remove_from_blocklist(
         self,
         ctx: commands.Context,
-        *thing_to_block: Union[InviteConverter, ValidServerID],
+        *thing_to_block: Union[discord.Invite, discord.Guild, int],
     ):
         """
         Add a guild ID to the blocklist, providing an invite link will also work
@@ -318,11 +311,11 @@ class InviteBlocklist(commands.Cog):
                     if i in blacklist:
                         blacklist.remove(i)
                         guilds_blocked.append(str(i))
-                if isinstance(i, discord.Invite):
+                elif isinstance(i, discord.Invite):
                     if i.guild and i.guild.id in blacklist:
                         guilds_blocked.append(f"{i.guild.name} - {i.guild.id}")
                         blacklist.remove(i.guild.id)
-                else:
+                elif isinstance(i, discord.Guild):
                     if i.id in blacklist:
                         guilds_blocked.append(f"{i.name} - {i.id}")
                         blacklist.remove(i.id)
@@ -358,7 +351,9 @@ class InviteBlocklist(commands.Cog):
 
     @invite_allowlist.command(name="add")
     async def add_to_allowlist(
-        self, ctx: commands.Context, *invite_or_guild_id: Union[InviteConverter, ValidServerID]
+        self,
+        ctx: commands.Context,
+        *invite_or_guild_id: Union[discord.Invite, discord.Guild, int],
     ):
         """
         Add a guild ID to the allowlist, providing an invite link will also work
@@ -373,10 +368,14 @@ class InviteBlocklist(commands.Cog):
                     if i not in whitelist:
                         whitelist.append(i)
                         guilds_blocked.append(str(i))
-                else:
+                elif isinstance(i, discord.Invite):
                     if i.guild and i.guild.id not in whitelist:
-                        whitelist.append(i.guild.id)
                         guilds_blocked.append(f"{i.guild.name} - {i.guild.id}")
+                        whitelist.append(i.guild.id)
+                elif isinstance(i, discord.Guild):
+                    if i.id not in whitelist:
+                        guilds_blocked.append(f"{i.name} - {i.id}")
+                        whitelist.append(i.id)
         if guilds_blocked:
             await ctx.send(
                 _("Now Allowing invites from {guild}.").format(guild=humanize_list(guilds_blocked))
@@ -386,7 +385,9 @@ class InviteBlocklist(commands.Cog):
 
     @invite_allowlist.command(name="remove", aliases=["del", "rem"])
     async def remove_from_allowlist(
-        self, ctx: commands.Context, *invite_or_guild_id: Union[InviteConverter, ValidServerID]
+        self,
+        ctx: commands.Context,
+        *invite_or_guild_id: Union[discord.Invite, discord.Guild, int],
     ):
         """
         Add a guild ID to the allowlist, providing an invite link will also work
@@ -401,10 +402,14 @@ class InviteBlocklist(commands.Cog):
                     if i in whitelist:
                         whitelist.remove(i)
                         guilds_blocked.append(str(i))
-                else:
+                elif isinstance(i, discord.Invite):
                     if i.guild and i.guild.id in whitelist:
                         guilds_blocked.append(f"{i.guild.name} - {i.guild.id}")
                         whitelist.remove(i.guild.id)
+                elif isinstance(i, discord.Guild):
+                    if i.id in whitelist:
+                        guilds_blocked.append(f"{i.name} - {i.id}")
+                        whitelist.remove(i.id)
         if guilds_blocked:
             await ctx.send(
                 _("Removed {guild} from allowlist.").format(guild=humanize_list(guilds_blocked))
