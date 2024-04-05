@@ -8,7 +8,7 @@ from red_commons.logging import getLogger
 from redbot.core import Config, checks, commands, i18n
 from redbot.core.utils.views import SetApiView
 
-from .api import HEADERS, APIError, Geocoding, Units, Zipcode
+from .api import HEADERS, APIError, Geocoding, Units
 from .menus import BaseMenu, WeatherPages
 
 _ = i18n.Translator("Weather", __file__)
@@ -21,12 +21,12 @@ class Weather(commands.Cog):
     """Get weather data from https://openweathermap.org"""
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.4.0"
+    __version__ = "1.5.0"
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 138475464)
-        self.config.register_global(units=None)
+        self.config.register_global(units=None, api_version="2.5")
         self.config.register_guild(units=None)
         self.config.register_user(units=None)
         self.session = aiohttp.ClientSession(headers=HEADERS)
@@ -67,8 +67,11 @@ class Weather(commands.Cog):
             units = Units(user_units)
         return units
 
-    def get_lang(self, ctx: commands.Context) -> Optional[str]:
+    async def get_lang(self, ctx: commands.Context) -> Optional[str]:
         if not ctx.interaction:
+            locale = await i18n.get_locale_from_guild(self.bot, ctx.guild)
+            if locale:
+                return locale.replace("-", "_")
             return None
         lang = str(ctx.interaction.locale)
         return lang.replace("-", "_")
@@ -112,17 +115,20 @@ class Weather(commands.Cog):
                 return
             if not units:
                 units = await self.get_units(ctx)
-            lang = self.get_lang(ctx)
+            lang = await self.get_lang(ctx)
             try:
                 resp = await Geocoding.get(appid, search, limit=5, session=self.session)
             except APIError as e:
-                await ctx.send(e)
+                await ctx.send(_("Error Retrieving Location: {error}").format(error=e))
                 return
             if not resp:
                 await ctx.send(_("No locations found matching `{search}`.").format(search=search))
                 return
+        api_version = await self.config.api_version()
         await BaseMenu(
-            appid=appid, source=WeatherPages(resp, units, lang, forecast), session=self.session
+            appid=appid,
+            source=WeatherPages(resp, units, lang, forecast, api_version=api_version),
+            session=self.session,
         ).start(ctx=ctx)
 
     @weather.command(name="zip")
@@ -153,14 +159,17 @@ class Weather(commands.Cog):
                 return
             if not units:
                 units = await self.get_units(ctx)
-            lang = self.get_lang(ctx)
+            lang = await self.get_lang(ctx)
             try:
-                resp = await Zipcode.get(appid=appid, zipcode=zipcode, session=self.session)
+                resp = await Geocoding.get_zip(appid=appid, zipcode=zipcode, session=self.session)
             except APIError as e:
-                await ctx.send(e)
+                await ctx.send(_("Error Retrieving Location: {error}").format(error=e))
                 return
+        api_version = await self.config.api_version()
         await BaseMenu(
-            appid=appid, source=WeatherPages([resp], units, lang, forecast), session=self.session
+            appid=appid,
+            source=WeatherPages([resp], units, lang, forecast, api_version=api_version),
+            session=self.session,
         ).start(ctx=ctx)
 
     @weather.command(name="coords", aliases=["co", "coordinates"])
@@ -193,21 +202,24 @@ class Weather(commands.Cog):
                 return
             if not units:
                 units = await self.get_units(ctx)
-            lang = self.get_lang(ctx)
+            lang = await self.get_lang(ctx)
             try:
                 resp = await Geocoding.reverse(
                     appid, lat=lat, lon=lon, limit=5, session=self.session
                 )
             except APIError as e:
-                await ctx.send(e)
+                await ctx.send(_("Error Retrieving Location: {error}").format(error=e))
                 return
             if not resp:
                 await ctx.send(
                     _("No locations found matching `{lat}, {lon}`.").format(lat=lat, lon=lon)
                 )
                 return
+        api_version = await self.config.api_version()
         await BaseMenu(
-            appid=appid, source=WeatherPages(resp, units, lang, forecast), session=self.session
+            appid=appid,
+            source=WeatherPages(resp, units, lang, forecast, api_version=api_version),
+            session=self.session,
         ).start(ctx=ctx)
 
     @weather.group(name="set")
@@ -253,6 +265,26 @@ class Weather(commands.Cog):
             _("{author} default units set to `{units}`").format(
                 author=author.display_name, units=units.name
             )
+        )
+
+    @weather_set.command(name="version", with_app_command=False)
+    @commands.is_owner()
+    async def set_api_version(self, ctx: commands.Context, version: Optional[str] = None):
+        """
+        Customise the API version used by the cog.
+
+        This is mainly to setup using the new OneCall 3.0 version but that requires
+        a valid credit card setup on the account even for the free tier.
+        By default we will try to use the 2.5 OneCall API which has historically
+        only required the basic free tier account for an API token.
+        """
+        if version is None:
+            await self.config.api_version.clear()
+            await ctx.send(_("I will attempt to use the `2.5` OneCall API."))
+            return
+        await self.config.api_version.set(version)
+        await ctx.send(
+            _("I will attempt to use the `{version}` OneCall API.").format(version=version)
         )
 
     @weather_set.command(name="creds", with_app_command=False)

@@ -11,7 +11,7 @@ from redbot.core.commands import commands
 from redbot.core.i18n import Translator
 from redbot.vendored.discord.ext import menus
 
-from .api import APIError, Geocoding, OneCall, Units, Zipcode
+from .api import APIError, Geocoding, OneCall, Units
 
 log = getLogger("red.Trusty-cogs.weather")
 _ = Translator("Weather", __file__)
@@ -20,10 +20,12 @@ _ = Translator("Weather", __file__)
 class WeatherPages(menus.ListPageSource):
     def __init__(
         self,
-        pages: List[Union[Geocoding, Zipcode]],
+        pages: List[Geocoding],
         units: Units,
         lang: Optional[str],
         forecast: Optional[bool] = False,
+        *,
+        api_version: str,
     ):
         super().__init__(pages, per_page=1)
         self.units = units
@@ -35,8 +37,9 @@ class WeatherPages(menus.ListPageSource):
         ]
         self._last_we = None
         self._last_coords = None
+        self.api_version = api_version
 
-    async def format_page(self, view: BaseMenu, page: Union[Geocoding, Zipcode]):
+    async def format_page(self, view: BaseMenu, page: Geocoding):
         log.verbose("WeatherPages page: %s", page)
         if self._last_coords != page:
             try:
@@ -50,9 +53,10 @@ class WeatherPages(menus.ListPageSource):
                     state=page.state,
                     country=page.country,
                     session=view.session,
+                    api_version=self.api_version,
                 )
             except APIError as e:
-                return str(e)
+                return _("Error retriving weather data: {error}").format(error=e)
         else:
             we = self._last_we
         if self._last_coords is None:

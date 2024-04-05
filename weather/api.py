@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Union
 
 import aiohttp
 import discord
@@ -195,12 +195,14 @@ class Precipitation:
 
 @dataclass
 class Geocoding:
-    name: str
-    lat: float
-    lon: float
-    country: str
-    local_names: Optional[Dict[str, str]] = None
-    state: Optional[str] = None
+    def __init__(self, **kwargs):
+        self.name: Optional[str] = kwargs.get("name")
+        self.lat: Optional[float] = kwargs.get("lat")
+        self.lon: Optional[float] = kwargs.get("lon")
+        self.country: Optional[str] = kwargs.get("country")
+        self.local_names: Optional[Dict[str, str]] = kwargs.get("local_names")
+        self.state: Optional[str] = kwargs.get("state")
+        self.zipcode: Optional[str] = kwargs.get("zipcode")
 
     @property
     def location(self):
@@ -239,6 +241,32 @@ class Geocoding:
         return [cls.from_json(i) for i in data]
 
     @classmethod
+    async def get_zip(
+        cls,
+        appid: str,
+        zipcode: str,
+        *,
+        session: Optional[aiohttp.ClientSession] = None,
+    ) -> Geocoding:
+        url = "http://api.openweathermap.org/geo/1.0/zip"
+        params = {
+            "zip": zipcode,
+            "appid": appid,
+        }
+        if session is None:
+            async with aiohttp.ClientSession(headers=HEADERS) as session:
+                async with session.get(url, params=params) as resp:
+                    data = await resp.json()
+        else:
+            async with session.get(url, params=params) as resp:
+                data = await resp.json()
+        log.debug("Zipcode get data: %s", data)
+        if "cod" in data and data["cod"] != "200":
+            raise APIError(data["message"])
+
+        return cls.from_json(data)
+
+    @classmethod
     async def reverse(
         cls,
         appid: str,
@@ -268,85 +296,61 @@ class Geocoding:
 
 
 @dataclass
-class Zipcode:
-    zipcode: str
-    name: str
-    lat: float
-    lon: float
-    country: str
-    state: Optional[str] = None
+class Temperature:
+    def __init__(self, **kwargs):
+        self.units: Units = kwargs.get("units", Units.standard)
+        self.day: Optional[float] = kwargs.get("day")
+        self.night: Optional[float] = kwargs.get("night")
+        self.eve: Optional[float] = kwargs.get("eve")
+        self.morn: Optional[float] = kwargs.get("morn")
+        self.min: Optional[float] = kwargs.get("min")
+        self.max: Optional[float] = kwargs.get("max")
 
-    @property
-    def location(self):
-        if self.state:
-            return f"{self.name}, {self.state}, {self.country}"
-        return f"{self.zipcode}, {self.name}, {self.country}"
-
-    @classmethod
-    def from_json(cls, data: dict) -> Zipcode:
-        return cls(zipcode=data.pop("zip"), **data)
+    def __str__(self):
+        if self.min and self.max:
+            return f"{self.min}-{self.max} {self.units.get().temp}"
+        return f"{self.max} {self.units.get().temp}"
 
     @classmethod
-    async def get(
-        cls,
-        appid: str,
-        zipcode: str,
-        *,
-        session: Optional[aiohttp.ClientSession] = None,
-    ) -> Zipcode:
-        url = "http://api.openweathermap.org/geo/1.0/zip"
-        params = {
-            "zip": zipcode,
-            "appid": appid,
-        }
-        if session is None:
-            async with aiohttp.ClientSession(headers=HEADERS) as session:
-                async with session.get(url, params=params) as resp:
-                    data = await resp.json()
-        else:
-            async with session.get(url, params=params) as resp:
-                data = await resp.json()
-        log.debug("Zipcode get data: %s", data)
-        if "cod" in data and data["cod"] != "200":
-            raise APIError(data["message"])
-
-        return cls.from_json(data)
+    def from_data(cls, data: Union[dict, float], units: Units):
+        if isinstance(data, dict):
+            return cls(**data, units=units)
+        return cls(max=data, units=units)
 
 
 @dataclass
 class CurrentWeather:
-    dt: int
-    temp: float
-    feels_like: float
-    pressure: int
-    humidity: int
-    dew_point: float
-    uvi: float
-    clouds: int
-    visibility: int
-    wind_speed: int
-    wind_deg: int
-    weather: List[WeatherType]
-    units: Units
-    sunrise: Optional[int] = None
-    sunset: Optional[int] = None
-    wind_gust: Optional[float] = None
-    rain: Optional[Precipitation] = None
-    snow: Optional[Precipitation] = None
+    def __init__(self, **kwargs):
+        self.dt: Optional[int] = kwargs.get("dt")
+        self.temp: Optional[float] = kwargs.get("temp")
+        self.feels_like: Optional[float] = kwargs.get("feels_like")
+        self.pressure: Optional[int] = kwargs.get("pressure")
+        self.humidity: Optional[int] = kwargs.get("humidity")
+        self.dew_point: Optional[float] = kwargs.get("dew_point")
+        self.uvi: Optional[float] = kwargs.get("uvi")
+        self.clouds: Optional[int] = kwargs.get("clouds")
+        self.wind_speed: Optional[float] = kwargs.get("wind_speed")
+        self.wind_deg: Optional[int] = kwargs.get("wind_deg")
+        self.weather: List[WeatherType] = kwargs.get("weather", [])
+        self.units: Units = kwargs.get("units", Units.standard)
+        self.visibility: Optional[int] = kwargs.get("visibility")
+        self.sunrise: Optional[int] = kwargs.get("sunrise")
+        self.sunset: Optional[int] = kwargs.get("sunset")
+        self.wind_gust: Optional[float] = kwargs.get("wind_gust")
+        self.rain: Optional[Union[Precipitation, float]] = kwargs.get("rain")
+        self.snow: Optional[Union[Precipitation, float]] = kwargs.get("snow")
 
     def __str__(self):
-        temp_units = self.units.get().temp
         sunrise_ts = f"<t:{self.sunrise}:t>" if self.sunrise else _("No Data")
         sunset_ts = f"<t:{self.sunset}:t>" if self.sunset else _("No Data")
         windspeed = str(self.wind_speed) + " " + self.units.get().speed
-        cloudiness_emoji = WEATHER_EMOJIS[get_cloud_num(self.clouds)]
+        cloudiness_emoji = WEATHER_EMOJIS[get_cloud_num(self.clouds or 0)]
         ret = _(
             "{weather_emoji} **Weather**: {weather}\n"
             "\N{FACE WITH COLD SWEAT} **Humidity**: {humidity}%\n"
             "\N{DASH SYMBOL} **Wind Speed**: {wind_speed} {direction}\n"
-            "\N{THERMOMETER} **Temperature**: {temp} {temp_units}\n"
+            "\N{THERMOMETER} **Temperature**: {temp}\n"
             "{cloudiness_emoji} **Cloudiness**: {clouds}%\n"
-            "\N{EYEGLASSES} **Visibility**: {visibility} m\n"
             "\N{SUNRISE OVER MOUNTAINS} **Sunrise**: {sunrise_ts}\n"
             "\N{SUNSET OVER BUILDINGS} **Sunset**: {sunset_ts}\n"
             "\N{BLACK SUN WITH RAYS}\N{VARIATION SELECTOR-16} **UV Index**: {uvi}\n"
@@ -360,13 +364,15 @@ class CurrentWeather:
             temp=self.temp,
             cloudiness_emoji=cloudiness_emoji,
             clouds=self.clouds,
-            visibility=self.visibility,
-            temp_units=temp_units,
             sunrise_ts=sunrise_ts,
             sunset_ts=sunset_ts,
             uvi=self.uvi,
             pressure=self.pressure,
         )
+        if self.visibility:
+            ret += _("\N{EYEGLASSES} **Visibility**: {visibility} m\n").format(
+                visibility=self.visibility
+            )
         if self.rain:
             ret += _("\N{CLOUD WITH RAIN}\N{VARIATION SELECTOR-16} **Rain**: {rain}\n").format(
                 rain=str(self.rain)
@@ -389,11 +395,17 @@ class CurrentWeather:
     @classmethod
     def from_json(cls, data: dict, units: Units) -> CurrentWeather:
         rain = data.pop("rain", None)
+        if rain and isinstance(rain, dict):
+            rain = Precipitation(h1=rain.pop("1h", None), h3=rain.pop("3h", None))
         snow = data.pop("snow", None)
+        if snow and isinstance(snow, dict):
+            snow = Precipitation(h1=snow.pop("1h", None), h3=snow.pop("3h", None))
+        temp = Temperature.from_data(data.pop("temp"), units)
         return cls(
             weather=[WeatherType(**i) for i in data.pop("weather", [])],
-            rain=Precipitation(h1=rain.pop("1h", None), h3=rain.pop("3h", None)) if rain else None,
-            snow=Precipitation(h1=snow.pop("1h", None), h3=snow.pop("3h", None)) if snow else None,
+            temp=temp,
+            rain=rain,
+            snow=snow,
             units=units,
             **data,
         )
@@ -410,189 +422,42 @@ class MinutelyWeather:
 
 
 @dataclass
-class HourlyWeather:
-    dt: int
-    temp: float
-    feels_like: float
-    pressure: int
-    humidity: int
-    dew_point: float
-    uvi: float
-    clouds: int
-    visibility: int
-    wind_speed: float
-    wind_deg: int
-    weather: List[WeatherType]
-    pop: int
-    units: Units
-    wind_gust: Optional[float] = None
-    rain: Optional[Precipitation] = None
-    snow: Optional[Precipitation] = None
-
-    @property
-    def datetime(self):
-        return datetime.fromtimestamp(self.dt)
-
-    @property
-    def wind_dir(self):
-        index = int(self.wind_speed // 22.5)
-        return WIND_DIRECTION[index]
-
-    def __str__(self):
-        temp_units = self.units.get().temp
-        windspeed = str(self.wind_speed) + " " + self.units.get().speed
-        cloudiness_emoji = WEATHER_EMOJIS[get_cloud_num(self.clouds)]
-        ret = _(
-            "{weather_emoji} **Weather**: {weather}\n"
-            "\N{FACE WITH COLD SWEAT} **Humidity**: {humidity}%\n"
-            "\N{DASH SYMBOL} **Wind Speed**: {wind_speed} {direction}\n"
-            "\N{THERMOMETER} **Temperature**: {temp} {temp_units}\n"
-            "{cloudiness_emoji} **Cloudiness**: {clouds}%\n"
-            "\N{EYEGLASSES} **Visibility**: {visibility} m\n"
-            "\N{BLACK SUN WITH RAYS}\N{VARIATION SELECTOR-16} **UV Index**: {uvi}\n"
-            "\N{BALLOON} **Atmospheric Pressure**: {pressure} hPa\n"
-        ).format(
-            weather_emoji="".join(i.emoji for i in self.weather),
-            weather=humanize_list([i.description for i in self.weather]),
-            humidity=self.humidity,
-            wind_speed=windspeed,
-            direction=self.wind_dir,
-            temp=self.temp,
-            temp_units=temp_units,
-            cloudiness_emoji=cloudiness_emoji,
-            clouds=self.clouds,
-            uvi=self.uvi,
-            pressure=self.pressure,
-            visibility=self.visibility,
-        )
-        if self.rain:
-            ret += _("\N{CLOUD WITH RAIN}\N{VARIATION SELECTOR-16} **Rain**: {rain}\n").format(
-                rain=str(self.rain)
-            )
-        if self.snow:
-            ret += _("\N{CLOUD WITH SNOW}\N{VARIATION SELECTOR-16} **Snow**: {snow}\n").format(
-                snow=str(self.snow)
-            )
-        return ret
-
-    @classmethod
-    def from_json(cls, data: dict, units: Units) -> HourlyWeather:
-        rain = data.pop("rain", None)
-        snow = data.pop("snow", None)
-        return cls(
-            weather=[WeatherType(**i) for i in data.pop("weather", [])],
-            units=units,
-            rain=Precipitation(h1=rain.pop("1h"), h3=None) if rain else None,
-            snow=Precipitation(h1=snow.pop("1h"), h3=None) if snow else None,
-            **data,
-        )
+class HourlyWeather(CurrentWeather):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.pop: Optional[int] = kwargs.get("pop")
 
 
 @dataclass
-class Temperature:
-    day: float
-    night: float
-    eve: float
-    morn: float
-    min: Optional[float] = None
-    max: Optional[float] = None
-
-
-@dataclass
-class DailyWeather:
-    dt: int
-    sunrise: int
-    sunset: int
-    moonrise: int
-    moonset: int
-    moon_phase: float
-    temp: Temperature
-    feels_like: Temperature
-    pressure: int
-    humidity: int
-    dew_point: float
-    wind_speed: float
-    wind_deg: int
-    weather: List[WeatherType]
-    clouds: int
-    pop: float
-    uvi: float
-    units: Units
-    wind_gust: Optional[float] = None
-    rain: Optional[float] = None
-    snow: Optional[float] = None
-
-    @property
-    def datetime(self):
-        return datetime.fromtimestamp(self.dt)
-
-    @property
-    def wind_dir(self):
-        index = int(self.wind_speed // 22.5)
-        return WIND_DIRECTION[index]
+class DailyWeather(CurrentWeather):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.pop: Optional[float] = kwargs.get("pop")
+        self.sunrise: Optional[int] = kwargs.get("sunrise")
+        self.sunset: Optional[int] = kwargs.get("sunset")
+        self.moonrise: Optional[int] = kwargs.get("moonrise")
+        self.moonset: Optional[int] = kwargs.get("moonset")
+        self.moon_phase: Optional[float] = kwargs.get("moon_phase")
+        self.summary: Optional[str] = kwargs.get("summary")
 
     def __str__(self):
-        temp_units = self.units.get().temp
-        sunrise_ts = f"<t:{self.sunrise}:t>"
-        sunset_ts = f"<t:{self.sunset}:t>"
-        windspeed = str(self.wind_speed) + " " + self.units.get().speed
+        ret = super().__str__()
+        if self.summary:
+            ret = f"{self.summary}\n{ret}"
         moon = MOONS[int(self.moon_phase // 0.125)]
-        cloudiness_emoji = WEATHER_EMOJIS[get_cloud_num(self.clouds)]
-        ret = _(
-            "{weather_emoji} **Weather**: {weather}\n"
-            "\N{FACE WITH COLD SWEAT} **Humidity**: {humidity}%\n"
-            "\N{DASH SYMBOL} **Wind Speed**: {wind_speed} {direction}\n"
-            "\N{THERMOMETER} **Temperature**: {temp} {temp_units}\n"
-            "{cloudiness_emoji} **Cloudiness**: {clouds}%\n"
-            "\N{SUNRISE OVER MOUNTAINS} **Sunrise**: {sunrise_ts}\n"
-            "\N{SUNSET OVER BUILDINGS} **Sunset**: {sunset_ts}\n"
-            "\N{BLACK SUN WITH RAYS}\N{VARIATION SELECTOR-16} **UV Index**: {uvi}\n"
-            "\N{BALLOON} **Atmospheric Pressure**: {pressure} hPa\n"
-        ).format(
-            weather_emoji="".join(i.emoji for i in self.weather),
-            weather=humanize_list([i.description for i in self.weather]),
-            humidity=self.humidity,
-            wind_speed=windspeed,
-            direction=self.wind_dir,
-            temp=f"{self.temp.min}-{self.temp.max}",
-            temp_units=temp_units,
-            cloudiness_emoji=cloudiness_emoji,
-            clouds=self.clouds,
-            sunrise_ts=sunrise_ts,
-            sunset_ts=sunset_ts,
-            uvi=self.uvi,
-            pressure=self.pressure,
-        )
-        if self.rain:
-            ret += _("\N{CLOUD WITH RAIN}\N{VARIATION SELECTOR-16} **Rain**: {rain} mm\n").format(
-                rain=self.rain
-            )
-        if self.snow:
-            ret += _("\N{CLOUD WITH SNOW}\N{VARIATION SELECTOR-16} **Snow**: {snow} mm\n").format(
-                snow=self.snow
-            )
         ret += _("Moon Phase: {moon}").format(moon=moon)
         return ret
-
-    @classmethod
-    def from_json(cls, data: dict, units: Units) -> DailyWeather:
-        return cls(
-            weather=[WeatherType(**i) for i in data.pop("weather", [])],
-            temp=Temperature(**data.pop("temp")),
-            feels_like=Temperature(**data.pop("feels_like")),
-            units=units,
-            **data,
-        )
 
 
 @dataclass
 class Alert:
-    sender_name: str
-    event: str
-    start: int
-    end: int
-    description: str
-    tags: List[str]
+    def __init__(self, **kwargs):
+        self.sender_name: str = kwargs.get("sender_name", "")
+        self.event: str = kwargs.get("event", "")
+        self.start: int = kwargs.get("start", 0)
+        self.end: int = kwargs.get("end", 0)
+        self.description: str = kwargs.get("description", "")
+        self.tags: List[str] = kwargs.get("tags", [])
 
     def __str__(self):
         return "\N{WARNING SIGN}\N{VARIATION SELECTOR-16} {0.event}: <t:{0.start}> - <t:{0.end}>".format(
@@ -606,19 +471,20 @@ class Alert:
 
 @dataclass
 class OneCall:
-    lat: float
-    lon: float
-    timezone: str
-    timezone_offset: int
-    current: CurrentWeather
-    minutely: List[MinutelyWeather]
-    hourly: List[HourlyWeather]
-    daily: List[DailyWeather]
-    alerts: List[Alert]
-    units: Units
-    name: str
-    state: Optional[str]
-    country: str
+    def __init__(self, **kwargs):
+        self.lat: float = kwargs.get("lat")
+        self.lon: float = kwargs.get("lon")
+        self.timezone: str = kwargs.get("timezone")
+        self.timezone_offset: int = kwargs.get("timezone_offset")
+        self.current: CurrentWeather = kwargs.get("current")
+        self.minutely: List[MinutelyWeather] = kwargs.get("minutely", [])
+        self.hourly: List[HourlyWeather] = kwargs.get("hourly", [])
+        self.daily: List[DailyWeather] = kwargs.get("daily", [])
+        self.alerts: List[Alert] = kwargs.get("alerts", [])
+        self.units: Units = kwargs.get("units", Units.standard)
+        self.name: str = kwargs.get("name", "")
+        self.state: Optional[str] = kwargs.get("state", "")
+        self.country: str = kwargs.get("country", "")
 
     @property
     def coords(self) -> Coords:
@@ -676,7 +542,7 @@ class OneCall:
         *,
         session: Optional[aiohttp.ClientSession] = None,
     ) -> OneCall:
-        geo = await Zipcode.get(appid, zipcode, session=session)
+        geo = await Geocoding.get_zip(appid, zipcode, session=session)
         return await cls.get(
             appid=appid,
             lat=geo.lat,
@@ -716,11 +582,15 @@ class OneCall:
         country: Optional[str] = None,
         *,
         session: Optional[aiohttp.ClientSession] = None,
+        api_version: str = "2.5",
     ) -> OneCall:
-        url = "http://api.openweathermap.org/data/2.5/onecall"
+        url = f"https://api.openweathermap.org/data/{api_version}/onecall"
         params = {"appid": appid, "exclude": "minutely"}
         if lang:
-            params["lang"] = lang
+            try:
+                params["lang"] = lang.split("_")[0]
+            except IndexError:
+                params["lang"] = lang
         if lat and lon:
             params["lat"] = str(lat)
             params["lon"] = str(lon)
@@ -767,6 +637,8 @@ class OneCall:
             icon_url=icon_url,
         )
         if not include_forecast and not include_hourly:
+            if self.daily and self.daily[0].summary:
+                embed.description = self.daily[0].summary
             embed.add_field(
                 name=_("Current Weather") + f" (<t:{self.current.dt}:R>)",
                 value=str(self.current),
