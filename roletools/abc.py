@@ -66,6 +66,10 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def selfrole_add(self, ctx: commands.Context, *, role: SelfRoleConverter) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
     async def selfrole_remove(self, ctx: commands.Context, *, role: SelfRoleConverter) -> None:
         raise NotImplementedError()
 

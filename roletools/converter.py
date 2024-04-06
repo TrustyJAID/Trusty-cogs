@@ -61,7 +61,7 @@ class RoleHierarchyConverter(commands.RoleConverter):
                 raise BadArgument(
                     _(
                         "The {role} role is an integration role and cannot be assigned or removed."
-                    ).fromat(role=role.mention)
+                    ).format(role=role.mention)
                 )
             if getattr(role, "is_premium_subscriber", None) and role.is_premium_subscriber():
                 raise BadArgument(
@@ -73,29 +73,26 @@ class RoleHierarchyConverter(commands.RoleConverter):
             if role >= ctx.guild.me.top_role:
                 raise BadArgument(
                     _(
-                        "The {role} role is higher than my highest role in the discord hierarchy."
+                        "The {role} role is higher than or equal to my highest role in the discord hierarchy."
                     ).format(role=role.mention)
                 )
             if role >= author.top_role and author.id != ctx.guild.owner_id:
                 raise BadArgument(
                     _(
-                        "The {role} role is higher than your "
+                        "The {role} role is higher than or equal to your "
                         "highest role in the discord hierarchy."
                     ).format(role=role.mention)
                 )
         return role
 
 
-class SelfRoleConverter(commands.RoleConverter):
+class SelfRoleConverter:
     """Converts a partial role name into a role object that can actually be applied."""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> discord.Role:
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> discord.Role:
         if not ctx.guild.me.guild_permissions.manage_roles:
             raise BadArgument(_("I require manage roles permission to use this command."))
-        if isinstance(ctx, discord.Interaction):
-            author = ctx.user
-        else:
-            author = ctx.author
         role = None
         try:
             role = await commands.RoleConverter().convert(ctx, argument)
@@ -117,7 +114,7 @@ class SelfRoleConverter(commands.RoleConverter):
                 raise BadArgument(
                     _(
                         "The {role} role is an integration role and cannot be assigned or removed."
-                    ).fromat(role=role.mention)
+                    ).format(role=role.mention)
                 )
             if role.is_premium_subscriber():
                 raise BadArgument(
@@ -129,7 +126,7 @@ class SelfRoleConverter(commands.RoleConverter):
             if role >= ctx.guild.me.top_role:
                 raise BadArgument(
                     _(
-                        "The {role} role is higher than my highest role in the discord hierarchy."
+                        "The {role} role is higher than or equal to my highest role in the discord hierarchy."
                     ).format(role=role.mention)
                 )
         return role

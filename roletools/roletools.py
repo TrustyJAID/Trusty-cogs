@@ -265,15 +265,21 @@ class RoleTools(
                     )
                 )
 
-    @roletools.group(invoke_without_command=True)
+    @roletools.command()
+    @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
-    async def selfrole(self, ctx: Context) -> None:
+    async def selfrole(self, ctx: Context, *, role: SelfRoleConverter) -> None:
         """
         Add or remove a defined selfrole
-        """
-        pass
 
-    @selfrole.command(name="add")
+        `<role>` The role you want to add or remove.
+        If you already have the role it will be removed.
+        """
+        if role not in ctx.author.roles:
+            await self.selfrole_add(ctx, role=role)
+        else:
+            await self.selfrole_remove(ctx, role=role)
+
     async def selfrole_add(self, ctx: Context, *, role: SelfRoleConverter) -> None:
         """
         Give yourself a role
@@ -317,7 +323,6 @@ class RoleTools(
         msg = _("You have been given the {role} role.").format(role=role.mention)
         await ctx.send(msg)
 
-    @selfrole.command(name="remove")
     async def selfrole_remove(self, ctx: Context, *, role: SelfRoleConverter) -> None:
         """
         Remove a role from yourself
