@@ -204,6 +204,29 @@ class Spotify(
         yield client
         client._token_cv.reset(cv_token)
 
+    @commands.Cog.listener()
+    async def on_oauth_receive(self, user_id: int, payload: dict):
+        if payload["provider"] != "spotify":
+            return
+        if "code" not in payload:
+            log.error("Received Spotify OAuth without a code parameter %s - %s", user_id, payload)
+            return
+
+        try:
+            code = payload["code"]
+            state = payload["state"]
+            auth = self.temp_cache[int(user_id)]
+            user_token = await auth.request_token(code=code, state=state)
+            user = self.bot.get_user(user_id)
+            await self.save_token(user, user_token)
+            del self.cog.temp_cache[user.id]
+            self.dashboard_authed.append(user.id)
+        except KeyError:
+            log.error("Recieved Spotify Auth request but the user was not in the cache.")
+            return
+        except Exception:
+            log.exception("Error setting user OAuth in Spotify")
+
     async def get_user_auth(
         self,
         ctx: commands.Context,
