@@ -1,54 +1,43 @@
-import re
 from datetime import datetime, timedelta
 from typing import List, Literal, Optional
 from zoneinfo import ZoneInfo, available_timezones
 
 import discord
 from babel.dates import format_time
-from discord.ext.commands.converter import Converter
 from discord.utils import format_dt, snowflake_time
 from redbot.core import commands, i18n
+from redbot.core.commands.converter import RelativedeltaConverter
 from redbot.core.config import Config
 from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
 from redbot.core.utils.views import SimpleMenu
 
 TIMESTAMP_STYLES = ["R", "D", "d", "T", "t", "F", "f"]
 
-TIME_RE_STRING = r"|".join(
-    [
-        r"((?P<weeks>\d+?)\s?(weeks?|w))",
-        r"((?P<days>\d+?)\s?(days?|d))",
-        r"((?P<hours>\d+?)\s?(hours?|hrs|hr?))",
-        r"((?P<minutes>\d+?)\s?(minutes?|mins?|m(?!o)))",  # prevent matching "months"
-        r"((?P<seconds>\d+?)\s?(seconds?|secs?|s))",
-    ]
+RELATIVE_CONVERTER = RelativedeltaConverter(
+    allowed_units=["years", "months", "weeks", "days", "hours", "minutes", "seconds"]
 )
-TIME_RE = re.compile(TIME_RE_STRING, re.I)
-TIME_SPLIT = re.compile(r"t(?:ime)?=")
 
 
-class MuteTime(Converter):
-    """
-    This will parse my defined multi response pattern and provide usable formats
-    to be used in multiple reponses
-    """
+class TimezoneConverter(discord.app_commands.Transformer):
+    async def convert(self, ctx: commands.Context, argument: str) -> ZoneInfo:
+        try:
+            return ZoneInfo(argument)
+        except Exception:
+            raise commands.BadArgument("That is not a valid timezone.")
 
-    async def convert(self, ctx: commands.Context, argument: str) -> timedelta:
-        time_split = TIME_SPLIT.split(argument)
-        if time_split:
-            maybe_time = time_split[-1]
-        else:
-            maybe_time = argument
+    async def transform(self, interaction: discord.Interaction, argument: str) -> ZoneInfo:
+        ctx = await interaction.client.get_context(interaction)
+        return await self.convert(ctx, argument)
 
-        time_data = {}
-        for time in TIME_RE.finditer(maybe_time):
-            argument = argument.replace(time[0], "")
-            for k, v in time.groupdict().items():
-                if v:
-                    time_data[k] = int(v)
-        if not time_data:
-            raise commands.BadArgument("You need to provide proper relative time info.")
-        return timedelta(**time_data)
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        choices = [
+            discord.app_commands.Choice(name=i, value=i)
+            for i in available_timezones()
+            if current.lower() in i.lower()
+        ]
+        return choices[:25]
 
 
 class AbsoluteTimeFlags(commands.FlagConverter, case_insensitive=True):
@@ -86,9 +75,16 @@ class AbsoluteTimeFlags(commands.FlagConverter, case_insensitive=True):
         default=0,
         description="The second. Defaults to 0.",
     )
+    timezone: Optional[ZoneInfo] = commands.flag(
+        name="timezone",
+        aliases=["tz"],
+        default=None,
+        description="The base timezone referenced.",
+        converter=TimezoneConverter,
+    )
 
     def datetime(self, tzinfo: ZoneInfo) -> datetime:
-        now = datetime.now(tz=tzinfo)
+        now = datetime.now(tz=self.timezone or tzinfo)
         return datetime(
             year=self.year or now.year,
             month=self.month or now.month,
@@ -100,35 +96,13 @@ class AbsoluteTimeFlags(commands.FlagConverter, case_insensitive=True):
         )
 
 
-class TimezoneConverter(discord.app_commands.Transformer):
-    async def convert(self, ctx: commands.Context, argument: str) -> ZoneInfo:
-        try:
-            return ZoneInfo(argument)
-        except Exception:
-            raise commands.BadArgument("That is not a valid timezone.")
-
-    async def transform(self, interaction: discord.Interaction, argument: str) -> ZoneInfo:
-        ctx = await interaction.client.get_context(interaction)
-        return await self.convert(ctx, argument)
-
-    async def autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> List[discord.app_commands.Choice]:
-        choices = [
-            discord.app_commands.Choice(name=i, value=i)
-            for i in available_timezones()
-            if current.lower() in i.lower()
-        ]
-        return choices[:25]
-
-
 class Timestamp(commands.Cog):
     """
     A discord timestamp creator cog.
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.1"
+    __version__ = "1.2.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -310,12 +284,16 @@ class Timestamp(commands.Cog):
 
     @discord_timestamp.command(name="relative", aliases=["r"])
     @discord.app_commands.describe(relative_time="The time relative to now. e.g. in 2 hours.")
-    async def relative_timestamp(self, ctx: commands.Context, *, relative_time: MuteTime):
+    async def relative_timestamp(
+        self, ctx: commands.Context, *, relative_time: RELATIVE_CONVERTER
+    ):
         """
         Produce a timestamp relative to right now.
 
+        Accepts: `years`, `months`, `weeks`, `days`, `hours`, `minutes`, and `seconds`.
+
         Example:
-            `[p]ts r in 2 hours`
+            `[p]ts r 2 hours`
             Will produce a timestamp 2 hours from the time the command was run.
 
         """
