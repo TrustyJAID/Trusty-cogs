@@ -8,7 +8,7 @@ from discord.utils import format_dt, snowflake_time
 from redbot.core import commands, i18n
 from redbot.core.commands.converter import RelativedeltaConverter
 from redbot.core.config import Config
-from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
+from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
 from redbot.core.utils.views import SimpleMenu
 
 TIMESTAMP_STYLES = ["R", "D", "d", "T", "t", "F", "f"]
@@ -244,6 +244,12 @@ class Timestamp(commands.Cog):
         zone_info = self.get_timezone_info(timezone)
         await ctx.send(f"I have set your timezone to `{timezone.key}`.\n{zone_info}")
 
+    async def send_all_styles(self, ctx: commands.Context, new_time: datetime, *, msg: str = ""):
+        for i in TIMESTAMP_STYLES:
+            ts = format_dt(new_time, i)
+            msg += f"{ts}\n{box(ts)}"
+        await ctx.maybe_send_embed(msg)
+
     @discord_timestamp.command(name="absolute", aliases=["a"])
     async def absolute_timestamp(self, ctx: commands.Context, *, time: AbsoluteTimeFlags):
         """
@@ -269,18 +275,14 @@ class Timestamp(commands.Cog):
             else:
                 msg += (
                     "You haven't set your timezone yet. "
-                    f"See `{ctx.clean_prefix}{self.set_timezone.qualified_name}` to set it.\n"
+                    f"See `{ctx.clean_prefix}{self.set_timezone.qualified_name}` to set it."
                 )
             try:
                 new_time = time.datetime(tzinfo=zone).astimezone(ZoneInfo("UTC"))
             except ValueError as e:
                 await ctx.send(e)
                 return
-
-            for i in TIMESTAMP_STYLES:
-                ts = format_dt(new_time, i)
-                msg += f"`{ts}` - {ts}\n"
-        await ctx.send(msg)
+        await self.send_all_styles(ctx, new_time, msg=f"{msg}\n{zone} to UTC\n")
 
     @discord_timestamp.command(name="relative", aliases=["r"])
     @discord.app_commands.describe(relative_time="The time relative to now. e.g. in 2 hours.")
@@ -297,12 +299,11 @@ class Timestamp(commands.Cog):
             Will produce a timestamp 2 hours from the time the command was run.
 
         """
-        async with ctx.typing():
-            msg = ""
-            for i in TIMESTAMP_STYLES:
-                ts = format_dt(ctx.message.created_at + relative_time, i)
-                msg += f"`{ts}` - {ts}\n"
-        await ctx.send(msg)
+        await ctx.typing()
+        new_time = ctx.message.created_at + relative_time
+        td = humanize_timedelta(timedelta=new_time - ctx.message.created_at)
+        # convert back to a timedelta from the relativedelta and humanize
+        await self.send_all_styles(ctx, new_time, msg=f"{td}\n")
 
     @discord_timestamp.command(name="snowflake", aliases=["s"])
     @discord.app_commands.describe(
@@ -319,10 +320,6 @@ class Timestamp(commands.Cog):
             `[p]ts s 218773382617890828`
             Will produce <t:1472230039:F>.
         """
-        async with ctx.typing():
-            now = snowflake_time(snowflake)
-            msg = ""
-            for i in TIMESTAMP_STYLES:
-                ts = format_dt(now, i)
-                msg += f"`{ts}` - {ts}\n"
-        await ctx.send(msg)
+        await ctx.typing()
+        new_time = snowflake_time(snowflake)
+        await self.send_all_styles(ctx, new_time, msg=f"Discord ID `{snowflake}`\n")
