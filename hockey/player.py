@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Literal, NamedTuple, Optional, Union
 
 import aiohttp
 import discord
@@ -140,18 +140,18 @@ FLAG_LOOKUP = {
 }
 
 
-@dataclass
-class SearchPlayer:
+class SearchPlayer(NamedTuple):
     playerId: str
     name: str
     positionCode: str
     active: bool
-    height: str
-    heightInCentimeters: int
-    weightInPounds: int
-    weightInKilograms: int
     birthCity: str
     birthCountry: str
+    height: str = ""
+    heightInCentimeters: Optional[int] = None
+    heightInInches: Optional[int] = None
+    weightInPounds: Optional[int] = None
+    weightInKilograms: Optional[int] = None
     birthStateProvince: Optional[str] = None
     teamId: Optional[str] = None
     teamAbbrev: Optional[str] = None
@@ -164,18 +164,21 @@ class SearchPlayer:
     def id(self) -> int:
         return int(self.playerId)
 
+    @property
+    def url(self):
+        name = self.name.replace(" ", "-").lower()
+        return f"https://www.nhl.com/player/{name}-{self.id}"
+
     @classmethod
     def from_json(cls, data: dict) -> SearchPlayer:
         return cls(**data)
 
 
-@dataclass
-class RosterPlayer:
+class RosterPlayer(NamedTuple):
     id: int
     headshot: str
     firstName: dict
     lastName: dict
-
     positionCode: str
     shootsCatches: str
     heightInInches: int
@@ -186,7 +189,7 @@ class RosterPlayer:
     birthCity: dict
     birthCountry: str
     sweaterNumber: Optional[int] = None
-    birthStateProvince: dict = field(default_factory=dict)
+    birthStateProvince: dict = {}
 
     @property
     def playerId(self) -> int:
@@ -325,9 +328,9 @@ class FeaturedStats:
             career_value = career_data.get(key, None)
             if season_value and career_value:
                 if isinstance(career_value, float):
-                    post_data.append([key, f"[ {career_value:.2} ]", f"[ {season_value:.2} ]"])
+                    post_data.append([key, f"{career_value:.2}", f"{season_value:.2}"])
                 else:
-                    post_data.append([key, f"[ {career_value} ]", f"[ {season_value} ]"])
+                    post_data.append([key, f"{career_value}", f"{season_value}"])
         return tabulate(post_data, headers=[_("Stats"), _("Career"), style])
 
 
@@ -360,7 +363,7 @@ class SeasonStats(Stats):
         for key, season_value in keys.items():
             # season_value = getattr(self, value, None)
             if season_value is not None:
-                post_data.append([key, f"[ {season_value} ]"])
+                post_data.append([key, f"{season_value}"])
         return tabulate(post_data, headers=[_("Stats"), style])
 
 
@@ -491,6 +494,10 @@ class PlayerStats:
     def cap_friendly_url(self) -> str:
         return f"https://www.capfriendly.com/players/{self.full_name_url}"
 
+    @property
+    def url(self):
+        return f"https://www.nhl.com/player/{self.first_name.lower()}-{self.last_name.lower()}-{self.id}"
+
     def __str__(self) -> str:
         return f"{self.full_name}, born {self.birth_date}"
 
@@ -558,7 +565,7 @@ class PlayerStats:
                 else:
                     msg += name + f"{getattr(self, attr, '')}\n"
         links = [
-            # _("[Elite Prospects]({ep_url})").format(ep_url=self.ep_url),
+            _("[NHL]({ep_url})").format(ep_url=self.url),
             _("[Cap Friendly]({cf_url})").format(cf_url=self.cap_friendly_url),
         ]
         if getattr(self, "dda_id", None):
@@ -611,9 +618,9 @@ class PlayerStats:
                 career_value = career_stats.get(key, "None")
                 if season_value and career_value:
                     if isinstance(season_value, float):
-                        post_data.append([key, f"[ {career_value:.2} ]", f"[ {season_value:.2} ]"])
+                        post_data.append([key, f"{career_value:.2}", f"{season_value:.2}"])
                     else:
-                        post_data.append([key, f"[ {career_value} ]", f"[ {season_value} ]"])
+                        post_data.append([key, f"{career_value}", f"{season_value}"])
             stats_md = tabulate(post_data, headers=[_("Stats"), _("Career"), style])
 
         if self.featuredStats and stats_md is None:
@@ -621,10 +628,10 @@ class PlayerStats:
 
         if stats_md is not None:
             stats_str = "{emoji} {team_name} {emoji}\n{stats}".format(
-                emoji=team_data.emoji, team_name=team_data.name, stats=box(stats_md, lang="apache")
+                emoji=team_data.emoji, team_name=team_data.name, stats=box(stats_md, lang="ansi")
             )
             em.add_field(name=_("Stats"), value=stats_str)
-        em.set_author(name=f"{self.full_name} {number}", icon_url=team_data.logo)
+        em.set_author(name=f"{self.full_name} {number}", icon_url=team_data.logo, url=self.url)
         return em
 
 
@@ -988,22 +995,22 @@ class Skater(SimplePlayer):
         em.set_thumbnail(url=self.headshot())
         em.description = self.description()
         post_data = [
-            [_("GP"), f"[ {self.games} ]"],
-            [_("Shots"), f"[ {self.shots} ]"],
-            [_("Goals"), f"[ {self.goals} ]"],
-            [_("Assists"), f"[ {self.assists} ]"],
-            [_("Hits"), f"[ {self.hits} ]"],
-            [_("Faceoff %"), f"[ {self.face_off_percent} ]"],
-            ["+/-", f"[ {self.plusminus} ]"],
-            [_("Blocked Shots"), f"[ {self.blocked} ]"],
-            [_("PIM"), f"[ {self.pim} ]"],
-            [_("Avg. TOI"), f"[ {self.time_on_ice_average()} ]"],
+            [_("GP"), f"{self.games}"],
+            [_("Shots"), f"{self.shots}"],
+            [_("Goals"), f"{self.goals}"],
+            [_("Assists"), f"{self.assists}"],
+            [_("Hits"), f"{self.hits}"],
+            [_("Faceoff %"), f"{self.face_off_percent}"],
+            ["+/-", f"{self.plusminus}"],
+            [_("Blocked Shots"), f"{self.blocked}"],
+            [_("PIM"), f"{self.pim}"],
+            [_("Avg. TOI"), f"{self.time_on_ice_average()}"],
         ]
         stats_md = tabulate(
             post_data, headers=[_("Stats"), f"{self.season[:4]}-{self.season[4:]}"]
         )
         em.set_thumbnail(url=self.headshot())
-        stats_str = f"{emoji} {team_name} {emoji}\n{box(stats_md, lang='apache')}"
+        stats_str = f"{emoji} {team_name} {emoji}\n{box(stats_md, lang='asni')}"
         em.add_field(name=_("Stats"), value=stats_str)
         return em
 
@@ -1080,19 +1087,19 @@ class SkaterPlayoffs(Skater):
         em.set_thumbnail(url=self.headshot())
         em.description = self.description()
         post_data = [
-            [_("GP"), f"[ {self.games} ]", f"[ {self.p_games} ]"],
-            [_("Shots"), f"[ {self.shots} ]", f"[ {self.p_shots} ]"],
-            [_("Goals"), f"[ {self.goals} ]", f"[ {self.p_goals} ]"],
-            [_("Assists"), f"[ {self.assists} ]", f"[ {self.p_assists} ]"],
-            [_("Hits"), f"[ {self.hits} ]", f"[ {self.p_hits} ]"],
-            [_("Faceoff %"), f"[ {self.face_off_percent} ]", f"[ {self.p_face_off_percent} ]"],
-            ["+/-", f"[ {self.plusminus} ]", f"[ {self.p_plusminus} ]"],
-            [_("Blocked"), f"[ {self.blocked} ]", f"[ {self.p_blocked} ]"],
-            [_("PIM"), f"[ {self.pim} ]", f"[ {self.p_pim} ]"],
+            [_("GP"), f"{self.games}", f"{self.p_games}"],
+            [_("Shots"), f"{self.shots}", f"{self.p_shots}"],
+            [_("Goals"), f"{self.goals}", f"{self.p_goals}"],
+            [_("Assists"), f"{self.assists}", f"{self.p_assists}"],
+            [_("Hits"), f"{self.hits}", f"{self.p_hits}"],
+            [_("Faceoff %"), f"{self.face_off_percent}", f"{self.p_face_off_percent}"],
+            ["+/-", f"{self.plusminus}", f"{self.p_plusminus}"],
+            [_("Blocked"), f"{self.blocked}", f"{self.p_blocked}"],
+            [_("PIM"), f"{self.pim}", f"{self.p_pim}"],
             [
                 _("Avg. TOI"),
-                f"[ {self.time_on_ice_average()} ]",
-                f"[ {self.p_time_on_ice_average()} ]",
+                f"{self.time_on_ice_average()}",
+                f"{self.p_time_on_ice_average()}",
             ],
         ]
         stats_md = tabulate(
@@ -1190,12 +1197,12 @@ class Goalie(SimplePlayer):
         em.set_thumbnail(url=self.headshot())
         em.description = self.description()
         post_data = [
-            [_("GP"), f"[ {self.games} ]"],
-            [_("SO"), f"[ {self.shutouts} ]"],
-            [_("Saves"), f"[ {self.saves} ]"],
-            [_("Save %"), f"[ {self.save_percentage} ]"],
-            [_("GAA"), f"[ {self.goals_against_average} ]"],
-            [_("Started"), f"[ {self.games_started} ]"],
+            [_("GP"), f"{self.games}"],
+            [_("SO"), f"{self.shutouts}"],
+            [_("Saves"), f"{self.saves}"],
+            [_("Save %"), f"{self.save_percentage}"],
+            [_("GAA"), f"{self.goals_against_average}"],
+            [_("Started"), f"{self.games_started}"],
         ]
         stats_md = tabulate(
             post_data, headers=[_("Stats"), f"{self.season[:4]}-{self.season[4:]}"]
@@ -1263,12 +1270,12 @@ class GoaliePlayoffs(Goalie):
         em.set_thumbnail(url=self.headshot())
         em.description = self.description()
         post_data = [
-            [_("GP"), f"[ {self.games} ]", f"[ {self.p_games} ]"],
-            [_("SO"), f"[ {self.shutouts} ]", f"[ {self.p_shutouts} ]"],
-            [_("Saves"), f"[ {self.saves} ]", f"[ {self.p_saves} ]"],
-            [_("Save %"), f"[ {self.save_percentage} ]", f"[ {self.p_save_percentage} ]"],
-            [_("GAA"), f"[ {self.goals_against_average} ]", f"[ {self.p_goals_against_average} ]"],
-            [_("Started"), f"[ {self.games_started} ]", f"[ {self.p_games_started} ]"],
+            [_("GP"), f"{self.games}", f"{self.p_games}"],
+            [_("SO"), f"{self.shutouts}", f"{self.p_shutouts}"],
+            [_("Saves"), f"{self.saves}", f"{self.p_saves}"],
+            [_("Save %"), f"{self.save_percentage}", f"{self.p_save_percentage}"],
+            [_("GAA"), f"{self.goals_against_average}", f"{self.p_goals_against_average}"],
+            [_("Started"), f"{self.games_started}", f"{self.p_games_started}"],
         ]
 
         stats_md = tabulate(

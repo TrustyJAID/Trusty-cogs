@@ -202,17 +202,30 @@ class Player:
     headshot: str
 
     def __str__(self):
-        return self.name
+        return f"#{self.sweaterNumber} {self.name}"
 
     @property
     def id(self):
         return self.playerId
 
     @property
+    def first_name(self):
+        return self.firstName.get("default", _("Unknown"))
+
+    @property
+    def last_name(self):
+        return self.lastName.get("default", _("Unknown"))
+
+    @property
+    def url(self):
+        return f"https://www.nhl.com/player/{self.first_name.lower()}-{self.last_name.lower()}-{self.id}"
+
+    @property
     def name(self) -> str:
-        first = self.firstName.get("default", _("Unknown"))
-        last = self.lastName.get("default", _("Unknown"))
-        return f"{first} {last}"
+        return f"{self.first_name} {self.last_name}"
+
+    def as_link(self):
+        return f"[{str(self)}]({self.url})"
 
     @classmethod
     def from_json(cls, data: dict) -> Player:
@@ -1144,17 +1157,11 @@ class NewAPI(HockeyAPI):
                 player_id = star.get("playerId", -1)
                 player = home_roster.get(player_id, None) or away_roster.get(player_id, None)
                 if star.get("star", 0) == 1:
-                    first_star = (
-                        f"#{player.sweaterNumber} {player.name}" if player else _("Unknown Player")
-                    )
+                    first_star = player
                 if star.get("star", 0) == 2:
-                    second_star = (
-                        f"#{player.sweaterNumber} {player.name}" if player else _("Unknown Player")
-                    )
+                    second_star = player
                 if star.get("star", 0) == 3:
-                    third_star = (
-                        f"#{player.sweaterNumber} {player.name}" if player else _("Unknown Player")
-                    )
+                    third_star = player
         return Game(
             game_id=game_id,
             game_state=game_state,

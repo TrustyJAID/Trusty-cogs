@@ -155,28 +155,6 @@ class Game:
     game state updates and goal posts
     """
 
-    game_id: int
-    game_state: GameState
-    period: int
-    home_shots: int
-    away_shots: int
-    home_score: int
-    away_score: int
-    game_start: datetime
-    goals: List[Goal]
-    home_abr: str
-    away_abr: str
-    period_ord: str
-    period_time_left: str
-    period_starts: Dict[str, datetime]
-    plays: List[dict]
-    first_star: Optional[str]
-    second_star: Optional[str]
-    third_star: Optional[str]
-    away_roster: Dict[int, Player]
-    home_roster: Dict[int, Player]
-    link: Optional[str]
-
     def __init__(self, **kwargs):
         super().__init__()
         self.game_id = kwargs.get("game_id")
@@ -278,34 +256,6 @@ class Game:
             GameType.playoffs: _("Post Season"),
         }
         return game_types.get(self.game_type, _("Unknown"))
-
-    def to_json(self) -> dict:
-        return {
-            "game_state": self.game_state.value,
-            "home_team": self.home_team,
-            "away_team": self.away_team,
-            "home_shots": self.home_shots,
-            "away_shots": self.away_shots,
-            "home_score": self.home_score,
-            "away_score": self.away_score,
-            "goals": [goal.to_json() for goal in self.goals],
-            "home_abr": self.home_abr,
-            "away_abr": self.away_abr,
-            "period": self.period,
-            "period_ord": self.period_ord,
-            "period_time_left": self.period_time_left,
-            "plays": self.plays,
-            "game_start": self.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "home_logo": self.home_logo,
-            "away_logo": self.away_logo,
-            "home_emoji": self.home_emoji,
-            "away_emoji": self.away_emoji,
-            "first_star": self.first_star,
-            "second_star": self.second_star,
-            "third_star": self.third_star,
-            "game_type": self.game_type.value,
-            "link": self.link,
-        }
 
     def nst_url(self):
         return f"https://www.naturalstattrick.com/game.php?season={self.season}&game={str(self.game_id)[5:]}&view=limited#gameflow"
@@ -473,7 +423,7 @@ class Game:
                 if self.recap_url is not None:
                     em.description = f"[Recap]({self.recap_url})"
             if self.first_star is not None:
-                stars = f"⭐ {self.first_star}\n⭐⭐ {self.second_star}\n⭐⭐⭐ {self.third_star}"
+                stars = f"⭐ {self.first_star.as_link()}\n⭐⭐ {self.second_star.as_link()}\n⭐⭐⭐ {self.third_star.as_link()}"
                 em.add_field(name=_("Stars of the game"), value=stars, inline=False)
             if self.game_state.is_live():
                 period = self.period_ord

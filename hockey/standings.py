@@ -12,6 +12,7 @@ import discord
 from red_commons.logging import getLogger
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
+from redbot.core.utils.chat_formatting import box
 from redbot.vendored.discord.ext import menus
 from tabulate import tabulate
 
@@ -672,7 +673,7 @@ class Standings:
         latest_timestamp = self.last_timestamp()
         for division in Divisions:
             if table:
-                new_dict[division.name] = f"```\n{self.get_division_table(division)}\n```"
+                new_dict[division.name] = box(self.get_division_table(division), lang="ansi")
             else:
                 new_dict[division.name] = self.get_division_str(division)
         for div in new_dict:
@@ -692,7 +693,7 @@ class Standings:
         msg = ""
         nhl_icon = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         if table:
-            msg = f"```\n{self.get_all_table()}\n```"
+            msg = box(self.get_all_table())
         else:
             msg = self.get_all_str()
         em.description = msg
@@ -738,7 +739,8 @@ class Standings:
         return tabulate(
             sorted(post_data, key=lambda x: int(x[0].replace("*", ""))),
             headers=headers,
-            numalign="left",
+            numalign="center",
+            tablefmt="plain",
         )
 
     def get_division_table(self, division: Divisions) -> str:
@@ -802,7 +804,7 @@ class Standings:
         # timestamp = datetime.strptime(record[0].last_updated, "%Y-%m-%dT%H:%M:%SZ")
         em.timestamp = self.last_timestamp(division=division)
         if table:
-            msg = f"```\n{self.get_division_table(division)}\n```"
+            msg = box(self.get_division_table(division), lang="ansi")
         else:
             msg = self.get_division_str(division)
         em.description = msg
@@ -829,7 +831,7 @@ class Standings:
         em = discord.Embed()
         em.timestamp = utc_to_local(self.last_timestamp(conference=conference), "UTC")
         if table:
-            msg = f"```\n{self.get_conference_table(conference)}\n```"
+            msg = box(self.get_conference_table(conference), lang="ansi")
         else:
             msg = self.get_conference_str(conference)
         em.description = msg
@@ -898,12 +900,14 @@ class Standings:
         division_table = tabulate(division_data, headers=headers)
         league_table = tabulate(league_data, headers=headers)
         em.colour = int(TEAMS[record.team.name]["home"].replace("#", ""), 16)
-        em.set_thumbnail(url=TEAMS[record.team.name]["logo"])
-        em.add_field(name=record.division.name + " Division", value=f"```\n{division_table}\n```")
+        # em.set_thumbnail(url=TEAMS[record.team.name]["logo"])
         em.add_field(
-            name=record.conference.name + " Conference", value=f"```\n{conference_table}\n```"
+            name=f"{record.division.name} Division", value=box(division_table, lang="ansi")
         )
-        em.add_field(name="League", value=f"```\n{league_table}\n```")
+        em.add_field(
+            name=f"{record.conference.name} Conference", value=box(conference_table, lang="ansi")
+        )
+        em.add_field(name="League", value=box(league_table, lang="ansi"))
         em.add_field(
             name="Wins (Regulation)",
             value=f"{record.league_record.wins} ({record.regulation_wins})",

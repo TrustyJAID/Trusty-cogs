@@ -24,22 +24,6 @@ log = getLogger("red.trusty-cogs.Hockey")
 
 
 class Goal:
-    goal_id: str
-    scorer_id: int
-    jersey_no: str
-    description: str
-    period: int
-    period_ord: str
-    time_remaining: str
-    time: datetime
-    home_score: int
-    away_score: int
-    strength: str
-    strength_code: str
-    empty_net: bool
-    event: str
-    link: Optional[str]
-
     def __init__(self, **kwargs):
         super().__init__()
         self.goal_id = kwargs.get("goal_id")
@@ -541,8 +525,7 @@ class Goal:
         if self.period_ord == "SO":
             shootout = True
         colour = self.team.colour
-        empty_net = _("Empty Net ") if self.empty_net else ""
-        title = f"🚨 {self.team_name} #{self.jersey_no} {empty_net}{self.strength} {self.event} 🚨"
+        title = f"🚨 {self.team_name} #{self.jersey_no} {self.strength} {self.event} 🚨"
         url = self.team.team_url
         logo = self.team.logo
         if not shootout:
@@ -568,11 +551,11 @@ class Goal:
                 ),
                 icon_url=logo,
             )
-            em.timestamp = self.time
+            # em.timestamp = self.time
             # if self.image is not None:
             # em.set_image(url=self.image)
         else:
-            if "missed" in self.event.lower():
+            if self.type_code.value != 505:
                 em = discord.Embed(description=self.description, colour=colour)
                 em.set_author(name=title.replace("🚨", ""), url=url, icon_url=logo)
             else:
@@ -596,11 +579,8 @@ class Goal:
         """
         Gets the text to send for goal posts
         """
-        empty_net = _("Empty Net ") if self.empty_net else ""
         if game.period_ord != "SO":
-            text = (
-                f"🚨 {self.team_name} #{self.jersey_no} {empty_net}{self.strength} {self.event} 🚨\n"
-            )
+            text = f"🚨 {self.team_name} #{self.jersey_no} {self.strength} {self.event} 🚨\n"
             if self.link:
                 text += f"[{self.description}]({self.link})\n"
             else:
