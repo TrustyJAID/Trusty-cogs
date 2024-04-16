@@ -1,4 +1,3 @@
-import discord
 from red_commons.logging import getLogger
 from redbot.core import Config, commands
 
@@ -20,7 +19,7 @@ class AutoMod(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.3"
+    __version__ = "1.0.4"
 
     def __init__(self, bot):
         self.bot = bot

@@ -142,6 +142,7 @@ class AutoModActionConverter(discord.app_commands.Transformer):
             raise commands.BadArgument(
                 ("Action with name `{name}` does not exist.").format(name=argument.lower())
             )
+        ret.append(discord.AutoModRuleAction())
         return ret
 
     async def transform(
@@ -239,10 +240,13 @@ class AutoModRuleFlags(FlagConverter, case_insensitive=True):
         return ret
 
     def to_args(self):
+        actions = self.actions
+        if not actions:
+            actions = [discord.AutoModRuleAction()]
         return {
             "event_type": discord.AutoModRuleEventType.message_send,
             "trigger": self.trigger,
-            "actions": self.actions,
+            "actions": actions,
             "enabled": self.enabled,
             "exempt_roles": self.exempt_roles,
             "exempt_channels": self.exempt_channels,
@@ -336,7 +340,7 @@ class AutoModTriggerFlags(FlagConverter, case_insensitive=True):
 
 
 class AutoModActionFlags(FlagConverter, case_insensitive=True):
-    custom_message: Optional[discord.app_commands.Range[str, 1, 150]] = flag(
+    custom_message: Optional[commands.Range[str, 1, 150]] = flag(
         name="message",
         aliases=[],
         default=None,
