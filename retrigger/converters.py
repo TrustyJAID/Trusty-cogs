@@ -31,6 +31,15 @@ if TYPE_CHECKING:
     from .abc import ReTriggerMixin
 
 
+CHANNEL_RE = re.compile(
+    r"(?:<#(?P<channel_mention_id>[0-9]+)>)"
+    r"|https:\/\/[a-z]*\.?discord\.com\/channels\/"
+    r"(?P<guild_id>\d+)\/(?P<channel_link_id>[0-9]+)\/?(?P<message_id>\d+)?$"
+)
+# General purpose regex for parsing mentions and links of channels from an argument
+# Includes support for pulling message ID from a message link
+
+
 class TriggerResponse(Enum):
     dm = "dm"
     dmme = "dmme"
@@ -760,14 +769,19 @@ class ChannelUserRole(IDConverter):
         guild = ctx.guild
         result = None
         id_match = self._get_id_match(argument)
-        channel_match = re.match(r"<#([0-9]+)>$", argument)
+        channel_match = CHANNEL_RE.match(argument)
+
         member_match = re.match(r"<@!?([0-9]+)>$", argument)
         role_match = re.match(r"<@&([0-9]+)>$", argument)
         for converter in ["channel", "role", "member"]:
             if converter == "channel":
-                match = id_match or channel_match
-                if match:
-                    channel_id = match.group(1)
+                if channel_match:
+                    channel_id = channel_match.group("channel_mention_id") or channel_match.group(
+                        "channel_link_id"
+                    )
+                    result = guild.get_channel_or_thread(int(channel_id))
+                elif id_match:
+                    channel_id = id_match.group(1)
                     result = guild.get_channel_or_thread(int(channel_id))
                 else:
                     result = discord.utils.get(guild.text_channels, name=argument)
