@@ -3,8 +3,9 @@ from typing import List, Literal, Optional
 from zoneinfo import ZoneInfo, available_timezones
 
 import discord
-from babel.dates import format_time
+from babel.dates import format_time, get_timezone_location, get_timezone_name
 from discord.utils import format_dt, snowflake_time
+from red_commons.logging import getLogger
 from redbot.core import commands, i18n
 from redbot.core.commands.converter import RelativedeltaConverter
 from redbot.core.config import Config
@@ -17,13 +18,35 @@ RELATIVE_CONVERTER = RelativedeltaConverter(
     allowed_units=["years", "months", "weeks", "days", "hours", "minutes", "seconds"]
 )
 
+_ = i18n.Translator("Timestamp", __file__)
+
+log = getLogger("red.trusty-cogs.timestamp")
+
 
 class TimezoneConverter(discord.app_commands.Transformer):
     async def convert(self, ctx: commands.Context, argument: str) -> ZoneInfo:
-        try:
-            return ZoneInfo(argument)
-        except Exception:
-            raise commands.BadArgument("That is not a valid timezone.")
+        if "/" in argument:
+            try:
+                return ZoneInfo(argument)
+            except Exception:
+                raise commands.BadArgument(_("That is not a valid timezone."))
+        locale = i18n.get_babel_locale()
+        now = datetime.now()
+        cog = ctx.bot.get_cog("Timestamp")
+        at = cog.at
+        for zone in at:
+            tnow = now.astimezone(ZoneInfo(zone))
+            try:
+                name = get_timezone_name(tnow, locale=locale)
+                short = get_timezone_name(tnow, width="short", locale=locale)
+                tz = f"{short} {name} ({zone})"
+            except LookupError:
+                continue
+            if len(argument) <= 3 and argument.lower() == short.lower():
+                return ZoneInfo(zone)
+            elif argument.lower() in tz.lower():
+                return ZoneInfo(zone)
+        raise commands.BadArgument(_("That is not a valid timezone."))
 
     async def transform(self, interaction: discord.Interaction, argument: str) -> ZoneInfo:
         ctx = await interaction.client.get_context(interaction)
@@ -32,11 +55,24 @@ class TimezoneConverter(discord.app_commands.Transformer):
     async def autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> List[discord.app_commands.Choice]:
-        choices = [
-            discord.app_commands.Choice(name=i, value=i)
-            for i in available_timezones()
-            if current.lower() in i.lower()
-        ]
+        g_locale = await i18n.get_locale_from_guild(interaction.client, interaction.guild)
+        locale = i18n.get_babel_locale(g_locale)
+        choices = []
+        now = datetime.now()
+        cog = interaction.client.get_cog("Timestamp")
+        at = cog.at
+        for zone in at:
+            tnow = now.astimezone(ZoneInfo(zone))
+            zone_name = zone
+            try:
+                name = get_timezone_name(tnow, locale=locale)
+                short = get_timezone_name(tnow, width="short", locale=locale)
+                ts_now = format_time(now, format="short", locale=locale)
+                zone_name = f"{short} {name} ({zone}) {ts_now}"
+            except Exception:
+                pass
+            if current.lower() in zone_name.lower():
+                choices.append(discord.app_commands.Choice(name=zone_name, value=zone))
         return choices[:25]
 
 
@@ -102,7 +138,7 @@ class Timestamp(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.0"
+    __version__ = "1.3.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -110,6 +146,8 @@ class Timestamp(commands.Cog):
         self.config.register_user(timezone=None)
         self._repo = ""
         self._commit = ""
+        self.at = available_timezones()
+        # cache these since it opens a lot of files
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -155,21 +193,48 @@ class Timestamp(commands.Cog):
         pass
 
     def get_timezone_info(self, zone: ZoneInfo) -> str:
-        now = datetime.now()
-        msg = f"- `{zone.key}`\n - Abbreviation: {zone.tzname(now)}\n"
-        utcoffset = zone.utcoffset(now) or timedelta(seconds=0)
         locale = i18n.get_babel_locale()
+        now = datetime.now().astimezone(zone)
+        zone_name = zone.key
+        short = zone.tzname(now)
+        location = None
+        try:
+            zone_name = get_timezone_name(now, locale=locale)
+            short = get_timezone_name(now, width="short", locale=locale)
+            location = get_timezone_location(now, locale=locale)
+        except LookupError:
+            log.error("Error parsing timezone %s", zone.key)
+        include = {"key": zone.key, "name": zone_name, "short": short}
+        translate = {
+            "key": _("Key"),
+            "name": _("Name"),
+            "short": _("Short"),
+            "offset": _("UTC Offset"),
+            "location": _("Location"),
+            "now": _("Time Now"),
+        }
+        utcoffset = zone.utcoffset(now) or timedelta(seconds=0)
+
         # because humanize_timedelta doesn't handle negative timedeltas
         if utcoffset < timedelta(seconds=0):
-            msg += f" - UTC Offset: `-{humanize_timedelta(seconds=-utcoffset.total_seconds())}`\n"
+            include["offset"] = f"`-{humanize_timedelta(seconds=-utcoffset.total_seconds())}`"
         elif utcoffset == timedelta(seconds=0):
-            msg += " - UTC Offset: `+0`\n"
+            include["offset"] = "`+0`"
         else:
-            msg += f" - UTC Offset: `+{humanize_timedelta(timedelta=utcoffset)}`\n"
+            include["offset"] = f"`+{humanize_timedelta(timedelta=utcoffset)}`"
         if utcoffset is not None:
-            tnow = now.astimezone(zone)
-            ts_now = format_time(tnow, format="short", locale=locale)
-            msg += f" - Time Now: {ts_now}\n"
+            ts_now = format_time(now, format="short", locale=locale)
+            include["now"] = ts_now
+        if location is not None:
+            include["location"] = location
+        msg = ""
+        for key, value in include.items():
+            name = translate[key]
+            if key == "key":
+                msg += f"- {value}\n"
+                continue
+            msg += f" - {name}: {value}\n"
+
         return msg
 
     @staticmethod
@@ -191,7 +256,7 @@ class Timestamp(commands.Cog):
             msg = ""
             now = ctx.message.created_at
             for i in sorted(
-                available_timezones(),
+                self.at,
                 key=lambda x: ZoneInfo(x).utcoffset(now),
             ):
                 z = ZoneInfo(i)
@@ -204,7 +269,7 @@ class Timestamp(commands.Cog):
                 for i, tzs in enumerate(pages, start=1):
                     em = discord.Embed(
                         # description=tzs,
-                        title="Available Timezones",
+                        title=_("Available Timezones"),
                         colour=await ctx.bot.get_embed_colour(ctx),
                     )
                     em.add_field(name=" ", value=tzs[0])
@@ -212,7 +277,9 @@ class Timestamp(commands.Cog):
                         em.add_field(name=" ", value=tzs[1])
                     if len(tzs) > 2:
                         em.add_field(name=" ", value=tzs[2])
-                    em.set_footer(text=f"Page {i}/{len(pages)}")
+                    em.set_footer(
+                        text=_("Page {current}/{total}").format(current=i, total=len(pages))
+                    )
                     msgs.append(em)
             else:
                 msgs = pages
@@ -242,7 +309,12 @@ class Timestamp(commands.Cog):
         """
         await self.config.user(ctx.author).timezone.set(timezone.key)
         zone_info = self.get_timezone_info(timezone)
-        await ctx.send(f"I have set your timezone to `{timezone.key}`.\n{zone_info}")
+        timezone_name = timezone.key
+        await ctx.send(
+            _("I have set your timezone to `{timezone_name}`.\n{zone_info}").format(
+                timezone_name=timezone_name, zone_info=zone_info
+            )
+        )
 
     async def send_all_styles(self, ctx: commands.Context, new_time: datetime, *, msg: str = ""):
         for i in TIMESTAMP_STYLES:
@@ -273,16 +345,22 @@ class Timestamp(commands.Cog):
             if usertz := await self.config.user(ctx.author).timezone():
                 zone = time.timezone or ZoneInfo(usertz)
             else:
-                msg += (
-                    "You haven't set your timezone yet. "
-                    f"See `{ctx.clean_prefix}{self.set_timezone.qualified_name}` to set it."
+                command = f"`{ctx.clean_prefix}{self.set_timezone.qualified_name}`"
+                msg += _("You haven't set your timezone yet. See {command} to set it.").format(
+                    command=command
                 )
             try:
                 new_time = time.datetime(tzinfo=zone).astimezone(ZoneInfo("UTC"))
+                from_tz = get_timezone_name(time.datetime(tzinfo=zone))
+                short_from_tz = get_timezone_name(time.datetime(tzinfo=zone), width="short")
+                to_tz = get_timezone_name(new_time)
+                short_to_tz = get_timezone_name(new_time, width="short")
             except ValueError as e:
                 await ctx.send(e)
                 return
-        await self.send_all_styles(ctx, new_time, msg=f"{msg}\n{zone} to UTC\n")
+        await self.send_all_styles(
+            ctx, new_time, msg=f"{msg}\n{from_tz} ({short_from_tz}) to {to_tz} ({short_to_tz})\n"
+        )
 
     @discord_timestamp.command(name="relative", aliases=["r"])
     @discord.app_commands.describe(relative_time="The time relative to now. e.g. in 2 hours.")
