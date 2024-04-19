@@ -271,7 +271,7 @@ class Timestamp(commands.Cog):
             zone = ZoneInfo("UTC")
             msg = ""
             if usertz := await self.config.user(ctx.author).timezone():
-                zone = ZoneInfo(usertz)
+                zone = time.timezone or ZoneInfo(usertz)
             else:
                 msg += (
                     "You haven't set your timezone yet. "
