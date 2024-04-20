@@ -121,6 +121,9 @@ class GameType(Enum):
     def __str__(self):
         return str(self.value)
 
+    def __int__(self):
+        return {GameType.pre_season: 1, GameType.regular_season: 2, GameType.playoffs: 3}[self]
+
     @classmethod
     def from_int(cls, value: int) -> GameType:
         return {
@@ -470,7 +473,7 @@ class Game:
             em.colour = colour
         home_url = self.home.team_url
         if self.first_star is not None:
-            stars = f"⭐ {self.first_star}\n⭐⭐ {self.second_star}\n⭐⭐⭐ {self.third_star}"
+            stars = f"⭐ {self.first_star.as_link()}\n⭐⭐ {self.second_star.as_link()}\n⭐⭐⭐ {self.third_star.as_link()}"
             em.add_field(name=_("Stars of the game"), value=stars)
         em.set_author(name=title, url=home_url, icon_url=self.home_logo)
         em.set_thumbnail(url=self.home_logo)
@@ -723,7 +726,15 @@ class Game:
             try:
                 em = await self.make_game_embed(False, None)
                 parent = await get_channel_obj(bot, data["parent"], data)
-                msg = parent.get_partial_message(channel_id)
+                if parent is None:
+                    return
+                if isinstance(parent, discord.ForumChannel):
+                    channel = parent.get_thread(channel_id)
+                    if channel is None:
+                        return
+                    msg = channel.get_partial_message(channel_id)
+                else:
+                    msg = parent.get_partial_message(channel_id)
                 asyncio.create_task(msg.edit(embed=em))
             except Exception:
                 log.exception("Error editing thread start message.")

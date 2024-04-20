@@ -129,7 +129,7 @@ class HockeyCommands(HockeyMixin):
         by searching for team or get all standings at once
         separated by division
         """
-        await ctx.defer()
+        await ctx.typing()
         try:
             standings = await self.api.get_standings()
         except aiohttp.ClientConnectorError:
@@ -160,9 +160,7 @@ class HockeyCommands(HockeyMixin):
         Team and Date can be provided at the same time and then
         only that teams games may appear in that date range if they exist.
         """
-        log.verbose("games team: %s", team)
-        log.verbose("games date: %s", date)
-        await ctx.defer()
+        await ctx.typing()
         teams = []
         if team is not None:
             teams = [team]
@@ -198,7 +196,7 @@ class HockeyCommands(HockeyMixin):
         Team and Date can be provided at the same time and then
         only that teams games may appear in that date range if they exist.
         """
-        await ctx.defer()
+        await ctx.typing()
         season_str = None
         if season:
             if season.group(3):
@@ -248,7 +246,7 @@ class HockeyCommands(HockeyMixin):
         Team and Date can be provided at the same time and then
         only that teams games may appear in that date range if they exist.
         """
-        await ctx.defer()
+        await ctx.typing()
         styles = ["all", "ev", "5v5", "sva", "home5v4", "away5v4"]
         if style not in styles:
             await ctx.send(
@@ -304,7 +302,7 @@ class HockeyCommands(HockeyMixin):
         Team and Date can be provided at the same time and then
         only that teams games may appear in that date range if they exist.
         """
-        await ctx.defer()
+        await ctx.typing()
         styles = ["all", "ev", "5v5", "sva"]
         if strength not in styles:
             await ctx.send(
@@ -356,7 +354,7 @@ class HockeyCommands(HockeyMixin):
         Team and Date can be provided at the same time and then
         only that teams games may appear in that date range if they exist.
         """
-        await ctx.defer()
+        await ctx.typing()
         teams = []
         if team is not None:
             teams = [team]
@@ -394,7 +392,7 @@ class HockeyCommands(HockeyMixin):
         Team and Date can be provided at the same time and then
         only that teams games may appear in that date range if they exist.
         """
-        await ctx.defer()
+        await ctx.typing()
         teams = []
         if team is not None:
             teams = [team]
@@ -427,7 +425,7 @@ class HockeyCommands(HockeyMixin):
         `<team>` The name of the teams season schedule you want to post.
         `[season]` must be YYYYYYYY format. e.g. 20212022.
         """
-        await ctx.defer()
+        await ctx.typing()
         if season is None:
             season = f"{datetime.now().year}{datetime.now().year+1}"
         if "-" in season:
@@ -489,7 +487,7 @@ class HockeyCommands(HockeyMixin):
         `[season]` The season to get stats data on format can be `YYYY` or `YYYYYYYY`
         `<player>` The name of the player to search for
         """
-        log.verbose("player %s", player)
+        await ctx.typing()
         season_str = None
         if season:
             if season.group(3):
@@ -509,7 +507,7 @@ class HockeyCommands(HockeyMixin):
                     return
                 year = int(season.group(1)) + 1
                 season_str = f"{season.group(1)}{year}"
-        await ctx.defer()
+
         if not player:
             await ctx.send(_("No player could be found by that name."))
             return
@@ -549,7 +547,7 @@ class HockeyCommands(HockeyMixin):
         `[season]` The season to get stats data on format can be `YYYY` or `YYYYYYYY`
         `<team>` The name of the team to search for
         """
-        await ctx.defer()
+        await ctx.typing()
         season_str = None
         if season:
             if season.group(3):
@@ -631,6 +629,7 @@ class HockeyCommands(HockeyMixin):
             powerPlayAssists
             gameWinningGoals
         """
+        await ctx.typing()
         if category is None:
             category = LeaderCategories("goals")
         if season is not None:
@@ -654,7 +653,7 @@ class HockeyCommands(HockeyMixin):
         """
         Display a nice embed of server specific rules
         """
-        await ctx.defer()
+        await ctx.typing()
         if not ctx.channel.permissions_for(ctx.guild.me).embed_links:
             return
         rules = await self.config.guild(ctx.guild).rules()
@@ -734,7 +733,7 @@ class HockeyCommands(HockeyMixin):
                 points = data.get(leaderboard_type.key(), 0)
                 if not points:
                     continue
-                msg_list.append(f"#{count}. {member_mention}: {points}\n")
+                msg_list.append(f"{count}. {member_mention}: {points}\n")
             elif leaderboard_type.is_standard():  # .value in [1, 3, 5]:
                 total = data.get(leaderboard_type.total_key(), 0)
                 wins = data.get(leaderboard_type.key(), 0)
@@ -746,7 +745,7 @@ class HockeyCommands(HockeyMixin):
                     percent = 0.0
                 verb = _("correct")
                 msg_list.append(
-                    f"#{count}. {member_mention}: {wins}/{total} {verb} ({percent:.4}%)\n"
+                    f"{count}. {member_mention}: {wins}/{total} {verb} ({percent:.4}%)\n"
                 )
             elif leaderboard_type.is_worst():
                 wins = data.get(leaderboard_type.key(), 0)
@@ -760,7 +759,7 @@ class HockeyCommands(HockeyMixin):
                     percent = 0.0
                 verb = _("incorrect")
                 msg_list.append(
-                    f"#{count}. {member_mention}: {losses}/{total} {verb} ({percent:.4}%)\n"
+                    f"{count}. {member_mention}: {losses}/{total} {verb} ({percent:.4}%)\n"
                 )
             count += 1
         leaderboard_list = [msg_list[i : i + 10] for i in range(0, len(msg_list), 10)]
@@ -854,6 +853,7 @@ class HockeyCommands(HockeyMixin):
         than people who consistently vote. The only way to win is to keep playing
         and picking correctly.
         """
+        await ctx.typing(ephemeral=not public)
         if leaderboard_type is None:
             leaderboard_type = LeaderboardType(3)
         await self.post_leaderboard(ctx, leaderboard_type, not public)
@@ -865,7 +865,7 @@ class HockeyCommands(HockeyMixin):
         """
         View your current pickems votes for the server.
         """
-        await ctx.defer(ephemeral=not public)
+        await ctx.typing(ephemeral=not public)
         if str(ctx.guild.id) not in self.all_pickems:
             msg = _("This server does not have any pickems setup.")
             await ctx.send(msg)
@@ -921,6 +921,7 @@ class HockeyCommands(HockeyMixin):
         choosing all will create a nicely formatted list of
         all current NHL team discord server links
         """
+        await ctx.typing(ephemeral=True)
         if team is None:
             msg = _("You must provide a valid current team.")
             await ctx.send(msg)
@@ -931,14 +932,15 @@ class HockeyCommands(HockeyMixin):
             else:
                 await ctx.send(_("You must provide a valid current team."))
                 return
-            await ctx.send(_("Here is the {team} server invite link:").format(team=team))
-            await ctx.channel.send(invites)
+            await ctx.send(
+                _("Here is the {team} server invite link:\n{link}").format(team=team, link=invites)
+            )
+            # await ctx.channel.send(invites)
         else:
             if not ctx.channel.permissions_for(ctx.author).manage_messages:
                 # Don't need everyone spamming this command
                 await ctx.send(_("You are not authorized to use this command."), ephemeral=True)
                 return
-            await ctx.defer()
             atlantic = [
                 team
                 for team in TEAMS
@@ -966,7 +968,7 @@ class HockeyCommands(HockeyMixin):
                 "Pacific": pacific,
             }
             msg1 = _(
-                "__**Hockey Discord Master List**__\n```fix\n"
+                "# Hockey Discord Master List\n"
                 "- Do not join other discords to troll.\n- "
                 "Respect their rules & their members "
                 "(Yes even the leafs & habs unfortunately).\n- "
@@ -980,28 +982,23 @@ class HockeyCommands(HockeyMixin):
                 "it to an angry mob after we just won.\n- "
                 "Not following the above rules will result in "
                 "appropriate punishments ranging from a warning "
-                "to a ban. ```\n\nhttps://discord.gg/reddithockey\n"
-                "https://discord.gg/rishockey\n"
-                "https://discord.gg/c3Q7Fq4T\n"
-                "https://discord.gg/thehockeyguy\n"
-                "https://discord.gg/P3aFDDXqym\n"
+                "to a ban. \n\nhttps://discord.gg/reddithockey\n"  # r/hockey
+                "https://discord.gg/rishockey\n"  # r/ishockey
+                # "https://discord.gg/c3Q7Fq4T\n" # SDPN
+                "https://discord.gg/thehockeyguy\n"  # THG
+                "https://discord.gg/P3aFDDXqym\n"  # PWHL
             )
-            eastern_conference = "https://i.imgur.com/CtXvcCs.png"
-            western_conference = "https://i.imgur.com/UFYJTDF.png"
-            image = await self.get_image("eastern_logo.png", eastern_conference)
-            await ctx.send(msg1, file=image)
+            await ctx.channel.send(msg1)
             for division in team_list:
-                if division == "Central":
-                    image = await self.get_image("western_logo.png", western_conference)
-                    await ctx.send(file=image)
-                div_emoji = "<:" + TEAMS["Team {}".format(division)]["emoji"] + ">"
-                msg = "{0} __**{1} DIVISION**__ {0}".format(div_emoji, division.upper())
-                await ctx.send(msg)
+                msg = "# {div} DIVISION".format(div=division.upper())
+                await ctx.channel.send(msg)
                 for team in team_list[division]:
-                    team_emoji = "<:" + TEAMS[team]["emoji"] + ">"
+                    team_emoji = discord.PartialEmoji.from_str(TEAMS[team]["emoji"])
                     team_link = TEAMS[team]["invite"]
-                    msg = "{0} {1} {0}".format(team_emoji, team_link)
+                    msg = "## {emoji} {link} {emoji}".format(emoji=team_emoji, link=team_link)
                     await ctx.channel.send(msg)
+            if ctx.interaction:
+                await ctx.send(_("Done."))
 
     async def get_image(self, file_name: str, url: str) -> discord.File:
         path = cog_data_path(self) / file_name

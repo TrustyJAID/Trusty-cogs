@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import json
+from collections import namedtuple
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TypedDict
+from typing import Dict, List, NamedTuple, Optional, Tuple, TypedDict, Union
 
 import aiohttp
 from red_commons.logging import getLogger
 from redbot.core.i18n import Translator
+from yarl import URL
 
 from .constants import TEAMS
 from .game import Game, GameState, GameType
@@ -34,6 +36,32 @@ ORDINALS = {
     4: _("4th"),
     5: _("5th"),
 }
+
+
+class CayenneExp(NamedTuple):
+    key: str
+    value: Union[int, str]
+
+    def __str__(self):
+        return f"{self.key}={self.value}"
+
+
+class SortDir(Enum):
+    ASC = "ASC"
+    DESC = "DESC"
+
+    def __str__(self):
+        return self.value
+
+
+@dataclass
+class SortDict:
+    property: str
+    direction: SortDir
+
+    def __str__(self):
+        x = {"property": self.property, "direction": str(self.direction)}
+        return json.dumps(x)
 
 
 class HockeyAPIError(Exception):
@@ -502,9 +530,9 @@ class Schedule:
 
 
 class HockeyAPI:
-    def __init__(self, testing: bool = False):
+    def __init__(self, base_url: Union[URL, str], *, testing: bool = False):
         self.session = aiohttp.ClientSession(
-            headers={"User-Agent": "Red-DiscordBot Trusty-cogs Hockey"}
+            base_url, headers={"User-Agent": "Red-DiscordBot Trusty-cogs Hockey"}
         )
         self.base_url = None
         self.testing = testing
@@ -512,342 +540,195 @@ class HockeyAPI:
     async def close(self):
         await self.session.close()
 
-    async def get_game_content(self, game_id: int):
-        raise NotImplementedError()
 
-    async def get_standings(self) -> Standings:
-        raise NotImplementedError
+class StatsType(Enum):
+    skater = "skater"
+    goalie = "goalie"
+    team = "team"
 
-    async def get_schedule(
-        self,
-        team: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-    ) -> Schedule:
-        raise NotImplementedError
+    def __str__(self):
+        return self.name.lower()
 
-    async def get_games_list(
-        self,
-        team: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-    ) -> List[Game]:
-        raise NotImplementedError
-
-    async def get_games(
-        self,
-        team: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-    ) -> List[Game]:
-        raise NotImplementedError
-
-    async def get_game_from_id(self, game_id: int) -> Game:
-        raise NotImplementedError
-
-    async def get_game_from_url(self, game_url: str) -> Game:
-        raise NotImplementedError
+    @property
+    def config_key(self):
+        if self is StatsType.skater:
+            return "playerReportData"
+        return f"{self}ReportData"
 
 
 class StatsAPI(HockeyAPI):
+    """
+    This Represents access to the new NHL Stats API
+    """
+
     def __init__(self, testing: bool = False):
-        super().__init__(testing)
-        self.base_url = "https://statsapi.web.nhl.com"
+        self.base_url = URL("https://api.nhle.com")
+        super().__init__(self.base_url, testing=testing)
+        self._config = None
+        self._franchises = None
 
-    async def get_game_content(self, game_id: int):
-        async with self.session.get(f"{self.base_url}/{game_id}/content") as resp:
+    @staticmethod
+    def _cayenne_params(params: List[CayenneExp]) -> str:
+        return r" and ".join(str(k) for k in params)
+
+    async def franchises(self):
+        if self._franchises is not None:
+            return self._franchises
+        url = URL("/stats/rest/en/franchise")
+        async with self.session.get(url) as resp:
+            if resp.status != 200:
+                log.error("Error accessing the standings at %s. %s", resp.url, resp.status)
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
+            data = await resp.json()
+        franchise_tuple = namedtuple("Franchise", [k for k in data["data"][0].keys()])
+        self._franchises = [franchise_tuple(**i) for i in data["data"]]
+        return self._franchises
+
+    async def config(self):
+        if self._config is not None:
+            return self._config
+        url = URL("/stats/rest/en/config")
+        async with self.session.get(url) as resp:
+            if resp.status != 200:
+                log.error("Error accessing the standings at %s. %s", resp.url, resp.status)
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
+            data = await resp.json()
+
+        self._config = data
+        return self._config
+
+    async def request(self, url: URL) -> dict:
+        async with self.session.get(url) as resp:
+            # log.debug("Stats API headers: %s", resp.headers)
+            if resp.status != 200:
+                log.error("Error accessing the standings at %s. %s", resp.url, resp.status)
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
             data = await resp.json()
         return data
 
-    async def get_schedule(
+    async def get(
         self,
-        team: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-    ) -> Schedule:
-        start_date_str = start_date.strftime("%Y-%m-%d") if start_date is not None else None
-        end_date_str = end_date.strftime("%Y-%m-%d") if end_date is not None else None
-        params = {"expand": "schedule.teams,schedule.linescore,schedule.broadcasts"}
-        url = self.base_url + "/api/v1/schedule"
-        if start_date is None and end_date is not None:
-            # if no start date is provided start with today
-            params["startDate"] = datetime.now().strftime("%Y-%m-%d")
-            params["endDate"] = end_date_str
-            # url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
-        elif start_date is not None and end_date is None:
-            # if no end date is provided carry through to the following year
-            params["endDate"] = str(start_date.year + 1) + start_date.strftime("-%m-%d")
-            params["startDate"] = start_date_str
-            # url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
-        if start_date_str is not None:
-            params["startDate"] = start_date_str
-        if end_date_str is not None:
-            params["endDate"] = end_date_str
-        if team not in ["all", None]:
-            # if a team is provided get just that TEAMS data
-            # url += "&teamId={}".format(TEAMS[team]["id"])
-            params["teamId"] = TEAMS[team]["id"]
+        stat_type: StatsType,
+        endpoint: str,
+        *,
+        filter: List[CayenneExp] = [],
+        sort: List[SortDict] = [],
+        is_aggregate: bool = False,
+        is_game: bool = False,
+        page: int = 0,
+        limit: int = 100,
+    ) -> List[NamedTuple]:
+        config = await self.config()
+        config_info = config.get(stat_type.config_key, {}).get(endpoint)
+        if config_info is None:
+            raise HockeyAPIError("Stat Type not available with that endpoint", stat_type, endpoint)
+
+        url = URL(f"/stats/rest/en/{stat_type}/{endpoint}")
+        query = {
+            "start": page,
+            "limit": limit,
+            "isAggregate": str(is_aggregate).lower(),
+            "isGame": str(is_game).lower(),
+        }
+        url = url.update_query(query)
+        sort_keys = []
+        if is_game:
+            sort_keys = config_info["game"]["sortKeys"]
+        else:
+            sort_keys = config_info["season"]["sortKeys"]
+        if not sort:
+            for k in sort_keys:
+                sort.append(SortDict(property=k, direction=SortDir.DESC))
+        if sort:
+            url = url.update_query({"sort": [str(s) for s in sort]})
+        if filter:
+            url = url.update_query({"cayenneExp": self._cayenne_params(filter)})
+        data = await self.request(url)
+        tp = namedtuple(
+            f"{stat_type.name.title()}{endpoint.title()}", [k for k in data["data"][0].keys()]
+        )
+        log.debug(url)
+        return [tp(**i) for i in data["data"]]
+
+
+class SkaterStatsAPI(StatsAPI):
+    def __init__(self, testing: bool = False):
+        super().__init__(testing=testing)
+
+    async def summary(
+        self,
+        *,
+        game_type: GameType = GameType.regular_season,
+        season_start: Optional[str] = None,
+        season_end: Optional[str] = None,
+        franchise: Optional[int] = None,
+        page: int = 0,
+        limit: int = 50,
+    ) -> List[NamedTuple]:
+        c_params = [CayenneExp(key="gameTypeId", value=int(game_type))]
+        if season_start:
+            c_params.append(CayenneExp(key="seasonId>", value=season_start))
+        if season_end:
+            c_params.append(CayenneExp(key="seasonId<", value=season_end))
+        if franchise:
+            c_params.append(CayenneExp(key="franchiseId", value=franchise))
+
+        c_str = self._cayenne_params(c_params)
+        url = URL("/stats/rest/en/skater/summary")
+        url = url.update_query({"start": page, "limit": limit, "cayenneExp": c_str})
+        data = await self.request(url)
+        tp = namedtuple("SkaterSummary", [k for k in data["data"][0].keys()])
+        return [tp(**i) for i in data["data"]]
+
+
+class SearchAPI(HockeyAPI):
+    def __init__(self, testing: bool = False):
+        self.base_url = URL("https://search.d3.nhle.com")
+        super().__init__(self.base_url, testing=testing)
+
+    async def player(
+        self,
+        search: str,
+        *,
+        culture: str = "en-us",
+        active: Optional[bool] = None,
+        limit: int = 20,
+    ) -> List[SearchPlayer]:
+        params = {"q": search, "culture": culture, "limit": limit}
+        if active is not None:
+            # omit active for wider range of search unless specified
+            # the parameters expects a string not bool so convert
+            params["active"] = str(active).lower()
+
+        url = URL("/api/v1/search/player")
         async with self.session.get(url, params=params) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-            else:
-                data = None
-                log.info("Error checking schedule. %s", resp.status)
-        return Schedule.from_statsapi(data)
-
-    async def get_games_list(
-        self,
-        team: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-    ) -> List[dict]:
-        """
-        Get a specified days games, defaults to the current day
-        requires a datetime object
-        returns a list of game objects
-        if a start date and an end date are not provided to the url
-        it returns only todays games
-
-        returns a list of games
-        """
-        data = await self.get_schedule(team, start_date, end_date)
-        game_list = [game for date in data["dates"] for game in date["games"]]
-        return game_list
-
-    async def get_games(
-        self,
-        team: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-    ) -> List[dict]:
-        """
-        Get a specified days games, defaults to the current day
-        requires a datetime object
-        returns a list of game objects
-        if a start date and an end date are not provided to the url
-        it returns only todays games
-
-        returns a list of game objects
-        """
-        games_list = await self.get_games_list(team, start_date, end_date)
-        return_games_list = []
-        if games_list != []:
-            for games in games_list:
-                try:
-                    async with self.session.get(self.base_url + games["link"]) as resp:
-                        data = await resp.json()
-                    log.verbose("get_games, url: %s%s", self.base_url, games["link"])
-                    return_games_list.append(await self.to_game_obj_json(data))
-                except Exception:
-                    log.error("Error grabbing game data:", exc_info=True)
-                    continue
-        return return_games_list
-
-    async def get_game_from_id(self, game_id: int) -> Game:
-        url = f"{self.base_url}/api/v1/game/{game_id}/feed/live"
-        async with self.session.get(url) as resp:
+            if resp.status != 200:
+                log.error("Error accessing the Schedule for now. %s", resp.status)
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
             data = await resp.json()
-        return data
-
-    async def get_game_from_url(self, game_url: str) -> dict:
-        url = f"{self.base_url}/{game_url}"
-        async with self.session.get(url) as resp:
-            data = await resp.json()
-        return data
-
-    def get_image_and_highlight_url(
-        self, event_id: int, media_content: dict
-    ) -> Tuple[Optional[str], ...]:
-        image, link = None, None
-        try:
-            if media_content["media"]["milestones"]:
-                for highlight in media_content["media"]["milestones"]["items"]:
-                    if highlight["statsEventId"] == str(event_id):
-                        for playback in highlight["highlight"]["playbacks"]:
-                            if playback["name"] == "FLASH_1800K_896x504":
-                                link = playback["url"]
-                        image = (
-                            highlight["highlight"]
-                            .get("image", {})
-                            .get("cuts", {})
-                            .get("1136x640", {})
-                            .get("src", None)
-                        )
-            else:
-                for highlight in media_content["highlights"]["gameCenter"]["items"]:
-                    if "keywords" not in highlight:
-                        continue
-                    for keyword in highlight["keywords"]:
-                        if keyword["type"] != "statsEventId":
-                            continue
-                        if keyword["value"] == str(event_id):
-                            for playback in highlight["playbacks"]:
-                                if playback["name"] == "FLASH_1800K_896x504":
-                                    link = playback["url"]
-                            image = (
-                                highlight["image"]
-                                .get("cuts", {})
-                                .get("1136x640", {})
-                                .get("src", None)
-                            )
-        except KeyError:
-            pass
-        return link, image
-
-    async def to_goal(self, data: dict, players: dict, media_content: Optional[dict]) -> Goal:
-        scorer_id = []
-        if "players" in data:
-            scorer_id = [
-                p["player"]["id"]
-                for p in data["players"]
-                if p["playerType"] in ["Scorer", "Shooter"]
-            ]
-
-        if "strength" in data["result"]:
-            str_dat = data["result"]["strength"]["name"]
-            strength_code = data["result"]["strength"]["code"]
-            strength = "Even Strength" if str_dat == "Even" else str_dat
-            if data["about"]["ordinalNum"] == "SO":
-                strength = "Shoot Out"
-        else:
-            strength = " "
-            strength_code = " "
-        empty_net = data["result"].get("emptyNet", False)
-        player_id = f"ID{scorer_id[0]}" if scorer_id != [] else None
-        if player_id in players:
-            jersey_no = players[player_id]["jerseyNumber"]
-        else:
-            jersey_no = ""
-        link = None
-        image = None
-        if media_content:
-            event_id = data["about"]["eventId"]
-            link, image = self.get_image_and_highlight_url(event_id, media_content)
-
-        # scorer = scorer_id[0]
-        return Goal(
-            goal_id=data["result"]["eventCode"],
-            team_name=data["team"]["name"],
-            scorer_id=scorer_id[0] if scorer_id != [] else None,
-            jersey_no=jersey_no,
-            description=data["result"]["description"],
-            period=data["about"]["period"],
-            period_ord=data["about"]["ordinalNum"],
-            time_remaining=data["about"]["periodTimeRemaining"],
-            time=data["about"]["dateTime"],
-            home_score=data["about"]["goals"]["home"],
-            away_score=data["about"]["goals"]["away"],
-            strength=strength,
-            strength_code=strength_code,
-            empty_net=empty_net,
-            event=data["result"]["event"],
-            link=link,
-            image=image,
-            home_shots=data.get("home_shots", 0),
-            away_shots=data.get("away_shots", 0),
-        )
-
-    async def get_game_recap_from_content(self, content: dict) -> Optional[str]:
-        recap_url = None
-        for _item in (
-            content.get("editorial", {"recap": {}}).get("recap", {"items": []}).get("items", [])
-        ):
-            if "playbacks" not in _item["media"]:
-                continue
-            for _playback in _item["media"]["playbacks"]:
-                if _playback["name"] == "FLASH_1800K_896x504":
-                    recap_url = _playback["url"]
-        return recap_url
-
-    async def to_game(self, data: dict, content: Optional[dict]) -> Game:
-        event = data["liveData"]["plays"]["allPlays"]
-        home_team = data["gameData"]["teams"]["home"]["name"]
-        away_team = data["gameData"]["teams"]["away"]["name"]
-        away_roster = data["liveData"]["boxscore"]["teams"]["away"]["players"]
-        home_roster = data["liveData"]["boxscore"]["teams"]["home"]["players"]
-        players = {}
-        players.update(away_roster)
-        players.update(home_roster)
-        game_id = data["gameData"]["game"]["pk"]
-        season = data["gameData"]["game"]["season"]
-        period_starts = {}
-        for play in data["liveData"]["plays"]["allPlays"]:
-            if play["result"]["eventTypeId"] == "PERIOD_START":
-                dt = datetime.strptime(play["about"]["dateTime"], "%Y-%m-%dT%H:%M:%SZ")
-                dt = dt.replace(tzinfo=timezone.utc)
-                period_starts[play["about"]["ordinalNum"]] = dt
-
-        try:
-            recap_url = await self.get_game_recap_from_content(content)
-        except Exception:
-            log.error("Cannot get game recap url.")
-            recap_url = None
-        goals = [
-            await self.to_goal(goal, players, content)
-            for goal in event
-            if goal["result"]["eventTypeId"] == "GOAL"
-            or (
-                goal["result"]["eventTypeId"] in ["SHOT", "MISSED_SHOT"]
-                and goal["about"]["ordinalNum"] == "SO"
-            )
-        ]
-        link = f"{self.base_url}{data['link']}"
-        if "currentPeriodOrdinal" in data["liveData"]["linescore"]:
-            period_ord = data["liveData"]["linescore"]["currentPeriodOrdinal"]
-            period_time_left = data["liveData"]["linescore"]["currentPeriodTimeRemaining"]
-            events = data["liveData"]["plays"]["allPlays"]
-        else:
-            period_ord = "0"
-            period_time_left = "0"
-            events = ["."]
-        decisions = data["liveData"]["decisions"]
-        first_star = decisions.get("firstStar", {}).get("fullName")
-        second_star = decisions.get("secondStar", {}).get("fullName")
-        third_star = decisions.get("thirdStar", {}).get("fullName")
-        game_type = data["gameData"]["game"]["type"]
-        game_state = (
-            data["gameData"]["status"]["abstractGameState"]
-            if data["gameData"]["status"]["detailedState"] != "Postponed"
-            else data["gameData"]["status"]["detailedState"]
-        )
-        return Game(
-            game_id=game_id,
-            game_state=game_state,
-            home_team=home_team,
-            away_team=away_team,
-            period=data["liveData"]["linescore"]["currentPeriod"],
-            home_shots=data["liveData"]["linescore"]["teams"]["home"]["shotsOnGoal"],
-            away_shots=data["liveData"]["linescore"]["teams"]["away"]["shotsOnGoal"],
-            home_score=data["liveData"]["linescore"]["teams"]["home"]["goals"],
-            away_score=data["liveData"]["linescore"]["teams"]["away"]["goals"],
-            game_start=data["gameData"]["datetime"]["dateTime"],
-            goals=goals,
-            home_abr=data["gameData"]["teams"]["home"]["abbreviation"],
-            away_abr=data["gameData"]["teams"]["away"]["abbreviation"],
-            period_ord=period_ord,
-            period_time_left=period_time_left,
-            period_starts=period_starts,
-            plays=events,
-            first_star=first_star,
-            second_star=second_star,
-            third_star=third_star,
-            away_roster=away_roster,
-            home_roster=home_roster,
-            link=link,
-            game_type=game_type,
-            season=season,
-            recap_url=recap_url,
-            # data=data,
-        )
+        players = [SearchPlayer.from_json(i) for i in data]
+        return sorted(players, key=lambda x: x.active, reverse=True)
 
 
 class NewAPI(HockeyAPI):
     def __init__(self, testing: bool = False):
-        super().__init__(testing)
-        self.base_url = "https://api-web.nhle.com/v1"
+        self.base_url = URL("https://api-web.nhle.com")
+        super().__init__(self.base_url, testing=testing)
+        self.search_api = SearchAPI(testing=testing)
+        self.stats_api = StatsAPI(testing=testing)
 
-    async def get_game_content(self, game_id: int):
-        raise NotImplementedError()
+    async def close(self):
+        await self.search_api.close()
+        await self.stats_api.close()
+        await super().close()
 
     def team_to_abbrev(self, team: str) -> Optional[str]:
         if len(team) == 3:
@@ -862,10 +743,13 @@ class NewAPI(HockeyAPI):
         if self.testing:
             data = await self.load_testing_data("testschedule.json")
             return Schedule.from_nhle(data)
-        async with self.session.get(f"{self.base_url}/schedule/now") as resp:
+        url = URL("/v1/schedule/now")
+        async with self.session.get(url) as resp:
             if resp.status != 200:
                 log.error("Error accessing the Schedule for now. %s", resp.status)
-                raise HockeyAPIError("There was an error accessing the API.")
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
             log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
         return Schedule.from_nhle(data)
@@ -878,27 +762,18 @@ class NewAPI(HockeyAPI):
         active: Optional[bool] = None,
         limit: int = 20,
     ) -> List[SearchPlayer]:
-        params = {"q": search, "culture": culture, "limit": limit}
-        if active is not None:
-            # omit active for wider range of search unless specified
-            # the parameters expects a string not bool so convert
-            params["active"] = str(active).lower()
-
-        url = "https://search.d3.nhle.com/api/v1/search/player"
-        async with self.session.get(url, params=params) as resp:
-            if resp.status != 200:
-                log.error("Error accessing the Schedule for now. %s", resp.status)
-                raise HockeyAPIError("There was an error accessing the API.")
-            data = await resp.json()
-        players = [SearchPlayer.from_json(i) for i in data]
-        return sorted(players, key=lambda x: x.active, reverse=True)
+        return await self.search_api.player(
+            search=search, culture=culture, active=active, limit=limit
+        )
 
     async def get_player(self, player_id: int) -> PlayerStats:
-        url = f"https://api-web.nhle.com/v1/player/{player_id}/landing"
+        url = URL(f"/v1/player/{player_id}/landing")
         async with self.session.get(url) as resp:
             if resp.status != 200:
                 log.error("Error accessing the Schedule for now. %s", resp.status)
-                raise HockeyAPIError("There was an error accessing the API.")
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
             data = await resp.json()
         return PlayerStats.from_json(data)
 
@@ -908,20 +783,25 @@ class NewAPI(HockeyAPI):
         team_abr = self.team_to_abbrev(team)
         if team_abr is None:
             raise HockeyAPIError("An unknown team name was provided")
-        url = f"https://api-web.nhle.com/v1/roster/{team_abr}/{season}"
+        url = URL(f"/v1/roster/{team_abr}/{season}")
         async with self.session.get(url) as resp:
             if resp.status != 200:
                 log.error("Error accessing the Club Schedule for the season. %s", resp.status)
-                raise HockeyAPIError("There was an error accessing the API.")
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
             data = await resp.json()
         return Roster.from_json(data)
 
     async def schedule(self, date: datetime) -> Schedule:
         date_str = date.strftime("%Y-%m-%d")
-        async with self.session.get(f"{self.base_url}/schedule/{date_str}") as resp:
+        url = URL(f"/v1/schedule/{date_str}")
+        async with self.session.get(url) as resp:
             if resp.status != 200:
                 log.error("Error accessing the Schedule for now. %s", resp.status)
-                raise HockeyAPIError("There was an error accessing the API.")
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
             log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
         return Schedule.from_nhle(data)
@@ -930,12 +810,13 @@ class NewAPI(HockeyAPI):
         team_abr = self.team_to_abbrev(team)
         if team_abr is None:
             raise HockeyAPIError("An unknown team name was provided")
-        async with self.session.get(
-            f"{self.base_url}/club-schedule-season/{team_abr}/now"
-        ) as resp:
+        url = URL(f"/v1/club-schedule-season/{team_abr}/now")
+        async with self.session.get(url) as resp:
             if resp.status != 200:
                 log.error("Error accessing the Club Schedule for the season. %s", resp.status)
-                raise HockeyAPIError("There was an error accessing the API.")
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
 
             data = await resp.json()
         return Schedule.from_nhle(data)
@@ -947,13 +828,15 @@ class NewAPI(HockeyAPI):
             date_str = date.strftime("%Y-%m-%d")
         if team_abr is None:
             raise HockeyAPIError("An unknown team name was provided")
-        url = f"{self.base_url}/club-schedule/{team_abr}/week/{date_str}"
+        url = URL(f"/v1/club-schedule/{team_abr}/week/{date_str}")
         async with self.session.get(url) as resp:
             if resp.status != 200:
                 log.error(
                     "Error accessing the Club Schedule for the week. %s: %s", resp.status, url
                 )
-                raise HockeyAPIError("There was an error accessing the API.")
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
             log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
         return Schedule.from_nhle(data)
@@ -967,12 +850,13 @@ class NewAPI(HockeyAPI):
         date_str = "now"
         if date is not None:
             date_str = date.strftime("%Y-%m")
-        async with self.session.get(
-            f"{self.base_url}/club-schedule/{team_abr}/month/{date_str}"
-        ) as resp:
+        url = URL(f"/v1/club-schedule/{team_abr}/month/{date_str}")
+        async with self.session.get(url) as resp:
             if resp.status != 200:
                 log.error("Error accessing the Club Schedule for the month. %s", resp.status)
-                raise HockeyAPIError("There was an error accessing the API.")
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
             log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
         return Schedule.from_nhle(data)
@@ -981,37 +865,49 @@ class NewAPI(HockeyAPI):
         if self.testing:
             data = await self.load_testing_data("test-landing.json")
             return data
-        async with self.session.get(f"{self.base_url}/gamecenter/{game_id}/landing") as resp:
+        url = URL(f"/v1/gamecenter/{game_id}/landing")
+        async with self.session.get(url) as resp:
             if resp.status != 200:
                 log.error("Error accessing the games landing page. %s", resp.status)
-                raise HockeyAPIError("There was an error accessing the API.")
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
             log.trace("Hockey GC landing headers %s", resp.headers)
             data = await resp.json()
         return data
 
     async def gamecenter_pbp(self, game_id: int):
-        async with self.session.get(f"{self.base_url}/gamecenter/{game_id}/play-by-play") as resp:
+        url = URL(f"/v1/gamecenter/{game_id}/play-by-play")
+        async with self.session.get(url) as resp:
             if resp.status != 200:
                 log.error("Error accessing the games play-by-play. %s", resp.status)
-                raise HockeyAPIError("There was an error accessing the API.")
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
             log.trace("Hockey GC pbp headers %s", resp.headers)
             data = await resp.json()
         return data
 
     async def gamecenter_boxscore(self, game_id: int):
-        async with self.session.get(f"{self.base_url}/gamecenter/{game_id}/boxscore") as resp:
+        url = URL(f"/v1/gamecenter/{game_id}/boxscore")
+        async with self.session.get(url) as resp:
             if resp.status != 200:
                 log.error("Error accessing the games play-by-play. %s", resp.status)
-                raise HockeyAPIError("There was an error accessing the API.")
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
             log.trace("Hockey GC boxscore headers %s", resp.headers)
             data = await resp.json()
         return data
 
     async def standings_now(self):
-        async with self.session.get(f"{self.base_url}/standings/now") as resp:
+        url = URL("/v1/standings/now")
+        async with self.session.get(url) as resp:
             if resp.status != 200:
-                log.error("Error accessing the standings. %s", resp.status)
-                raise HockeyAPIError("There was an error accessing the API.")
+                log.error("Error accessing the standings at %s. %s", resp.url, resp.status)
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
             log.trace("Hockey standings headers %s", resp.headers)
             data = await resp.json()
         return data
@@ -1070,33 +966,6 @@ class NewAPI(HockeyAPI):
         except Exception:
             landing = None
         return await self.to_game(data, content=landing)
-
-    async def get_game_from_url(self, game_url: str) -> dict:
-        raise NotImplementedError
-
-    async def to_goal(self, data: dict, players: dict, content: Optional[dict]) -> Goal:
-        # scorer = scorer_id[0]
-        return Goal(
-            goal_id=data["result"]["eventCode"],
-            team_name=data["team"]["name"],
-            scorer_id=scorer_id[0] if scorer_id != [] else None,
-            jersey_no=jersey_no,
-            description=data["result"]["description"],
-            period=data["about"]["period"],
-            period_ord=data["about"]["ordinalNum"],
-            time_remaining=data["about"]["periodTimeRemaining"],
-            time=data["about"]["dateTime"],
-            home_score=data["about"]["goals"]["home"],
-            away_score=data["about"]["goals"]["away"],
-            strength=strength,
-            strength_code=strength_code,
-            empty_net=empty_net,
-            event=data["result"]["event"],
-            link=link,
-            image=image,
-            home_shots=data.get("home_shots", 0),
-            away_shots=data.get("away_shots", 0),
-        )
 
     async def get_game_recap(self, game_id: int) -> Optional[str]:
         landing = await self.gamecenter_landing(game_id)

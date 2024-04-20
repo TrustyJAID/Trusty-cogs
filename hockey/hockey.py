@@ -62,72 +62,70 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "4.1.0"
+    __version__ = "4.2.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
-        default_global = {
-            "teams": [],
-            "created_gdc": False,
-            "print": False,
-            "last_day": 0,
-            "enable_slash": False,
-            "loop_error_channel": None,
-            "loop_error_guild": None,
-        }
-        default_global["player_db"] = 0
-        default_guild = {
-            "standings_channel": None,
-            "standings_type": None,
-            "post_standings": False,
-            "standings_msg": None,
-            "create_channels": False,
-            "create_threads": False,
-            "category": None,
-            "gdc_team": None,
-            "gdt_team": None,
-            "gdt_channel": None,
-            "gdc": [],
-            "gdt": [],
-            "gdc_chans": {},
-            "gdt_chans": {},
-            "delete_gdc": True,
-            "update_gdt": True,
-            "rules": "",
-            "team_rules": "",
-            "game_state_notifications": False,
-            "goal_notifications": False,
-            "start_notifications": False,
-            "gdc_state_updates": ["Preview", "Live", "Final", "Goal"],
-            "gdt_state_updates": ["Preview", "Live", "Final", "Goal"],
-            "ot_notifications": True,
-            "so_notifications": True,
-            "timezone": None,
-            "include_goal_image": False,
-            "gdt_countdown": True,
-            "gdc_countdown": True,
-        }
-        default_channel = {
-            "team": [],
-            "game_states": ["Preview", "Live", "Final", "Goal"],
-            "countdown": True,
-            "to_delete": False,
-            "update": True,
-            "publish_states": [],
-            "game_state_notifications": False,
-            "goal_notifications": False,
-            "start_notifications": False,
-            "guild_id": None,
-            "parent": None,
-            "include_goal_image": False,
-        }
-
         self.config = Config.get_conf(self, CONFIG_ID, force_registration=True)
-        self.config.register_global(**default_global, schema_version=0)
-        self.config.register_guild(**default_guild)
-        self.config.register_channel(**default_channel)
+        self.config.register_global(
+            teams=[],
+            created_gdc=False,
+            print=False,
+            last_day=0,
+            enable_slash=False,
+            loop_error_channel=None,
+            loop_error_guild=None,
+            player_db=0,
+            schema_version=0,
+        )
+        self.config.register_guild(
+            standings_channel=None,
+            standings_type=None,
+            post_standings=False,
+            standings_msg=None,
+            create_channels=False,
+            create_threads=False,
+            category=None,
+            gdc_team=None,
+            gdt_team=None,
+            gdt_channel=None,
+            gdc=[],
+            gdt=[],
+            gdc_chans={},
+            gdt_chans={},
+            delete_gdc=True,
+            update_gdt=True,
+            rules="",
+            team_rules="",
+            game_state_notifications=False,
+            goal_notifications=False,
+            start_notifications=False,
+            gdc_state_updates=["Preview", "Live", "Final", "Goal"],
+            gdt_state_updates=["Preview", "Live", "Final", "Goal"],
+            ot_notifications=True,
+            so_notifications=True,
+            timezone=None,
+            include_goal_image=False,
+            gdt_countdown=True,
+            gdc_countdown=True,
+            gdt_role=None,
+        )
+        self.config.register_channel(
+            team=[],
+            game_states=["Preview", "Live", "Final", "Goal"],
+            countdown=True,
+            to_delete=False,
+            update=True,
+            publish_states=[],
+            game_state_notifications=False,
+            goal_notifications=False,
+            start_notifications=False,
+            guild_id=None,
+            parent=None,
+            include_goal_image=False,
+        )
         self.pickems_config = Config.get_conf(
             None, CONFIG_ID, cog_name="Hockey_Pickems", force_registration=True
         )

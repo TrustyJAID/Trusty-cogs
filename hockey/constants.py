@@ -55,7 +55,7 @@ TEAMS = {
         "emoji": "BuffaloSabres:664662843672756224",
         "home": "#002654",
         "id": 7,
-        "invite": "https://discord.gg/NfAhvVnWX9",
+        "invite": "https://discord.gg/C6gpAvqDWm",
         "logo": "https://i.imgur.com/GKxSQaT.png",
         "team_url": "https://www.nhl.com/sabres",
         "timezone": "US/Eastern",

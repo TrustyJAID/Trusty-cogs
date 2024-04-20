@@ -1,8 +1,8 @@
 import asyncio
 import os
 import re
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import timedelta
+from typing import Optional, Union
 
 import aiohttp
 import discord
@@ -16,7 +16,7 @@ from redbot.core.utils.views import ConfirmView
 from .abc import HockeyMixin
 from .constants import TEAMS
 from .helper import StandingsFinder, StateFinder, TeamFinder
-from .standings import Conferences, Divisions, Standings
+from .standings import Conferences, Divisions
 
 _ = Translator("Hockey", __file__)
 
@@ -35,7 +35,7 @@ class HockeySetCommands(HockeyMixin):
         """
         Show hockey settings for this server
         """
-        await ctx.defer()
+        await ctx.typing()
         guild = ctx.guild
         standings_channel = guild.get_channel(await self.config.guild(guild).standings_channel())
         post_standings = _("On") if await self.config.guild(guild).post_standings() else _("Off")
@@ -515,7 +515,7 @@ class HockeySetCommands(HockeyMixin):
         self,
         ctx: commands.Context,
         standings_type: StandingsFinder,
-        channel: Optional[discord.TextChannel] = None,
+        channel: Union[discord.TextChannel, discord.Thread] = commands.CurrentChannel,
     ) -> None:
         """
         Posts automatic standings when all games for the day are done
@@ -524,10 +524,8 @@ class HockeySetCommands(HockeyMixin):
         `[channel]` The channel you want standings to be posted into, if not provided
         this will use the current channel.
         """
-        await ctx.defer()
+        await ctx.typing()
         guild = ctx.guild
-        if channel is None:
-            channel = ctx.channel
         channel_perms = channel.permissions_for(guild.me)
         if not (
             channel_perms.send_messages
@@ -586,6 +584,7 @@ class HockeySetCommands(HockeyMixin):
 
         This updates at the same time as the game day channels (usually 9AM PST)
         """
+        await ctx.typing()
         guild = ctx.message.guild
         cur_state = not await self.config.guild(guild).post_standings()
         verb = _("will") if cur_state else _("won't")
@@ -641,6 +640,7 @@ class HockeySetCommands(HockeyMixin):
         `goal` is all goal updates.
         `periodrecap` is a recap of the period at the intermission.
         """
+        await ctx.typing()
         cur_states = []
         added = []
         removed = []
@@ -679,6 +679,7 @@ class HockeySetCommands(HockeyMixin):
         `[channel]` The channel you specifically want goal images enabled for.
         If channel is not provided the server-wide setting will be toggled instead.
         """
+        await ctx.typing()
         if channel is None:
             current = not await self.config.guild(ctx.guild).include_goal_image()
             await self.config.guild(ctx.guild).include_goal_image.set(current)
@@ -714,7 +715,7 @@ class HockeySetCommands(HockeyMixin):
         self,
         ctx: commands.Context,
         team: TeamFinder,
-        channel: Optional[discord.TextChannel] = None,
+        channel: Union[discord.TextChannel, discord.Thread] = commands.CurrentChannel,
     ) -> None:
         """
         Adds a hockey team goal updates to a channel do 'all' for all teams
@@ -729,8 +730,6 @@ class HockeySetCommands(HockeyMixin):
             return
         # team_data = await self.get_team(team)
         async with ctx.typing():
-            if channel is None:
-                channel = ctx.channel
             cur_teams = await self.config.channel(channel).team()
             cur_teams = [] if cur_teams is None else cur_teams
             if team in cur_teams:
@@ -752,14 +751,12 @@ class HockeySetCommands(HockeyMixin):
         self,
         ctx: commands.Context,
         team: Optional[TeamFinder] = None,
-        channel: Optional[discord.TextChannel] = None,
+        channel: Union[discord.TextChannel, discord.Thread] = commands.CurrentChannel,
     ) -> None:
         """
         Removes a teams goal updates from a channel
         defaults to the current channel
         """
-        if channel is None:
-            channel = ctx.channel
         msg = _("No teams are currently being posted in {channel}.").format(
             channel=channel.mention
         )
