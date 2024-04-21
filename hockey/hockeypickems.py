@@ -154,7 +154,7 @@ class HockeyPickems(HockeyMixin):
                     log.exception("Error adding pickems to the bot %r", pickem)
 
     def pickems_name(self, game: Game) -> str:
-        return f"{game.away_abr}@{game.home_abr}-{game.game_start.month}-{game.game_start.day}"
+        return f"{game.away.tri_code}@{game.home.tri_code}-{game.game_start.month}-{game.game_start.day}"
 
     async def find_pickems_object(self, game: Game) -> List[Pickems]:
         """
