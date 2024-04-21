@@ -10,7 +10,7 @@ from redbot.core.utils.chat_formatting import bold, humanize_list
 
 from .abc import HockeyMixin
 from .game import Game
-from .helper import StateFinder, TeamFinder, get_chn_name
+from .helper import StateFinder, TeamFinder, get_chn_name, get_team_role
 
 log = getLogger("red.trusty-cogs.Hockey")
 
@@ -299,6 +299,7 @@ class GameDayChannels(HockeyMixin):
         if not category.permissions_for(guild.me).manage_channels:
             await ctx.send(_("I don't have manage channels permission!"))
             return
+        await self.clear_gdc(guild)
         await self.config.guild(guild).category.set(category.id)
         await self.config.guild(guild).gdc_team.set(team)
         await self.config.guild(guild).delete_gdc.set(delete_gdc)
@@ -399,6 +400,7 @@ class GameDayChannels(HockeyMixin):
             new_chn = await guild.create_text_channel(chn_name, category=category)
         except discord.Forbidden:
             log.error("Error creating channel in %r", guild)
+            return
         except Exception:
             log.exception(f"Error creating channels in {repr(guild)}")
             return
@@ -413,14 +415,24 @@ class GameDayChannels(HockeyMixin):
         await self.config.channel(new_chn).game_states.set(gdc_state_updates)
         gdc_countdown = await self.config.guild(guild).gdc_countdown()
         await self.config.channel(new_chn).countdown.set(gdc_countdown)
+        start_roles = await self.config.guild(guild).start_roles()
+        await self.config.channel(new_chn).start_roles.set(start_roles)
         # Gets the timezone to use for game day channel topic
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")
         # guild_team = await config.guild(guild).gdc_team()
         time_string = f"<t:{next_game.timestamp}:F>"
+        home_role = get_team_role(guild, next_game.home_team)
+        away_role = get_team_role(guild, next_game.away_team)
+        home_role_mention = next_game.home_team
+        away_role_mention = next_game.away_team
+        if home_role:
+            home_role_mention = home_role.mention
+        if away_role:
+            away_role_mention = away_role.mention
 
         game_msg = (
-            f"{next_game.away_team} {next_game.away_emoji} @ "
-            f"{next_game.home_team} {next_game.home_emoji} {time_string}"
+            f"{away_role_mention} {next_game.away_emoji} @ "
+            f"{home_role_mention} {next_game.home_emoji} {time_string}"
         )
         try:
             await new_chn.edit(topic=game_msg)
@@ -429,18 +441,31 @@ class GameDayChannels(HockeyMixin):
         if new_chn.permissions_for(guild.me).embed_links:
             em = await next_game.game_state_embed()
             try:
-                preview_msg = await new_chn.send(embed=em)
+                preview_msg = await new_chn.send(game_msg, embed=em)
             except Exception:
                 log.error("Error posting game preview in GDC channel.")
         else:
             try:
-                preview_msg = await new_chn.send(await next_game.game_state_text())
+                game_text = await next_game.game_state_text()
+                text_message = f"{game_msg}\n{game_text}"
+                preview_msg = await new_chn.send(text_message)
             except Exception:
                 log.error("Error posting game preview in GDC channel.")
                 return
 
         if new_chn.permissions_for(guild.me).manage_messages:
             await preview_msg.pin()
+
+    async def clear_gdc(self, guild: discord.Guild) -> None:
+        """
+        Rather than delete the threads we will now purge our local data only
+        since it's no longer necessary to keep and threads will be automatically
+        archived
+        """
+        channels = await self.config.guild(guild).gdc_chans()
+        for channel in channels.values():
+            await self.config.channel_from_id(channel).clear()
+        await self.config.guild(guild).gdc_chans.clear()
 
     async def delete_gdc(self, guild: discord.Guild) -> None:
         """

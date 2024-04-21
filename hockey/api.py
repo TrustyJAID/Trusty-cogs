@@ -18,7 +18,7 @@ from .game import Game, GameState, GameType
 from .goal import Goal
 from .helper import Team
 from .player import PlayerStats, Roster, SearchPlayer
-from .standings import Standings
+from .standings import Playoffs, Standings
 
 TEAM_IDS = {v["id"]: k for k, v in TEAMS.items()}
 
@@ -531,10 +531,10 @@ class Schedule:
 
 class HockeyAPI:
     def __init__(self, base_url: Union[URL, str], *, testing: bool = False):
+        self.base_url = URL(base_url)
         self.session = aiohttp.ClientSession(
-            base_url, headers={"User-Agent": "Red-DiscordBot Trusty-cogs Hockey"}
+            self.base_url, headers={"User-Agent": "Red-DiscordBot Trusty-cogs Hockey"}
         )
-        self.base_url = None
         self.testing = testing
 
     async def close(self):
@@ -562,8 +562,7 @@ class StatsAPI(HockeyAPI):
     """
 
     def __init__(self, testing: bool = False):
-        self.base_url = URL("https://api.nhle.com")
-        super().__init__(self.base_url, testing=testing)
+        super().__init__(URL("https://api.nhle.com"), testing=testing)
         self._config = None
         self._franchises = None
 
@@ -689,8 +688,7 @@ class SkaterStatsAPI(StatsAPI):
 
 class SearchAPI(HockeyAPI):
     def __init__(self, testing: bool = False):
-        self.base_url = URL("https://search.d3.nhle.com")
-        super().__init__(self.base_url, testing=testing)
+        super().__init__(URL("https://search.d3.nhle.com"), testing=testing)
 
     async def player(
         self,
@@ -720,8 +718,7 @@ class SearchAPI(HockeyAPI):
 
 class NewAPI(HockeyAPI):
     def __init__(self, testing: bool = False):
-        self.base_url = URL("https://api-web.nhle.com")
-        super().__init__(self.base_url, testing=testing)
+        super().__init__(URL("https://api-web.nhle.com"), testing=testing)
         self.search_api = SearchAPI(testing=testing)
         self.stats_api = StatsAPI(testing=testing)
 
@@ -930,6 +927,24 @@ class NewAPI(HockeyAPI):
         data = await self.standings_now()
         return Standings.from_nhle(data)
 
+    async def get_playoffs(self, date: Optional[Union[datetime, int]] = None):
+        if date is None:
+            year = datetime.now(timezone.utc).year
+        elif isinstance(date, datetime):
+            year = date.year
+        else:
+            year = date
+        url = URL(f"/v1/playoff-bracket/{year}")
+        async with self.session.get(url) as resp:
+            if resp.status != 200:
+                log.error("Error accessing the standings at %s. %s", resp.url, resp.status)
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
+            log.trace("Hockey standings headers %s", resp.headers)
+            data = await resp.json()
+        return Playoffs.from_json(data, year)
+
     async def get_games_list(
         self,
         team: Optional[str] = None,
@@ -1043,8 +1058,6 @@ class NewAPI(HockeyAPI):
             away_score=data["awayTeam"].get("score", 0),
             game_start=game_start,
             goals=goals,
-            home_abr=data["homeTeam"].get("abbrev", ""),
-            away_abr=data["awayTeam"].get("abbrev", ""),
             period_ord=period_ord,
             period_time_left=period_time_left,
             period_starts={},
@@ -1059,6 +1072,6 @@ class NewAPI(HockeyAPI):
             season=data.get("season", 0),
             recap_url=recap_url,
             api=self,
-            url=f"{self.base_url}/gamecenter/{game_id}/play-by-play",
+            url=URL(f"{self.base_url}/v1/gamecenter/{game_id}/play-by-play"),
             # data=data,
         )

@@ -368,7 +368,7 @@ class HockeyMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def set_game_start_notification_style(
+    async def set_game_state_notification_style(
         self, ctx: commands.Context, on_off: Optional[bool] = None
     ) -> None:
         raise NotImplementedError()
@@ -383,7 +383,7 @@ class HockeyMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def set_channel_game_start_notification_style(
+    async def set_channel_game_state_notification_style(
         self,
         ctx: commands.Context,
         channel: discord.TextChannel,

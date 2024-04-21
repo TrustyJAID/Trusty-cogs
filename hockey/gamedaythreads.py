@@ -253,7 +253,10 @@ class GameDayThreads(HockeyMixin):
         Set the role that will be pinged when a new thread is created automatically
         letting users join the thread.
 
-        `[team_name=False]` If this is true the bot will
+        `[team_name=False]` If this is true the bot will search for existing team Roles and
+        ping both if they exist.
+        `[role]` If this is set only that role will be pinged when all game day threads
+        are created in the server.
 
         Note: This is limited to 100 members at once due to a discord limitation.
         """
@@ -324,7 +327,9 @@ class GameDayThreads(HockeyMixin):
         self,
         ctx: commands.Context,
         team: TeamFinder,
-        channel: Optional[Union[discord.TextChannel, discord.ForumChannel]] = None,
+        channel: Optional[
+            Union[discord.TextChannel, discord.ForumChannel]
+        ] = commands.CurrentChannel,
     ) -> None:
         """
         Setup game day channels for a single team or all teams
@@ -349,15 +354,18 @@ class GameDayThreads(HockeyMixin):
             msg = _("You must provide a valid current team.")
             await ctx.send(msg)
             return
-        if channel is None:
-            channel = ctx.channel
         if not isinstance(channel, (discord.TextChannel, discord.ForumChannel)):
-            await ctx.send(_("I can only create game day threads in a regular text channel."))
+            await ctx.send(
+                _(
+                    "I can only create game day threads in a regular Text Channel or a Forum Channel."
+                )
+            )
             return
         if not channel.permissions_for(guild.me).create_public_threads:
             msg = _("I don't have permission to create public threads in this channel.")
             await ctx.send(msg)
             return
+        await self.delete_gdt(guild)
         await self.config.guild(guild).gdt_channel.set(channel.id)
         await self.config.guild(guild).gdt_team.set(team)
         await self.config.guild(guild).create_threads.set(True)
@@ -482,23 +490,37 @@ class GameDayThreads(HockeyMixin):
         time_string = f"<t:{next_game.timestamp}:F>"
         gdt_role_id = await self.config.guild(guild).gdt_role()
         role_mention = ""
+        home_role = get_team_role(guild, next_game.home_team)
+        away_role = get_team_role(guild, next_game.away_team)
+        home_role_mention = next_game.home_team
+        away_role_mention = next_game.away_team
+        allowed_roles = []
+        if home_role:
+            home_role_mention = home_role.mention
+        if away_role:
+            away_role_mention = away_role.mention
+
         if gdt_role_id == "team":
-            roles = await get_team_role(guild, next_game.away_team, next_game.home_team)
-            role_mention = humanize_list([t for t in roles if t is not None and "<" in t])
+            if away_role:
+                allowed_roles.append(away_role)
+            if home_role:
+                allowed_roles.append(home_role)
+
         else:
             gdt_role = guild.get_role(gdt_role_id)
             if gdt_role is not None:
+                allowed_roles.append(gdt_role)
                 role_mention = gdt_role.mention
 
         game_msg = (
-            f"{next_game.away_team} {next_game.away_emoji} @ "
-            f"{next_game.home_team} {next_game.home_emoji} {time_string}"
+            f"{away_role_mention} {next_game.away_emoji} @ "
+            f"{home_role_mention} {next_game.home_emoji} {time_string}"
         )
 
         chn_name = get_chn_name(next_game)
         em = await next_game.game_state_embed()
         game_text = await next_game.game_state_text()
-        am = discord.AllowedMentions(roles=True)
+        am = discord.AllowedMentions(roles=allowed_roles)
         new_chn = None
 
         if isinstance(channel, discord.ForumChannel):
@@ -525,7 +547,7 @@ class GameDayThreads(HockeyMixin):
                         pass
             try:
                 if channel.permissions_for(guild.me).embed_links:
-                    twm = await channel.create_thread(
+                    thread_with_message = await channel.create_thread(
                         name=chn_name,
                         content=game_msg,
                         embed=em,
@@ -533,13 +555,13 @@ class GameDayThreads(HockeyMixin):
                         applied_tags=tags,
                     )
                 else:
-                    twm = await channel.create_thread(
+                    thread_with_message = await channel.create_thread(
                         name=chn_name,
                         content=f"{game_msg}\n{game_text}",
                         allowed_mentions=am,
                         applied_tags=tags,
                     )
-                new_chn = twm[0]
+                new_chn = thread_with_message[0]
             except discord.Forbidden:
                 log.error("Error creating thread in %r", guild)
             except Exception:
@@ -576,6 +598,8 @@ class GameDayThreads(HockeyMixin):
         await self.config.channel(new_chn).game_states.set(gdt_state_updates)
         gdt_countdown = await self.config.guild(guild).gdt_countdown()
         await self.config.channel(new_chn).countdown.set(gdt_countdown)
+        start_roles = await self.config.guild(guild).start_roles()
+        await self.config.channel(new_chn).start_roles.set(start_roles)
         # Gets the timezone to use for game day channel topic
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")
         # guild_team = await config.guild(guild).gdc_team()

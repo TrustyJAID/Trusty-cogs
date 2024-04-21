@@ -29,6 +29,7 @@ from redbot.core.commands import Context
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
+from yarl import URL
 
 from .constants import TEAMS
 from .teamentry import TeamEntry
@@ -90,6 +91,10 @@ class Team:
     def colour(self) -> discord.Colour:
         return discord.Colour.from_str(self.home_colour)
 
+    @property
+    def link(self) -> Optional[URL]:
+        return URL(self.team_url)
+
     @classmethod
     def from_json(cls, data: dict, team_name: str) -> Team:
         return cls(
@@ -103,7 +108,7 @@ class Team:
             away_colour=data.get("away", "#ffffff"),
             division=data.get("division", _("unknown")),
             conference=data.get("conference", _("unknown")),
-            tri_code=data.get("tri_code", ""),
+            tri_code=data.get("tri_code", "".join([i[0].upper() for i in team_name.split(" ")])),
             nickname=data.get("nickname", []),
             team_url=data.get("team_url", ""),
             timezone=data.get("timezone", "US/Pacific"),
@@ -112,29 +117,76 @@ class Team:
         )
 
     @classmethod
+    def from_id(cls, team_id: int) -> Team:
+        for name, data in TEAMS.items():
+            if team_id == data["id"]:
+                return cls(
+                    id=data.get("id", 0),
+                    name=name,
+                    emoji=discord.PartialEmoji.from_str(data.get("emoji", "")),
+                    logo=data.get(
+                        "logo", "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
+                    ),
+                    home_colour=data.get("home", "#000000"),
+                    away_colour=data.get("away", "#ffffff"),
+                    division=data.get("division", _("unknown")),
+                    conference=data.get("conference", _("unknown")),
+                    tri_code=data.get(
+                        "tri_code", "".join([i[0].upper() for i in name.split(" ")])
+                    ),
+                    nickname=data.get("nickname", []),
+                    team_url=data.get("team_url", ""),
+                    timezone=data.get("timezone", "US/Pacific"),
+                    active=data.get("active", False),
+                    invite=data.get("invite"),
+                )
+        return cls(
+            id=team_id,
+            name=_("Unknown Team"),
+            emoji=discord.PartialEmoji.from_str(""),
+            logo="https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png",
+            home_colour="#000000",
+            away_colour="#ffffff",
+            division=_("unknown"),
+            conference=_("unknown"),
+            tri_code="",
+            nickname=[],
+            team_url="",
+            timezone="US/Pacific",
+            active=False,
+            invite=None,
+        )
+
+    @classmethod
+    def from_name(cls, team_name: str) -> Team:
+        for name, data in TEAMS.items():
+            if team_name == name:
+                return cls.from_id(data["id"])
+        return cls(
+            id=0,
+            name=team_name,
+            emoji=discord.PartialEmoji.from_str(""),
+            logo="https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png",
+            home_colour="#000000",
+            away_colour="#ffffff",
+            division=_("unknown"),
+            conference=_("unknown"),
+            tri_code="".join([i[0].upper() for i in team_name.split(" ")]),
+            nickname=[],
+            team_url="",
+            timezone="US/Pacific",
+            active=False,
+            invite=None,
+        )
+
+    @classmethod
     def from_nhle(cls, data: dict, home: bool = False) -> Team:
         name = data.get("name", {}).get("default")
         team_id = data.get("id", -1)
-        tri_code = data.get("abbrev", "")
-        logo = data.get("logo", "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png")
-        home_emoji = discord.PartialEmoji.from_str("\N{HOUSE BUILDING}\N{VARIATION SELECTOR-16}")
-        away_emoji = discord.PartialEmoji.from_str("\N{AIRPLANE}\N{VARIATION SELECTOR-16}")
-        return cls(
-            id=team_id,
-            name=name,
-            emoji=home_emoji if home else away_emoji,
-            logo=logo,
-            home_colour=data.get("home", "#000000"),
-            away_colour=data.get("away", "#ffffff"),
-            division=data.get("division", _("unknown")),
-            conference=data.get("conference", _("unknown")),
-            tri_code=tri_code,
-            nickname=data.get("nickname", []),
-            team_url=data.get("team_url", ""),
-            timezone=data.get("timezone", "US/Pacific"),
-            active=data.get("active", False),
-            invite=data.get("invite"),
-        )
+        team_ids = set(i["id"] for i in TEAMS.values())
+        if team_id in team_ids:
+            return cls.from_id(team_id)
+        return cls.from_name(name)
 
 
 class Broadcast(NamedTuple):
@@ -156,7 +208,7 @@ def get_chn_name(game: Game) -> str:
     """
     timestamp = utc_to_local(game.game_start)
     chn_name = "{}-vs-{}-{}-{}-{}".format(
-        game.home_abr, game.away_abr, timestamp.year, timestamp.month, timestamp.day
+        game.home.tri_code, game.away.tri_code, timestamp.year, timestamp.month, timestamp.day
     )
     return chn_name.lower()
 
@@ -586,7 +638,7 @@ def game_states_to_int(states: List[str]) -> List[int]:
 
 async def check_to_post(
     bot: Red,
-    channel: discord.TextChannel,
+    channel: Union[discord.TextChannel, discord.Thread],
     channel_data: dict,
     post_state: List[str],
     game_state: GameState,
@@ -615,28 +667,15 @@ async def check_to_post(
     return should_post
 
 
-async def get_team_role(guild: discord.Guild, home_team: str, away_team: str) -> Tuple[str, str]:
+def get_team_role(guild: discord.Guild, team_name: str) -> Optional[discord.Role]:
     """
     This returns the role mentions if they exist
     Otherwise it returns the name of the team as a str
     """
-    home_role = None
-    away_role = None
-
-    for role in guild.roles:
-        if "Montréal Canadiens" in home_team and "Montreal Canadiens" in role.name:
-            home_role = role.mention
-        elif role.name == home_team:
-            home_role = role.mention
-        if "Montréal Canadiens" in away_team and "Montreal Canadiens" in role.name:
-            away_role = role.mention
-        elif role.name == away_team:
-            away_role = role.mention
-    if home_role is None:
-        home_role = home_team
-    if away_role is None:
-        away_role = away_team
-    return home_role, away_role
+    role = discord.utils.get(guild.roles, name=team_name)
+    if role is None and "Canadiens" in team:
+        role = discord.utils.get(guild.roles, neam="Montreal Canadiens")
+    return role
 
 
 async def get_team(bot: Red, team: str, game_start: str, game_id: int = 0) -> dict:

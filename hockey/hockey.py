@@ -26,6 +26,7 @@ from .helper import utc_to_local
 from .hockey_commands import HockeyCommands
 from .hockeypickems import HockeyPickems
 from .hockeyset import HockeySetCommands
+from .notifications import HockeyNotifications
 from .pickems import Pickems
 from .standings import Standings
 
@@ -55,6 +56,7 @@ class Hockey(
     GameDayThreads,
     HockeyDev,
     HockeyPickems,
+    HockeyNotifications,
     commands.Cog,
     metaclass=CompositeMetaClass,
 ):
@@ -62,7 +64,7 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "4.2.1"
+    __version__ = "4.2.2"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -102,6 +104,7 @@ class Hockey(
             game_state_notifications=False,
             goal_notifications=False,
             start_notifications=False,
+            start_roles=[],
             gdc_state_updates=["Preview", "Live", "Final", "Goal"],
             gdt_state_updates=["Preview", "Live", "Final", "Goal"],
             ot_notifications=True,
@@ -122,6 +125,7 @@ class Hockey(
             game_state_notifications=False,
             goal_notifications=False,
             start_notifications=False,
+            start_roles=[],
             guild_id=None,
             parent=None,
             include_goal_image=False,

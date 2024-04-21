@@ -187,14 +187,10 @@ class HockeyCommands(HockeyMixin):
         season: Optional[YearFinder] = None,
     ) -> None:
         """
-        Gets all NHL games for the current season
+        Gets Playoff brackets for a givent season.
 
-        If team is provided it will grab that teams schedule.
-        A date may also be provided and the bot will search for games within
-        that date range.
-        Dates must be in the format of `YYYY-MM-DD` if provided.
-        Team and Date can be provided at the same time and then
-        only that teams games may appear in that date range if they exist.
+        `[season]` Is the year the playoffs happened in.
+        Example: `2024` or `2023-2024` for the 2024 Stanley Cup Playoffs.
         """
         await ctx.typing()
         season_str = None
@@ -209,14 +205,14 @@ class HockeyCommands(HockeyMixin):
                 if int(season.group(1)) > datetime.now().year:
                     await ctx.send(_("Please select a year prior to now."))
                     return
-                season_str = int(season.group(1))
+                season_str = int(season.group(3))
             else:
                 if int(season.group(1)) > datetime.now().year:
                     await ctx.send(_("Please select a year prior to now."))
                     return
-                season_str = int(season.group(1)) - 1
+                season_str = int(season.group(1))
         try:
-            await PlayoffsView(start_date=season_str).start(ctx=ctx)
+            await PlayoffsView(start_date=season_str, api=self.api).start(ctx=ctx)
         except Exception:
             await ctx.send(
                 _("There's an issue accessing the NHL API at the moment. Try again later.")

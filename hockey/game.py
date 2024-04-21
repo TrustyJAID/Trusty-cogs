@@ -11,15 +11,15 @@ from red_commons.logging import getLogger
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import humanize_list, pagify
+from yarl import URL
 
 from .constants import TEAMS
 from .goal import Goal
 from .helper import Team, check_to_post, get_channel_obj, get_team, get_team_role
-from .standings import Playoffs
 
 if TYPE_CHECKING:
-    from .api import Player
+    from .api import Event, Player
 
 _ = Translator("Hockey", __file__)
 
@@ -161,29 +161,27 @@ class Game:
     def __init__(self, **kwargs):
         super().__init__()
         self.game_id = kwargs.get("game_id")
-        self.game_state = kwargs.get("game_state")
-        self.home_shots = kwargs.get("home_shots")
-        self.away_shots = kwargs.get("away_shots")
-        self.home_score = kwargs.get("home_score")
-        self.away_score = kwargs.get("away_score")
+        self.game_state = kwargs.get("game_state", GameState.unknown)
+        self.home_shots: int = kwargs.get("home_shots", 0)
+        self.away_shots: int = kwargs.get("away_shots", 0)
+        self.home_score: int = kwargs.get("home_score", 0)
+        self.away_score: int = kwargs.get("away_score", 0)
         self.home: Team = kwargs.get("home")
         self.away: Team = kwargs.get("away")
-        self.goals = kwargs.get("goals")
-        self.home_abr = kwargs.get("home_abr")
-        self.away_abr = kwargs.get("away_abr")
-        self.period = kwargs.get("period")
-        self.period_ord = kwargs.get("period_ord")
-        self.period_time_left = kwargs.get("period_time_left")
+        self.goals: List[Goal] = kwargs.get("goals", [])
+        self.period: int = kwargs.get("period", 0)
+        self.period_ord: str = kwargs.get("period_ord", "")
+        self.period_time_left: str = kwargs.get("period_time_left", "")
         self.period_starts = kwargs.get("period_starts", {})
-        self.plays = kwargs.get("plays")
+        self.plays: List[Event] = kwargs.get("plays", [])
         self.game_start_str = kwargs.get("game_start", "")
         game_start = datetime.strptime(self.game_start_str, "%Y-%m-%dT%H:%M:%SZ")
         self.game_start = game_start.replace(tzinfo=timezone.utc)
         self.first_star = kwargs.get("first_star")
         self.second_star = kwargs.get("second_star")
         self.third_star = kwargs.get("third_star")
-        self.away_roster = kwargs.get("away_roster", {})
-        self.home_roster = kwargs.get("home_roster", {})
+        self.away_roster: Dict[int, Player] = kwargs.get("away_roster", {})
+        self.home_roster: Dict[int, Player] = kwargs.get("home_roster", {})
         self.game_type: GameType = kwargs.get("game_type", GameType.unknown)
         self.link = kwargs.get("link")
         self.season = kwargs.get("season")
@@ -206,12 +204,12 @@ class Game:
         return self.away.name
 
     @property
-    def home_logo(self) -> str:
-        return self.home.logo
+    def home_logo(self) -> URL:
+        return URL(self.home.logo)
 
     @property
-    def away_logo(self) -> str:
-        return self.away.logo
+    def away_logo(self) -> URL:
+        return URL(self.away.logo)
 
     @property
     def home_emoji(self) -> Union[discord.PartialEmoji, str]:
@@ -237,8 +235,9 @@ class Game:
         return [g for g in self.goals if g.team.id == self.away.id]
 
     @property
-    def recap_url(self):
-        return self._recap_url
+    def recap_url(self) -> Optional[URL]:
+        if self._recap_url is not None:
+            return URL(self._recap_url)
 
     @property
     def short(self) -> str:
@@ -260,24 +259,32 @@ class Game:
         }
         return game_types.get(self.game_type, _("Unknown"))
 
-    def nst_url(self):
-        return f"https://www.naturalstattrick.com/game.php?season={self.season}&game={str(self.game_id)[5:]}&view=limited#gameflow"
+    def nst_url(self) -> URL:
+        url = URL("https://www.naturalstattrick.com/game.php")
+        params = {"season": self.season, "game": str(self.game_id)[5:], "view": "limited"}
+        url = url.update_query(params)
+        return url.with_fragment("gameflow")
 
-    def heatmap_url(self, style: Literal["all", "ev", "5v5", "sva", "home5v4", "away5v4"] = "all"):
-        base_url = "https://www.naturalstattrick.com/heatmaps/games/"
+    def heatmap_url(
+        self, style: Literal["all", "ev", "5v5", "sva", "home5v4", "away5v4"] = "all"
+    ) -> URL:
+        url = URL(f"https://www.naturalstattrick.com/heatmaps/games/{self.season}/")
         if style == "home5v4":
-            return f"{base_url}{self.season}/{self.season}-{str(self.game_id)[5:]}-{self.home.tri_code}-5v4.png"
+            return url.join(
+                URL(f"{self.season}-{str(self.game_id)[5:]}-{self.home.tri_code}-5v4.png")
+            )
         elif style == "away5v4":
-            return f"{base_url}{self.season}/{self.season}-{str(self.game_id)[5:]}-{self.away.tri_code}-5v4.png"
-        else:
-            return f"{base_url}{self.season}/{self.season}-{str(self.game_id)[5:]}-{style}.png"
+            return url.join(
+                URL(f"{self.season}-{str(self.game_id)[5:]}-{self.away.tri_code}-5v4.png")
+            )
+        return url.join(URL(f"{self.season}-{str(self.game_id)[5:]}-{style}.png"))
 
     def gameflow_url(
         self, corsi: bool = True, strength: Literal["all", "ev", "5v5", "sva"] = "all"
-    ):
-        base_url = "https://www.naturalstattrick.com/graphs/"
+    ) -> URL:
+        url = URL("https://www.naturalstattrick.com/graphs/")
         diff = "cfdiff" if corsi else "xgdiff"
-        return f"{base_url}{self.season}-{str(self.game_id)[5:]}-{diff}-{strength}.png"
+        return url.join(URL(f"{self.season}-{str(self.game_id)[5:]}-{diff}-{strength}.png"))
 
     def get_goal_from_id(self, goal_id: int) -> Optional[Goal]:
         for goal in self.goals:
@@ -314,21 +321,35 @@ class Game:
             icon_url=self.away_logo,
         )
         if self.game_state is GameState.preview:
-            home_str, away_str, desc = await self.get_stats_msg()
+            home_str, away_str, desc, url = await self.get_stats_msg()
             if desc is not None and em.description is None:
                 em.description = desc
+            if url is not None:
+                em.set_image(url=url)
             em.add_field(
                 name=f"{self.away_emoji} {self.away_team} {self.away_emoji}", value=away_str
             )
             em.add_field(
                 name=f"{self.home_emoji} {self.home_team} {self.home_emoji}", value=home_str
             )
+        if self.game_type is GameType.playoffs:
+            playoffs = await self.api.get_playoffs(self.game_start.year)
+            series = playoffs.get_series(self.home, self.away)
+            log.debug("Playoffs series %s", series)
+            em.set_image(url=series.logo or playoffs.logo)
+            em.description = series.seriesTitle
         if include_heatmap:
             em.set_image(url=self.heatmap_url())
-            em.description = f"[Natural Stat Trick]({self.nst_url()})"
+            if em.description is None:
+                em.description = f"[Natural Stat Trick]({self.nst_url()})"
+            else:
+                em.description += f"\n[Natural Stat Trick]({self.nst_url()})"
         if include_gameflow:
             em.set_image(url=self.gameflow_url())
-            em.description = f"[Natural Stat Trick]({self.nst_url()})"
+            if em.description is None:
+                em.description = f"[Natural Stat Trick]({self.nst_url()})"
+            else:
+                em.description += f"\n[Natural Stat Trick]({self.nst_url()})"
 
         if not self.game_state.is_preview():
             home_msg = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
@@ -424,7 +445,10 @@ class Game:
                         name=_("{team} Shootout").format(team=self.away_team), value=away_msg
                     )
                 if self.recap_url is not None:
-                    em.description = f"[Recap]({self.recap_url})"
+                    if em.description is None:
+                        em.description = f"[Recap]({self.recap_url})"
+                    else:
+                        em.description += f"\n[Recap]({self.recap_url})"
             if self.first_star is not None:
                 stars = f"⭐ {self.first_star.as_link()}\n⭐⭐ {self.second_star.as_link()}\n⭐⭐⭐ {self.third_star.as_link()}"
                 em.add_field(name=_("Stars of the game"), value=stars, inline=False)
@@ -463,9 +487,11 @@ class Game:
                 away_score=self.away_score, away_shots=self.away_shots
             )
         else:
-            home_str, away_str, desc = await self.get_stats_msg()
+            home_str, away_str, desc, url = await self.get_stats_msg()
             if desc is not None:
                 em.description = desc
+            if url is not None:
+                em.set_image(url=url)
         em.add_field(name=home_field, value=home_str, inline=False)
         em.add_field(name=away_field, value=away_str, inline=True)
         colour = self.home.colour
@@ -498,13 +524,14 @@ class Game:
             )
         return em
 
-    async def get_stats_msg(self) -> Tuple[str, str, Optional[str]]:
+    async def get_stats_msg(self) -> Tuple[str, str, Optional[str], Optional[URL]]:
         """
         returns team stats on the season from standings object
         """
         home_str = _("GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n")
         away_str = _("GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n")
         desc = None
+        url = None
         if self.game_type is not GameType.playoffs:
             msg = _(
                 "GP:**{gp}** W:**{wins}** L:**{losses}\n**OT:**{ot}** PTS:**{pts}** S:**{streak}**\n"
@@ -535,36 +562,26 @@ class Game:
                 pass
         else:
             try:
-                desc_str = _("{round_name}:\n{series_status}")
                 msg = _("GP:**{gp}** W:**{wins}** L:**{losses}**")
-                playoffs = await Playoffs.get_playoffs()
-                for rounds in playoffs.rounds:
-                    for series in rounds.series:
-                        for matchup in series.matchupTeams:
-                            if matchup.team.name == self.away_team:
-                                away_str = msg.format(
-                                    gp=series.currentGame.seriesSummary.gameNumber - 1,
-                                    wins=matchup.seriesRecord.wins,
-                                    losses=matchup.seriesRecord.losses,
-                                )
-                            if matchup.team.name == self.home_team:
-                                home_str = msg.format(
-                                    gp=series.currentGame.seriesSummary.gameNumber - 1,
-                                    wins=matchup.seriesRecord.wins,
-                                    losses=matchup.seriesRecord.losses,
-                                )
-                            if (
-                                matchup.team.name == self.away_team
-                                or matchup.team.name == self.home_team
-                            ):
-                                desc = desc_str.format(
-                                    round_name=rounds.names.name,
-                                    series_status=series.currentGame.seriesSummary.seriesStatus,
-                                )
+                playoffs = await self.api.get_playoffs()
+                series = playoffs.get_series(self.home, self.away)
+                if series is not None:
+                    gp = series.games_played
+                    if self.away.id == series.topSeedTeam.id:
+                        away_wins = series.topSeedWins
+                        home_wins = series.bottomSeedWins
+                    else:
+                        away_wins = series.bottomSeedWins
+                        home_wins = series.topSeedWins
+                    url = series.logo
+
+                    away_str = msg.format(gp=gp, wins=away_wins, losses=gp - away_wins)
+                    home_str = msg.format(gp=gp, wins=home_wins, losses=gp - home_wins)
+                    desc = series.seriesTitle
             except Exception:
                 log.exception("Error pulling playoffs stats")
                 pass
-        return home_str, away_str, desc
+        return home_str, away_str, desc, url
 
     async def check_game_state(self, bot: Red, count: int = 0) -> bool:
         # post_state = ["all", self.home_team, self.away_team]
@@ -769,7 +786,7 @@ class Game:
         channel: Union[discord.TextChannel, discord.Thread],
         state_embed: discord.Embed,
         state_text: str,
-    ) -> Optional[Tuple[discord.TextChannel, discord.Message]]:
+    ) -> Optional[Tuple[Union[discord.TextChannel, discord.Thread], discord.Message]]:
         guild = channel.guild
         if not channel.permissions_for(guild.me).send_messages:
             log.debug("No permission to send messages in %s", repr(channel))
@@ -786,35 +803,57 @@ class Game:
             guild_notifications = guild_settings["game_state_notifications"]
             channel_notifications = channel_settings["game_state_notifications"]
             state_notifications = guild_notifications or channel_notifications
+            start_roles = []
+            for role_id in channel_settings.get("start_roles", []):
+                if role := guild.get_role(role_id):
+                    start_roles.append(role)
             # TODO: Something with these I can't remember what now
             # guild_start = guild_settings["start_notifications"]
             # channel_start = channel_settings["start_notifications"]
             # start_notifications = guild_start or channel_start
             # heh inclusive or
             allowed_mentions = {}
-            home_role, away_role = await get_team_role(guild, self.home_team, self.away_team)
+            away_role = get_team_role(guild, self.away_team)
+            home_role = get_team_role(guild, self.home_team)
+            home_role_mention = self.home_team
+            away_role_mention = self.away_team
+            if home_role:
+                home_role_mention = home_role.mention
+            if away_role:
+                away_role_mention = away_role.mention
+            mention_roles = []
+            allowed_mentions = discord.AllowedMentions(roles=False)
             if state_notifications:
-                allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
-            else:
-                allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
+                mention_roles.extend([home_role, away_role])
+
+            if start_roles and self.period == 1:
+                mention_roles.extend(start_roles)
+            allowed_mentions = discord.AllowedMentions(roles=mention_roles)
+
             if self.game_type is GameType.regular_season and "OT" in self.period_ord:
                 if not guild_settings["ot_notifications"]:
-                    allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
+                    allowed_mentions = discord.AllowedMentions(roles=False)
             if "SO" in self.period_ord:
                 if not guild_settings["so_notifications"]:
-                    allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
-            if game_day_channels is not None:
-                # We don't want to ping people in the game day channels twice
-                if channel.id in game_day_channels:
-                    home_role, away_role = self.home_team, self.away_team
-            msg = _("**{period} Period starting {away_role} at {home_role}**").format(
-                period=self.period_ord, away_role=away_role, home_role=home_role
+                    allowed_mentions = discord.AllowedMentions(roles=False)
+
+            text = _("**{period} Period starting {away_role} at {home_role}**").format(
+                period=self.period_ord, away_role=away_role_mention, home_role=home_role_mention
             )
+            if self.period == 1:
+                add_mentions = []
+                for role in start_roles:
+                    if home_role and home_role.id == role.id:
+                        continue
+                    if away_role and away_role.id == role.id:
+                        continue
+                    add_mentions.append(role)
+                text += "\n" + humanize_list([r.mention for r in add_mentions])
             try:
                 if not can_embed:
-                    msg = await channel.send(msg + "\n{}".format(state_text), **allowed_mentions)
+                    await channel.send(f"{text}\n{state_text}", allowed_mentions=allowed_mentions)
                 else:
-                    msg = await channel.send(msg, embed=state_embed, **allowed_mentions)
+                    await channel.send(text, embed=state_embed, allowed_mentions=allowed_mentions)
                 if self.game_state in publish_states:
                     try:
                         if channel.is_news():
@@ -837,15 +876,6 @@ class Game:
                     preview_msg = await channel.send(state_text)
                 else:
                     preview_msg = await channel.send(embed=state_embed)
-
-                if self.game_state in publish_states:
-                    try:
-                        if channel.is_news():
-                            # allows backwards compatibility still
-                            # await preview_msg.publish()
-                            pass
-                    except Exception:
-                        pass
 
                 # Create new pickems object for the game
                 if self.game_state.is_preview():
