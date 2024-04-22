@@ -1,13 +1,21 @@
-import contextlib
 import re
 from typing import Optional, Union
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import pagify
 
 from .constants import emoji_dict, regionals
+
+log = getLogger("red.trusty-cogs.fun")
+
+VARIATION_CHAR = "\N{VARIATION SELECTOR-16}"
+ENCLOSING_KEYCAP = "\N{COMBINING ENCLOSING KEYCAP}"
+INVALID_CHARS = re.compile(rf"<a?:([a-zA-Z0-9\_]+?):([0-9]+?)>|[^a-z0-9\?\!#{ENCLOSING_KEYCAP}]")
+VALID_CHARS = re.compile(r"[a-zA-Z0-9\?\!#]")
+EMOJI_REGEX = re.compile(r"<a?:(?:[a-zA-Z0-9\_]+?):(?P<emoji_id>[0-9]+?)>")
 
 
 class Fun(commands.Cog):
@@ -18,7 +26,7 @@ class Fun(commands.Cog):
     """
 
     __author__ = ["Appu", "TrustyJAID"]
-    __version__ = "1.3.0"
+    __version__ = "1.4.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -61,7 +69,9 @@ class Fun(commands.Cog):
 
     # used in [p]react, replaces e.g. 'aaaa' with '🇦🅰🍙🔼'
     def replace_letters(self, react_me: str):
-        for char in "abcdefghijklmnopqrstuvwxyz0123456789!?":
+        for char in emoji_dict.keys():
+            if char == "combination":
+                continue
             char_count = react_me.count(char)
             if char_count > 1:  # there's a duplicate of this letter:
                 if len(emoji_dict[char]) >= char_count:
@@ -69,11 +79,11 @@ class Fun(commands.Cog):
                     i = 0
                     while i < char_count:
                         # moving goal post necessitates while loop instead of for
-                        if emoji_dict[char][i] not in react_me:
-                            react_me = react_me.replace(char, emoji_dict[char][i], 1)
-                        else:
-                            # skip this one because it's already been used by another replacement (e.g. circle emoji used to replace O already, then want to replace 0)
-                            char_count += 1
+                        try:
+                            if emoji_dict[char][i] not in react_me:
+                                react_me = react_me.replace(char, emoji_dict[char][i], 1)
+                        except IndexError:
+                            log.error("Error replacing %s iterations %s", char, i)
                         i += 1
             else:
                 if char_count == 1:
@@ -124,17 +134,43 @@ class Fun(commands.Cog):
         `[message]` Can be a message ID from the current channel, a jump URL,
         or a channel_id-message_id from shift + copying ID on the message.
         """
-
+        OOF = (
+            "\N{NEGATIVE SQUARED LATIN CAPITAL LETTER O}\N{VARIATION SELECTOR-16}",
+            "\N{REGIONAL INDICATOR SYMBOL LETTER O}",
+            "\N{REGIONAL INDICATOR SYMBOL LETTER F}",
+        )
+        deleted = False
+        if ctx.bot_permissions.manage_messages:
+            try:
+                await ctx.message.delete()
+                deleted = True
+            except Exception:
+                pass
         if message is None:
-            async for messages in ctx.channel.history(limit=2):
-                message = messages
+            if ctx.message.reference:
+                message = ctx.message.reference.cached_message
+                if message is None and ctx.message.reference.message_id:
+                    message = ctx.channel.get_partial_message(ctx.message.reference.message_id)
+            elif ctx.bot_permissions.read_message_history:
+                limit = 1 if deleted else 2
+                async for messages in ctx.channel.history(limit=limit):
+                    message = messages
+        if message is None:
+            await ctx.send("No message was available to react to.")
+            return
+
         if not message.channel.permissions_for(ctx.me).add_reactions:
-            return await ctx.send("I require add_reactions permission in that channel.")
-        with contextlib.suppress(discord.HTTPException):
-            for emoji in ("🅾", "🇴", "🇫"):
+            await ctx.send("I require add_reactions permission in that channel.")
+            return
+        my_emojis = [r.emoji for r in message.reactions if r.me]
+        for emoji in OOF:
+            if emoji in my_emojis:
+                log.trace("Already reacted to %s", message)
+                continue
+            try:
                 await message.add_reaction(emoji)
-        if ctx.channel.permissions_for(ctx.me).manage_messages:
-            await ctx.message.delete()
+            except Exception:
+                break
 
     # given String react_me, return a list of emojis that can construct the string with no duplicates (for the purpose of reacting)
     # TODO make it consider reactions already applied to the message
@@ -142,8 +178,9 @@ class Fun(commands.Cog):
     async def react(
         self,
         ctx: commands.Context,
-        msg: str,
         message: Optional[discord.Message],
+        *,
+        msg: str,
     ) -> None:
         """
         Add letter(s) as reaction to previous message.
@@ -151,9 +188,25 @@ class Fun(commands.Cog):
         `[message]` Can be a message ID from the current channel, a jump URL,
         or a channel_id-message_id from shift + copying ID on the message.
         """
+        deleted = False
+        if ctx.bot_permissions.manage_messages:
+            try:
+                await ctx.message.delete()
+                deleted = True
+            except Exception:
+                pass
         if message is None:
-            async for messages in ctx.channel.history(limit=2):
-                message = messages
+            if ctx.message.reference:
+                message = ctx.message.reference.cached_message
+                if message is None and ctx.message.reference.message_id:
+                    message = ctx.channel.get_partial_message(ctx.message.reference.message_id)
+            elif ctx.bot_permissions.read_message_history:
+                limit = 1 if deleted else 2
+                async for messages in ctx.channel.history(limit=limit):
+                    message = messages
+        if message is None:
+            await ctx.send("No message was available to react to.")
+            return
 
         reactions = []
         non_unicode_emoji_list = []
@@ -161,24 +214,30 @@ class Fun(commands.Cog):
         # this is the string that will hold all our unicode converted characters from msg
 
         # replace all custom server emoji <:emoji:123456789> with "<" and add emoji ids to non_unicode_emoji_list
-        emotes = re.findall(r"<a?:(?:[a-zA-Z0-9\_]+?):(?:[0-9]+?)>", msg.lower())
-        react_me = re.sub(r"<a?:([a-zA-Z0-9\_]+?):([0-9]+?)>", "", msg.lower())
+        emotes = EMOJI_REGEX.findall(msg)
+        extras = VALID_CHARS.sub("", msg)
+        react_me = INVALID_CHARS.sub("", msg)
+        log.debug("Extras %s react_me %s", extras, react_me)
 
-        for emote in emotes:
-            reactions.append(discord.utils.get(self.bot.emojis, id=int(emote.split(":")[-1][:-1])))
-            non_unicode_emoji_list.append(emote)
+        for emoji_id in emotes:
+            emoji = discord.utils.get(self.bot.emojis, id=int(emoji_id))
+            if emoji is not None:
+                reactions.append(emoji)
+                non_unicode_emoji_list.append(emoji)
 
         if self.has_dupe(non_unicode_emoji_list):
-            return await ctx.send(
+            await ctx.send(
                 "You requested that I react with at least two of the exact same specific emoji. "
                 "I'll try to find alternatives for alphanumeric text, but if you specify a specific emoji must be used, I can't help."
             )
+            return
 
         react_me_original = react_me
         # we'll go back to this version of react_me if prefer_combine
         # is false but we can't make the reaction happen unless we combine anyway.
 
         if self.has_dupe(react_me):
+            log.debug("has dupe?")
             # there's a duplicate letter somewhere, so let's go ahead try to fix it.
             react_me = self.replace_combos(react_me)
             react_me = self.replace_letters(react_me)
@@ -189,31 +248,50 @@ class Fun(commands.Cog):
                 react_me = self.replace_letters(react_me)
                 if self.has_dupe(react_me):
                     # this failed too, so there's really nothing we can do anymore.
-                    return await ctx.send(
-                        "Failed to fix all duplicates. Cannot react with this string."
-                    )
+                    await ctx.send("Failed to fix all duplicates. Cannot react with this string.")
+                    return
 
             for char in react_me:
-                if (
-                    char not in "0123456789"
-                ):  # these unicode characters are weird and actually more than one character.
-                    if char != "⃣":  # </3
+                if not char.isdigit():
+                    # these unicode characters are weird and actually more than one character.
+                    if char not in [VARIATION_CHAR, ENCLOSING_KEYCAP]:
                         reactions.append(char)
                 else:
                     reactions.append(emoji_dict[char][0])
+            for char in extras:
+                log.debug(char)
+                if char != VARIATION_CHAR:
+                    reactions.append(char)
+                else:
+                    reactions.append(f"{reactions.pop()}{VARIATION_CHAR}")
         else:  # probably doesn't matter, but by treating the case without dupes seperately, we can save some time
             for char in react_me:
-                if char in "abcdefghijklmnopqrstuvwxyz0123456789!?":
+                log.debug("searching char %s", ord(char))
+                if char in emoji_dict.keys():
+                    if char == "combination":
+                        continue
                     reactions.append(emoji_dict[char][0])
+                elif char == VARIATION_CHAR:
+                    log.debug("Found Variation Character")
+                    reactions.append(f"{reactions.pop()}{VARIATION_CHAR}")
                 else:
                     reactions.append(char)
+            for char in extras:
+                log.debug(char)
+                if char not in [VARIATION_CHAR, ENCLOSING_KEYCAP]:
+                    reactions.append(char)
+                else:
+                    reactions.append(f"{reactions.pop()}{VARIATION_CHAR}")
 
-        if message.channel.permissions_for(ctx.me).add_reactions:
-            with contextlib.suppress(discord.HTTPException):
-                for reaction in reactions:
+        log.debug(reactions)
+        my_emojis = [r.emoji for r in message.reactions if r.me]
+        if message.channel.permissions_for(ctx.me).add_reactions and message is not None:
+            for reaction in reactions:
+                if reaction in my_emojis:
+                    log.trace("Already reacted to %s", message)
+                    continue
+                try:
                     await message.add_reaction(reaction)
-        if message.channel.permissions_for(ctx.me).manage_messages:
-            with contextlib.suppress(discord.HTTPException):
-                await ctx.message.delete()
-        else:
-            await ctx.tick()
+                except Exception:
+                    log.error("Error adding reaction %s", reaction)
+                    break
