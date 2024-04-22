@@ -106,10 +106,16 @@ class Spotify(
         self.slash_commands = {"guilds": {}}
         self._temp_user_devices = {}
         self.play_ctx = discord.app_commands.ContextMenu(
-            name="Play on Spotify", callback=self.play_from_message
+            name="Play on Spotify",
+            callback=self.play_from_message,
+            # allowed_contexts=discord.flags.AppCommandContext.all(),
+            # allowed_installs=discord.AppInstallationType.all()
         )
         self.queue_ctx = discord.app_commands.ContextMenu(
-            name="Queue on Spotify", callback=self.play_from_message
+            name="Queue on Spotify",
+            callback=self.play_from_message,
+            # allowed_contexts=discord.flags.AppCommandContext.all(),
+            # allowed_installs=discord.AppInstallationType.all()
         )
         self._commit = ""
         self._repo = ""
@@ -117,6 +123,9 @@ class Spotify(
     async def cog_load(self):
         self.bot.tree.add_command(self.play_ctx)
         self.bot.tree.add_command(self.queue_ctx)
+        await self.set_tokens()
+
+    async def set_tokens(self):
         tokens = await self.bot.get_shared_api_tokens("spotify")
         if not tokens:
             self._ready.set()
@@ -378,7 +387,7 @@ class Spotify(
         self, service_name: str, api_tokens: Mapping[str, str]
     ) -> None:
         if service_name == "spotify":
-            await self.cog_load()
+            await self.set_tokens()
 
     async def play_from_message(self, interaction: discord.Interaction, message: discord.Message):
         queue = interaction.command.name == "Queue on Spotify"
