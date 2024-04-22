@@ -415,8 +415,15 @@ class GameDayChannels(HockeyMixin):
         await self.config.channel(new_chn).game_states.set(gdc_state_updates)
         gdc_countdown = await self.config.guild(guild).gdc_countdown()
         await self.config.channel(new_chn).countdown.set(gdc_countdown)
-        start_roles = await self.config.guild(guild).start_roles()
-        await self.config.channel(new_chn).start_roles.set(start_roles)
+
+        # Set default notification settings on the newly created channel
+        start_roles = await self.config.guild(guild).default_start_roles()
+        await self.config.channel(new_chn).game_start_roles.set(start_roles)
+        state_roles = await self.config.guild(guild).default_state_roles()
+        await self.config.channel(new_chn).game_state_roles.set(state_roles)
+        goal_roles = await self.config.guild(guild).default_goal_roles()
+        await self.config.channel(new_chn).game_goal_roles.set(goal_roles)
+
         # Gets the timezone to use for game day channel topic
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")
         # guild_team = await config.guild(guild).gdc_team()

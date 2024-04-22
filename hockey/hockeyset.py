@@ -38,7 +38,6 @@ class HockeySetCommands(HockeyMixin):
         await ctx.typing()
         guild: discord.Guild = ctx.guild
         standings_channel = guild.get_channel(await self.config.guild(guild).standings_channel())
-        post_standings = _("On") if await self.config.guild(guild).post_standings() else _("Off")
         gdc_channels = (await self.config.guild(guild).gdc_chans()).values()
         gdt_channels = (await self.config.guild(guild).gdt_chans()).values()
         standings_chn = "None"
@@ -60,14 +59,7 @@ class HockeySetCommands(HockeyMixin):
             else:
                 standings_msg = None
             if standings_msg is not None:
-                if ctx.channel.permissions_for(guild.me).embed_links:
-                    standings_msg = (
-                        _("[Standings") + f" {post_standings}]({standings_msg.jump_url})"
-                    )
-                else:
-                    standings_msg = (
-                        _("Standings") + f" {post_standings}```{standings_msg.jump_url}"
-                    )
+                standings_msg = standings_msg.jump_url
         channels = ""
         for channel in await self.config.all_channels():
             chn = guild.get_channel_or_thread(channel)
@@ -83,16 +75,11 @@ class HockeySetCommands(HockeyMixin):
                         game_states=humanize_list(game_states)
                     )
 
-        notification_settings = _("Game Start: {game_start}\nGoals: {goals}\n").format(
-            game_start=await self.config.guild(guild).game_state_notifications(),
-            goals=await self.config.guild(guild).goal_notifications(),
-        )
         if ctx.channel.permissions_for(guild.me).embed_links:
             em = discord.Embed(title=guild.name + _(" Hockey Settings"))
             em.colour = await self.bot.get_embed_colour(ctx.channel)
             em.description = channels
-            em.add_field(name=_("Standings Settings"), value=f"{standings_chn}: {standings_msg}")
-            em.add_field(name=_("Notifications"), value=notification_settings)
+            em.add_field(name=_("Standings Settings"), value=f"{standings_msg}")
             await ctx.send(embed=em)
         else:
             msg = _(
@@ -101,7 +88,6 @@ class HockeySetCommands(HockeyMixin):
             ).format(
                 guild=guild.name,
                 channels=channels,
-                notifications=notification_settings,
                 standings_chn=standings_chn,
                 standings=standings_msg,
             )

@@ -266,8 +266,19 @@ class TeamFinder(discord.app_commands.Transformer):
     async def convert(cls, ctx: Context, argument: str) -> str:
         potential_teams = argument.split()
         result = set()
-        include_all = ctx.command.name in ["setup", "add", "otherdiscords"]
-        include_inactive = ctx.command.name in ["roster"]
+        include_all = ctx.command.qualified_name in [
+            "hockey gdt setup",
+            "hockey gdc setup",
+            "hockey set add",
+            "hockey otherdiscords",
+            "hockey notifications start",
+            "hockey notifications goal",
+            "hockey notifications state",
+            "hockey notifications defaultstart",
+            "hockey notifications defaultstate",
+            "hockey notifications defaultgoal",
+        ]
+        include_inactive = ctx.command.qualified_name in ["hockey roster"]
         if argument in TEAMS.keys():
             return argument
         for team, data in TEAMS.items():

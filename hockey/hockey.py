@@ -64,7 +64,7 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "4.2.2"
+    __version__ = "4.3.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -104,7 +104,9 @@ class Hockey(
             game_state_notifications=False,
             goal_notifications=False,
             start_notifications=False,
-            start_roles=[],
+            default_start_roles={},
+            default_state_roles={},
+            default_goal_roles={},
             gdc_state_updates=["Preview", "Live", "Final", "Goal"],
             gdt_state_updates=["Preview", "Live", "Final", "Goal"],
             ot_notifications=True,
@@ -125,7 +127,9 @@ class Hockey(
             game_state_notifications=False,
             goal_notifications=False,
             start_notifications=False,
-            start_roles=[],
+            game_start_roles={},
+            game_state_roles={},
+            game_goal_roles={},
             guild_id=None,
             parent=None,
             include_goal_image=False,
@@ -577,11 +581,19 @@ class Hockey(
             return game.get_goal_from_id(goal_id)
         return None
 
-    def get_goal_save_event(self, game_id: int, goal_id: int) -> asyncio.Event:
+    def get_goal_save_event(self, game_id: int, goal_id: str, set_event: bool) -> asyncio.Event:
+        """
+        Get an asyncio Event for saving goals.
+        If set_event is True and the event does not exist it will return in a set state.
+        This is for when the cog is reloaded and it's seeing the event for the first time we can
+        reasonably assume that the event is done saving.
+        """
         if game_id not in self.saving_goals:
             self.saving_goals[game_id] = {}
         if goal_id not in self.saving_goals[game_id]:
             self.saving_goals[game_id][goal_id] = asyncio.Event()
+            if set_event:
+                self.saving_goals[game_id][goal_id].set()
         return self.saving_goals[game_id][goal_id]
 
     async def wait_for_file(self, ctx: commands.Context) -> None:

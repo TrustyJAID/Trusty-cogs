@@ -4,7 +4,7 @@ import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Set, Tuple, Union
 
 import discord
 from red_commons.logging import getLogger
@@ -160,7 +160,7 @@ class Game:
 
     def __init__(self, **kwargs):
         super().__init__()
-        self.game_id = kwargs.get("game_id")
+        self.game_id: int = kwargs.get("game_id", 0)
         self.game_state = kwargs.get("game_state", GameState.unknown)
         self.home_shots: int = kwargs.get("home_shots", 0)
         self.away_shots: int = kwargs.get("away_shots", 0)
@@ -800,19 +800,22 @@ class Game:
         # can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
 
         if self.game_state.is_live():
-            guild_notifications = guild_settings["game_state_notifications"]
-            channel_notifications = channel_settings["game_state_notifications"]
-            state_notifications = guild_notifications or channel_notifications
-            start_roles = []
-            for role_id in channel_settings.get("start_roles", []):
-                if role := guild.get_role(role_id):
-                    start_roles.append(role)
-            # TODO: Something with these I can't remember what now
-            # guild_start = guild_settings["start_notifications"]
-            # channel_start = channel_settings["start_notifications"]
-            # start_notifications = guild_start or channel_start
-            # heh inclusive or
-            allowed_mentions = {}
+
+            start_roles: Set[discord.Role] = set()
+            state_roles: Set[discord.Role] = set()
+            for team, role_ids in channel_settings.get("game_start_roles", {}).items():
+                if team not in ["all", self.home_team, self.away_team]:
+                    continue
+                for role_id in role_ids:
+                    if role := guild.get_role(role_id):
+                        start_roles.add(role)
+            for team, role_ids in channel_settings.get("game_state_roles", {}).items():
+                if team not in ["all", self.home_team, self.away_team]:
+                    continue
+                for role_id in role_ids:
+                    if role := guild.get_role(role_id):
+                        state_roles.add(role)
+
             away_role = get_team_role(guild, self.away_team)
             home_role = get_team_role(guild, self.home_team)
             home_role_mention = self.home_team
@@ -821,16 +824,15 @@ class Game:
                 home_role_mention = home_role.mention
             if away_role:
                 away_role_mention = away_role.mention
-            mention_roles = []
+            mention_roles = set()
             allowed_mentions = discord.AllowedMentions(roles=False)
-            if state_notifications:
-                mention_roles.extend([home_role, away_role])
-
+            mention_roles = state_roles
             if start_roles and self.period == 1:
-                mention_roles.extend(start_roles)
-            allowed_mentions = discord.AllowedMentions(roles=mention_roles)
+                mention_roles |= start_roles
 
-            if self.game_type is GameType.regular_season and "OT" in self.period_ord:
+            allowed_mentions = discord.AllowedMentions(roles=list(mention_roles))
+
+            if "OT" in self.period_ord:
                 if not guild_settings["ot_notifications"]:
                     allowed_mentions = discord.AllowedMentions(roles=False)
             if "SO" in self.period_ord:
@@ -840,15 +842,14 @@ class Game:
             text = _("**{period} Period starting {away_role} at {home_role}**").format(
                 period=self.period_ord, away_role=away_role_mention, home_role=home_role_mention
             )
-            if self.period == 1:
-                add_mentions = []
-                for role in start_roles:
-                    if home_role and home_role.id == role.id:
-                        continue
-                    if away_role and away_role.id == role.id:
-                        continue
-                    add_mentions.append(role)
-                text += "\n" + humanize_list([r.mention for r in add_mentions])
+            ignore = [home_role_mention, away_role_mention]
+            add_mentions: Set[discord.Role] = set()
+            for role in mention_roles:
+                if role.mention in ignore:
+                    continue
+                add_mentions.add(role)
+            text += "\n" + humanize_list([r.mention for r in add_mentions])
+
             try:
                 if not can_embed:
                     await channel.send(f"{text}\n{state_text}", allowed_mentions=allowed_mentions)
@@ -902,9 +903,9 @@ class Game:
         # away_goal_ids = [goal.goal_id for goal in self.away_goals]
 
         home_goal_list = set(team_data[self.home_team]["goal_id"])
-        current_home_goals = set(goal.goal_id for goal in self.home_goals)
+        current_home_goals = set(str(goal.goal_id) for goal in self.home_goals)
         away_goal_list = set(team_data[self.away_team]["goal_id"])
-        current_away_goals = set(goal.goal_id for goal in self.away_goals)
+        current_away_goals = set(str(goal.goal_id) for goal in self.away_goals)
 
         for goal in self.goals:
             # goal_id = str(goal["result"]["eventCode"])
@@ -946,10 +947,13 @@ class Game:
         # the difference here from the saved data to the new data returns only goals
         # that are missing from the old data and ignores new goals in the current data
         away_diff = away_goal_list.difference(current_away_goals)
+        # log.debug("Home Diff %s Current %s Old %s", home_diff, current_home_goals, home_goal_list)
+        # log.debug("Away Diff %s Current %s Old %s", away_diff, current_away_goals, away_goal_list)
+
         for goal_str in home_diff:
-            asyncio.create_task(Goal.remove_goal_post(bot, goal_str, self.home_team, self))
+            asyncio.create_task(Goal.remove_goal_post(bot, str(goal_str), self.home_team, self))
         for goal_str in away_diff:
-            asyncio.create_task(Goal.remove_goal_post(bot, goal_str, self.away_team, self))
+            asyncio.create_task(Goal.remove_goal_post(bot, str(goal_str), self.away_team, self))
 
     async def save_game_state(self, bot: Red, time_to_game_start: str = "0") -> None:
         """

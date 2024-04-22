@@ -930,6 +930,7 @@ class HockeyPickems(HockeyMixin):
         if amount and amount <= 0:
             amount = None
         global_bank = await bank.is_global()
+        author = ctx.author
 
         if global_bank and not await self.bot.is_owner(author):
             msg = _("This command is restricted to bot owner while the bank is global.")

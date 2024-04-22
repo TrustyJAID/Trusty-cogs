@@ -9,6 +9,7 @@ from red_commons.logging import getLogger
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
+from redbot.core.utils.chat_formatting import humanize_list
 
 from .helper import Team, check_to_post, get_channel_obj, get_team
 
@@ -203,7 +204,7 @@ class Goal:
         """
         # scorer = self.headshots.format(goal["players"][0]["player"]["id"])
         cog: Hockey = bot.get_cog("Hockey")
-        event = cog.get_goal_save_event(game_data.game_id, self.goal_id)
+        event = cog.get_goal_save_event(game_data.game_id, str(self.goal_id), False)
         post_state = ["all", game_data.home_team, game_data.away_team]
         msg_list = []
         goal_embed = await self.goal_post_embed(game_data)
@@ -257,9 +258,7 @@ class Goal:
             can_embed = channel.permissions_for(guild.me).embed_links
             can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
             role = None
-            guild_notifications = await config.guild(guild).goal_notifications()
-            channel_notifications = await config.channel(channel).goal_notifications()
-            goal_notifications = guild_notifications or channel_notifications
+
             guild_image_setting = await config.guild(guild).include_goal_image()
             channel_image_setting = await config.channel(channel).include_goal_image()
             include_goal_image = guild_image_setting or channel_image_setting
@@ -269,21 +268,28 @@ class Goal:
             # publish_goals = "Goal" in await config.channel(channel).publish_states()
             allowed_mentions = {}
             montreal = ["Montréal Canadiens", "Montreal Canadiens"]
+            roles = set()
+            team_role = discord.utils.get(guild.roles, name=f"{self.team_name} GOAL")
+            if team_role is None and self.team_name in montreal:
+                # Special lookup for Canadiens without the accent
+                for name in montreal:
+                    team_role = discord.utils.get(guild.roles, name=f"{name} GOAL")
+                    if team_role is not None:
+                        break
+            if team_role is not None:
+                roles.add(team_role.mention)
+            goal_roles = await config.channel(channel).game_goal_roles()
+            mention_roles = set()
 
-            role = discord.utils.get(guild.roles, name=f"{self.team_name} GOAL")
-            try:
-                if self.team_name in montreal:
-                    if not role:
-                        montreal.remove(self.team_name)
-                        role = discord.utils.get(guild.roles, name=f"{montreal[0]} GOAL")
-            except Exception:
-                log.error("Error trying to find montreal goal role")
-            if goal_notifications:
-                log.debug("actually_post_goal goal_notifications: %s", goal_notifications)
-                allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
-            else:
-                allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
-
+            for team, role_ids in goal_roles.items():
+                if team not in ["all", self.team_name]:
+                    continue
+                for role_id in role_ids:
+                    if role := guild.get_role(role_id):
+                        mention_roles.add(role)
+                        roles.add(role.mention)
+            allowed_mentions = discord.AllowedMentions(roles=list(mention_roles))
+            roles_text = humanize_list(list(roles))
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
                 if channel.id in game_day_channels:
@@ -310,18 +316,22 @@ class Goal:
 
             if not can_embed and not can_manage_webhooks:
                 # Create text only message if embed_links permission is not set
-                if role is not None:
-                    msg = await channel.send(f"{role}\n{goal_text}", **allowed_mentions)
+                if roles_text:
+                    msg = await channel.send(
+                        f"{roles_text}\n{goal_text}", allowed_mentions=allowed_mentions
+                    )
                 else:
                     msg = await channel.send(goal_text)
                 # msg_list[str(channel.id)] = msg.id
 
-            if role is None or "missed" in self.event.lower():
+            if not roles_text or "missed" in self.event.lower():
                 msg = await channel.send(embed=send_em)
                 # msg_list[str(channel.id)] = msg.id
 
             else:
-                msg = await channel.send(role.mention, embed=send_em, **allowed_mentions)
+                msg = await channel.send(
+                    roles_text, embed=send_em, allowed_mentions=allowed_mentions
+                )
                 # msg_list[str(channel.id)] = msg.id
             return channel.guild.id, channel.id, msg.id
         except Exception:
@@ -333,9 +343,10 @@ class Goal:
         """
         Attempt to delete a goal if it was pulled back
         """
+        log.trace("Removing goal %s from game %s", goal_id, data)
         cog: Hockey = bot.get_cog("Hockey")
         config = cog.config
-        event = cog.get_goal_save_event(data.game_id, goal_id)
+        event = cog.get_goal_save_event(data.game_id, str(goal_id), True)
         await event.wait()
         team_data = await get_team(bot, team, data.game_start_str, data.game_id)
         if str(goal_id) not in [str(goal.goal_id) for goal in data.goals]:
@@ -389,7 +400,7 @@ class Goal:
         # scorer = self.headshots.format(goal["players"][0]["player"]["id"])
         # post_state = ["all", game_data.home_team, game_data.away_team]
         cog: Hockey = bot.get_cog("Hockey")
-        event = cog.get_goal_save_event(game_data.game_id, self.goal_id)
+        event = cog.get_goal_save_event(game_data.game_id, str(self.goal_id), True)
         await event.wait()
         # Wait until the initial posting has fully completed before continuing to edit
         og_msg = []
