@@ -75,6 +75,8 @@ KEY_CHOICES = [
 
 class SpotifyCommands(SpotifyMixin):
     @commands.hybrid_group(name="spotify", aliases=["sp"])
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=True)
     async def spotify_com(self, ctx: commands.Context):
         """
         Spotify commands
@@ -465,7 +467,10 @@ class SpotifyCommands(SpotifyMixin):
                 msg += _("The following scopes were added: {added}\n").format(added=add)
             if rem:
                 _("The following scopes were removed: {removed}\n").format(removed=rem)
-        await ctx.maybe_send_embed(msg)
+        if msg:
+            await ctx.maybe_send_embed(msg)
+        else:
+            await ctx.send(_("No Scope settings have been changed."))
 
     @spotify_set.command(name="currentscope", aliases=["currentscopes"], with_app_command=False)
     @commands.is_owner()
