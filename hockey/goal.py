@@ -266,7 +266,7 @@ class Goal:
             if include_goal_image and self.image:
                 send_em.set_image(url=self.image)
             # publish_goals = "Goal" in await config.channel(channel).publish_states()
-            allowed_mentions = {}
+
             montreal = ["Montréal Canadiens", "Montreal Canadiens"]
             roles = set()
             team_role = discord.utils.get(guild.roles, name=f"{self.team_name} GOAL")
@@ -453,9 +453,32 @@ class Goal:
             channel_image_setting = await config.channel(channel).include_goal_image()
             include_goal_image = guild_image_setting or channel_image_setting
             send_em = em.copy()
+            montreal = ["Montréal Canadiens", "Montreal Canadiens"]
+            roles = set()
+            team_role = discord.utils.get(guild.roles, name=f"{self.team_name} GOAL")
+            if team_role is None and self.team_name in montreal:
+                # Special lookup for Canadiens without the accent
+                for name in montreal:
+                    team_role = discord.utils.get(guild.roles, name=f"{name} GOAL")
+                    if team_role is not None:
+                        break
+            if team_role is not None:
+                roles.add(team_role.mention)
+            goal_roles = await config.channel(channel).game_goal_roles()
+            mention_roles = set()
+
+            for team, role_ids in goal_roles.items():
+                if team not in ["all", self.team_name]:
+                    continue
+                for role_id in role_ids:
+                    if role := guild.get_role(role_id):
+                        mention_roles.add(role)
+                        roles.add(role.mention)
+            allowed_mentions = discord.AllowedMentions(roles=list(mention_roles))
+            roles_text = humanize_list(list(roles))
             if include_goal_image and self.image:
                 send_em.set_image(url=self.image)
-            role = discord.utils.get(guild.roles, name=self.team_name + " GOAL")
+
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
                 if channel.id in game_day_channels:
@@ -464,15 +487,15 @@ class Goal:
                 if channel.id in game_day_threads:
                     role = None
             if channel.permissions_for(channel.guild.me).embed_links:
-                if role is None or self.type_code.value != 505:  # Goal type_code value
-                    await message.edit(embed=send_em)
+                if not roles_text or self.type_code.value != 505:  # Goal type_code value
+                    await message.edit(embed=send_em, allowed_mentions=allowed_mentions)
                 else:
-                    await message.edit(content=role.mention, embed=send_em)
+                    await message.edit(content=roles_text, embed=send_em)
             else:
-                if role is None or self.type_code.value != 505:  # Goal type_code value
+                if not roles_text or self.type_code.value != 505:  # Goal type_code value
                     await message.edit(content=text)
                 else:
-                    await message.edit(content=f"{role.mention}\n{text}")
+                    await message.edit(content=f"{roles_text}\n{text}")
         except (discord.errors.NotFound, discord.errors.Forbidden):
             log.exception("Apparently could not edit a message")
             return

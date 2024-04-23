@@ -4,7 +4,7 @@ import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.core.utils.views import SimpleMenu
 
 from .abc import HockeyMixin
@@ -97,7 +97,11 @@ class HockeyNotifications(HockeyMixin):
             if len(em) >= 4000 or len(em.fields) > 5:
                 embeds.append(em)
                 em = discord.Embed(colour=await self.bot.get_embed_colour(ctx))
-            em.add_field(name=channel.mention, value=info)
+            for page in pagify(info, page_length=1024):
+                if len(em) >= 4000 or len(em.fields) > 5:
+                    embeds.append(em)
+                    em = discord.Embed(colour=await self.bot.get_embed_colour(ctx))
+                em.add_field(name=channel.mention, value=page)
         embeds.append(em)
         await SimpleMenu(embeds, use_select_menu=True).start(ctx)
 
