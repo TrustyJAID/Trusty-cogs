@@ -312,6 +312,8 @@ class Game:
         colour = self.home.colour
 
         em = discord.Embed(timestamp=self.game_start)
+        home_field = f"{self.home_emoji} {self.home_team}"
+        away_field = f"{self.away_emoji} {self.away_team}"
         if colour is not None:
             em.colour = colour
         em.set_author(name=title, url=team_url, icon_url=self.home_logo)
@@ -326,18 +328,14 @@ class Game:
                 em.description = desc
             if url is not None:
                 em.set_image(url=url)
-            em.add_field(
-                name=f"{self.away_emoji} {self.away_team} {self.away_emoji}", value=away_str
-            )
-            em.add_field(
-                name=f"{self.home_emoji} {self.home_team} {self.home_emoji}", value=home_str
-            )
+            em.add_field(name=home_field, value=away_str)
+            em.add_field(name=away_field, value=home_str)
         if self.game_type is GameType.playoffs:
             playoffs = await self.api.get_playoffs(self.game_start.year)
             series = playoffs.get_series(self.home, self.away)
             log.debug("Playoffs series %s", series)
             em.set_image(url=series.logo or playoffs.logo)
-            em.description = series.seriesTitle
+            em.description = f"[{series.title}]({series.url})"
         if include_heatmap:
             em.set_image(url=self.heatmap_url())
             if em.description is None:
@@ -358,12 +356,8 @@ class Game:
             away_msg = _("Goals: **{away_score}**\nShots: **{away_shots}**").format(
                 away_score=self.away_score, away_shots=self.away_shots
             )
-            em.add_field(
-                name=f"{self.away_emoji} {self.away_team} {self.away_emoji}", value=away_msg
-            )
-            em.add_field(
-                name=f"{self.home_emoji} {self.home_team} {self.home_emoji}", value=home_msg
-            )
+            em.add_field(name=home_field, value=away_msg)
+            em.add_field(name=away_field, value=home_msg)
 
             if self.goals != [] and include_goals:
                 goal_msg = ""
@@ -477,8 +471,8 @@ class Game:
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
         title = f"{self.away_team} @ {self.home_team} {str(self.game_state)}"
         em = discord.Embed(timestamp=self.game_start)
-        home_field = "{0} {1} {0}".format(self.home_emoji, self.home_team)
-        away_field = "{0} {1} {0}".format(self.away_emoji, self.away_team)
+        home_field = f"{self.home_emoji} {self.home_team}"
+        away_field = f"{self.away_emoji} {self.away_team}"
         if not self.game_state.is_preview():
             home_str = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
                 home_score=self.home_score, home_shots=self.home_shots
@@ -577,7 +571,7 @@ class Game:
 
                     away_str = msg.format(gp=gp, wins=away_wins, losses=gp - away_wins)
                     home_str = msg.format(gp=gp, wins=home_wins, losses=gp - home_wins)
-                    desc = series.seriesTitle
+                    desc = f"[{series.title}]({series.url})"
             except Exception:
                 log.exception("Error pulling playoffs stats")
                 pass
@@ -800,7 +794,6 @@ class Game:
         # can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
 
         if self.game_state.is_live():
-
             start_roles: Set[discord.Role] = set()
             state_roles: Set[discord.Role] = set()
             for team, role_ids in channel_settings.get("game_start_roles", {}).items():

@@ -116,6 +116,7 @@ class HockeyNotifications(HockeyMixin):
 
         `<team>` The team playing to notify this role. Can be `all`.
         `<roles...>` The roles which you want to be pinged when a game starts.
+        If a role is already set and included in this command it will be removed.
         """
         async with self.config.guild(ctx.guild).default_start_roles() as existing:
             if team not in existing:
@@ -153,6 +154,7 @@ class HockeyNotifications(HockeyMixin):
 
         `<team>` The team playing to notify this role. Can be `all`.
         `<roles...>` The roles which you want to be pinged when a game starts.
+        If a role is already set and included in this command it will be removed.
         """
         async with self.config.guild(ctx.guild).default_goal_roles() as existing:
             if team not in existing:
@@ -186,9 +188,9 @@ class HockeyNotifications(HockeyMixin):
         Set the default role(s) to be notified for all period starts.
         This setting applies to all automatically created channels/threads.
 
-        `<channel>` The channel or thread you want notifications in.
         `<team>` The team playing to notify this role. Can be `all`.
         `<roles...>` The roles which you want to be pinged when a game starts.
+        If a role is already set and included in this command it will be removed.
         """
         async with self.config.guild(ctx.guild).default_state_roles() as existing:
             if team not in existing:
@@ -224,7 +226,6 @@ class HockeyNotifications(HockeyMixin):
     ) -> None:
         """
         Set the default role(s) to be notified when a game starts.
-        This setting applies to all automatically created channels/threads.
 
         `<channel>` The channel or thread you want notifications in.
         `<team>` The team playing to notify this role. Can be `all`.
@@ -312,9 +313,9 @@ class HockeyNotifications(HockeyMixin):
         *roles: discord.Role,
     ) -> None:
         """
-        Set the default role(s) to be notified when a game starts.
-        This setting applies to all automatically created channels/threads.
+        Set the default role(s) to be notified when all periods start.
 
+        `<channel>` The channel or thread you want notifications in.
         `<team>` The team playing to notify this role. Can be `all`.
         `<roles...>` The roles which you want to be pinged when a game starts.
         If a role is already set and included in this command it will be removed.
@@ -360,7 +361,7 @@ class HockeyNotifications(HockeyMixin):
         if on_off:
             await self.config.guild(ctx.guild).ot_notifications.clear()
             # Deftault is True
-            reply = _("__OT Notifications:__ **Enabled**\n\n")
+            reply = _("Overtime Period Notifications: **Enabled**\n\n")
             await ctx.maybe_send_embed(reply)
         else:
             await self.config.guild(ctx.guild).ot_notifications.set(on_off)
@@ -382,10 +383,10 @@ class HockeyNotifications(HockeyMixin):
         if on_off:
             await self.config.guild(ctx.guild).so_notifications.clear()
             # Deftault is True
-            reply = _("__SO Period Notifications:__ **On**\n\n")
+            reply = _("Shootout Period Notifications: **On**\n\n")
             await ctx.maybe_send_embed(reply)
         else:
             await self.config.guild(ctx.guild).so_notifications.set(on_off)
             await ctx.maybe_send_embed(
-                _("Okay, I will not notify SO Period start in this server.")
+                _("Okay, I will not notify Shootout Period start in this server.")
             )

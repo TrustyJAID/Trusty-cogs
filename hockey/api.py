@@ -1034,7 +1034,10 @@ class NewAPI(HockeyAPI):
 
         recap_url = None
         if content:
+
             recap = content.get("summary", {}).get("gameVideo", {}).get("condensedGame")
+            if recap is None:
+                recap = content.get("gameVideo", {}).get("condensedGame")
             if recap is not None:
                 recap_url = VIDEO_URL.format(clip_id=recap)
             for star in content.get("summary", {}).get("threeStars", []):

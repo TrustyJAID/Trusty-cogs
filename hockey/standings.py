@@ -114,7 +114,7 @@ class Playoffs:
 
     @classmethod
     def from_json(cls, data: dict, year: int) -> Playoffs:
-        series = [PlayoffSeries.from_json(i) for i in data.pop("series", [])]
+        series = [PlayoffSeries.from_json(i, year) for i in data.pop("series", [])]
         return cls(**data, series=series, year=year)
 
     def get_series(self, team_1: Team, team_2: Team) -> Optional[PlayoffSeries]:
@@ -160,6 +160,7 @@ class PlayoffSeries:
     bottomSeedWins: int
     winningTeamId: int
     losingTeamId: int
+    year: int
 
     conferenceAbbrev: Optional[str] = None
     conferenceName: Optional[str] = None
@@ -177,7 +178,9 @@ class PlayoffSeries:
 
     @property
     def title(self) -> str:
-        return self.seriesTitle
+        return _("{year} Stanley Cup Playoffs: {series}").format(
+            year=self.year, series=self.seriesTitle
+        )
 
     @property
     def description(self) -> str:
@@ -188,7 +191,7 @@ class PlayoffSeries:
     @property
     def url(self) -> Optional[URL]:
         if self.seriesUrl is not None:
-            return URL(f"https://nhl.com/{self.seriesUrl}")
+            return URL("https://nhl.com").join(URL(self.seriesUrl))
         return None
 
     @property
@@ -219,7 +222,7 @@ class PlayoffSeries:
             return self.bottomSeedTeam
 
     @classmethod
-    def from_json(cls, data: dict) -> PlayoffSeries:
+    def from_json(cls, data: dict, year: int) -> PlayoffSeries:
         top_team = data.pop("topSeedTeam", None)
         if top_team:
             top_team = Team.from_nhle(top_team)
@@ -227,7 +230,7 @@ class PlayoffSeries:
         if bot_team:
             bot_team = Team.from_nhle(bot_team)
 
-        return cls(**data, topSeedTeam=top_team, bottomSeedTeam=bot_team)
+        return cls(**data, topSeedTeam=top_team, bottomSeedTeam=bot_team, year=year)
 
 
 class PlayoffsView(discord.ui.View):
