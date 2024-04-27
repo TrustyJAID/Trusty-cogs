@@ -753,7 +753,9 @@ class ImageMaker(commands.Cog):
                     draw.text((margin, offset), f"{line}...", fill=(0, 0, 0), font=font1)
                     break
                 draw.text((margin, offset), f"{line}", fill=(0, 0, 0), font=font1)
-                offset += font1.getsize(line)[1]
+                _top, left, _bottom, right = font1.getbbox(text=line)
+                h = right - left
+                offset += h
         temp = BytesIO()
         template.save(temp, format=WEBP_OR_PNG)
         temp.name = f"wheeze.{WEBP_OR_PNG}"
