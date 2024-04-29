@@ -28,7 +28,7 @@ from .components import (
 from .errors import NoSchedule
 from .helper import LeaderboardType
 from .player import SearchPlayer
-from .schedule import Schedule, ScheduleList
+from .schedule import PlayByPlay, PlayByPlayFilter, Schedule, ScheduleList
 
 if TYPE_CHECKING:
     from .abc import HockeyMixin
@@ -63,6 +63,7 @@ class GamesMenu(discord.ui.View):
         self.heatmap_button = HeatmapButton(discord.ButtonStyle.primary, 1)
         self.gameflow_button = GameflowButton(discord.ButtonStyle.primary, 1)
         self.broadcast_button = BroadcastsButton(1)
+
         self.add_item(self.stop_button)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
@@ -80,6 +81,12 @@ class GamesMenu(discord.ui.View):
             self.add_item(self.broadcast_button)
         if isinstance(self.source, ScheduleList):
             self.add_item(self.broadcast_button)
+        if isinstance(self.source, PlayByPlay):
+            self.pbp_filter = PlayByPlayFilter(self.source.select_options)
+            self.add_item(self.pbp_filter)
+            self.heatmap_button.disabled = True
+            self.gameflow_button.disabled = True
+            self.broadcast_button.disabled = True
         self.select_view: Optional[HockeySelectGame] = None
         self.author = None
 

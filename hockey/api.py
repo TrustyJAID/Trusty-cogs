@@ -3,14 +3,16 @@ from __future__ import annotations
 import json
 from collections import namedtuple
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Tuple, TypedDict, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, TypedDict, Union
 
 import aiohttp
 from red_commons.logging import getLogger
+from redbot.core import commands
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import humanize_timedelta
 from yarl import URL
 
 from .constants import TEAMS
@@ -26,9 +28,7 @@ log = getLogger("red.trusty-cogs.Hockey")
 
 _ = Translator("Hockey", __file__)
 
-VIDEO_URL = (
-    "https://players.brightcove.net/6415718365001/EXtG1xJ7H_default/index.html?videoId={clip_id}"
-)
+VIDEO_URL = URL("https://players.brightcove.net/6415718365001/EXtG1xJ7H_default/index.html")
 ORDINALS = {
     1: _("1st"),
     2: _("2nd"),
@@ -126,7 +126,7 @@ class GameData(TypedDict):
 
 
 class GameEventTypeCode(Enum):
-    UNKNOWN = 0
+    ALL = 0
     FACEOFF = 502
     HIT = 503
     GIVEAWAY = 504
@@ -146,6 +146,13 @@ class GameEventTypeCode(Enum):
 
     def __str__(self):
         return self.name.title().replace("_", " ")
+
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> GameEventTypeCode:
+        for event in GameEventTypeCode:
+            if argument.lower() in event.name.lower():
+                return event
+        return GameEventTypeCode.ALL
 
 
 class Situation:
@@ -280,10 +287,28 @@ class Event:
     type_code: GameEventTypeCode
     type_desc_key: str
     sort_order: int
-    details: Optional[dict]
+    details: Dict[str, Any]
+    team: Optional[Team]
+    home: Team
+    away: Team
+    home_roster: Dict[int, Player]
+    away_roster: Dict[int, Player]
 
     @classmethod
-    def from_json(cls, data: dict) -> Event:
+    def from_json(
+        cls,
+        data: dict,
+        home_team: Team,
+        away_team: Team,
+        home_roster: Dict[int, Player],
+        away_roster: Dict[int, Player],
+    ) -> Event:
+        team_id = data.get("details", {}).get("eventOwnerTeamId")
+        team = None
+        if team_id == home_team.id:
+            team = home_team
+        if team_id == away_team.id:
+            team = away_team
         return cls(
             id=data.get("eventId", 0),
             period=data.get("periodDescriptor", {}).get("number"),
@@ -296,6 +321,11 @@ class Event:
             type_desc_key=data.get("typeDescKey", ""),
             sort_order=data.get("sortOrder", 0),
             details=data.get("details", {}),
+            team=team,
+            home=home_team,
+            away=away_team,
+            home_roster=home_roster,
+            away_roster=away_roster,
         )
 
     def is_goal_or_shot(self) -> bool:
@@ -312,27 +342,28 @@ class Event:
     def situation(self):
         return Situation(self.situation_code)
 
-    def get_player(self, player_id: int, data: dict) -> Optional[Player]:
-        for player in data.get("rosterSpots", []):
-            if player_id == player.get("playerId"):
-                return Player.from_json(player)
+    def get_player(self, player_id: int) -> Optional[Player]:
+        if player_id in self.home_roster:
+            return self.home_roster[player_id]
+        if player_id in self.away_roster:
+            return self.away_roster[player_id]
         return None
 
-    def description(self, data: dict) -> str:
+    def goal_description(self) -> str:
         description = ""
         shot_type = ""
         for key, value in self.details.items():
             if key == "shotType":
                 shot_type = value
             if key in ["scoringPlayerId", "shootingPlayerId"]:
-                player = self.get_player(value, data)
+                player = self.get_player(value)
                 player_name = player.name if player else _("Unknown")
                 player_num = f"#{player.sweaterNumber} " if player else ""
                 total = self.details.get("scoringPlayerTotal", 0)
                 description += f"{player_num}{player_name} ({total}) {shot_type}"
 
             if key == "assist1PlayerId":
-                player = self.get_player(value, data)
+                player = self.get_player(value)
                 player_name = player.name if player else _("Unknown")
                 player_num = f"#{player.sweaterNumber} " if player else ""
                 total = self.details.get("assist1PlayerTotal", 0)
@@ -340,17 +371,120 @@ class Event:
                     player_num=player_num, player_name=player_name, total=total
                 )
             if key == "assist2PlayerId":
-                player = self.get_player(value, data)
+                player = self.get_player(value)
                 player_name = player.name if player else _("Unknown")
                 player_num = f"#{player.sweaterNumber} " if player else ""
                 total = self.details.get("assist2PlayerTotal", 0)
                 description += _(", {player_num}{player_name} ({total})").format(
                     player_num=player_num, player_name=player_name, total=total
                 )
-
         return description
 
-    def get_highlight(self, content: Optional[dict]) -> Optional[str]:
+    def when(self) -> str:
+        period_ord = self.period_descriptor.get("periodType", "REG")
+        if period_ord == "REG":
+            period_ord = ORDINALS.get(self.period)
+        description = _("{time_left} left in the {ordinal} period").format(
+            time_left=self.time_remaining,
+            ordinal=period_ord,
+        )
+        return description
+
+    def what(self) -> str:
+        home = True if self.team and self.team.id == self.home.id else False
+        return f"{self.situation.strength(home)} {self.type_code}"
+
+    def description(self) -> str:
+        return f"__{self.when()} {self.what()}__\n{self.who()}"
+
+    def who(self) -> str:
+        shot_type = ""
+        description = ""
+        if self.team:
+            description = f"- {self.team.emoji} {self.team}\n"
+        if self.details and self.is_goal_or_shot():
+            for key, value in self.details.items():
+                if key == "shotType":
+                    shot_type = value
+                if key in ["scoringPlayerId", "shootingPlayerId"]:
+                    player = self.get_player(value)
+                    total = self.details.get("scoringPlayerTotal", 0)
+                    description += f"- {player.as_link() if player else ''} ({total}) {shot_type}"
+
+                if key == "assist1PlayerId":
+                    player = self.get_player(value)
+                    total = self.details.get("assist1PlayerTotal", 0)
+                    description += _(" assists: {player} ({total})").format(
+                        player=player.as_link() if player else _("Unknown"), total=total
+                    )
+                if key == "assist2PlayerId":
+                    player = self.get_player(value)
+                    total = self.details.get("assist2PlayerTotal", 0)
+                    description += _(", {player} ({total})").format(
+                        player=player.as_link() if player else _("Unknown"), total=total
+                    )
+        else:
+            if self.details:
+                if "playerId" in self.details:
+                    player = self.get_player(self.details["playerId"])
+                    description += player.as_link() if player else ""
+                if self.type_code is GameEventTypeCode.FACEOFF:
+                    winner = self.get_player(self.details.get("winningPlayerId", 0))
+                    loser = self.get_player(self.details.get("losingPlayerId", 0))
+                    description += _("- {winner} won faceoff against {loser}").format(
+                        winner=winner.as_link() if winner else winner,
+                        loser=loser.as_link() if loser else loser,
+                    )
+                if self.type_code is GameEventTypeCode.HIT:
+                    hitting = self.get_player(self.details.get("hittingPlayerId", 0))
+                    hittee = self.get_player(self.details.get("hitteePlayerId", 0))
+                    description += _("- {hitting} hit {hittee}").format(
+                        hitting=hitting.as_link() if hitting else hitting,
+                        hittee=hittee.as_link() if hittee else hittee,
+                    )
+                if self.type_code is GameEventTypeCode.BLOCKED_SHOT:
+                    shooter = self.get_player(self.details.get("shootingPlayerId", 0))
+                    blocker = self.get_player(self.details.get("blockingPlayerId", 0))
+                    description += _("- {blocker} blocked shot from {shooter}").format(
+                        blocker=blocker.as_link() if blocker else blocker,
+                        shooter=shooter.as_link() if shooter else shooter,
+                    )
+                if self.type_code is GameEventTypeCode.SHOT_ON_GOAL:
+                    shooter = self.get_player(self.details.get("shootingPlayerId", 0))
+                    goalie = self.get_player(self.details.get("goalieInNetId", 0))
+                    description += _("- {goalie} saved shot from {shooter}").format(
+                        goalie=goalie.as_link() if goalie else goalie,
+                        shooter=shooter.as_link() if shooter else shooter,
+                    )
+                if self.type_code is GameEventTypeCode.MISSED_SHOT:
+                    shooter = self.get_player(self.details.get("shootingPlayerId", 0))
+                    goalie = self.get_player(self.details.get("goalieInNetId", 0))
+                    shot_type = self.details.get("shotType", _("Unknown"))
+                    description += _("- {shooter} missed {shot_type} shot on {goalie}").format(
+                        goalie=goalie.as_link() if goalie else goalie,
+                        shooter=shooter.as_link() if shooter else shooter,
+                        shot_type=shot_type,
+                    )
+                if self.type_code is GameEventTypeCode.PENALTY:
+                    committed = self.get_player(self.details.get("committedByPlayerId", 0))
+                    drawn = self.get_player(self.details.get("drawnByPlayerId", 0))
+                    desc = self.details.get("descKey", _("Unknown")).title()
+                    duration = timedelta(minutes=self.details.get("duration", 2))
+                    duration_str = humanize_timedelta(timedelta=duration)
+                    description += _("- {committed} {duration} for {desc}.").format(
+                        desc=desc,
+                        duration=duration_str,
+                        committed=committed.as_link() if committed else committed,
+                    )
+                    if drawn:
+                        description += _(" Drawn by {drawn}.").format(drawn=drawn.as_link())
+                if self.type_code is GameEventTypeCode.STOPPAGE:
+                    reason = self.details.get("reason")
+                    if reason:
+                        description += f"- {reason.title()}"
+        return description
+
+    def get_highlight(self, content: Optional[dict]) -> Optional[URL]:
         if content is None:
             return None
         clip_id = None
@@ -363,7 +497,7 @@ class Event:
                 if goal.get("timeInPeriod", "") == self.time_in_period:
                     clip_id = goal.get("highlightClip", None)
         if clip_id is not None:
-            return VIDEO_URL.format(clip_id=clip_id)
+            return VIDEO_URL.with_query({"videoId": clip_id})
         return None
 
     def get_sog(self, data: dict) -> Tuple[int, int]:
@@ -390,28 +524,20 @@ class Event:
         scorer_id = self.details.get("scoringPlayerId", 0)
         if scorer_id == 0:
             scorer_id = self.details.get("shootingPlayerId", 0)
-        scorer = self.get_player(scorer_id, data)
+        scorer = self.get_player(scorer_id)
         jersey_no = scorer.sweaterNumber if scorer else 0
         assisters = []
-        if assist1 := self.get_player(self.details.get("assist1PlayerId", 0), data):
+        if assist1 := self.get_player(self.details.get("assist1PlayerId", 0)):
             assisters.append(assist1)
-        if assist2 := self.get_player(self.details.get("assist2PlayerId", 0), data):
+        if assist2 := self.get_player(self.details.get("assist2PlayerId", 0)):
             assisters.append(assist2)
         home_score = self.details.get("homeScore", 0)
         away_score = self.details.get("awayScore", 0)
         team_id = self.details.get("eventOwnerTeamId")
-        home_team = data.get("homeTeam", {})
-        away_team = data.get("awayTeam", {})
-        if team_id == home_team.get("id", -1):
-            team_name = home_team.get("name", {}).get("default", _("Unknown Team"))
-            team = Team.from_nhle(home_team)
-        elif team_id == away_team.get("id", -1):
-            team_name = away_team.get("name", {}).get("default", _("Unknown Team"))
-            team = Team.from_nhle(away_team, home=False)
-
-        if team_id in TEAM_IDS:
-            team_name = TEAM_IDS.get(team_id, _("Unknown Team"))
-            team = Team.from_json(TEAMS.get(team_name, {}), team_name)
+        if team_id == self.home.id:
+            team = self.home
+        else:
+            team = self.away
 
         period_ord = self.period_descriptor.get("periodType", "REG")
         if period_ord == "REG":
@@ -424,7 +550,7 @@ class Event:
             team=team,
             scorer_id=scorer_id,
             jersey_no=jersey_no,
-            description=self.description(data),
+            description=self.goal_description(),
             period=self.period,
             period_ord=period_ord,
             time_remaining=self.time_remaining,
@@ -443,6 +569,7 @@ class Event:
             away_shots=away_sog,
             game_id=game_id,
             type_code=self.type_code,
+            nhle_event=self,
         )
 
 
@@ -459,13 +586,28 @@ class ScheduledGame:
     broadcasts: List[dict]
     venue: str
     schedule_state: str
+    home: Team
+    away: Team
+    base_url: URL
+
+    @property
+    def landing(self):
+        return self.base_url.join(URL(f"/v1/gamecenter/{self.id}/landing"))
+
+    @property
+    def play_by_play(self):
+        return self.base_url.join(URL(f"/v1/gamecenter/{self.id}/play-by-play"))
+
+    @property
+    def boxscore(self):
+        return self.base_url.join(URL(f"/v1/gamecenter/{self.id}/boxscore"))
 
     @classmethod
     def from_statsapi(cls, data: dict) -> ScheduledGame:
         raise NotImplementedError  # not working so no point building this yet
 
     @classmethod
-    def from_nhle(cls, data: dict) -> ScheduledGame:
+    def from_nhle(cls, data: dict, url: URL) -> ScheduledGame:
         game_id = data["id"]
         game_type = GameType.from_int(data["gameType"])
         venue = data["venue"].get("default", "Unknown")
@@ -487,6 +629,8 @@ class ScheduledGame:
         schedule_state = data["gameScheduleState"]
         period = data.get("periodDescriptor", {}).get("number", -1)
         game_state = GameState.from_nhle(data["gameState"], period)
+        home = Team.from_nhle(home_team_data, home=True)
+        away = Team.from_nhle(away_team_data, home=False)
         return cls(
             id=game_id,
             home_team=home_team,
@@ -499,13 +643,17 @@ class ScheduledGame:
             broadcasts=broadcasts,
             venue=venue,
             schedule_state=schedule_state,
+            home=home,
+            away=away,
+            base_url=url,
         )
 
 
 class Schedule:
-    def __init__(self, days: List[List[ScheduledGame]]):
+    def __init__(self, days: List[List[ScheduledGame]], url: URL):
         self.games: List[ScheduledGame] = [g for d in days for g in d]
         self.days: List[List[ScheduledGame]] = days
+        self.url: URL = url
 
     @classmethod
     def from_statsapi(cls, data: dict) -> Schedule:
@@ -515,18 +663,18 @@ class Schedule:
         return [g for g in self.games if g.game_state.value < GameState.live.value]
 
     @classmethod
-    def from_nhle(cls, data: dict) -> Schedule:
+    def from_nhle(cls, data: dict, url: URL) -> Schedule:
         days = []
         if "games" in data:
             for g in data.get("games", []):
-                days.append([ScheduledGame.from_nhle(g)])
+                days.append([ScheduledGame.from_nhle(g, url)])
 
         for day in data.get("gameWeek", []):
             games = []
             for game in day.get("games", []):
-                games.append(ScheduledGame.from_nhle(game))
+                games.append(ScheduledGame.from_nhle(game, url))
             days.append(games)
-        return cls(days)
+        return cls(days, url)
 
 
 class HockeyAPI:
@@ -737,10 +885,11 @@ class NewAPI(HockeyAPI):
         return TEAMS.get(team_name, {}).get("tri_code", None)
 
     async def schedule_now(self) -> Schedule:
+        url = URL("/v1/schedule/now")
         if self.testing:
             data = await self.load_testing_data("testschedule.json")
-            return Schedule.from_nhle(data)
-        url = URL("/v1/schedule/now")
+            return Schedule.from_nhle(data, url=self.base_url.join(url))
+
         async with self.session.get(url) as resp:
             if resp.status != 200:
                 log.error("Error accessing the Schedule for now. %s", resp.status)
@@ -749,7 +898,7 @@ class NewAPI(HockeyAPI):
                 )
             log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
-        return Schedule.from_nhle(data)
+        return Schedule.from_nhle(data, url=self.base_url.join(url))
 
     async def search_player(
         self,
@@ -801,7 +950,7 @@ class NewAPI(HockeyAPI):
                 )
             log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
-        return Schedule.from_nhle(data)
+        return Schedule.from_nhle(data, url=self.base_url.join(url))
 
     async def club_schedule_season(self, team: str) -> Schedule:
         team_abr = self.team_to_abbrev(team)
@@ -816,7 +965,7 @@ class NewAPI(HockeyAPI):
                 )
 
             data = await resp.json()
-        return Schedule.from_nhle(data)
+        return Schedule.from_nhle(data, url=self.base_url.join(url))
 
     async def club_schedule_week(self, team: str, date: Optional[datetime] = None) -> Schedule:
         team_abr = self.team_to_abbrev(team)
@@ -836,7 +985,7 @@ class NewAPI(HockeyAPI):
                 )
             log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
-        return Schedule.from_nhle(data)
+        return Schedule.from_nhle(data, url=self.base_url.join(url))
 
     async def club_schedule_month(self, team: str, date: Optional[datetime] = None) -> Schedule:
         team_abr = self.team_to_abbrev(team)
@@ -856,7 +1005,7 @@ class NewAPI(HockeyAPI):
                 )
             log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
-        return Schedule.from_nhle(data)
+        return Schedule.from_nhle(data, url=self.base_url.join(url))
 
     async def gamecenter_landing(self, game_id: int):
         if self.testing:
@@ -982,11 +1131,13 @@ class NewAPI(HockeyAPI):
             landing = None
         return await self.to_game(data, content=landing)
 
-    async def get_game_recap(self, game_id: int) -> Optional[str]:
+    async def get_game_recap(self, game_id: int) -> Optional[URL]:
         landing = await self.gamecenter_landing(game_id)
-        recap_id = landing.get("summary", {}).get("gameVideo", {}).get("condensedGame", None)
-        if recap_id is not None:
-            return VIDEO_URL.format(clip_id=recap_id)
+        recap = landing.get("summary", {}).get("gameVideo", {}).get("condensedGame")
+        if recap is None:
+            recap = landing.get("gameVideo", {}).get("condensedGame")
+        if recap is not None:
+            return VIDEO_URL.with_query({"videoId": recap})
         return None
 
     async def to_game(self, data: dict, content: Optional[dict] = None) -> Game:
@@ -1015,8 +1166,7 @@ class NewAPI(HockeyAPI):
         period_descriptor = data.get("periodDescriptor", {}).get("periodType", "REG")
         if period_descriptor != "REG":
             period_ord = period_descriptor
-        events = [Event.from_json(i) for i in data["plays"]]
-        goals = [e.to_goal(data, content=content) for e in events if e.is_goal_or_shot()]
+
         home_roster = {
             p["playerId"]: Player.from_json(p)
             for p in data["rosterSpots"]
@@ -1027,6 +1177,8 @@ class NewAPI(HockeyAPI):
             for p in data["rosterSpots"]
             if p["teamId"] == away_id
         }
+        events = [Event.from_json(i, home, away, home_roster, away_roster) for i in data["plays"]]
+        goals = [e.to_goal(data, content=content) for e in events if e.is_goal_or_shot()]
         game_type = GameType.from_int(data["gameType"])
         first_star = None
         second_star = None
@@ -1034,12 +1186,11 @@ class NewAPI(HockeyAPI):
 
         recap_url = None
         if content:
-
             recap = content.get("summary", {}).get("gameVideo", {}).get("condensedGame")
             if recap is None:
                 recap = content.get("gameVideo", {}).get("condensedGame")
             if recap is not None:
-                recap_url = VIDEO_URL.format(clip_id=recap)
+                recap_url = VIDEO_URL.with_query({"videoId": recap})
             for star in content.get("summary", {}).get("threeStars", []):
                 player_id = star.get("playerId", -1)
                 player = home_roster.get(player_id, None) or away_roster.get(player_id, None)
@@ -1076,5 +1227,6 @@ class NewAPI(HockeyAPI):
             recap_url=recap_url,
             api=self,
             url=URL(f"{self.base_url}/v1/gamecenter/{game_id}/play-by-play"),
+            landing=content,
             # data=data,
         )

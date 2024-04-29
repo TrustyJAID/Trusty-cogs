@@ -189,6 +189,7 @@ class Game:
         self.data = kwargs.get("data", {})
         self.api = kwargs.get("api", None)
         self.url = kwargs.get("url", None)
+        self.landing: Optional[dict] = kwargs.get("landing", None)
 
     def __repr__(self):
         return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
@@ -292,6 +293,90 @@ class Game:
                 return goal
         return None
 
+    async def goal_fields(
+        self, period_goals: Optional[Literal["1st", "2nd", "3rd"]] = None
+    ) -> List[Dict[str, str]]:
+        goal_msg = ""
+        first_goals = [goal for goal in self.goals if goal.period_ord == "1st"]
+        second_goals = [goal for goal in self.goals if goal.period_ord == "2nd"]
+        third_goals = [goal for goal in self.goals if goal.period_ord == "3rd"]
+        ot_goals = [goal for goal in self.goals if "OT" in goal.period_ord]
+        so_goals = [goal for goal in self.goals if goal.period_ord == "SO"]
+        list_goals = {
+            "1st": first_goals,
+            "2nd": second_goals,
+            "3rd": third_goals,
+            "OT": ot_goals,
+        }
+        fields = []
+        if period_goals:
+            list_goals = {period_goals: list_goals[period_goals]}
+        for goals in list_goals:
+            ordinal = goals
+            goal_msg = ""
+
+            period_start_str = ""
+            period_start = self.period_starts.get(ordinal)
+            if period_start:
+                period_start_ts = int(period_start.timestamp())
+                period_start_str = f"(<t:{period_start_ts}:t>)"
+
+            for goal in list_goals[ordinal]:
+                emoji = goal.emoji
+                left = ""
+                if goal.time_remaining:
+                    left = _("\n{time} left in the {ord} period").format(
+                        time=goal.time_remaining, ord=goal.period_ord
+                    )
+                if goal.link:
+                    goal_msg += _(
+                        "{emoji} [{team} {strength} Goal By {description} {left}]({link})\n\n"
+                    ).format(
+                        emoji=emoji,
+                        team=goal.team_name,
+                        strength=goal.strength,
+                        description=goal.description,
+                        link=goal.link,
+                        left=left,
+                    )
+                else:
+                    goal_msg += _(
+                        "{emoji} {team} {strength} Goal By {description} {left}\n\n"
+                    ).format(
+                        emoji=emoji,
+                        team=goal.team_name,
+                        strength=goal.strength,
+                        description=goal.description,
+                        left=left,
+                    )
+
+            count = 0
+            continued = _("(Continued)")
+            for page in pagify(goal_msg, delims=["\n\n", "\n"], page_length=1024, priority=True):
+                fields.append(
+                    dict(
+                        name=_("{ordinal} Period {time} Goals {continued}").format(
+                            ordinal=ordinal,
+                            time=period_start_str,
+                            continued="" if count == 0 else continued,
+                        ),
+                        value=page,
+                        inline=False,
+                    )
+                )
+                count += 1
+        if len(so_goals) != 0:
+            home_msg, away_msg = await self.goals[-1].get_shootout_display(self)
+            # get the last goal so that we always post the full current
+            # shootout display here
+            fields.append(
+                dict(name=_("{team} Shootout").format(team=self.home_team), value=home_msg)
+            )
+            fields.append(
+                dict(name=_("{team} Shootout").format(team=self.away_team), value=away_msg)
+            )
+        return fields
+
     async def make_game_embed(
         self,
         include_plays: bool = False,
@@ -322,32 +407,27 @@ class Game:
             text=_("{game_type} Game start ").format(game_type=self.game_type_str()),
             icon_url=self.away_logo,
         )
+        description = ""
         if self.game_state is GameState.preview:
             home_str, away_str, desc, url = await self.get_stats_msg()
-            if desc is not None and em.description is None:
-                em.description = desc
+            if desc is not None:
+                description += desc
             if url is not None:
                 em.set_image(url=url)
             em.add_field(name=home_field, value=away_str)
             em.add_field(name=away_field, value=home_str)
-        if self.game_type is GameType.playoffs:
+        if self.game_type is GameType.playoffs and not self.game_state.is_preview():
             playoffs = await self.api.get_playoffs(self.game_start.year)
             series = playoffs.get_series(self.home, self.away)
             log.debug("Playoffs series %s", series)
             em.set_image(url=series.logo or playoffs.logo)
-            em.description = f"[{series.title}]({series.url})"
+            description += f"[{series.title}]({series.url})"
         if include_heatmap:
             em.set_image(url=self.heatmap_url())
-            if em.description is None:
-                em.description = f"[Natural Stat Trick]({self.nst_url()})"
-            else:
-                em.description += f"\n[Natural Stat Trick]({self.nst_url()})"
+            description += f"\n[Natural Stat Trick]({self.nst_url()})"
         if include_gameflow:
             em.set_image(url=self.gameflow_url())
-            if em.description is None:
-                em.description = f"[Natural Stat Trick]({self.nst_url()})"
-            else:
-                em.description += f"\n[Natural Stat Trick]({self.nst_url()})"
+            description += f"\n[Natural Stat Trick]({self.nst_url()})"
 
         if not self.game_state.is_preview():
             home_msg = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
@@ -360,89 +440,11 @@ class Game:
             em.add_field(name=away_field, value=home_msg)
 
             if self.goals != [] and include_goals:
-                goal_msg = ""
-                first_goals = [goal for goal in self.goals if goal.period_ord == "1st"]
-                second_goals = [goal for goal in self.goals if goal.period_ord == "2nd"]
-                third_goals = [goal for goal in self.goals if goal.period_ord == "3rd"]
-                ot_goals = [goal for goal in self.goals if "OT" in goal.period_ord]
-                so_goals = [goal for goal in self.goals if goal.period_ord == "SO"]
-                list_goals = {
-                    "1st": first_goals,
-                    "2nd": second_goals,
-                    "3rd": third_goals,
-                    "OT": ot_goals,
-                }
-                if period_goals:
-                    list_goals = {period_goals: list_goals[period_goals]}
-                for goals in list_goals:
-                    ordinal = goals
-                    goal_msg = ""
-
-                    period_start_str = ""
-                    period_start = self.period_starts.get(ordinal)
-                    if period_start:
-                        period_start_ts = int(period_start.timestamp())
-                        period_start_str = f"(<t:{period_start_ts}:t>)"
-
-                    for goal in list_goals[ordinal]:
-                        emoji = goal.emoji
-                        left = ""
-                        if goal.time_remaining:
-                            left = _("\n{time} left in the {ord} period").format(
-                                time=goal.time_remaining, ord=goal.period_ord
-                            )
-                        if goal.link:
-                            goal_msg += _(
-                                "{emoji} [{team} {strength} Goal By {description} {left}]({link})\n\n"
-                            ).format(
-                                emoji=emoji,
-                                team=goal.team_name,
-                                strength=goal.strength,
-                                description=goal.description,
-                                link=goal.link,
-                                left=left,
-                            )
-                        else:
-                            goal_msg += _(
-                                "{emoji} {team} {strength} Goal By {description} {left}\n\n"
-                            ).format(
-                                emoji=emoji,
-                                team=goal.team_name,
-                                strength=goal.strength,
-                                description=goal.description,
-                                left=left,
-                            )
-
-                    count = 0
-                    continued = _("(Continued)")
-                    for page in pagify(
-                        goal_msg, delims=["\n\n", "\n"], page_length=1024, priority=True
-                    ):
-                        em.add_field(
-                            name=_("{ordinal} Period {time} Goals {continued}").format(
-                                ordinal=ordinal,
-                                time=period_start_str,
-                                continued="" if count == 0 else continued,
-                            ),
-                            value=page,
-                            inline=False,
-                        )
-                        count += 1
-                if len(so_goals) != 0:
-                    home_msg, away_msg = await self.goals[-1].get_shootout_display(self)
-                    # get the last goal so that we always post the full current
-                    # shootout display here
-                    em.add_field(
-                        name=_("{team} Shootout").format(team=self.home_team), value=home_msg
-                    )
-                    em.add_field(
-                        name=_("{team} Shootout").format(team=self.away_team), value=away_msg
-                    )
-                if self.recap_url is not None:
-                    if em.description is None:
-                        em.description = f"[Recap]({self.recap_url})"
-                    else:
-                        em.description += f"\n[Recap]({self.recap_url})"
+                fields = await self.goal_fields(period_goals)
+                for field in fields:
+                    em.add_field(name=field["name"], value=field["value"], inline=False)
+            if self.recap_url is not None:
+                description += f"\n[Recap]({self.recap_url})"
             if self.first_star is not None:
                 stars = f"⭐ {self.first_star.as_link()}\n⭐⭐ {self.second_star.as_link()}\n⭐⭐⭐ {self.third_star.as_link()}"
                 em.add_field(name=_("Stars of the game"), value=stars, inline=False)
@@ -457,10 +459,10 @@ class Game:
                         time=self.period_time_left, ordinal=period
                     )
                 if include_plays:
-                    em.description = _("Last Play: {play}").format(
-                        play=self.plays[-1]["result"]["description"]
-                    )
+                    description += _("Last Play: {play}").format(play=self.plays[-1].description)
                 em.add_field(name="Period", value=msg)
+        if description:
+            em.description = description
         return em
 
     async def game_state_embed(self) -> discord.Embed:
@@ -473,6 +475,7 @@ class Game:
         em = discord.Embed(timestamp=self.game_start)
         home_field = f"{self.home_emoji} {self.home_team}"
         away_field = f"{self.away_emoji} {self.away_team}"
+        description = ""
         if not self.game_state.is_preview():
             home_str = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
                 home_score=self.home_score, home_shots=self.home_shots
@@ -480,26 +483,34 @@ class Game:
             away_str = _("Goals: **{away_score}**\nShots: **{away_shots}**").format(
                 away_score=self.away_score, away_shots=self.away_shots
             )
+            if self.game_type is GameType.playoffs:
+                playoffs = await self.api.get_playoffs(self.game_start.year)
+                series = playoffs.get_series(self.home, self.away)
+                log.debug("Playoffs series %s", series)
+                em.set_image(url=series.logo or playoffs.logo)
+                description += f"[{series.title}]({series.url})\n"
         else:
             home_str, away_str, desc, url = await self.get_stats_msg()
             if desc is not None:
-                em.description = desc
+                description += f"{desc}\n"
             if url is not None:
                 em.set_image(url=url)
-        em.add_field(name=home_field, value=home_str, inline=False)
-        em.add_field(name=away_field, value=away_str, inline=True)
+        em.add_field(name=home_field, value=home_str)
+        em.add_field(name=away_field, value=away_str)
         colour = self.home.colour
         if colour is not None:
             em.colour = colour
         home_url = self.home.team_url
         if self.first_star is not None:
             stars = f"⭐ {self.first_star.as_link()}\n⭐⭐ {self.second_star.as_link()}\n⭐⭐⭐ {self.third_star.as_link()}"
-            em.add_field(name=_("Stars of the game"), value=stars)
+            em.add_field(name=_("Stars of the game"), value=stars, inline=False)
         em.set_author(name=title, url=home_url, icon_url=self.home_logo)
         em.set_thumbnail(url=self.home_logo)
         em.set_footer(text=_("Game start "), icon_url=self.away_logo)
         if self.recap_url is not None:
-            em.description = f"[Recap]({self.recap_url})"
+            description += f"[Recap]({self.recap_url})\n"
+        if description:
+            em.description = description
         return em
 
     async def game_state_text(self) -> str:
@@ -567,7 +578,7 @@ class Game:
                     else:
                         away_wins = series.bottomSeedWins
                         home_wins = series.topSeedWins
-                    url = series.logo
+                    url = series.logo or playoffs.logo
 
                     away_str = msg.format(gp=gp, wins=away_wins, losses=gp - away_wins)
                     home_str = msg.format(gp=gp, wins=home_wins, losses=gp - home_wins)
@@ -672,6 +683,7 @@ class Game:
                     self.first_star is not None
                     and self.second_star is not None
                     and self.third_star is not None
+                    and self.recap_url is not None
                 )
                 or count >= 20
                 or self.game_state is GameState.official_final

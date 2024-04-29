@@ -64,7 +64,7 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "4.3.0"
+    __version__ = "4.4.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):

@@ -12,6 +12,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .abc import HockeyMixin
+from .api import GameEventTypeCode
 from .constants import BASE_URL, TEAMS
 from .helper import (
     DateFinder,
@@ -24,7 +25,7 @@ from .helper import (
 )
 from .menu import BaseMenu, GamesMenu, LeaderboardPages, PlayerPages, SimplePages
 from .player import SearchPlayer
-from .schedule import Schedule, ScheduleList
+from .schedule import PlayByPlay, Schedule, ScheduleList
 from .standings import PlayoffsView, StandingsMenu
 from .stats import LeaderCategories, LeaderView
 
@@ -151,14 +152,12 @@ class HockeyCommands(HockeyMixin):
         team: Optional[discord.app_commands.Transform[str, TeamFinder]],
     ) -> None:
         """
-        Gets all NHL games for the current season
+        Display information about games.
 
-        If team is provided it will grab that teams schedule.
-        A date may also be provided and the bot will search for games within
-        that date range.
-        Dates must be in the format of `YYYY-MM-DD` if provided.
-        Team and Date can be provided at the same time and then
-        only that teams games may appear in that date range if they exist.
+        `[date]` The date in the form of `YYYY-MM-DD` you want to get.
+            - Defaults to the current date.
+        `[team]` The team name you want to filter games for.
+            - Defaults to all teams.
         """
         await ctx.typing()
         teams = []
@@ -167,6 +166,48 @@ class HockeyCommands(HockeyMixin):
         try:
             await GamesMenu(
                 source=Schedule(team=teams, date=date, api=self.api),
+                cog=self,
+                delete_message_after=False,
+                clear_reactions_after=True,
+                timeout=180,
+            ).start(ctx=ctx)
+        except aiohttp.ClientConnectorError:
+            await ctx.send(
+                _("There's an issue accessing the NHL API at the moment. Try again later.")
+            )
+            log.exception("Error accessing NHL API")
+            return
+
+    @hockey_commands.command(aliases=["pbp"])
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @discord.app_commands.describe(date="YYYY-MM-DD")
+    async def playbyplay(
+        self,
+        ctx: commands.Context,
+        date: Optional[discord.app_commands.Transform[datetime, DateFinder]] = None,
+        type_code: Optional[GameEventTypeCode] = None,
+        *,
+        team: Optional[discord.app_commands.Transform[str, TeamFinder]],
+    ) -> None:
+        """
+        Gets all play-by-play information for any game.
+
+        `[date]` The date in the form of `YYYY-MM-DD` you want to get.
+            - Defaults to the current date.
+        `[type_code]` The event type you want to filter down.
+            - Defaults to all events.
+            - Displays only the last events of that type from the game.
+        `[team]` The team name you want to filter games for.
+            - Defaults to all teams.
+        """
+        log.debug(type_code)
+        await ctx.typing()
+        teams = []
+        if team is not None:
+            teams = [team]
+        try:
+            await GamesMenu(
+                source=PlayByPlay(type_code=type_code, team=teams, date=date, api=self.api),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,
@@ -233,14 +274,12 @@ class HockeyCommands(HockeyMixin):
         """
         Display game heatmaps.
 
-        `[style]` must be one of "all", "ev", "5v5", "sva", "home5v4", or "away5v4"
-
-        If team is provided it will grab that teams schedule.
-        A date may also be provided and the bot will search for games within
-        that date range.
-        Dates must be in the format of `YYYY-MM-DD` if provided.
-        Team and Date can be provided at the same time and then
-        only that teams games may appear in that date range if they exist.
+        `[style]` must be one of `all`, `ev`, `5v5`, `sva`, `home5v4`, or `away5v4`
+            - Defaults to all.
+        `[date]` The date in the form of `YYYY-MM-DD` you want to get.
+            - Defaults to the current date.
+        `[team]` The team name you want to filter games for.
+            - Defaults to all teams.
         """
         await ctx.typing()
         styles = ["all", "ev", "5v5", "sva", "home5v4", "away5v4"]
@@ -289,14 +328,13 @@ class HockeyCommands(HockeyMixin):
         Display games gameflow.
 
         `[strength]` must be one of "all", "ev", "5v5", or "sva".
+            - Defaults to `all`.
         `[corsi]` either true or false.
-
-        If team is provided it will grab that teams schedule.
-        A date may also be provided and the bot will search for games within
-        that date range.
-        Dates must be in the format of `YYYY-MM-DD` if provided.
-        Team and Date can be provided at the same time and then
-        only that teams games may appear in that date range if they exist.
+            - Defaults to `true`.
+        `[date]` The date in the form of `YYYY-MM-DD` you want to get.
+            - Defaults to the current date.
+        `[team]` The team name you want to filter games for.
+            - Defaults to all teams.
         """
         await ctx.typing()
         styles = ["all", "ev", "5v5", "sva"]
@@ -341,14 +379,12 @@ class HockeyCommands(HockeyMixin):
         team: Optional[discord.app_commands.Transform[str, TeamFinder]],
     ) -> None:
         """
-        Gets upcoming NHL games for the current season as a list
+        Gets upcoming NHL games for the current season as a list.
 
-        If team is provided it will grab that teams schedule
-        A date may also be provided and the bot will search for games within
-        that date range.
-        Dates must be in the format of `YYYY-MM-DD` if provided.
-        Team and Date can be provided at the same time and then
-        only that teams games may appear in that date range if they exist.
+        `[date]` The date in the form of `YYYY-MM-DD` you want to get.
+            - Defaults to the current date.
+        `[team]` The team name you want to filter games for.
+            - Defaults to all teams.
         """
         await ctx.typing()
         teams = []
@@ -381,12 +417,10 @@ class HockeyCommands(HockeyMixin):
         """
         Gets NHL games and their game recap links
 
-        If team is provided it will grab that teams schedule
-        A date may also be provided and the bot will search for games within
-        that date range.
-        Dates must be in the format of `YYYY-MM-DD` if provided.
-        Team and Date can be provided at the same time and then
-        only that teams games may appear in that date range if they exist.
+        `[date]` The date in the form of `YYYY-MM-DD` you want to get.
+            - Defaults to the current date.
+        `[team]` The team name you want to filter games for.
+            - Defaults to all teams.
         """
         await ctx.typing()
         teams = []

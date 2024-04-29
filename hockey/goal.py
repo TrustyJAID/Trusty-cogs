@@ -14,6 +14,8 @@ from redbot.core.utils.chat_formatting import humanize_list
 from .helper import Team, check_to_post, get_channel_obj, get_team
 
 if TYPE_CHECKING:
+    from yarl import URL
+
     from .api import GameEventTypeCode, GoalData, Player
     from .game import Game
     from .hockey import Hockey
@@ -44,7 +46,7 @@ class Goal:
         self.strength_code = kwargs.get("strength_code")
         self.empty_net = kwargs.get("empty_net")
         self.event = kwargs.get("event")
-        self.link = kwargs.get("link", None)
+        self.link: Optional[Union[str, URL]] = kwargs.get("link", None)
         self.image = kwargs.get("image", None)
         self.tasks: List[asyncio.Task] = []
         self.home_shots: int = kwargs.get("home_shots", 0)
@@ -54,6 +56,7 @@ class Goal:
         self.assisters: List[Player] = kwargs.get("assisters")
         self.game_id: int = kwargs.get("game_id")
         self.type_code: GameEventTypeCode = kwargs.get("type_code")
+        self.nhle_event = kwargs.get("nhle_event")
 
     def __repr__(self):
         return "<Hockey Goal team={0.team_name} id={0.goal_id} >".format(self)
@@ -82,7 +85,7 @@ class Goal:
             "strength": self.strength,
             "empty_net": self.empty_net,
             "event": self.event,
-            "link": self.link,
+            "link": str(self.link) if self.link else None,
             "image": self.image,
             "home_shots": self.home_shots,
             "away_shots": self.away_shots,

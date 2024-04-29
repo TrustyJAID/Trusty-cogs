@@ -7,10 +7,9 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.vendored.discord.ext import menus
 
-from .api import ScheduledGame
+from .api import GameEventTypeCode, ScheduledGame
 from .constants import TEAMS
 from .errors import NoSchedule
-from .game import GameState
 from .helper import utc_to_local
 
 _ = Translator("Hockey", __file__)
@@ -95,7 +94,7 @@ class Schedule(menus.PageSource):
         return page
 
     async def format_page(self, menu: menus.MenuPages, game: ScheduledGame) -> discord.Embed:
-        log.trace("%s/gamecenter/%s/play-by-play", self.api.base_url, game.id)
+        log.debug(game.play_by_play)
 
         game_obj = await self.api.get_game_from_id(game.id)
         # return {"content": f"{self.index+1}/{len(self._cache)}", "embed": await game_obj.make_game_embed()}
@@ -110,8 +109,12 @@ class Schedule(menus.PageSource):
             em.set_image(url=game_obj.gameflow_url(corsi=self.corsi, strength=self.strength))
             em.description = f"[Natural Stat Trick]({game_obj.nst_url()})"
         if self.show_broadcasts:
-            broadcasts = game.broadcasts
-            broadcast_str = humanize_list([b["name"] for b in broadcasts])
+            broadcasts = []
+            for cast in game.broadcasts:
+                country = cast.get("countryCode")
+                network = cast.get("network")
+                broadcasts.append(f"- {country}: {network}")
+            broadcast_str = "\n".join(c for c in broadcasts)
             em.add_field(name=_("Broadcasts"), value=broadcast_str)
         return em
 
@@ -225,7 +228,7 @@ class Schedule(menus.PageSource):
             description = f"{away_team} @ {home_team}"
             emoji = None
             if home_team in TEAMS:
-                if home_team in TEAMS:
+                if home_team in TEAMS and TEAMS[home_team]["emoji"]:
                     emoji = discord.PartialEmoji.from_str(TEAMS[home_team]["emoji"])
                 else:
                     emoji = discord.PartialEmoji.from_str("\N{HOUSE BUILDING}")
@@ -244,6 +247,46 @@ class Schedule(menus.PageSource):
         self._cache = games
         # return the games as a form of metadata about how the cache is changing
         return games
+
+
+class PlayByPlayFilter(discord.ui.Select):
+    def __init__(self, options: List[discord.SelectOption]):
+        super().__init__(
+            min_values=1, max_values=1, options=options, placeholder=_("Filter Events")
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.source.type_code = GameEventTypeCode(int(self.values[0]))
+        await self.view.show_page(self.view.current_page, interaction=interaction)
+
+
+class PlayByPlay(Schedule):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.type_code = kwargs.get("type_code")
+        self.select_options = [
+            discord.SelectOption(label=e.name.title().replace("_", " "), value=str(e.value))
+            for e in GameEventTypeCode
+        ]
+
+    async def format_page(self, menu: menus.MenuPages, game: ScheduledGame) -> discord.Embed:
+        log.debug(game.play_by_play)
+        game_obj = await self.api.get_game_from_id(game.id)
+        msg = ""
+        events = game_obj.plays
+        log.debug(game_obj.url)
+        if self.type_code is not None and self.type_code is not GameEventTypeCode.ALL:
+            events = [e for e in game_obj.plays if e.type_code is self.type_code]
+        for e in reversed(events):
+            msg += f"{e.description()}\n"
+            if highlight := e.get_highlight(game_obj.landing):
+                msg += _("- [Highlight]({highlight_url})").format(highlight_url=highlight)
+                msg += "\n"
+        em = await game_obj.game_state_embed()
+        for page in pagify(msg, delims=["\n"], page_length=4096):
+            em.description = page
+            break
+        return em
 
 
 class ScheduleList(menus.PageSource):
