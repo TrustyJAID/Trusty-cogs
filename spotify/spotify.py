@@ -3,7 +3,7 @@ import re
 import time
 from abc import ABC
 from contextlib import asynccontextmanager
-from typing import Literal, Mapping, Optional, Tuple
+from typing import Dict, Literal, Mapping, Optional, Tuple
 
 import discord
 import tekore
@@ -47,7 +47,7 @@ class Spotify(
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.7.2"
+    __version__ = "1.7.3"
 
     def __init__(self, bot):
         super().__init__()
@@ -101,6 +101,7 @@ class Spotify(
         # RPC
         self.dashboard_authed = []
         self.temp_cache = {}
+        self.waiting_auth: Dict[int, asyncio.Event] = {}
         if DASHBOARD:
             self.rpc_extension = DashboardRPC_Spotify(self)
         self.slash_commands = {"guilds": {}}
@@ -220,21 +221,51 @@ class Spotify(
         if "code" not in payload:
             log.error("Received Spotify OAuth without a code parameter %s - %s", user_id, payload)
             return
-
+        if int(user_id) not in self.waiting_auth:
+            return
         try:
             code = payload["code"]
             state = payload["state"]
             auth = self.temp_cache[int(user_id)]
             user_token = await auth.request_token(code=code, state=state)
             user = self.bot.get_user(user_id)
+            if user is None:
+                return
             await self.save_token(user, user_token)
-            del self.cog.temp_cache[user.id]
+            del self.temp_cache[user.id]
             self.dashboard_authed.append(user.id)
+            msg = _("Detected authentication via dashboard.")
+            await user.send(msg)
         except KeyError:
             log.error("Recieved Spotify Auth request but the user was not in the cache.")
             return
         except Exception:
             log.exception("Error setting user OAuth in Spotify")
+        self.waiting_auth[int(user_id)].set()
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        author = message.author
+        if author.id not in self.waiting_auth and author.id not in self.temp_cache:
+            return
+        if self._tokens[-1] not in message.clean_content:
+            return
+        redirected = message.clean_content.strip()
+        auth = self.temp_cache[author.id]
+        try:
+            user_token = await auth.request_token(url=redirected)
+            del self.temp_cache[author.id]
+            msg = _("Detected authentication via message.")
+            await author.send(msg)
+        except AssertionError:
+            msg = _(
+                "You must follow the *latest* link I sent you for authorization. "
+                "Older links are no longer valid."
+            )
+            await author.send(msg)
+            return
+        await self.save_token(author, user_token)
+        self.waiting_auth[author.id].set()
 
     async def get_user_auth(
         self,
@@ -286,6 +317,11 @@ class Spotify(
             await ctx.send(msg, ephemeral=True)
         return None
 
+    async def wait_for_auth(self, user_id: int):
+        if user_id not in self.waiting_auth:
+            raise RuntimeError("Tried to wait for a user's auth but they're not expecting it.")
+        await self.waiting_auth[user_id].wait()
+
     async def ask_for_auth(
         self, ctx: commands.Context, author: discord.User
     ) -> Optional[tekore.Token]:
@@ -296,84 +332,30 @@ class Spotify(
         is_slash = False
         if ctx.interaction:
             is_slash = True
-            msg = _(
-                "Please accept the authorization [here]({auth}) and **DM "
-                "me** with the final full url."
-            ).format(auth=auth.url)
-
-        else:
-            msg = _(
-                "Please accept the authorization in the following link and reply "
-                "to me with the full url\n\n {auth}"
-            ).format(auth=auth.url)
-
-        def check(message):
-            return (author.id in self.dashboard_authed) or (
-                message.author.id == author.id and self._tokens[-1] in message.content
-            )
+        msg = _(
+            "Please accept the authorization [here]({auth}) and **DM "
+            "me** with the final full url."
+        ).format(auth=auth.url)
 
         if is_slash:
             await ctx.send(msg, ephemeral=True)
         else:
             await author.send(msg)
+        self.waiting_auth[author.id] = asyncio.Event()
         try:
-            check_msg = await self.bot.wait_for("message", check=check, timeout=120)
+            await asyncio.wait_for(self.wait_for_auth(author.id), timeout=180)
         except asyncio.TimeoutError:
             # Let's check if they authenticated throug Dashboard
-            if author.id in self.dashboard_authed:
-                msg = _("Detected authentication via dashboard for.")
-                if is_slash:
-                    await ctx.send(msg, ephemeral=True)
-                else:
-                    await author.send(msg)
-                return await self.get_user_auth(ctx, author)
             try:
                 del self.temp_cache[author.id]
+                del self.waiting_auth[author.id]
             except KeyError:
                 pass
             await author.send(_("Alright I won't interact with spotify for you."))
             return
+        return await self.get_user_auth(ctx, author)
 
-        if author.id in self.dashboard_authed:
-            msg = _("Detected authentication via dashboard for {user}.").format(user=author.name)
-            if is_slash:
-                await ctx.send(msg, ephemeral=True)
-            else:
-                await author.send(msg)
-            return await self.get_user_auth(ctx, author)
-
-        redirected = check_msg.clean_content.strip()
-        if self._tokens[-1] not in redirected:
-            del self.temp_cache[author.id]
-            msg = _("Credentials not valid")
-            if is_slash:
-                await ctx.send(msg, ephemeral=True)
-            else:
-                await ctx.send(msg)
-            return
-        reply_msg = _("Your authorization has been set!")
-        if is_slash:
-            await ctx.send(reply_msg, ephemeral=True)
-        else:
-            await author.send(reply_msg)
-        try:
-            user_token = await auth.request_token(url=redirected)
-        except AssertionError:
-            msg = _(
-                "You must follow the *latest* link I sent you for authorization. "
-                "Older links are no longer valid."
-            )
-            if is_slash:
-                await ctx.send(msg, ephemeral=True)
-            else:
-                await author.send(msg)
-            return
-        await self.save_token(author, user_token)
-
-        del self.temp_cache[author.id]
-        return user_token
-
-    async def save_token(self, author: discord.User, user_token: tekore.Token):
+    async def save_token(self, author: discord.abc.User, user_token: tekore.Token):
         async with self.config.user(author).token() as token:
             token["access_token"] = user_token.access_token
             token["refresh_token"] = user_token.refresh_token
@@ -401,7 +383,9 @@ class Spotify(
         content = message.content + " "
         if message.embeds:
             em_dict = message.embeds[0].to_dict()
-            content += " ".join(v for k, v in em_dict.items() if k in ["title", "description"])
+            content += " ".join(
+                str(v) for k, v in em_dict.items() if k in ["title", "description"]
+            )
             if "title" in em_dict:
                 if "url" in em_dict["title"]:
                     content += " " + em_dict["title"]["url"]
