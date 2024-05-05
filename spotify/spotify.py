@@ -228,7 +228,7 @@ class Spotify(
             state = payload["state"]
             auth = self.temp_cache[int(user_id)]
             user_token = await auth.request_token(code=code, state=state)
-            user = self.bot.get_user(user_id)
+            user = self.bot.get_user(int(user_id))
             if user is None:
                 return
             await self.save_token(user, user_token)
