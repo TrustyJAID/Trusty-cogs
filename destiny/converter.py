@@ -20,6 +20,31 @@ log = getLogger("red.trusty-cogs.Destiny")
 
 STRING_VAR_RE = re.compile(r"{var:(?P<hash>\d+)}")
 
+LOADOUT_COLOURS = {
+    "3871954967": discord.Colour(2171690),
+    "3871954966": discord.Colour(9867402),
+    "3871954965": discord.Colour(3947839),
+    "3871954964": discord.Colour(506554),
+    "3871954963": discord.Colour(4285049),
+    "3871954962": discord.Colour(6723509),
+    "3871954961": discord.Colour(3893443),
+    "3871954960": discord.Colour(1978973),
+    "3871954975": discord.Colour(10388775),
+    "3871954974": discord.Colour(4074770),
+    "1693821586": discord.Colour(2445870),
+    "1693821587": discord.Colour(3241571),
+    "1693821584": discord.Colour(7317564),
+    "1693821585": discord.Colour(12277017),
+    "1693821590": discord.Colour(11813737),
+    "1693821591": discord.Colour(3942220),
+    "1693821588": discord.Colour(9004445),
+    "1693821589": discord.Colour(3483255),
+    "1693821594": discord.Colour(8333347),
+    "1693821595": discord.Colour(5248791),
+}
+# Generated from the dominant colour of each image using
+# this algorithm https://stackoverflow.com/a/61730849
+
 
 class BungieTweet:
     def __init__(self, **kwargs):
@@ -144,90 +169,91 @@ class DestinyComponentType(Enum):
 
 
 class DestinyActivityModeType(Enum):
-    none = 0
-    story = 2
-    strike = 3
-    raid = 4
-    allpvp = 5
-    patrol = 6
-    allpve = 7
-    reserved9 = 9
-    control = 10
-    reserved11 = 11
-    clash = 12
-    reserved13 = 13
-    crimsondoubles = 15
-    nightfall = 16
-    heroicnightfall = 17
-    allstrikes = 18
-    ironbanner = 10
-    reserved20 = 20
-    reserved21 = 21
-    reserved22 = 22
-    reserved24 = 24
-    allmayhem = 25
-    reserved26 = 26
-    reserved27 = 27
-    reserved28 = 28
-    reserved29 = 29
-    reserved30 = 30
-    supremacy = 31
-    privatematchesall = 32
-    survival = 37
-    countdown = 38
-    trialsofthenine = 39
-    social = 40
-    trialscountdown = 31
-    trialssurvival = 42
-    ironbannercontrol = 43
-    ironbannerclash = 44
-    ironbannersupremacy = 45
-    scorednightfall = 46
-    scoredheroicnightfall = 47
-    rumble = 48
-    alldoubles = 49
-    doubles = 50
-    privatematchesclash = 51
-    privatematchescontrol = 52
-    privatematchessupremacy = 53
-    privatematchescountdown = 54
-    privatematchesruvival = 55
-    privatematchesmayhem = 56
-    privatematchesrumble = 57
-    heroicadventure = 58
-    showdown = 59
-    lockdown = 60
-    scorched = 61
-    scorchedteam = 62
-    gambit = 63
-    allpvecompetitive = 64
-    breakthrough = 65
-    blackarmoryrun = 66
-    salvage = 67
-    ironbannersalvage = 68
-    pvpcompetitive = 69
-    pvpquickplay = 70
-    clashquickplay = 71
-    clashcompetitive = 72
-    controlquickplay = 73
-    controlcompetitive = 74
-    gambitprime = 75
-    reckoning = 76
-    menagerie = 77
-    vexoffensive = 78
-    nightmarehunt = 79
-    elimination = 80
-    momentum = 81
-    dungeon = 82
-    sundial = 83
-    trialsofosiris = 84
-    dares = 85
-    offensive = 86
-    lostsector = 87
-    rift = 88
-    zonecontrol = 89
-    ironbannerrift = 90
-    ironbannerzonecontrol = 91
+    Unknown = 0
+    Story = 2
+    Strike = 3
+    Raid = 4
+    AllPvP = 5
+    Patrol = 6
+    AllPvE = 7
+    Reserved9 = 9
+    Control = 10
+    Reserved11 = 11
+    Clash = 12
+    # Clash  -> Destiny's name for Team Deathmatch. 4v4 combat, the team with the highest kills at the end of time wins.
+    Reserved13 = 13
+    CrimsonDoubles = 15
+    Nightfall = 16
+    HeroicNightfall = 17
+    AllStrikes = 18
+    IronBanner = 19
+    Reserved20 = 20
+    Reserved21 = 21
+    Reserved22 = 22
+    Reserved24 = 24
+    AllMayhem = 25
+    Reserved26 = 26
+    Reserved27 = 27
+    Reserved28 = 28
+    Reserved29 = 29
+    Reserved30 = 30
+    Supremacy = 31
+    PrivateMatchesAll = 32
+    Survival = 37
+    Countdown = 38
+    TrialsOfTheNine = 39
+    Social = 40
+    TrialsCountdown = 41
+    TrialsSurvival = 42
+    IronBannerControl = 43
+    IronBannerClash = 44
+    IronBannerSupremacy = 45
+    ScoredNightfall = 46
+    ScoredHeroicNightfall = 47
+    Rumble = 48
+    AllDoubles = 49
+    Doubles = 50
+    PrivateMatchesClash = 51
+    PrivateMatchesControl = 52
+    PrivateMatchesSupremacy = 53
+    PrivateMatchesCountdown = 54
+    PrivateMatchesSurvival = 55
+    PrivateMatchesMayhem = 56
+    PrivateMatchesRumble = 57
+    HeroicAdventure = 58
+    Showdown = 59
+    Lockdown = 60
+    Scorched = 61
+    ScorchedTeam = 62
+    Gambit = 63
+    AllPvECompetitive = 64
+    Breakthrough = 65
+    BlackArmoryRun = 66
+    Salvage = 67
+    IronBannerSalvage = 68
+    PvPCompetitive = 69
+    PvPQuickplay = 70
+    ClashQuickplay = 71
+    ClashCompetitive = 72
+    ControlQuickplay = 73
+    ControlCompetitive = 74
+    GambitPrime = 75
+    Reckoning = 76
+    Menagerie = 77
+    VexOffensive = 78
+    NightmareHunt = 79
+    Elimination = 80
+    Momentum = 81
+    Dungeon = 82
+    Sundial = 83
+    TrialsOfOsiris = 84
+    Dares = 85
+    Offensive = 86
+    LostSector = 87
+    Rift = 88
+    ZoneControl = 89
+    IronBannerRift = 90
+    IronBannerZoneControl = 91
 
 
 class DestinyEnumGroup:
@@ -305,6 +331,36 @@ class DestinyStatsGroup(DestinyEnumGroup):
     @classmethod
     def all(cls):
         return cls(*DestinyStatsGroupType)
+
+
+class BungieMembershipType(Enum):
+    All = -1
+    Unknown = 0
+    TigerXbox = 1
+    TigerPsn = 2
+    TigerSteam = 3
+    TigerBlizzard = 4
+    TigerStadia = 5
+    TigerEgs = 6
+    TigerDemon = 10
+    BungieNext = 254
+
+    def __int__(self) -> int:
+        return self.value
+
+    def __str__(self) -> str:
+        return {
+            BungieMembershipType.All: _("All"),
+            BungieMembershipType.Unknown: _("Unknown"),
+            BungieMembershipType.TigerXbox: _("Xbox"),
+            BungieMembershipType.TigerPsn: _("Playstation"),
+            BungieMembershipType.TigerSteam: _("Steam"),
+            BungieMembershipType.TigerBlizzard: _("Blizzard"),
+            BungieMembershipType.TigerStadia: _("Stadia"),
+            BungieMembershipType.TigerEgs: _("Epic Games"),
+            BungieMembershipType.TigerDemon: _("Demon"),
+            BungieMembershipType.BungieNext: _("BungieNext"),
+        }[self]
 
 
 class PeriodType(Enum):
@@ -394,164 +450,42 @@ class DestinyItemType(Enum):
     finisher = 29
 
 
-class DestinyActivity(Converter):
+class DestinyActivity(discord.app_commands.Transformer):
     """Returns the correct history code if provided a named one"""
 
-    CHOICES: List[dict] = [
-        {"name": "all", "value": "0"},
-        {"name": "story", "value": "2"},
-        {"name": "strike", "value": "3"},
-        {"name": "raid", "value": "4"},
-        {"name": "allpvp", "value": "5"},
-        {"name": "patrol", "value": "6"},
-        {"name": "allpve", "value": "7"},
-        {"name": "control", "value": "10"},
-        {"name": "clash", "value": "12"},
-        {"name": "crimsondoubles", "value": "15"},
-        {"name": "nightfall", "value": "16"},
-        {"name": "heroicnightfall", "value": "17"},
-        {"name": "allstrikes", "value": "18"},
-        {"name": "ironbanner", "value": "19"},
-        {"name": "allmayhem", "value": "25"},
-        {"name": "supremacy", "value": "31"},
-        {"name": "privatematchesall", "value": "32"},
-        {"name": "survival", "value": "37"},
-        {"name": "countdown", "value": "38"},
-        {"name": "trialsofthenine", "value": "39"},
-        {"name": "social", "value": "40"},
-        {"name": "trialscountdown", "value": "41"},
-        {"name": "trialssurvival", "value": "42"},
-        {"name": "ironbannercontrol", "value": "43"},
-        {"name": "ironbannerclash", "value": "44"},
-        {"name": "ironbannersupremacy", "value": "45"},
-        {"name": "scorednightfall", "value": "46"},
-        {"name": "scoredheroicnightfall", "value": "47"},
-        {"name": "rumble", "value": "48"},
-        {"name": "alldoubles", "value": "49"},
-        {"name": "doubles", "value": "50"},
-        {"name": "privatematchesclash", "value": "51"},
-        {"name": "privatematchescontrol", "value": "52"},
-        {"name": "privatematchessupremacy", "value": "53"},
-        {"name": "privatematchescountdown", "value": "54"},
-        {"name": "privatematchessurvival", "value": "55"},
-        {"name": "privatematchesmayhem", "value": "56"},
-        {"name": "privatematchesrumble", "value": "57"},
-        {"name": "heroicadventure", "value": "58"},
-        {"name": "showdown", "value": "59"},
-        {"name": "lockdown", "value": "60"},
-        {"name": "scorched", "value": "61"},
-        {"name": "scorchedteam", "value": "62"},
-        {"name": "gambit", "value": "63"},
-        {"name": "allpvecompetitive", "value": "64"},
-        {"name": "breakthrough", "value": "65"},
-        {"name": "blackarmoryrun", "value": "66"},
-        {"name": "salvage", "value": "67"},
-        {"name": "ironbannersalvage", "value": "68"},
-        {"name": "pvpcompetitive", "value": "69"},
-        {"name": "pvpquickplay", "value": "70"},
-        {"name": "clashquickplay", "value": "71"},
-        {"name": "clashcompetitive", "value": "72"},
-        {"name": "controlquickplay", "value": "73"},
-        {"name": "controlcompetitive", "value": "74"},
-        {"name": "gambirprime", "value": "75"},
-        {"name": "reckoning", "value": "76"},
-        {"name": "menagerie", "value": "77"},
-        {"name": "vexoffensive", "value": "78"},
-        {"name": "nightmarehunt", "value": "79"},
-        {"name": "elimination", "value": "80"},
-        {"name": "momentum", "value": "81"},
-        {"name": "dungeon", "value": "82"},
-        {"name": "sundial", "value": "83"},
-        {"name": "trialsofosiris", "value": "84"},
-    ]
-
-    async def convert(self, ctx: commands.Context, argument: str) -> int:
-        possible_results: dict = {
-            "all": {"code": 0, "alt": ["none"]},
-            "story": {"code": 2, "alt": []},
-            "strike": {"code": 3, "alt": []},
-            "raid": {"code": 4, "alt": []},
-            "allpvp": {"code": 5, "alt": ["pvp"]},
-            "patrol": {"code": 6, "alt": []},
-            "allpve": {"code": 7, "alt": ["pve"]},
-            "control": {"code": 10, "alt": []},
-            "clash": {"code": 12, "alt": []},
-            "crimsondoubles": {"code": 15, "alt": []},
-            "nightfall": {"code": 16, "alt": []},
-            "heroicnightfall": {"code": 17, "alt": []},
-            "allstrikes": {"code": 18, "alt": []},
-            "ironbanner": {"code": 19, "alt": []},
-            "allmayhem": {"code": 25, "alt": []},
-            "supremacy": {"code": 31, "alt": []},
-            "privatematchesall": {"code": 32, "alt": ["private"]},
-            "survival": {"code": 37, "alt": []},
-            "countdown": {"code": 38, "alt": []},
-            "trialsofthenine": {"code": 39, "alt": ["9"]},
-            "social": {"code": 40, "alt": []},
-            "trialscountdown": {"code": 41, "alt": []},
-            "trialssurvival": {"code": 42, "alt": []},
-            "ironbannercontrol": {"code": 43, "alt": []},
-            "ironbannerclash": {"code": 44, "alt": []},
-            "ironbannersupremacy": {"code": 45, "alt": []},
-            "scorednightfall": {"code": 46, "alt": []},
-            "scoredheroicnightfall": {"code": 47, "alt": []},
-            "rumble": {"code": 48, "alt": []},
-            "alldoubles": {"code": 49, "alt": []},
-            "doubles": {"code": 50, "alt": []},
-            "privatematchesclash": {"code": 51, "alt": ["privateclash"]},
-            "privatematchescontrol": {"code": 52, "alt": ["privatecontrol"]},
-            "privatematchessupremacy": {"code": 53, "alt": ["privatesupremacy"]},
-            "privatematchescountdown": {"code": 54, "alt": ["privatecountdown"]},
-            "privatematchessurvival": {"code": 55, "alt": ["privatesurvival"]},
-            "privatematchesmayhem": {"code": 56, "alt": ["privatemayhem"]},
-            "privatematchesrumble": {"code": 57, "alt": ["privaterumble"]},
-            "heroicadventure": {"code": 58, "alt": []},
-            "showdown": {"code": 59, "alt": []},
-            "lockdown": {"code": 60, "alt": []},
-            "scorched": {"code": 61, "alt": []},
-            "scorchedteam": {"code": 62, "alt": []},
-            "gambit": {"code": 63, "alt": []},
-            "allpvecompetitive": {"code": 64, "alt": ["pvecomp"]},
-            "breakthrough": {"code": 65, "alt": []},
-            "blackarmoryrun": {"code": 66, "alt": ["blackarmory", "armory"]},
-            "salvage": {"code": 67, "alt": []},
-            "ironbannersalvage": {"code": 68, "alt": []},
-            "pvpcompetitive": {"code": 69, "alt": ["pvpcomp", "comp"]},
-            "pvpquickplay": {"code": 70, "alt": ["pvpqp", "qp"]},
-            "clashquickplay": {"code": 71, "alt": ["clashqp"]},
-            "clashcompetitive": {"code": 72, "alt": ["clashcomp"]},
-            "controlquickplay": {"code": 73, "alt": ["controlqp"]},
-            "controlcompetitive": {"code": 74, "alt": ["controlcomp"]},
-            "gambirprime": {"code": 75, "alt": []},
-            "reckoning": {"code": 76, "alt": []},
-            "menagerie": {"code": 77, "alt": []},
-            "vexoffensive": {"code": 78, "alt": []},
-            "nightmarehunt": {"code": 79, "alt": []},
-            "elimination": {"code": 80, "alt": ["elim"]},
-            "momentum": {"code": 81, "alt": []},
-            "dungeon": {"code": 82, "alt": []},
-            "sundial": {"code": 83, "alt": []},
-            "trialsofosiris": {"code": 84, "alt": ["trials"]},
-        }
-        result = None
-        argument = argument.lower()
-        if argument.isdigit() and int(argument) in [
-            v["code"] for k, v in possible_results.items()
-        ]:
-            result = int(argument)
-        elif argument in possible_results:
-            result = possible_results[argument]["code"]
-        else:
-            for k, v in possible_results.items():
-                if argument in v["alt"]:
-                    result = v["code"]
-        if not result:
-            raise BadArgument(
-                _("That is not an available activity, pick from these: {activity_list}").format(
-                    activity_list=humanize_list(list(possible_results.keys()))
+    async def convert(self, ctx: commands.Context, argument: str) -> DestinyActivityModeType:
+        if argument.isdigit():
+            try:
+                return DestinyActivityModeType(int(argument))
+            except ValueError:
+                raise BadArgument(
+                    _(
+                        "That is not an available activity, pick from these: {activity_list}"
+                    ).format(
+                        activity_list=humanize_list(list(i.name for i in DestinyActivityModeType))
+                    )
                 )
-            )
-        return result
+        for activity in DestinyActivityModeType:
+            if activity.name.lower() == argument.lower():
+                return activity
+        return DestinyActivityModeType.Unknown
+
+    async def transform(
+        self, interaction: discord.Interaction, argument: str
+    ) -> DestinyActivityModeType:
+        ctx = await interaction.client.get_context(interaction)
+        return await self.convert(ctx, argument)
+
+    async def autocomplete(self, interaction: discord.Interaction, current: str):
+        possible_options = [
+            discord.app_commands.Choice(name=i.name, value=str(i.value))
+            for i in DestinyActivityModeType
+        ]
+        choices = []
+        for choice in possible_options:
+            if current.lower() in choice.name.lower():
+                choices.append(discord.app_commands.Choice(name=choice.name, value=choice.value))
+        return choices[:25]
 
 
 class StatsPage(discord.app_commands.Transformer):

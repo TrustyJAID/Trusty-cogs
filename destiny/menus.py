@@ -77,7 +77,7 @@ class ClanPendingButton(discord.ui.Button):
         await pred.wait()
         if pred.result:
             try:
-                await self.view.cog.approve_clan_pending(
+                await self.view.cog.api.approve_clan_pending(
                     interaction.user,
                     self.clan_id,
                     self.membership_type,
@@ -173,7 +173,7 @@ class VaultPages(menus.ListPageSource):
     async def format_page(self, menu: menus.MenuPages, page):
         self.current_item_hash = page["itemHash"]
         self.current_item_instance = page.get("itemInstanceId", None)
-        items = await self.cog.get_definition(
+        items = await self.cog.api.get_definition(
             "DestinyInventoryItemDefinition", [self.current_item_hash]
         )
         item_data = items[str(self.current_item_hash)]
@@ -185,11 +185,11 @@ class VaultPages(menus.ListPageSource):
         if item_data.get("screenshot", None):
             embed.set_image(url=BASE_URL + item_data["screenshot"])
         if self.current_item_instance is not None:
-            instance_data = await self.cog.get_instanced_item(
+            instance_data = await self.cog.api.get_instanced_item(
                 menu.author, self.current_item_instance
             )
             perk_hashes = [i["perkHash"] for i in instance_data["perks"]["data"]["perks"]]
-            perk_info = await self.cog.get_definition(
+            perk_info = await self.cog.api.get_definition(
                 "DestinyInventoryItemDefinition", perk_hashes
             )
             perk_str = "\n".join(perk["displayProperties"]["name"] for perk in perk_info.values())
@@ -295,7 +295,7 @@ class DestinyEquipLoadout(discord.ui.Button):
             membership_type = self.view.source.membership_type
             character_id = self.view.source.character
             index = self.view.source.current_index
-            await self.view.cog.equip_loadout(
+            await self.view.cog.api.equip_loadout(
                 interaction.user,
                 index,
                 character_id,
@@ -365,7 +365,7 @@ class PostmasterSelect(discord.ui.Select):
             item_name = item["displayProperties"]["name"]
             url = f"https://www.light.gg/db/items/{item_hash}"
             try:
-                await self.view.cog.pull_from_postmaster(
+                await self.view.cog.api.pull_from_postmaster(
                     interaction.user, item_hash, char_id, membership_type, quantity, instance
                 )
                 self.view.source.remove_item(char_id, item_hash, instance)
