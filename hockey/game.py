@@ -414,8 +414,8 @@ class Game:
                 description += desc
             if url is not None:
                 em.set_image(url=url)
-            em.add_field(name=home_field, value=away_str)
-            em.add_field(name=away_field, value=home_str)
+            em.add_field(name=home_field, value=home_str)
+            em.add_field(name=away_field, value=away_str)
         if self.game_type is GameType.playoffs and not self.game_state.is_preview():
             playoffs = await self.api.get_playoffs(self.game_start.year)
             series = playoffs.get_series(self.home, self.away)
@@ -436,8 +436,8 @@ class Game:
             away_msg = _("Goals: **{away_score}**\nShots: **{away_shots}**").format(
                 away_score=self.away_score, away_shots=self.away_shots
             )
-            em.add_field(name=home_field, value=away_msg)
-            em.add_field(name=away_field, value=home_msg)
+            em.add_field(name=home_field, value=home_msg)
+            em.add_field(name=away_field, value=away_msg)
 
             if self.goals != [] and include_goals:
                 fields = await self.goal_fields(period_goals)

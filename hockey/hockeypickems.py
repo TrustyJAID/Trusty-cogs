@@ -440,21 +440,32 @@ class HockeyPickems(HockeyMixin):
         # 12 should cover most of the US and most times are in relation to the US
         # In practice we don't care since the exact dates are under the game themselves
         # but this is used to display a mostly accurate day.
-        message = await channel.send(_("Pickems <t:{date}:D>").format(date=timestamp))
+        start_msg = _("Pickems <t:{date}:D>").format(date=timestamp)
         name = _("Pickems-{month}-{day}").format(month=day.month, day=day.day)
         auto_archive_duration = 10080
-
-        try:
-            new_chn = await channel.create_thread(
-                name=name, message=message, auto_archive_duration=auto_archive_duration
-            )
-            for page in pagify(msg):
-                await new_chn.send(page)
-        except discord.Forbidden:
-            # await self.pickems_config.guild(guild).pickems_channel.clear()
-            return None
-        except discord.HTTPException:
-            return None
+        new_chn = None
+        if isinstance(channel, discord.TextChannel):
+            message = await channel.send(start_msg)
+            try:
+                new_chn = await channel.create_thread(
+                    name=name, message=message, auto_archive_duration=auto_archive_duration
+                )
+                for page in pagify(msg):
+                    await new_chn.send(page)
+            except (discord.Forbidden, discord.HTTPException):
+                return None
+        elif isinstance(channel, discord.ForumChannel):
+            start_pages = [p for p in pagify(f"{start_msg}\n{msg}")]
+            content = start_pages.pop(0)
+            try:
+                channel_with_msg = await channel.create_thread(
+                    name=name, content=content, auto_archive_duration=auto_archive_duration
+                )
+                new_chn = channel_with_msg[0]
+                for page in start_pages:
+                    await new_chn.send(page)
+            except (discord.Forbidden, discord.HTTPException):
+                return None
         return new_chn
 
     async def create_pickems_channel(
@@ -1062,7 +1073,7 @@ class HockeyPickems(HockeyMixin):
     async def setup_auto_pickems(
         self,
         ctx: commands.Context,
-        channel: Optional[discord.TextChannel] = None,
+        channel: Union[discord.TextChannel, discord.ForumChannel] = commands.CurrentChannel,
     ) -> None:
         """
         Sets up automatically created pickems threads every week.
@@ -1077,28 +1088,25 @@ class HockeyPickems(HockeyMixin):
             msg = _("You cannot create threads within threads.")
             await ctx.send(msg)
             return
-        pickems_channel = ctx.channel
-        if channel is not None:
-            pickems_channel = channel
 
-        if not pickems_channel.permissions_for(ctx.guild.me).create_public_threads:
+        if not channel.permissions_for(ctx.guild.me).create_public_threads:
             msg = _("I don't have permission to create public threads!")
             await ctx.send(msg)
             return
-        if not pickems_channel.permissions_for(ctx.guild.me).manage_threads:
+        if not channel.permissions_for(ctx.guild.me).manage_threads:
             msg = _("I do not have permission to manage threads in {channel}.").format(
-                channel=pickems_channel.mention
+                channel=channel.mention
             )
             await ctx.send(msg)
             return
-        if not pickems_channel.permissions_for(ctx.guild.me).send_messages_in_threads:
+        if not channel.permissions_for(ctx.guild.me).send_messages_in_threads:
             msg = _("I do not have permission to send messages in threads in {channel}.").format(
-                channel=pickems_channel.mention
+                channel=channel.mention
             )
             await ctx.send(msg)
             return
 
-        await self.pickems_config.guild(ctx.guild).pickems_channel.set(pickems_channel.id)
+        await self.pickems_config.guild(ctx.guild).pickems_channel.set(channel.id)
         existing_channels = await self.pickems_config.guild(ctx.guild).pickems_channels()
         if existing_channels:
             await self.pickems_config.guild(ctx.guild).pickems_channels.clear()
