@@ -123,6 +123,9 @@ class InviteBlocklist(commands.Cog):
             if payload.cached_message is not None:
                 await self._handle_message_search(payload.cached_message)
             else:
+                if "edited_timestamp" not in payload.data:
+                    # This should only be happening on links posted by users
+                    return
                 msg = discord.Message(state=chan._state, channel=chan, data=payload.data)
                 # construct the message object regardless of cache state
                 # d.py will normally ignore these edits and not build the full object
