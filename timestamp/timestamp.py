@@ -67,7 +67,7 @@ class TimezoneConverter(discord.app_commands.Transformer):
             try:
                 name = get_timezone_name(tnow, locale=locale)
                 short = get_timezone_name(tnow, width="short", locale=locale)
-                ts_now = format_time(now, format="short", locale=locale)
+                ts_now = format_time(tnow, format="short", locale=locale)
                 zone_name = f"{short} {name} ({zone}) {ts_now}"
             except Exception:
                 pass
