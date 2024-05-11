@@ -104,8 +104,12 @@ class Events:
                 for word in bad_words:
                     username = username.replace(word, replace_word)
         em = discord.Embed(description=converted_msg)
-        if EMBED_DATA["colour"]:
-            em.colour = EMBED_DATA["colour"]
+        colour = EMBED_DATA.get("colour", 0)
+        goodbye_colour = EMBED_DATA.get("colour_goodbye", 0)
+        em.colour = colour
+        if not is_welcome:
+            em.colour = goodbye_colour or colour
+
         if EMBED_DATA["title"]:
             em.title = await self.convert_parms(member, guild, EMBED_DATA["title"], False)
         if EMBED_DATA["footer"]:

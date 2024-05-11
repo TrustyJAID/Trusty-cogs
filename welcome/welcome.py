@@ -41,6 +41,7 @@ default_settings = {
     "EMBED_DATA": {
         "title": None,
         "colour": 0,
+        "colour_goodbye": 0,
         "footer": None,
         "thumbnail": "avatar",
         "image": None,
@@ -63,7 +64,7 @@ class Welcome(Events, commands.Cog):
     https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
     __author__ = ["irdumb", "TrustyJAID"]
-    __version__ = "2.5.1"
+    __version__ = "2.5.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -710,6 +711,7 @@ class Welcome(Events, commands.Cog):
         await ctx.send(_("Greeting embeds turned {verb}").format(verb=verb))
 
     @_embed.command(aliases=["color"])
+    @commands.bot_has_permissions(embed_links=True)
     async def colour(self, ctx: commands.Context, colour: discord.Colour) -> None:
         """
         Set the embed colour.
@@ -717,7 +719,24 @@ class Welcome(Events, commands.Cog):
         This accepts hex codes and integer value colours.
         """
         await self.config.guild(ctx.guild).EMBED_DATA.colour.set(colour.value)
-        await ctx.tick()
+        em = discord.Embed(
+            colour=colour, description=_("Welcome colour set to `{colour}`").format(colour=colour)
+        )
+        await ctx.send(embed=em)
+
+    @_embed.command(aliases=["gcolor", "goodbyecolor", "gcolour"])
+    @commands.bot_has_permissions(embed_links=True)
+    async def goodbyecolour(self, ctx: commands.Context, colour: discord.Colour) -> None:
+        """
+        Set the embed colour.
+
+        This accepts hex codes and integer value colours.
+        """
+        await self.config.guild(ctx.guild).EMBED_DATA.colour_goodbye.set(colour.value)
+        em = discord.Embed(
+            colour=colour, description=_("Goodbye colour set to `{colour}`").format(colour=colour)
+        )
+        await ctx.send(embed=em)
 
     @_embed.command()
     async def title(self, ctx: commands.Context, *, title: str = "") -> None:
