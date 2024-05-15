@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
@@ -238,7 +239,7 @@ def plot_exchange(items: List[Exchange]):
     plt.xlabel("Days", color=font_colour)
     plt.grid(True)
     item_name = items[0].name
-    url_name = item_name.replace(" ", "_").replace("'", "")
+    url_name = re.sub(r"\W", "", item_name)  # item_name.replace(" ", "_").replace("'", "")
     plt.yticks(fontsize=13, color=font_colour)
     plt.xticks(fontsize=13, color=font_colour)
     ax.set_title(f"{item_name} {data_set.get_name()}", color=font_colour)
