@@ -108,23 +108,28 @@ class AdventureAlertListeners(MixinMeta):
             return
         role_config = style.get_role_config(self.config.guild(ctx.guild))
         user_config = style.get_user_config(self.config.guild(ctx.guild))
-        roles = {f"<@&{rid}>" for rid in await role_config()}
-        users = {f"<@{uid}>" for uid in await user_config()}
+        roles = set()
+        users = set()
+        for rid in await role_config():
+            if role := ctx.guild.get_role(rid):
+                roles.add(role.mention)
+        for uid in await user_config():
+            if user := ctx.guild.get_member(uid):
+                users.add(user.mention)
+
         # guild_members = [m.id for m in ctx.guild.members]
         all_users = await self.config.all_users()
+
         for u_id, data in all_users.items():
             user = ctx.guild.get_member(u_id)
             if not user:
                 continue
             if data.get(style.get_users_global(), False):
                 users.add(user.mention)
+        all_mentions = roles | users
         jump_url = ctx.message.jump_url
-        if roles or users:
-            msg = (
-                f"{humanize_list(list(roles)) if roles else ''} "
-                + f"{humanize_list(list(users)) if users else ''} "
-                + f"[{style.get_message()}]({jump_url})"
-            )
+        if all_mentions:
+            msg = f"{humanize_list(list(all_mentions))} " + f"[{style.get_message()}]({jump_url})"
             for page in pagify(msg):
                 await ctx.channel.send(
                     page, allowed_mentions=discord.AllowedMentions(users=True, roles=True)
