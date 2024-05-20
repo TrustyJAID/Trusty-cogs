@@ -18,7 +18,9 @@
     "name": "Cleverbot",
     "permissions": [],
     "required_cogs": {},
-    "requirements": [],
+    "requirements": [
+        "charset-normalizer"
+    ],
     "short": "Talk with Cleverbot!",
     "tags": [
         "cleverbot"

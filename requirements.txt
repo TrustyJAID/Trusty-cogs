@@ -1,3 +1,4 @@
+charset-normalizer
 git+https://github.com/Kareeeeem/jpglitch
 git+https://github.com/TrustyJAID/aPRAW@setup-fix
 httpx>=0.15,<0.25
