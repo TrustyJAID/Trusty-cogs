@@ -690,8 +690,8 @@ class ValidRegex(Converter):
             re.compile(argument)
             result = argument
         except Exception as e:
-            log.error("Retrigger conversion error")
-            err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=argument, e=e)
+            err_msg = _("`{arg}` is not a valid regex pattern: {e}").format(arg=argument, e=e)
+            log.error("Retrigger invalid regex error: Pattern %s Reason %s", argument, e)
             raise BadArgument(err_msg)
         return result
 
