@@ -9,6 +9,7 @@ import discord
 import unidecode
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+from red_commons.logging import getLogger
 from redbot.core import commands
 
 IMAGE_LINKS: Pattern = re.compile(
@@ -22,6 +23,8 @@ MENTION_REGEX: Pattern = re.compile(r"<@!?([0-9]+)>")
 ID_REGEX: Pattern = re.compile(r"[0-9]{17,}")
 
 VALID_CONTENT_TYPES = ("image/png", "image/jpeg", "image/jpg", "image/gif")
+
+log = getLogger("red.trusty-cogs.NotSoBot")
 
 
 class TenorError(Exception):
@@ -95,10 +98,14 @@ class ImageFinder(Converter):
             api = ctx.cog.tenor
             if api:
                 tenor_matches = [m.group("image_id") for m in tenor_matches]
-                posts = await api.posts(tenor_matches)
-                for post in posts:
-                    if "gif" in post.media_formats:
-                        urls.append(post.media_formats["gif"].url)
+                try:
+                    posts = await api.posts(tenor_matches)
+                    for post in posts:
+                        if "gif" in post.media_formats:
+                            urls.append(post.media_formats["gif"].url)
+                except TenorError as e:
+                    log.error("Error getting tenor image information. %s", e)
+
         if matches:
             for match in matches:
                 urls.append(match.group(1))
@@ -167,10 +174,13 @@ class ImageFinder(Converter):
             if tenor:
                 api = ctx.cog.tenor
                 if api:
-                    posts = await api.posts([tenor.group("image_id")])
-                    for post in posts:
-                        if "gif" in post.media_formats:
-                            urls.append(post.media_formats["gif"].url)
+                    try:
+                        posts = await api.posts([tenor.group("image_id")])
+                        for post in posts:
+                            if "gif" in post.media_formats:
+                                urls.append(post.media_formats["gif"].url)
+                    except TenorError as e:
+                        log.error("Error getting tenor image information. %s", e)
         if not urls:
             raise BadArgument("No Images found in recent history.")
         return urls
