@@ -541,12 +541,15 @@ class SpotifyCommands(SpotifyMixin):
             )
             msg = ""
             cog_settings = await self.config.user(author).all()
-            show_private = cog_settings["show_private"]
+            show_private = cog_settings["show_private"] or isinstance(
+                ctx.channel, discord.DMChannel
+            )
             msg += _("Show Private Playlists: {show_private}\n").format(show_private=show_private)
             if not cog_settings["token"]:
                 em.description = msg
                 await ctx.send(embed=em)
                 return
+            cur = None
             user_token = await self.get_user_auth(ctx)
             if user_token:
                 user_spotify = tekore.Spotify(sender=self._sender)
@@ -559,17 +562,17 @@ class SpotifyCommands(SpotifyMixin):
                         if d.id == device_id:
                             device_name = d.name
                     msg += _("Default Spotify Device: {device}").format(device=device_name)
-            if show_private or isinstance(ctx.channel, discord.DMChannel):
+            if cur is not None and show_private:
                 msg += _(
                     "Spotify Name: [{display_name}](https://open.spotify.com/user/{user_id})\n"
                     "Subscription: {product}\n"
                 ).format(display_name=cur.display_name, product=cur.product, user_id=cur.id)
-            if isinstance(ctx.channel, discord.DMChannel) or is_slash:
+            if cur is not None and (isinstance(ctx.channel, discord.DMChannel) or is_slash):
                 private = _("Country: {country}\nSpotify ID: {id}\nEmail: {email}\n").format(
                     country=cur.country, id=cur.id, email=cur.email
                 )
                 em.add_field(name=_("Private Data"), value=private)
-            if cur.images:
+            if cur is not None and cur.images:
                 em.set_thumbnail(url=cur.images[0].url)
             em.description = msg
         await ctx.send(embed=em)
