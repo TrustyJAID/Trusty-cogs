@@ -25,7 +25,7 @@ from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 
-from .converter import ImageFinder
+from .converter import ImageFinder, TenorAPI
 from .vw import macintoshplus
 
 log = getLogger("red.trusty-cogs.NotSoBot")
@@ -94,7 +94,7 @@ class NotSoBot(commands.Cog):
     """
 
     __author__ = ["NotSoSuper", "TrustyJAID"]
-    __version__ = "2.5.5"
+    __version__ = "2.6.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -150,6 +150,7 @@ class NotSoBot(commands.Cog):
         )
         self.image_mimes = ["image/png", "image/pjpeg", "image/jpeg", "image/x-icon"]
         self.gif_mimes = ["image/gif"]
+        self.tenor: Optional[TenorAPI] = None
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -163,6 +164,29 @@ class NotSoBot(commands.Cog):
         Nothing to delete
         """
         return
+
+    async def on_red_api_tokens_update(self, service_name: str, api_tokens: Dict[str, str]):
+        if service_name != "tenor":
+            return
+
+        if "api_key" in api_tokens:
+            if self.tenor is not None:
+                self.tenor._token = api_tokens["api_key"]
+                return
+            self.tenor = TenorAPI(api_tokens["api_key"], str(self.bot.user))
+
+    async def cog_load(self):
+        asyncio.create_task(self.load_tenor())
+
+    async def load_tenor(self):
+        await self.bot.wait_until_red_ready()
+        tokens = await self.bot.get_shared_api_tokens("tenor")
+        if "api_key" in tokens:
+            self.tenor = TenorAPI(tokens["api_key"], str(self.bot.user))
+
+    async def cog_unload(self):
+        if self.tenor:
+            await self.tenor.session.close()
 
     def random_filename(self, image=False, ext: str = "png"):
         h = str(uuid.uuid4().hex)
@@ -310,7 +334,7 @@ class NotSoBot(commands.Cog):
             log.error("Error processing magik", exc_info=True)
 
     @commands.command(aliases=["imagemagic", "imagemagick", "magic", "magick", "cas", "liquid"])
-    @commands.cooldown(2, 20, commands.BucketType.user)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     async def magik(self, ctx, urls: ImageFinder = None, scale: int = 2, scale_msg: str = ""):
         """
         Apply magik to an image.
@@ -411,7 +435,7 @@ class NotSoBot(commands.Cog):
         return file, file_size
 
     @commands.command()
-    @commands.cooldown(1, 20, commands.BucketType.guild)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)
     async def gmagik(self, ctx, urls: ImageFinder = None, frame_delay: int = 1):
         """Attempt to do magik on a gif"""
@@ -584,7 +608,7 @@ class NotSoBot(commands.Cog):
         return file, file_size
 
     @commands.command()
-    @commands.cooldown(1, 5)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)
     async def triggered(self, ctx, urls: ImageFinder = None):
         """Generate a Triggered GIF for a user or image"""
@@ -622,6 +646,7 @@ class NotSoBot(commands.Cog):
             img.close()
 
     @commands.command(aliases=["aes"])
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)
     async def aesthetics(self, ctx, *, text: str):
         """Returns inputed text in aesthetics"""
@@ -661,7 +686,7 @@ class NotSoBot(commands.Cog):
             return False, False, False
 
     @commands.command(aliases=["expand"])
-    @commands.cooldown(1, 5)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)
     async def ascii(self, ctx, *, text: str):
         """Convert text into ASCII"""
@@ -732,7 +757,7 @@ class NotSoBot(commands.Cog):
                     save_file.write(data)
 
     @commands.command()
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.check(lambda ctx: AALIB_INSTALLED)
     @commands.bot_has_permissions(attach_files=True)
     async def iascii(self, ctx, urls: ImageFinder = None):
@@ -791,7 +816,7 @@ class NotSoBot(commands.Cog):
             raise
 
     @commands.command()
-    @commands.cooldown(1, 10, commands.BucketType.guild)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.check(lambda ctx: AALIB_INSTALLED)
     @commands.bot_has_permissions(attach_files=True)
     async def gascii(self, ctx, urls: ImageFinder = None):
@@ -821,6 +846,7 @@ class NotSoBot(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     async def rip(self, ctx, name: str = None, *, text: str = None):
         """Generate tombstone image with name and optional text"""
         if name is None:
@@ -891,7 +917,7 @@ class NotSoBot(commands.Cog):
         await self.safe_send(ctx, None, file, file_size)
 
     @commands.command()
-    @commands.cooldown(1, 5)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)  # ImageFinder consumes rest this is so goat'd
     async def merge(self, ctx, vertical: Optional[bool] = True, *, urls: Optional[ImageFinder]):
         """
@@ -980,7 +1006,7 @@ class NotSoBot(commands.Cog):
             return await self.bot.get_embed_colour(channel)
 
     @commands.command(aliases=["needsmorejpeg", "jpegify", "magik2"])
-    @commands.cooldown(2, 5, commands.BucketType.user)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)
     async def jpeg(self, ctx, urls: Optional[ImageFinder] = None, quality: int = 1):
         """
@@ -1041,7 +1067,7 @@ class NotSoBot(commands.Cog):
         return file, file_size
 
     @commands.command(aliases=["vaporwave", "vape", "vapewave"])
-    @commands.cooldown(2, 5)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)
     async def vw(self, ctx, urls: ImageFinder = None, *, txt: str = None):
         """Add vaporwave flavours to an image"""
@@ -1067,6 +1093,7 @@ class NotSoBot(commands.Cog):
 
     @commands.command(aliases=["achievement"])
     @commands.bot_has_permissions(attach_files=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     async def minecraftachievement(self, ctx, *, txt: str):
         """Generate a Minecraft Achievement"""
         img_path = cog_data_path(self) / "achievement.png"
@@ -1116,6 +1143,7 @@ class NotSoBot(commands.Cog):
 
     @commands.command(aliases=["wm"])
     @commands.bot_has_permissions(attach_files=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     async def watermark(
         self,
         ctx,
@@ -1316,7 +1344,7 @@ class NotSoBot(commands.Cog):
         return file, file_size
 
     @commands.command(aliases=["jpglitch"])
-    @commands.cooldown(2, 5)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)
     async def glitch(
         self,
@@ -1358,6 +1386,7 @@ class NotSoBot(commands.Cog):
 
     @commands.command(aliases=["pixel"])
     @commands.bot_has_permissions(attach_files=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     async def pixelate(self, ctx, urls: ImageFinder = None, pixels: int = 9):
         """Pixelate an image"""
         if urls is None:
@@ -1475,7 +1504,7 @@ class NotSoBot(commands.Cog):
 
     # Thanks to Iguniisu#9746 for the idea
     @commands.command(aliases=["magik3", "mirror"])
-    @commands.cooldown(2, 5, commands.BucketType.user)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)
     async def waaw(self, ctx, urls: ImageFinder = None):
         """Mirror an image vertically right to left"""
@@ -1534,7 +1563,7 @@ class NotSoBot(commands.Cog):
         return file, file_size
 
     @commands.command(aliases=["magik4", "mirror2"])
-    @commands.cooldown(2, 5, commands.BucketType.user)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)
     async def haah(self, ctx, urls: ImageFinder = None):
         """Mirror an image vertically left to right"""
@@ -1594,7 +1623,7 @@ class NotSoBot(commands.Cog):
         return file, file_size
 
     @commands.command(aliases=["magik5", "mirror3"])
-    @commands.cooldown(2, 5, commands.BucketType.user)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)
     async def woow(self, ctx, urls: ImageFinder = None):
         """Mirror an image horizontally top to bottom"""
@@ -1655,7 +1684,7 @@ class NotSoBot(commands.Cog):
         return file, file_size
 
     @commands.command(aliases=["magik6", "mirror4"])
-    @commands.cooldown(2, 5, commands.BucketType.user)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)
     async def hooh(self, ctx, urls: ImageFinder = None):
         """Mirror an image horizontally bottom to top"""
@@ -1680,6 +1709,7 @@ class NotSoBot(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     async def flipimg(self, ctx, urls: ImageFinder = None):
         """Rotate an image 180 degrees"""
         if urls is None:
@@ -1717,6 +1747,7 @@ class NotSoBot(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     async def flop(self, ctx, urls: ImageFinder = None):
         """Flip an image horizontally"""
         if urls is None:
@@ -1751,6 +1782,7 @@ class NotSoBot(commands.Cog):
 
     @commands.command(aliases=["inverse", "negate"])
     @commands.bot_has_permissions(attach_files=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     async def invert(self, ctx, urls: ImageFinder = None):
         """Invert the colours of an image"""
         if urls is None:
@@ -1787,6 +1819,7 @@ class NotSoBot(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     async def rotate(self, ctx, degrees: int = 90, urls: ImageFinder = None):
         """Rotate image X degrees"""
         if urls is None:

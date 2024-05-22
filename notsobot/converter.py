@@ -1,6 +1,10 @@
-import re
-from typing import List, Pattern, Union
+from __future__ import annotations
 
+import re
+from dataclasses import dataclass
+from typing import Dict, List, Pattern, Union
+
+import aiohttp
 import discord
 import unidecode
 from discord.ext.commands.converter import Converter
@@ -8,11 +12,67 @@ from discord.ext.commands.errors import BadArgument
 from redbot.core import commands
 
 IMAGE_LINKS: Pattern = re.compile(
-    r"(https?:\/\/[^\"\'\s]*\.(?:png|jpg|jpeg|gif|png|svg)(\?size=[0-9]*)?)", flags=re.I
+    r"(https?:\/\/[^\"\'\s]*\.(?:png|jpg|jpeg|gif)(\?size=[0-9]*)?)", flags=re.I
 )
-EMOJI_REGEX: Pattern = re.compile(r"(<(a)?:[a-zA-Z0-9\_]+:([0-9]+)>)")
+TENOR_REGEX: Pattern[str] = re.compile(
+    r"https:\/\/tenor\.com\/view\/(?P<image_slug>[a-zA-Z0-9-]+-(?P<image_id>\d+))"
+)
+EMOJI_REGEX: Pattern = re.compile(r"(<(?P<animated>a)?:[a-zA-Z0-9\_]+:([0-9]+)>)")
 MENTION_REGEX: Pattern = re.compile(r"<@!?([0-9]+)>")
 ID_REGEX: Pattern = re.compile(r"[0-9]{17,}")
+
+VALID_CONTENT_TYPES = ("image/png", "image/jpeg", "image/jpg", "image/gif")
+
+
+class TenorError(Exception):
+    pass
+
+
+@dataclass
+class TenorMedia:
+    url: str
+    duration: int
+    preview: str
+    dims: List[int]
+    size: int
+
+    @classmethod
+    def from_json(cls, data: dict) -> TenorMedia:
+        return cls(**data)
+
+
+@dataclass
+class TenorPost:
+    id: str
+    title: str
+    media_formats: Dict[str, TenorMedia]
+    created: float
+    content_description: str
+    itemurl: str
+    url: str
+    tags: List[str]
+    flags: List[str]
+    hasaudio: bool
+
+    @classmethod
+    def from_json(cls, data: dict) -> TenorPost:
+        media = {k: TenorMedia.from_json(v) for k, v in data.pop("media_formats", {}).items()}
+        return cls(**data, media_formats=media)
+
+
+class TenorAPI:
+    def __init__(self, token: str, client: str):
+        self._token = token
+        self._client = client
+        self.session = aiohttp.ClientSession(base_url="https://tenor.googleapis.com")
+
+    async def posts(self, ids: List[str]):
+        params = {"key": self._token, "ids": ",".join(i for i in ids), "client_key": self._client}
+        async with self.session.get("/v2/posts", params=params) as resp:
+            data = await resp.json()
+            if "error" in data:
+                raise TenorError(data)
+        return [TenorPost.from_json(i) for i in data.get("results", [])]
 
 
 class ImageFinder(Converter):
@@ -29,17 +89,24 @@ class ImageFinder(Converter):
         matches = IMAGE_LINKS.finditer(argument)
         emojis = EMOJI_REGEX.finditer(argument)
         ids = ID_REGEX.finditer(argument)
+        tenor_matches = TENOR_REGEX.finditer(argument)
         urls = []
+        if tenor_matches:
+            api = ctx.cog.tenor
+            if api:
+                tenor_matches = [m.group("image_id") for m in tenor_matches]
+                posts = await api.posts(tenor_matches)
+                for post in posts:
+                    if "gif" in post.media_formats:
+                        urls.append(post.media_formats["gif"].url)
         if matches:
             for match in matches:
                 urls.append(match.group(1))
         if emojis:
             for emoji in emojis:
-                ext = "gif" if emoji.group(2) else "png"
-                url = "https://cdn.discordapp.com/emojis/{id}.{ext}?v=1".format(
-                    id=emoji.group(3), ext=ext
-                )
-                urls.append(url)
+                partial_emoji = discord.PartialEmoji.from_str(emoji.group(1))
+                if partial_emoji.is_custom_emoji():
+                    urls.append(partial_emoji.url)
         if mentions:
             for mention in mentions:
                 if ctx.guild:
@@ -65,26 +132,24 @@ class ImageFinder(Converter):
                         urls.append(user.display_avatar.replace(format="png").url)
         if attachments:
             for attachment in attachments:
+                if attachment.content_type not in VALID_CONTENT_TYPES:
+                    continue
                 urls.append(attachment.url)
         if not urls:
             if ctx.guild:
-                for m in ctx.guild.members:
-                    if argument.lower() in unidecode.unidecode(m.display_name.lower()):
-                        # display_name so we can get the nick of the user first
-                        # without being NoneType and then check username if that matches
-                        # what we're expecting
-                        urls.append(m.display_avatar.replace(format="png").url)
-                        continue
-                    if argument.lower() in unidecode.unidecode(m.name.lower()):
-                        urls.append(m.display_avatar.replace(format="png").url)
-                        continue
+                user = await commands.MemberConverter().convert(ctx, argument)
+                if user.display_avatar.is_animated():
+                    urls.append(user.display_avatar.replace(format="gif").url)
+                else:
+                    urls.append(user.display_avatar.replace(format="png").url)
 
         if not urls:
             raise BadArgument("No images provided.")
         return urls
 
+    @staticmethod
     async def search_for_images(
-        self, ctx: commands.Context
+        ctx: commands.Context,
     ) -> List[Union[discord.Asset, discord.Attachment, str]]:
         urls = []
         if not ctx.channel.permissions_for(ctx.me).read_message_history:
@@ -92,10 +157,20 @@ class ImageFinder(Converter):
         async for message in ctx.channel.history(limit=10):
             if message.attachments:
                 for attachment in message.attachments:
+                    if attachment.content_type not in VALID_CONTENT_TYPES:
+                        continue
                     urls.append(attachment)
             match = IMAGE_LINKS.match(message.content)
             if match:
                 urls.append(match.group(1))
+            tenor = TENOR_REGEX.match(message.content)
+            if tenor:
+                api = ctx.cog.tenor
+                if api:
+                    posts = await api.posts([tenor.group("image_id")])
+                    for post in posts:
+                        if "gif" in post.media_formats:
+                            urls.append(post.media_formats["gif"].url)
         if not urls:
             raise BadArgument("No Images found in recent history.")
         return urls
