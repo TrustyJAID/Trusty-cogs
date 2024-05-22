@@ -1,28 +1,33 @@
-# How to use ReTrigger
+# [How to use ReTrigger](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
 
 ReTrigger is a highly versatile cog that allows server moderators and administrators to automatically perform many tasks based on regular expressions (regex) in chat. https://regex101.com/ Is suggested to test out any regular expression patterns you want before adding to the bot. Some commonly used tools include:
 
  - `\b` meaning word boundaries usually used at the beginning and end of the word or sentence to avoid triggering on `testing` when you only want `test`. (e.g. regex of `\bhello, world\b` will __only__ trigger if someone says exactly `hello, world` and not `hello, worlds`.)
+
  - `(?i)` at the beginning of the regex will ignore cases in the search so `test`, `Test`, and `TEST` are treated the same.
- - **Groups** can be utilized to pick specific parts of the pattern to be used later. Groups look like `(^I wanna be )([^.]*)` where everything inside the `()` brackets are a group. Groups are numbered 0 and up where 0 is the full pattern, 1 would be `I wanna be` and 2 would be `[^.]*]`. In this example anything after the words `I wanna be` is captured and can then be used in the response of the trigger by using `{2}` to signify group 2.
+
+ - **Groups** can be utilized to pick specific parts of the pattern to be used later. Groups look like `(^I wanna be )(.+)` where everything inside the `()` brackets are a group. Groups are numbered 0 and up where 0 is the full pattern, 1 would be `I wanna be ` and 2 would be `.+`. In this example anything after the words `I wanna be ` is captured and can then be used in the response of the trigger by using `{2}` to signify group 2.
+    - Named regex groups can be utilized as well for example: `(^I wanna be )(?P<tracer>.+)` then `{tracer}` can be used in the response instead of a numbered group.
+
  - More useful special characters:
     - `^` signifies the start of a string.
-    - `$` signifies the end of a string.
-    - `?` 0 or 1 of the previous character or group.
-    - `+` 1 or more of the previous character or group.
-    - `*` 0 or more of the previous character or group.
-    - `.` any character other than newline.
-    - `|` **or** statement meaning this **or** that.
+  - `$` signifies the end of a string.
+  - `?` 0 or 1 of the previous character or group.
+  - `+` 1 or more of the previous character or group.
+  - `*` 0 or more of the previous character or group.
+  - `.` any character other than newline.
+  - `|` **or** statement meaning this **or** that.
+- **If your regex has spaces make sure to enclose the regex in "double quotes"**
 
 
-## replacements
+## [replacements](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md#replacements)
 You can replace part of most strings with the context the command was run in. The following are discord objects that you can use to replace some data in your string with:
 - `{author}` The author of the message that triggered. See https://discordpy.readthedocs.io/en/latest/api.html#member for available attributes.
 - `{guild}` or `{server}` The server the message was triggered in. See https://discordpy.readthedocs.io/en/latest/api.html#guild for available attributes.
 - `{channel}` The channel the message was triggered in. See https://discordpy.readthedocs.io/en/latest/api.html#textchannel for available attributes.
 - `{message}` The message that triggered. See https://discordpy.readthedocs.io/en/latest/api.html#message for available attributes.
 
-For most of these you will want to use `.` to get the attribute. For example `{author.display_name}` will replace `{author}` with the message authors name as you see it in the server at the time the message triggered.
+For most of these you will want to use `.` to get the attribute. For example `{author.display_name}` will be replaced with the message authors current display name as you see it in the server at the time the message triggered.
 
 Special replacement parameters are as follows:
 - `{p}` can be used to replace the bots default prefix in the message.
@@ -33,8 +38,7 @@ Special replacement parameters are as follows:
 - `{lenmatch}` can be used to replace the length of the largest match found.
 
 
-
-## Basic Commands
+## [Basic Commands](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md#basic-commands)
 ### **text**
 __Usage:__ `[p]retrigger text <name> <regex> <text>`
 - `<name>` is the name of the trigger.
@@ -201,29 +205,26 @@ Note: If the user has DM's turned off in the server or has the bot blocked the u
 
 
 
-## Utility Commands
+## [Utility Commands](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md#utility-commands)
 ### **list**
 __Usage:__ `[p]retrigger list [trigger]`
+Lists all triggers in the server as an interactable menu.
 
-- `<trigger>` is the name of a trigger, if not supplied all triggers will be listed in a menu to see them all.
-- ▶ will display the next trigger in the list
-- ◀ will display the previous trigger in the list
-- ⏭ will jump to the last trigger in the list
-- ⏮ will jump to the first trigger in the list
-- ⏯ will toggle the displayed triggers active setting
-- ❎ will toggle the displayed trigger to be not active
-- ✅ will toggle the displayed trigger to be active
-- 🚮 will delete the displayed trigger
+- `[trigger]` is the optional name of a specific trigger to start the menu at.
+- ▶ will display the next trigger in the list.
+- ◀ will display the previous trigger in the list.
+- ⏭ will jump to the last trigger in the list.
+- ⏮ will jump to the first trigger in the list.
+- ⏯ will toggle the displayed triggers active setting.
+- ❎ will toggle the displayed trigger to be not active.
+- ✅ will toggle the displayed trigger to be active.
+- 🚮 will delete the displayed trigger.
 
 
 ### **remove**
 __Usage:__ `[p]retrigger remove <trigger>`
 - `<trigger>` is the name of the trigger you want to delete.
 This will delete a trigger.
-
-### **cooldown**
-__Usage:__ `[p]retrigger cooldown <trigger> <time> [style=guild]`
-Set cooldown options for specified triggers. This can be used to ensure a trigger is not constantly spammed by giving some time until it is allowed to be triggered again. Time must be in seconds.
 
 ### **blocklist**
 Set blocklist options for specified triggers.
@@ -245,11 +246,23 @@ Whitelist will ensure **only** the objects added to the trigger allowlist will a
  __Usage:__ `[p]retrigger allowlist remove <trigger> [channel_user_role...]`
  	multiple channels, users, or roles can be added at the same time.
 
+## **modlog**
+Set which events to record in the modlog. ReTrigger has a built in modlog setup which can be used to track when and how ReTrigger is performing automated moderation actions.
 
-## Edit commands
+ - **addroles** Toggle custom add role messages in the modlog.
+ - **bans** Toggle custom ban messages in the modlog.
+ - **channel** Set the modlog channel for filtered words.
+ - **filter** Toggle custom filter messages in the modlog.
+ - **kicks** Toggle custom kick messages in the modlog.
+ - **removeroles** Toggle custom add role messages in the modlog.
+ - **settings** Show the current modlog settings for this server.
+
+
+## [Edit commands](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md#edit-commands)
 Edit various settings in a set trigger. under `[p]retrigger edit`
 ### regex
  - Edit the regex of a saved trigger.
+ - Note: **This command does not require double quotes for spaces in the regex**
 ### edited
  - Toggle whether the bot will listen to edited messages as well as `on_message` for the specified trigger.
  ### ignorecommands
@@ -273,6 +286,10 @@ Edit various settings in a set trigger. under `[p]retrigger edit`
 ### readembeds
  - Toggle whether the bot will search the contents of embeds. **Requires `edited` also be enabled.**
 
+### cooldown
+ - Edit cooldown options for specified triggers. This can be used to ensure a trigger is not constantly spammed by giving some time until it is allowed to be triggered again. Time must be in seconds.
+### chance
+ - Edit the chance a trigger has to trigger. This is a random number between 0 and the number you choose. When the trigger regex matches this number is rolled and if it is 0 the trigger will execute otherwise it will be ignored.
 ### readthreads
  - Toggle whether a filter trigger will check thread titles.
    - This only works in conjunction with delete triggers. If a thread is created with a title that would match the delete triggers pattern the thread will be deleted. This also requires the bot to have manage_threads permission in the channel the threads are created in.
@@ -285,22 +302,12 @@ Edit various settings in a set trigger. under `[p]retrigger edit`
 - Set whether or not the Trigger will attempt to create a thread on the message.
   - You can set it to be either a public or private thread.
   - A thread name is required and utilizes object conversion to automatically make a thread with the users name. See the replacements section for more info on what can be replaced.
-
-
-## **modlog**
-Set which events to record in the modlog. ReTrigger has a built in modlog setup which can be used to track when and how ReTrigger is performing automated moderation actions.
-
- - **addroles** Toggle custom add role messages in the modlog.
- - **bans** Toggle custom ban messages in the modlog.
- - **channel** Set the modlog channel for filtered words.
- - **filter** Toggle custom filter messages in the modlog.
- - **kicks** Toggle custom kick messages in the modlog.
- - **removeroles** Toggle custom add role messages in the modlog.
- - **settings** Show the current modlog settings for this server.
+### mention
+ - Settings to control a trigger responses [AllowedMentions](https://discordpy.readthedocs.io/en/latest/api.html#allowedmentions) to allow the trigger to mention everyone/roles/users overriding the bots default settings.
 
 
 
-## F.A.Q.
+## [F.A.Q.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md#faq)
 __Can ReTrigger perform different actions if a user triggers it enough times?__
  - No. This is better suited for an entirely separate cog. This one is highly complex as it is and meant more as a versatile trigger system not automatic moderation although it can still be used as an automatic moderation tool.
 

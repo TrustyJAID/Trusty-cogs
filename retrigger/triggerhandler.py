@@ -213,7 +213,7 @@ class TriggerHandler(ReTriggerMixin):
         with Image.open(image) as im:
             if size <= 0:
                 size = 1
-            im.thumbnail((length * size, width * size), Image.ANTIALIAS)
+            im.thumbnail((length * size, width * size), Image.Resampling.LANCZOS)
             byte_array = BytesIO()
             im.save(byte_array, format="PNG")
             byte_array.seek(0)
@@ -227,7 +227,7 @@ class TriggerHandler(ReTriggerMixin):
             length, width = (16 * size, 16 * size)
             start_list = [frame.copy() for frame in ImageSequence.Iterator(im)]
             for frame in start_list:
-                frame.thumbnail((length, width), Image.ANTIALIAS)
+                frame.thumbnail((length, width), Image.Resampling.LANCZOS)
                 img_list.append(frame)
         byte_array = BytesIO()
         img_list[0].save(

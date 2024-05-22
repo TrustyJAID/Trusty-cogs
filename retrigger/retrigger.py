@@ -16,6 +16,7 @@ from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .converters import (
     ChannelUserRole,
+    MentionStyle,
     MultiFlags,
     Trigger,
     TriggerExists,
@@ -94,7 +95,7 @@ class ReTrigger(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.28.1"
+    __version__ = "2.28.2"
 
     def __init__(self, bot):
         super().__init__()
@@ -722,6 +723,8 @@ class ReTrigger(
 
         `<trigger>` is the name of the trigger.
         `<regex>` The new regex pattern to use.
+
+        Note: **"double quotes" is not required for regex with spaces in this command**
         """
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
@@ -1014,73 +1017,13 @@ class ReTrigger(
         )
         await ctx.send(msg)
 
-    @_edit.command(name="usermention", aliases=["userping"])
-    @checks.mod_or_permissions(manage_messages=True)
-    @wrapped_additional_help()
-    async def set_user_mention(
-        self,
-        ctx: commands.Context,
-        trigger: Trigger = commands.parameter(converter=TriggerExists),
-        set_to: bool = False,
-    ) -> None:
-        """
-        Set whether or not this trigger can mention users
-
-        `<trigger>` is the name of the trigger.
-        `[set_to]` either `true` or `false` on whether to allow this trigger
-        to actually ping the users in the message.
-        """
-        if type(trigger) is str:
-            return await self._no_trigger(ctx, trigger)
-
-        # trigger.user_mention = set_to
-        trigger.modify("user_mention", set_to, ctx.author, ctx.message.id)
-        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
-            trigger_list[trigger.name] = await trigger.to_json()
-        # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
-        # self.triggers[ctx.guild.id].append(trigger)
-        msg = _("Trigger {name} user mentions set to: {set_to}").format(
-            name=trigger.name, set_to=trigger.user_mention
-        )
-        await ctx.send(msg)
-
-    @_edit.command(name="everyonemention", aliases=["everyoneping"])
+    @_edit.command(name="mention", aliases=["ping"])
     @checks.mod_or_permissions(manage_messages=True, mention_everyone=True)
     @wrapped_additional_help()
-    async def set_everyone_mention(
+    async def set_mention(
         self,
         ctx: commands.Context,
-        trigger: Trigger = commands.parameter(converter=TriggerExists),
-        set_to: bool = False,
-    ) -> None:
-        """
-        Set whether or not to send this trigger can mention everyone
-
-        `<trigger>` is the name of the trigger.
-        `[set_to]` either `true` or `false` on whether to allow this trigger
-        to actually ping everyone if the bot has correct permissions.
-        """
-
-        if type(trigger) is str:
-            return await self._no_trigger(ctx, trigger)
-
-        # trigger.everyone_mention = set_to
-        trigger.modify("everyone_mention", set_to, ctx.author, ctx.message.id)
-        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
-            trigger_list[trigger.name] = await trigger.to_json()
-        # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
-        # self.triggers[ctx.guild.id].append(trigger)
-        msg = _("Trigger {name} everyone mentions set to: {set_to}").format(
-            name=trigger.name, set_to=trigger.everyone_mention
-        )
-        await ctx.send(msg)
-
-    @_edit.command(name="rolemention", aliases=["roleping"])
-    @checks.mod_or_permissions(manage_messages=True, mention_everyone=True)
-    @wrapped_additional_help()
-    async def set_role_mention(
-        self,
-        ctx: commands.Context,
+        style: MentionStyle,
         trigger: Trigger = commands.parameter(converter=TriggerExists),
         set_to: bool = False,
     ) -> None:
@@ -1095,13 +1038,13 @@ class ReTrigger(
             return await self._no_trigger(ctx, trigger)
 
         # trigger.role_mention = set_to
-        trigger.modify("role_mention", set_to, ctx.author, ctx.message.id)
+        trigger.modify(style.config_key, set_to, ctx.author, ctx.message.id)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
         # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         # self.triggers[ctx.guild.id].append(trigger)
-        msg = _("Trigger {name} role mentions set to: {set_to}").format(
-            name=trigger.name, set_to=trigger.role_mention
+        msg = _("Trigger {name} {style} mentions set to: {set_to}").format(
+            style=style.name, name=trigger.name, set_to=set_to
         )
         await ctx.send(msg)
 

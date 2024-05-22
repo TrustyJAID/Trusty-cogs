@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
     from .converters import (
         ChannelUserRole,
+        MentionStyle,
         MultiFlags,
         Trigger,
         TriggerExists,
@@ -281,20 +282,8 @@ class ReTriggerMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def set_user_mention(
-        self, ctx: commands.Context, trigger: TriggerExists, set_to: bool
-    ) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def set_everyone_mention(
-        self, ctx: commands.Context, trigger: TriggerExists, set_to: bool
-    ) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def set_role_mention(
-        self, ctx: commands.Context, trigger: TriggerExists, set_to: bool
+    async def set_mention(
+        self, ctx: commands.Context, style: MentionStyle, trigger: TriggerExists, set_to: bool
     ) -> None:
         raise NotImplementedError()
 

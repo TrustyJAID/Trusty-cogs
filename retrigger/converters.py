@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import (
@@ -18,6 +20,7 @@ from discord.ext.commands.errors import BadArgument
 from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import humanize_list
 
 log = getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
@@ -38,6 +41,34 @@ CHANNEL_RE = re.compile(
 )
 # General purpose regex for parsing mentions and links of channels from an argument
 # Includes support for pulling message ID from a message link
+
+
+class MentionStyle(Enum):
+    everyone = 0
+    role = 1
+    user = 2
+
+    @property
+    def config_key(self):
+        return {
+            MentionStyle.everyone: "everyone_mention",
+            MentionStyle.role: "role_mention",
+            MentionStyle.user: "user_mention",
+        }[self]
+
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> MentionStyle:
+        if argument.lower() in ["everyone"]:
+            return cls.everyone
+        if argument.lower() in ["roles", "role"]:
+            return cls.role
+        if argument.lower() in ["users", "user", "member", "members"]:
+            return cls.user
+        raise commands.BadArgument(
+            _("`{argument}` is not a valid MentionStyle. Choose one of {available}.").format(
+                argument=argument, available=humanize_list([i.name for i in MentionStyle])
+            )
+        )
 
 
 class TriggerResponse(Enum):

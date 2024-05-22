@@ -9,6 +9,7 @@ from red_commons.logging import getLogger
 from redbot.core.i18n import Translator
 
 from .abc import ReTriggerMixin
+from .converters import MentionStyle
 
 try:
     import regex as re
@@ -385,39 +386,12 @@ class ReTriggerSlash(ReTriggerMixin):
         ctx = await interaction.client.get_context(interaction)
         await self.set_tts(ctx, trigger, set_to)
 
-    @edit_slash.command(name="usermention")
+    @edit_slash.command(name="mention")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def set_user_mention_slash(
+    async def set_mention_slash(
         self,
         interaction: discord.Interaction,
-        trigger: app_commands.Transform[Trigger, TriggerTransformer],
-        set_to: bool,
-    ):
-        """Set whether or not this trigger can mention users"""
-        if trigger is None:
-            return
-        ctx = await interaction.client.get_context(interaction)
-        await self.set_user_menion(ctx, trigger, set_to)
-
-    @edit_slash.command(name="everyonemention")
-    @app_commands.checks.has_permissions(manage_messages=True)
-    async def set_everyone_mention_slash(
-        self,
-        interaction: discord.Interaction,
-        trigger: app_commands.Transform[Trigger, TriggerTransformer],
-        set_to: bool,
-    ):
-        """Set whether or not this trigger can mention everyone"""
-        if trigger is None:
-            return
-        ctx = await interaction.client.get_context(interaction)
-        await self.set_everyone_mention(ctx, trigger, set_to)
-
-    @edit_slash.command(name="rolemention")
-    @app_commands.checks.has_permissions(manage_messages=True)
-    async def set_role_mention_slash(
-        self,
-        interaction: discord.Interaction,
+        style: MentionStyle,
         trigger: app_commands.Transform[Trigger, TriggerTransformer],
         set_to: bool,
     ):
@@ -425,7 +399,7 @@ class ReTriggerSlash(ReTriggerMixin):
         if trigger is None:
             return
         ctx = await interaction.client.get_context(interaction)
-        await self.set_role_mention(ctx, trigger, set_to)
+        await self.set_mention(ctx, style, trigger, set_to)
 
     @edit_slash.command(name="edited")
     @app_commands.checks.has_permissions(manage_messages=True)
