@@ -13,7 +13,9 @@ from red_commons.logging import getLogger
 from redbot.core import commands
 
 IMAGE_LINKS: Pattern = re.compile(
-    r"(https?:\/\/[^\"\'\s]*\.(?:png|jpg|jpeg|gif)(\?size=[0-9]*)?)", flags=re.I
+    r"(https?:\/\/[^\"\'\s]*\.(?P<extension>png|jpg|jpeg|gif)"
+    r"(?P<extras>\?(?:ex=(?P<expires>\w+)&)(?:is=(?P<issued>\w+)&)(?:hm=(?P<token>\w+)&))?)",  # Discord CDN info
+    flags=re.I,
 )
 TENOR_REGEX: Pattern[str] = re.compile(
     r"https:\/\/tenor\.com\/view\/(?P<image_slug>[a-zA-Z0-9-]+-(?P<image_id>\d+))"
