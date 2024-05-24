@@ -505,7 +505,7 @@ TEAMS = {
         "emoji": "VegasGoldenKnights:664662933967601768",
         "home": "#B4975A",
         "id": 54,
-        "invite": "https://discord.gg/dMKq7RH",
+        "invite": "https://discord.gg/pPEQQPmm9q",
         "logo": "https://i.imgur.com/wg4A439.png",
         "team_url": "https://www.nhl.com/goldenknights",
         "timezone": "US/Pacific",
