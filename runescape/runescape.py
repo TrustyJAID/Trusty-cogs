@@ -117,10 +117,11 @@ class Runescape(commands.Cog):
     async def post_activity(
         self, profile: Profile, channels: Dict[str, int], activity: Activity
     ) -> None:
-        url = f"https://apps.runescape.com/runemetrics/app/overview/player/{profile.name}"
-        msg = f"{profile.name}: {activity.text}\n{activity.details}\n\n"
+        profile_url = "https://apps.runescape.com/runemetrics/app/overview/player/{}".format(profile.name.replace(" ", "%20"))
+        icon_url = "http://secure.runescape.com/m=avatar-rs/{}/chat.png".format(profile.name.replace(" ", "%20"))
         image_url = None
         page = None
+        msg = "[{}]({})\n{}\n{}".format(activity.text, profile_url, box(activity.details), discord.utils.format_dt(activity.date))
         if match := KILLED_RE.search(activity.text):
             page = match.group(1).strip()
             if page.endswith("s"):
@@ -152,13 +153,15 @@ class Runescape(commands.Cog):
                 continue
             if channel.permissions_for(guild.me).embed_links:
                 em = discord.Embed(
-                    description=f"[{msg}]({url})\n\n" + discord.utils.format_dt(activity.date)
+                    description=msg,
+                    color=discord.Color.blue()
                 )
+                em.set_author(name=profile.name, icon_url=icon_url)
                 if image_url:
                     em.set_thumbnail(url=image_url)
                 await channel.send(embed=em)
             else:
-                await channel.send(msg + "\n\n" + discord.utils.format_dt(activity.date))
+                await channel.send(msg)
 
     @check_new_metrics.before_loop
     async def before_checking_metrics(self):
