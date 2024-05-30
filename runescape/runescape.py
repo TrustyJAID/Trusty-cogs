@@ -1,4 +1,3 @@
-import re
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Literal, Optional
 
@@ -10,7 +9,6 @@ from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box
 
-from .helpers import IMAGE_URL
 from .menus import BaseMenu, GEChartPages, GESinglePages
 from .profile import (
     Activities,
@@ -29,19 +27,13 @@ from .wilderness import WildernessFlashEvents
 log = getLogger("red.trusty-cogs.runescape")
 
 
-LVL_RE = re.compile(r"Levelled Up (\w+)", flags=re.I)
-XP_RE = re.compile(r"\d+XP IN (.+)", flags=re.I)
-KILLED_RE = re.compile(r"(?:I )?(?:killed|defeated) (?:\d+ |the )?([a-z \-,]+)", flags=re.I)
-FOUND_RE = re.compile(r"I found (?:a pair of|some|a|an) (.+)", flags=re.I)
-
-
 class Runescape(commands.Cog):
     """
     Display Runescape account info
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.5.1"
+    __version__ = "1.5.2"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -117,48 +109,22 @@ class Runescape(commands.Cog):
     async def post_activity(
         self, profile: Profile, channels: Dict[str, int], activity: Activity
     ) -> None:
-        url = f"https://apps.runescape.com/runemetrics/app/overview/player/{profile.name}"
-        msg = f"{profile.name}: {activity.text}\n{activity.details}\n\n"
-        image_url = None
-        page = None
-        if match := KILLED_RE.search(activity.text):
-            page = match.group(1).strip()
-            if page.endswith("s"):
-                page = page[:-1]
-            page = page.replace(" ", "_")
-            if "-" in page:
-                page = page.title()
-            else:
-                page = page.capitalize()
-            image_url = IMAGE_URL + page + ".png"
-        if match := XP_RE.search(activity.text):
-            page = match.group(1).strip()
-            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
-        if match := LVL_RE.search(activity.text):
-            page = match.group(1).strip()
-            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
-        if match := FOUND_RE.search(activity.text):
-            page = match.group(1).strip() + " detail"
-            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
+        embed = activity.embed(profile)
+        text = activity.format_text(profile)
 
         for channel_id, guild_id in channels.items():
             guild = self.bot.get_guild(guild_id)
             if not guild:
                 continue
             channel = guild.get_channel(int(channel_id))
-            if not channel:
+            if not channel or isinstance(channel, (discord.ForumChannel, discord.CategoryChannel)):
                 continue
             if not channel.permissions_for(guild.me).send_messages:
                 continue
             if channel.permissions_for(guild.me).embed_links:
-                em = discord.Embed(
-                    description=f"[{msg}]({url})\n\n" + discord.utils.format_dt(activity.date)
-                )
-                if image_url:
-                    em.set_thumbnail(url=image_url)
-                await channel.send(embed=em)
+                await channel.send(embed=embed)
             else:
-                await channel.send(msg + "\n\n" + discord.utils.format_dt(activity.date))
+                await channel.send(text)
 
     @check_new_metrics.before_loop
     async def before_checking_metrics(self):

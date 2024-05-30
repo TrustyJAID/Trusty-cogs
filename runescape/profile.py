@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
@@ -14,10 +15,15 @@ from red_commons.logging import getLogger
 from redbot.core.utils.chat_formatting import humanize_number, pagify
 from tabulate import tabulate
 
-from .helpers import HEADERS
+from .helpers import HEADERS, IMAGE_URL
 from .xp import ELITE_XP, XP_TABLE
 
 log = getLogger("red.trusty-cogs.runescape")
+
+LVL_RE = re.compile(r"Levelled Up (\w+)", flags=re.I)
+XP_RE = re.compile(r"(?P<xp>\d+)XP IN (.+)", flags=re.I)
+KILLED_RE = re.compile(r"(?:I )?(?:killed|defeated) (?:\d+ |the )?([a-z \-,]+)", flags=re.I)
+FOUND_RE = re.compile(r"I found (?:a pair of|some|a|an) (.+)", flags=re.I)
 
 
 class APIError(Exception):
@@ -188,6 +194,52 @@ class Activity:
             id=activity_id,
         )
 
+    def _get_image_details_text(self):
+        text = self.text
+        details = self.details
+        image_url = None
+        page = None
+        if match := KILLED_RE.search(self.text):
+            page = match.group(1).strip()
+            if page.endswith("s"):
+                page = page[:-1]
+            page = page.replace(" ", "_")
+            if "-" in page:
+                page = page.title()
+            else:
+                page = page.capitalize()
+            image_url = IMAGE_URL + page + ".png"
+        if match := XP_RE.search(self.text):
+            page = match.group(2).strip()
+            if xp := match.group("xp"):
+                number = humanize_number(int(xp))
+                text = self.text.replace(xp, number)
+                details = self.details.replace(xp, number)
+            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
+        if match := LVL_RE.search(self.text):
+            page = match.group(1).strip()
+            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
+        if match := FOUND_RE.search(self.text):
+            page = match.group(1).strip() + " detail"
+            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
+        return text, details, image_url
+
+    def format_text(self, profile: Profile) -> str:
+        text, details, image_url = self._get_image_details_text()
+        ts = discord.utils.format_dt(self.date)
+        return f"{profile.name}: {text}\n{details}\n\n{ts}"
+
+    def embed(self, profile: Profile) -> discord.Embed:
+        url = f"https://apps.runescape.com/runemetrics/app/overview/player/{profile.name}"
+        # msg = f"{profile.name}: {activity.text}\n{activity.details}\n\n"
+        ts = discord.utils.format_dt(self.date)
+        text, details, image_url = self._get_image_details_text()
+        embed = discord.Embed(title=text, description=f"{details}\n\n{ts}")
+        embed.set_author(name=profile.name, url=profile.metrics, icon_url=profile.avatar)
+        if image_url is not None:
+            embed.set_thumbnail(url=image_url)
+        return embed
+
 
 class Activities:
     def __init__(self, *args, **kwargs):
@@ -354,6 +406,16 @@ class Profile:
             skills_list.append([skill.name, level, humanize_number(xp), rank])
         return tabulate(skills_list, headers=["Skill", "Level", "Experience", "Rank"])
 
+    @property
+    def avatar(self):
+        return "http://secure.runescape.com/m=avatar-rs/{}/chat.png".format(
+            self.name.replace(" ", "%20")
+        )
+
+    @property
+    def metrics(self):
+        return f"https://apps.runescape.com/runemetrics/app/overview/player/{self.name}"
+
     def stats_table(self) -> str:
         table = str(self)
         top_row_len = len(table.split("\n")[1])
@@ -377,11 +439,7 @@ class Profile:
             activities += f"[<t:{int(activity.date.timestamp())}>] {activity.details}\n"
 
         # em.colour = int(teams[_teams.name]["home"].replace("#", ""), 16)
-        em.set_thumbnail(
-            url="http://secure.runescape.com/m=avatar-rs/{}/chat.png".format(
-                self.name.replace(" ", "%20")
-            )
-        )
+        em.set_thumbnail(url=self.avatar)
         em.add_field(name="Combat Level", value=self.combatlevel)
         em.add_field(name="Total Level", value=humanize_number(self.totalskill))
         em.add_field(name="Total XP", value=humanize_number(self.totalxp))
