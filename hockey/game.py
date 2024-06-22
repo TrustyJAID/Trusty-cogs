@@ -419,12 +419,13 @@ class Game:
         if self.game_type is GameType.playoffs and not self.game_state.is_preview():
             try:
                 playoffs = await self.api.get_playoffs(self.game_start.year)
+                series = playoffs.get_series(self.home, self.away)
+                log.debug("Playoffs series %s", series)
+                em.set_image(url=series.logo or playoffs.logo)
+                description += f"[{series.title}]({series.url})"
             except Exception:
                 log.exception("Error getting playoffs data.")
-            series = playoffs.get_series(self.home, self.away)
-            log.debug("Playoffs series %s", series)
-            em.set_image(url=series.logo or playoffs.logo)
-            description += f"[{series.title}]({series.url})"
+
         if include_heatmap:
             em.set_image(url=self.heatmap_url())
             description += f"\n[Natural Stat Trick]({self.nst_url()})"
@@ -489,12 +490,13 @@ class Game:
             if self.game_type is GameType.playoffs:
                 try:
                     playoffs = await self.api.get_playoffs(self.game_start.year)
+                    series = playoffs.get_series(self.home, self.away)
+                    log.debug("Playoffs series %s", series)
+                    em.set_image(url=series.logo or playoffs.logo)
+                    description += f"[{series.title}]({series.url})\n"
                 except Exception:
                     log.exception("Error getting playoffs data.")
-                series = playoffs.get_series(self.home, self.away)
-                log.debug("Playoffs series %s", series)
-                em.set_image(url=series.logo or playoffs.logo)
-                description += f"[{series.title}]({series.url})\n"
+
         else:
             home_str, away_str, desc, url = await self.get_stats_msg()
             if desc is not None:
