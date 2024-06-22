@@ -158,10 +158,11 @@ class PlayoffSeries:
     topSeedWins: int
     bottomSeedRank: int
     bottomSeedWins: int
-    winningTeamId: int
-    losingTeamId: int
+
     year: int
 
+    winningTeamId: int = -1
+    losingTeamId: int = -1
     conferenceAbbrev: Optional[str] = None
     conferenceName: Optional[str] = None
     seriesLogo: Optional[str] = None

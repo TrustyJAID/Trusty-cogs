@@ -417,7 +417,10 @@ class Game:
             em.add_field(name=home_field, value=home_str)
             em.add_field(name=away_field, value=away_str)
         if self.game_type is GameType.playoffs and not self.game_state.is_preview():
-            playoffs = await self.api.get_playoffs(self.game_start.year)
+            try:
+                playoffs = await self.api.get_playoffs(self.game_start.year)
+            except Exception:
+                log.exception("Error getting playoffs data.")
             series = playoffs.get_series(self.home, self.away)
             log.debug("Playoffs series %s", series)
             em.set_image(url=series.logo or playoffs.logo)
@@ -484,7 +487,10 @@ class Game:
                 away_score=self.away_score, away_shots=self.away_shots
             )
             if self.game_type is GameType.playoffs:
-                playoffs = await self.api.get_playoffs(self.game_start.year)
+                try:
+                    playoffs = await self.api.get_playoffs(self.game_start.year)
+                except Exception:
+                    log.exception("Error getting playoffs data.")
                 series = playoffs.get_series(self.home, self.away)
                 log.debug("Playoffs series %s", series)
                 em.set_image(url=series.logo or playoffs.logo)
