@@ -190,7 +190,7 @@ TEAMS = {
         "emoji": "FloridaPanthers:664662872294555648",
         "home": "#C8102E",
         "id": 13,
-        "invite": "https://discord.gg/Sn9NUqxpc6",
+        "invite": "https://discord.gg/HsPmCmth7W",
         "logo": "https://i.imgur.com/aNuTh9j.png",
         "team_url": "https://www.nhl.com/panthers",
         "timezone": "US/Eastern",
