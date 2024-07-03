@@ -132,7 +132,13 @@ class AutoMod(commands.Cog):
             Will create an automod rule with the saved trigger `mytrigger` and
             the saved actions `timeoutuser` and `notifymods`.
         """
+        if not name:
+            await ctx.send_help()
+            return
         log.debug(f"{rule.to_args()}")
+        if not rule.trigger:
+            await ctx.send("No trigger was provided for the rule.")
+            return
         rule_args = rule.to_args()
         name = name.lower()
         if rule_args.get("reason") is not None:
@@ -140,7 +146,15 @@ class AutoMod(commands.Cog):
         try:
             rule = await ctx.guild.create_automod_rule(name=name, **rule_args)
         except Exception as e:
-            await ctx.send(e)
+            rule_args_str = "\n".join(f"- {k}: {v}" for k, v in rule_args.items())
+            await ctx.send(
+                (
+                    "There was an error creating a rule with the following rules:\n"
+                    f"Error: {e}\n"
+                    f"Name: {name}\n"
+                    f"Rules:\n{rule_args_str}"
+                )
+            )
             return
         pages = AutoModRulePages([rule], guild=ctx.guild)
         await BaseMenu(pages, self).start(ctx)
