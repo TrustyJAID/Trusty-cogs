@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Union
 
 import aiohttp
@@ -390,6 +390,8 @@ class GameDayThreads(HockeyMixin):
             for game in game_list:
                 if game.game_state == "Postponed":
                     continue
+                if (game.game_start - datetime.now(timezone.utc)) > timedelta(days=7):
+                    continue
                 await self.create_gdt(guild, game)
         msg = _("Game Day threads for {team} setup in {channel}").format(
             team=team, channel=channel.mention
@@ -418,6 +420,8 @@ class GameDayThreads(HockeyMixin):
                     next_game = next_games[0]
                 if next_game is None:
                     continue
+                if (next_game.game_start - datetime.now(timezone.utc)) > timedelta(days=7):
+                    continue
                 cur_channel = None
                 cur_channels = await self.config.guild(guild).gdt_chans()
                 if cur_channels and str(next_game.game_id) in cur_channels:
@@ -441,6 +445,8 @@ class GameDayThreads(HockeyMixin):
                 await self.delete_gdt(guild)
                 for game in game_list:
                     if game.game_state == "Postponed":
+                        continue
+                    if (game.game_start - datetime.now(timezone.utc)) > timedelta(days=7):
                         continue
                     await self.create_gdt(guild, game)
 
@@ -478,6 +484,8 @@ class GameDayThreads(HockeyMixin):
             if next_games != []:
                 next_game = next_games[0]
                 if next_game is None:
+                    return
+                if (next_game.game_start - datetime.now(timezone.utc)) > timedelta(days=7):
                     return
             else:
                 # Return if no more games are playing for this team

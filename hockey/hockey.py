@@ -387,6 +387,8 @@ class Hockey(
                         continue
                     if game.schedule_state != "OK":
                         continue
+                    if (game.game_start - datetime.now(timezone.utc)) > timedelta(days=1):
+                        continue
                     self.current_games[game.id] = {
                         "count": 0,
                         "game": None,

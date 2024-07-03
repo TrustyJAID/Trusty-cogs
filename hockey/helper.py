@@ -181,7 +181,7 @@ class Team:
 
     @classmethod
     def from_nhle(cls, data: dict, home: bool = False) -> Team:
-        name = data.get("name", {}).get("default")
+        name = data.get("name", {}).get("default") or data.get("placeName", {}).get("default")
         team_id = data.get("id", -1)
         team_ids = set(i["id"] for i in TEAMS.values())
         if team_id in team_ids:

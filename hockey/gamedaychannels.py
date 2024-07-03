@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import aiohttp
@@ -316,6 +316,8 @@ class GameDayChannels(HockeyMixin):
         else:
             game_list = await self.api.get_games()
             for game in game_list:
+                if (game.game_start - datetime.now(timezone.utc)) > timedelta(days=7):
+                    continue
                 try:
                     await self.create_gdc(guild, game)
                 except aiohttp.ClientConnectorError:
@@ -348,6 +350,8 @@ class GameDayChannels(HockeyMixin):
                     next_game = next_games[0]
                 if next_game is None:
                     continue
+                if (next_game.game_start - datetime.now(timezone.utc)) > timedelta(days=7):
+                    continue
                 cur_channels = await self.config.guild(guild).gdc_chans()
                 cur_channel = guild.get_channel(cur_channels.get(str(next_game.game_id)))
                 if cur_channel is None:
@@ -358,6 +362,8 @@ class GameDayChannels(HockeyMixin):
                 await self.delete_gdc(guild)
                 for game in game_list:
                     if game.game_state == "Postponed":
+                        continue
+                    if (game.game_start - datetime.now(timezone.utc)) > timedelta(days=7):
                         continue
                     await self.create_gdc(guild, game)
 
@@ -387,6 +393,8 @@ class GameDayChannels(HockeyMixin):
             if next_games != []:
                 next_game = next_games[0]
                 if next_game is None:
+                    return
+                if (next_game.game_start - datetime.now(timezone.utc)) > timedelta(days=7):
                     return
             else:
                 # Return if no more games are playing for this team
