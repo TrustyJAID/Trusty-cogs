@@ -883,7 +883,7 @@ class Destiny(commands.Cog):
                 except Exception:
                     pass
                 for user_id, data in saved_users.items():
-                    if data["oauth"]["membership_id"] == bungie_id:
+                    if data.get("oauth", {}).get("membership_id") == bungie_id:
                         discord_user = ctx.guild.get_member(int(user_id))
                         if discord_user:
                             discord_name = str(discord_user)
