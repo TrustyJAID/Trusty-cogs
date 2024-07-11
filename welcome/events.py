@@ -5,6 +5,7 @@ from typing import List, Optional, Pattern, Union, cast
 
 import discord
 from red_commons.logging import getLogger
+from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
@@ -68,7 +69,10 @@ class Events:
                         param = params[0]
             raw_response = raw_response.replace("{" + result[0] + "}", param)
         if has_filter:
-            bad_name = await has_filter.filter_hits(username, guild)
+            if version_info < VersionInfo.from_str("3.5.10"):
+                bad_name = await has_filter.filter_hits(username, guild)
+            else:
+                bad_name = await has_filter.filter_hits(guild, username)
             if bad_name:
                 for word in bad_name:
                     raw_response = re.sub(rf"(?i){word}", filter_setting, raw_response)
@@ -99,7 +103,10 @@ class Events:
         username = str(member)
         if has_filter:
             replace_word = await self.config.guild(guild).FILTER_SETTING() or "[Redacted]"
-            bad_words = await has_filter.filter_hits(username, guild)
+            if version_info < VersionInfo.from_str("3.5.10"):
+                bad_words = await has_filter.filter_hits(username, guild)
+            else:
+                bad_words = await has_filter.filter_hits(guild, username)
             if bad_words:
                 for word in bad_words:
                     username = username.replace(word, replace_word)
@@ -171,9 +178,14 @@ class Events:
         has_filter = self.bot.get_cog("Filter")
         filter_setting = await self.config.guild(guild).FILTER_SETTING()
         if has_filter and filter_setting is None:
-            if await has_filter.filter_hits(member.name, guild):
-                log.info("Member joined with a bad username.")
-                return
+            if version_info < VersionInfo.from_str("3.5.10"):
+                if await has_filter.filter_hits(member.name, guild):
+                    log.info("Member joined with a bad username.")
+                    return
+            else:
+                if await has_filter.filter_hits(guild, member.name):
+                    log.info("Member joined with a bad username.")
+                    return
 
         if datetime.now(timezone.utc).date() > self.today_count["now"].date():
             self.today_count = {"now": datetime.now(timezone.utc)}
