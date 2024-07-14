@@ -502,7 +502,7 @@ TEAMS = {
         "away": "#008852",
         "conference": "Western",
         "division": "Pacific",
-        "emoji": "VancouverCanucks:664662930859753492",
+        "emoji": "VancouverCanucks:1262121969466347690",
         "home": "#001F5C",
         "id": 23,
         "invite": "https://discord.gg/UTZ5Vrb",
