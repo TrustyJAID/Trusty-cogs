@@ -1262,6 +1262,7 @@ class NotSoBot(commands.Cog):
             img_bytes = BytesIO()
             image.save(img_bytes, format="JPEG")
             img_bytes.seek(0)
+            final = BytesIO()
             image = jpglitch.Jpeg(bytearray(img_bytes.getvalue()), amount, seed, iterations)
             final.name = self.random_filename(True, "jpg")
             image.save_image(final)
