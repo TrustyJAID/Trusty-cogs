@@ -8,6 +8,7 @@ from typing import Dict, Literal, Mapping, Optional, Tuple
 import discord
 import tekore
 from red_commons.logging import getLogger
+from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
@@ -109,19 +110,37 @@ class Spotify(
         self.play_ctx = discord.app_commands.ContextMenu(
             name="Play on Spotify",
             callback=self.play_from_message,
-            # allowed_contexts=discord.flags.AppCommandContext.all(),
-            # allowed_installs=discord.AppInstallationType.all()
         )
         self.queue_ctx = discord.app_commands.ContextMenu(
             name="Queue on Spotify",
             callback=self.play_from_message,
-            # allowed_contexts=discord.flags.AppCommandContext.all(),
-            # allowed_installs=discord.AppInstallationType.all()
         )
         self._commit = ""
         self._repo = ""
 
     async def cog_load(self):
+        if version_info > VersionInfo.from_str("3.5.9"):
+            self.play_ctx.allowed_contexts = discord.app_commands.installs.AppCommandContext(
+                guild=True, dm_channel=True, private_channel=True
+            )
+            self.play_ctx.allowed_installs = discord.app_commands.installs.AppInstallationType(
+                guild=True, user=True
+            )
+            self.queue_ctx.allowed_contexts = discord.app_commands.installs.AppCommandContext(
+                guild=True, dm_channel=True, private_channel=True
+            )
+            self.queue_ctx.allowed_installs = discord.app_commands.installs.AppInstallationType(
+                guild=True, user=True
+            )
+            self.spotify_com.app_command.allowed_contexts = (
+                discord.app_commands.installs.AppCommandContext(
+                    guild=True, dm_channel=True, private_channel=True
+                )
+            )
+            self.spotify_com.app_command.allowed_installs = (
+                discord.app_commands.installs.AppInstallationType(guild=True, user=True)
+            )
+
         self.bot.tree.add_command(self.play_ctx)
         self.bot.tree.add_command(self.queue_ctx)
         await self.set_tokens()
