@@ -16,6 +16,7 @@ from typing import Optional
 import discord
 from discord.ext.commands.errors import BadArgument
 from red_commons.logging import getLogger
+from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
@@ -64,7 +65,8 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         self._key: Optional[str] = None
         self.translation_loop.start()
         self.translate_ctx = discord.app_commands.ContextMenu(
-            name="Translate Message", callback=self.translate_from_message
+            name="Translate Message",
+            callback=self.translate_from_message,
         )
         self._tr: GoogleTranslator
 
@@ -82,6 +84,21 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         return
 
     async def cog_load(self) -> None:
+        if version_info > VersionInfo.from_str("3.5.9"):
+            self.translate_ctx.allowed_contexts = discord.app_commands.installs.AppCommandContext(
+                guild=True, dm_channel=True, private_channel=True
+            )
+            self.translate_ctx.allowed_installs = (
+                discord.app_commands.installs.AppInstallationType(guild=True, user=True)
+            )
+            self.translate.app_command.allowed_contexts = (
+                discord.app_commands.installs.AppCommandContext(
+                    guild=True, dm_channel=True, private_channel=True
+                )
+            )
+            self.translate.app_command.allowed_installs = (
+                discord.app_commands.installs.AppInstallationType(guild=True, user=True)
+            )
         self.bot.tree.add_command(self.translate_ctx)
         central_key = (await self.bot.get_shared_api_tokens("google_translate")).get(
             "api_key", None
