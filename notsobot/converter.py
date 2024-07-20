@@ -43,7 +43,9 @@ class TenorMedia:
 
     @classmethod
     def from_json(cls, data: dict) -> TenorMedia:
-        return cls(**data)
+        known_data_keys = ["url", "duration", "preview", "dims", "size"]
+        known_data = {k: data.pop(k) for k in known_data_keys}
+        return cls(**known_data)
 
 
 @dataclass
@@ -62,7 +64,19 @@ class TenorPost:
     @classmethod
     def from_json(cls, data: dict) -> TenorPost:
         media = {k: TenorMedia.from_json(v) for k, v in data.pop("media_formats", {}).items()}
-        return cls(**data, media_formats=media)
+        known_data_keys = [
+            "id",
+            "title",
+            "created",
+            "content_description",
+            "itemurl",
+            "url",
+            "tags",
+            "flags",
+            "hasaudio",
+        ]
+        known_data = {k: data.pop(k) for k in known_data_keys}
+        return cls(**known_data, media_formats=media)
 
 
 class TenorAPI:
