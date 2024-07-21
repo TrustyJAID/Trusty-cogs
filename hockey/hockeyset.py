@@ -35,6 +35,9 @@ class HockeySetCommands(HockeyMixin):
         """
         Show hockey settings for this server
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing()
         guild: discord.Guild = ctx.guild
         standings_channel = guild.get_channel(await self.config.guild(guild).standings_channel())
@@ -118,6 +121,9 @@ class HockeySetCommands(HockeyMixin):
 
         This command can take a while to complete.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         try:
             data = await self.api.club_schedule_season(team)
         except aiohttp.ClientConnectorError:
@@ -218,6 +224,9 @@ class HockeySetCommands(HockeyMixin):
         `[channel]` The channel you want standings to be posted into, if not provided
         this will use the current channel.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing()
         guild = ctx.guild
         channel_perms = channel.permissions_for(guild.me)
@@ -278,6 +287,9 @@ class HockeySetCommands(HockeyMixin):
 
         This updates at the same time as the game day channels (usually 9AM PST)
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing()
         guild = ctx.message.guild
         cur_state = not await self.config.guild(guild).post_standings()
@@ -296,6 +308,9 @@ class HockeySetCommands(HockeyMixin):
         """
         Toggle 60, 30, and 10 minute countdown updates for games in a specified channel
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         current = await self.config.channel(channel).countdown()
         await self.config.channel(channel).countdown.set(not current)
         if current:
@@ -334,6 +349,9 @@ class HockeySetCommands(HockeyMixin):
         `goal` is all goal updates.
         `periodrecap` is a recap of the period at the intermission.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing()
         cur_states = []
         added = []
@@ -373,6 +391,9 @@ class HockeySetCommands(HockeyMixin):
         `[channel]` The channel you specifically want goal images enabled for.
         If channel is not provided the server-wide setting will be toggled instead.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing()
         if channel is None:
             current = not await self.config.guild(ctx.guild).include_goal_image()
@@ -419,6 +440,9 @@ class HockeySetCommands(HockeyMixin):
         `[channel]` The channel to post updates into. Defaults to the current channel
         if not provided.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if not team:
             await ctx.send(_("You must provide a valid current team."))
             return
@@ -453,6 +477,9 @@ class HockeySetCommands(HockeyMixin):
         Removes a teams goal updates from a channel
         defaults to the current channel
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         msg = _("No teams are currently being posted in {channel}.").format(
             channel=channel.mention
         )

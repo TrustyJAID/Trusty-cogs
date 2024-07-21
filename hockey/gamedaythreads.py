@@ -46,6 +46,9 @@ class GameDayThreads(HockeyMixin):
         """
         Show the current Game Day Thread Settings
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         guild = ctx.guild
         create_threads = await self.config.guild(guild).create_threads()
         if create_threads is None:
@@ -109,6 +112,9 @@ class GameDayThreads(HockeyMixin):
         """
         Delete all current game day threads for the server
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing()
         await self.delete_gdt(ctx.guild)
         msg = _("Game day Threads cleared.")
@@ -127,6 +133,9 @@ class GameDayThreads(HockeyMixin):
         `final` is the final game update including 3 stars.
         `goal` is all the goal updates.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         cur_state = await self.config.guild(ctx.guild).gdt_state_updates()
         added = []
         removed = []
@@ -161,6 +170,9 @@ class GameDayThreads(HockeyMixin):
         """
         Toggle 60, 30, and 10 minute countdown updates in game day threads
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         current = await self.config.guild(ctx.guild).gdt_countdown()
         await self.config.guild(ctx.guild).gdt_countdown.set(not current)
         if current:
@@ -184,6 +196,9 @@ class GameDayThreads(HockeyMixin):
 
         `<update_start>` either true or false.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await self.config.guild(ctx.guild).update_gdt.set(update_start)
         if update_start:
             msg = _("Game day threads will update as the game progresses.")
@@ -197,6 +212,9 @@ class GameDayThreads(HockeyMixin):
         """
         Creates the next gdt for the server
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing()
         if not await self.config.guild(ctx.guild).gdt_team():
             msg = _("No team was setup for game day threads in this server.")
@@ -225,6 +243,9 @@ class GameDayThreads(HockeyMixin):
         """
         Toggles the game day channel creation on this server
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing()
         guild = ctx.guild
         if await self.config.guild(guild).create_channels():
@@ -260,6 +281,9 @@ class GameDayThreads(HockeyMixin):
 
         Note: This is limited to 100 members at once due to a discord limitation.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing()
         if role is None and not team_name:
             await self.config.guild(ctx.guild).gdt_role.clear()
@@ -317,6 +341,9 @@ class GameDayThreads(HockeyMixin):
         """
         Test checking for new game day channels
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await self.check_new_gdt()
         await ctx.tick()
 
@@ -341,6 +368,9 @@ class GameDayThreads(HockeyMixin):
         `[channel]` The channel that game day threads will be created in. If not provided will default
         to the current text channel.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing()
         guild: discord.Guild = ctx.guild
         if await self.config.guild(guild).create_channels():

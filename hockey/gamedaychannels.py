@@ -45,6 +45,9 @@ class GameDayChannels(HockeyMixin):
         """
         Show the current Game Day Channel Settings
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         async with ctx.typing():
             guild = ctx.message.guild
             create_channels = await self.config.guild(guild).create_channels()
@@ -107,6 +110,9 @@ class GameDayChannels(HockeyMixin):
         """
         Delete all current game day channels for the server
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await self.delete_gdc(ctx.guild)
         await ctx.send(_("Game day channels deleted."))
 
@@ -122,6 +128,9 @@ class GameDayChannels(HockeyMixin):
         `final` is the final game update including 3 stars.
         `goal` is all the goal updates.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         cur_state = await self.config.guild(ctx.guild).gdt_state_updates()
         added = []
         removed = []
@@ -156,6 +165,9 @@ class GameDayChannels(HockeyMixin):
         """
         Toggle 60, 30, and 10 minute countdown updates in game day channels
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         current = await self.config.guild(ctx.guild).gdc_countdown()
         await self.config.guild(ctx.guild).gdc_countdown.set(not current)
         if current:
@@ -176,6 +188,9 @@ class GameDayChannels(HockeyMixin):
         """
         Creates the next gdc for the server
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if not await self.config.guild(ctx.guild).gdc_team():
             await ctx.send(_("No team was setup for game day channels in this server."))
             return
@@ -202,6 +217,9 @@ class GameDayChannels(HockeyMixin):
         """
         Toggles the game day channel creation on this server
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         guild = ctx.message.guild
         if await self.config.guild(guild).create_threads():
             await ctx.send(
@@ -222,6 +240,9 @@ class GameDayChannels(HockeyMixin):
         """
         Change the category for channel creation. Channel is case sensitive.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         guild = ctx.message.guild
 
         # cur_setting = await self.config.guild(guild).category()
@@ -235,6 +256,9 @@ class GameDayChannels(HockeyMixin):
         """
         Toggle's auto deletion of game day channels.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         guild = ctx.message.guild
 
         cur_setting = await self.config.guild(guild).delete_gdc()
@@ -252,6 +276,9 @@ class GameDayChannels(HockeyMixin):
         """
         Test checking for new game day channels
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await self.check_new_gdc()
         await ctx.tick()
 
@@ -277,6 +304,9 @@ class GameDayChannels(HockeyMixin):
         `[delete_gdc=True]` will tell the bot whether or not to delete game day channels automatically
         must be either `True` or `False`. Defaults to `True` if not provided.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         guild = ctx.message.guild
         if await self.config.guild(guild).create_threads():
             await ctx.send(

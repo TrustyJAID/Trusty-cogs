@@ -849,6 +849,9 @@ class HockeyPickems(HockeyMixin):
         """
         Show the servers current pickems settings
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         data = await self.pickems_config.guild(ctx.guild).all()
         category_channel = ctx.guild.get_channel(data.get("pickems_category"))
         category = category_channel.mention if category_channel else None
@@ -898,7 +901,9 @@ class HockeyPickems(HockeyMixin):
         `<amount>` The number of credits that will be awarded to everyone
         who voted correctly on the game.
         """
-
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if amount and amount <= 0:
             amount = None
         global_bank = await bank.is_global()
@@ -938,6 +943,9 @@ class HockeyPickems(HockeyMixin):
         `<amount>` The number of credits that will be awarded to the winners
         every week.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if amount and amount <= 0:
             amount = None
         global_bank = await bank.is_global()
@@ -979,6 +987,9 @@ class HockeyPickems(HockeyMixin):
 
         `<amount>` The number of top members to receive the weekly awarded amount.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if amount and amount <= 0:
             amount = None
         global_bank = await bank.is_global()
@@ -1031,6 +1042,9 @@ class HockeyPickems(HockeyMixin):
         users per week to earn the weekly reward.
 
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         global_bank = await bank.is_global()
         currency_name = await bank.get_currency_name(ctx.guild)
         if global_bank:
@@ -1081,6 +1095,9 @@ class HockeyPickems(HockeyMixin):
         `[channel]` the channel where pickems threads will be created.
         If not provided this will use the current channel.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.defer()
         if not await self.check_pickems_req(ctx):
             return
@@ -1120,6 +1137,9 @@ class HockeyPickems(HockeyMixin):
         """
         Enable pickems buttons to be edited showing the number of votes for each team
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await self.pickems_config.guild(ctx.guild).show_count.set(enabled)
         if enabled:
             msg = _("Pickems will attempt to edit the buttons showing the number of votes.")
@@ -1133,6 +1153,9 @@ class HockeyPickems(HockeyMixin):
         """
         Stop posting new pickems threads and clear existing list of pickems threads.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         existing_channels = await self.pickems_config.guild(ctx.guild).pickems_channels()
         if existing_channels:
             await self.pickems_config.guild(ctx.guild).pickems_channels.clear()
@@ -1148,6 +1171,9 @@ class HockeyPickems(HockeyMixin):
         `[date]` is a specified day in the format "YYYY-MM-DD"
         if `date` is not provided the current day is used instead.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.defer()
         if not await self.check_pickems_req(ctx):
             return
@@ -1177,6 +1203,9 @@ class HockeyPickems(HockeyMixin):
 
         `<true_or_false>` `True` if you're sure you want to clear the settings.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if true_or_false:
             await self.pickems_config.guild(ctx.guild).pickems.clear()
             try:
@@ -1202,6 +1231,9 @@ class HockeyPickems(HockeyMixin):
 
         `<true_or_false>` `True` if you're sure you want to clear the settings.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if true_or_false:
             await self.pickems_config.guild(ctx.guild).leaderboard.clear()
             await ctx.send(_("Server leaderboard reset."))
@@ -1216,6 +1248,9 @@ class HockeyPickems(HockeyMixin):
 
         `<true_or_false>` `True` if you're sure you want to clear the settings.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if true_or_false:
             await self.tally_guild_leaderboard(ctx.guild)
             await ctx.send(_("Server leaderboard has been saved."))
@@ -1229,6 +1264,9 @@ class HockeyPickems(HockeyMixin):
 
         `<true_or_false>` `True` if you're sure you want to clear the settings.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if true_or_false:
             async with self.pickems_config.guild(ctx.guild).leaderboard() as leaderboard:
                 if leaderboard is None:
@@ -1246,6 +1284,9 @@ class HockeyPickems(HockeyMixin):
 
         `<true_or_false>` `True` if you're sure you want to clear the settings.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if true_or_false:
             async with self.pickems_config.guild(ctx.guild).leaderboard() as leaderboard:
                 if leaderboard is None:
@@ -1266,6 +1307,9 @@ class HockeyPickems(HockeyMixin):
 
         `<true_or_false>` `True` if you're sure you want to clear the settings.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if true_or_false:
             async with self.pickems_config.guild(ctx.guild).leaderboard() as leaderboard:
                 if leaderboard is None:
@@ -1285,6 +1329,9 @@ class HockeyPickems(HockeyMixin):
 
         `<true_or_false>` `True` if you're sure you want to clear the settings.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if true_or_false:
             async with self.pickems_config.guild(ctx.guild).leaderboard() as leaderboard:
                 if leaderboard is None:
@@ -1305,6 +1352,9 @@ class HockeyPickems(HockeyMixin):
 
         `<true_or_false>` `True` if you're sure you want to clear the settings.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if true_or_false:
             async with self.pickems_config.guild(ctx.guild).leaderboard() as leaderboard:
                 if leaderboard is None:
@@ -1326,6 +1376,9 @@ class HockeyPickems(HockeyMixin):
 
         `<true_or_false>` `True` if you're sure you want to clear the settings.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if true_or_false:
             async with self.pickems_config.guild(ctx.guild).leaderboard() as leaderboard:
                 if leaderboard is None:
@@ -1351,6 +1404,9 @@ class HockeyPickems(HockeyMixin):
         """
         Allows moderators to set a users points on the leaderboard
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         leaderboard = await self.pickems_config.guild(ctx.guild).leaderboard()
         if leaderboard == {} or leaderboard is None:
             await ctx.send(_("There is no current leaderboard for this server!"))

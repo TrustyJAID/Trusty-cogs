@@ -11,6 +11,7 @@ import aiohttp
 import discord
 import yaml
 from red_commons.logging import getLogger
+from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
@@ -266,6 +267,15 @@ class Hockey(
         self.loop = asyncio.create_task(self.game_check_loop())
         self.loop.add_done_callback(self.hockey_loop_error)
         await self.migrate_settings()
+        if version_info > VersionInfo.from_str("3.5.9"):
+            self.hockey_commands.app_command.allowed_contexts = (
+                discord.app_commands.installs.AppCommandContext(
+                    guild=True, dm_channel=True, private_channel=True
+                )
+            )
+            self.hockey_commands.app_command.allowed_installs = (
+                discord.app_commands.installs.AppInstallationType(guild=True, user=True)
+            )
 
     async def migrate_settings(self) -> None:
         schema_version = await self.config.schema_version()

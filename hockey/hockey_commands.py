@@ -121,7 +121,7 @@ class HockeyCommands(HockeyMixin):
         await ctx.send(msg)
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def standings(self, ctx: commands.Context, *, search: StandingsFinder = None) -> None:
         """
         Displays current standings
@@ -142,7 +142,7 @@ class HockeyCommands(HockeyMixin):
         await StandingsMenu(standings=standings, start=search).start(ctx=ctx)
 
     @hockey_commands.command(aliases=["score"])
-    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     @discord.app_commands.describe(date="YYYY-MM-DD")
     async def games(
         self,
@@ -179,7 +179,7 @@ class HockeyCommands(HockeyMixin):
             return
 
     @hockey_commands.command(aliases=["pbp"])
-    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     @discord.app_commands.describe(date="YYYY-MM-DD")
     async def playbyplay(
         self,
@@ -221,7 +221,7 @@ class HockeyCommands(HockeyMixin):
             return
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def playoffs(
         self,
         ctx: commands.Context,
@@ -262,7 +262,7 @@ class HockeyCommands(HockeyMixin):
             return
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def heatmap(
         self,
         ctx: commands.Context,
@@ -314,7 +314,7 @@ class HockeyCommands(HockeyMixin):
             return
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def gameflow(
         self,
         ctx: commands.Context,
@@ -370,7 +370,7 @@ class HockeyCommands(HockeyMixin):
             return
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def schedule(
         self,
         ctx: commands.Context,
@@ -406,7 +406,7 @@ class HockeyCommands(HockeyMixin):
             return
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def recap(
         self,
         ctx: commands.Context,
@@ -442,7 +442,7 @@ class HockeyCommands(HockeyMixin):
             return
 
     @hockey_commands.command(hidden=True, with_app_command=False)
-    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def season(
         self,
         ctx: commands.Context,
@@ -502,7 +502,7 @@ class HockeyCommands(HockeyMixin):
         # await ctx.send(x[0])
 
     @hockey_commands.command(aliases=["players"])
-    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def player(
         self,
         ctx: commands.Context,
@@ -563,7 +563,7 @@ class HockeyCommands(HockeyMixin):
             return
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def roster(
         self,
         ctx: commands.Context,
@@ -683,6 +683,9 @@ class HockeyCommands(HockeyMixin):
         """
         Display a nice embed of server specific rules
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing()
         if not ctx.channel.permissions_for(ctx.guild.me).embed_links:
             return
@@ -856,7 +859,7 @@ class HockeyCommands(HockeyMixin):
 
     @hockey_commands.command()
     @commands.guild_only()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
+    @commands.bot_has_permissions(add_reactions=True)
     async def leaderboard(
         self,
         ctx: commands.Context,
@@ -883,6 +886,9 @@ class HockeyCommands(HockeyMixin):
         than people who consistently vote. The only way to win is to keep playing
         and picking correctly.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing(ephemeral=not public)
         if leaderboard_type is None:
             leaderboard_type = LeaderboardType(3)
@@ -890,11 +896,14 @@ class HockeyCommands(HockeyMixin):
 
     @hockey_commands.command(aliases=["pickemvotes", "pickemvote"])
     @commands.guild_only()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
+    @commands.bot_has_permissions(add_reactions=True)
     async def pickemsvotes(self, ctx: commands.Context, public: Optional[bool] = False):
         """
         View your current pickems votes for the server.
         """
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         await ctx.typing(ephemeral=not public)
         if str(ctx.guild.id) not in self.all_pickems:
             msg = _("This server does not have any pickems setup.")
@@ -929,6 +938,9 @@ class HockeyCommands(HockeyMixin):
         rules,
     ) -> None:
         """Set the main rules page for the nhl rules command"""
+        if not ctx.guild:
+            await ctx.send(_("This command can only work inside a server."))
+            return
         if not team:
             await ctx.send(_("You must provide a valid current team."))
             return
