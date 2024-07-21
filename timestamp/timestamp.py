@@ -6,6 +6,7 @@ import discord
 from babel.dates import format_time, get_timezone_location, get_timezone_name
 from discord.utils import format_dt, snowflake_time
 from red_commons.logging import getLogger
+from redbot import VersionInfo, version_info
 from redbot.core import commands, i18n
 from redbot.core.commands.converter import RelativedeltaConverter
 from redbot.core.config import Config
@@ -163,6 +164,17 @@ class Timestamp(commands.Cog):
             ret += f"- Commit: [{self._commit[:9]}]({self._repo}/tree/{self._commit})"
         return ret
 
+    async def cog_load(self):
+        if version_info > VersionInfo.from_str("3.5.9"):
+            self.discord_timestamp.app_command.allowed_contexts = (
+                discord.app_commands.installs.AppCommandContext(
+                    guild=True, dm_channel=True, private_channel=True
+                )
+            )
+            self.discord_timestamp.app_command.allowed_installs = (
+                discord.app_commands.installs.AppInstallationType(guild=True, user=True)
+            )
+
     async def red_delete_data_for_user(
         self,
         *,
@@ -317,6 +329,7 @@ class Timestamp(commands.Cog):
         )
 
     async def send_all_styles(self, ctx: commands.Context, new_time: datetime, *, msg: str = ""):
+        msg += f"ISO\n{box(new_time.isoformat())}"
         for i in TIMESTAMP_STYLES:
             ts = format_dt(new_time, i)
             msg += f"{ts}\n{box(ts)}"
