@@ -40,7 +40,7 @@ class MemberUpdateEnum(Enum):
             MemberUpdateEnum.nicknames: _("Nickname"),
             MemberUpdateEnum.roles: _("Roles"),
             MemberUpdateEnum.pending: _("Pending"),
-            MemberUpdateEnum.timeout: _("Timeout"),
+            MemberUpdateEnum.timeout: _("Timeout until"),
             MemberUpdateEnum.avatar: _("Guild Avatar"),
             MemberUpdateEnum.flags: _("Flags"),
         }
@@ -1938,10 +1938,10 @@ class EventMixin:
                     embed.set_image(url=after_attr)
                     if after_attr:
                         embed.description += _(
-                            "{author} changed their [guild avatar]({after_attr}).\n"
+                            "- {author} changed their [guild avatar]({after_attr}).\n"
                         ).format(author=after.mention, after_attr=after_attr)
                     else:
-                        embed.description += _("{author} removed their guild avatar.\n").format(
+                        embed.description += _("- {author} removed their guild avatar.\n").format(
                             author=after.mention, after_attr=after_attr
                         )
 
@@ -1953,14 +1953,18 @@ class EventMixin:
                     reason = getattr(entry, "reason", None)
                     worth_sending = True
                     if isinstance(before_attr, datetime.datetime):
-                        before_attr = discord.utils.format_dt(before_attr)
+                        before_ts = discord.utils.format_dt(before_attr)
+                        before_ts_rel = discord.utils.format_dt(before_attr, style="R")
+                        before_attr = f"{before_ts} ({before_ts_rel})"
                     if isinstance(after_attr, datetime.datetime):
-                        after_attr = discord.utils.format_dt(after_attr)
+                        after_ts = discord.utils.format_dt(after_attr)
+                        after_ts_rel = discord.utils.format_dt(after_attr, style="R")
+                        after_attr = f"{after_ts} ({after_ts_rel})"
                     msg += _("Before ") + f"{update_type.get_name()} {before_attr}\n"
                     msg += _("After ") + f"{update_type.get_name()} {after_attr}\n"
                     embed.description = _("{author} has updated.").format(author=after.mention)
-                    before_text += f"{update_type.get_name()} {before_attr}\n"
-                    after_text += f"{update_type.get_name()} {after_attr}\n"
+                    before_text += f"- {update_type.get_name()}: {before_attr}\n"
+                    after_text += f"- {update_type.get_name()}: {after_attr}\n"
                     # embed.add_field(name=_("Before ") + name, value=str(before_attr)[:1024])
                     # embed.add_field(name=_("After ") + name, value=str(after_attr)[:1024])
         if before_text and after_text:
