@@ -64,3 +64,5 @@ class ReTriggerMessage(discord.Message):
         )
         self.webhook_id = None
         self.retrigger = True
+        self.nonce = message.nonce
+        self.poll = None
