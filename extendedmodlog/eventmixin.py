@@ -1078,6 +1078,8 @@ class EventMixin:
             discord.abc.GuildChannel, discord.Member, discord.User, discord.Role, int, None
         ],
         action: discord.AuditLogAction,
+        *,
+        extra: Optional[str] = None,
     ) -> Optional[discord.AuditLogEntry]:
         entry = None
         if isinstance(target, int) or target is None:
@@ -1092,12 +1094,18 @@ class EventMixin:
                 for log in self.audit_log[guild.id]:
                     if log.action != action:
                         continue
-
+                    if extra is not None:
+                        if getattr(log.after, extra, None) is None:
+                            continue
                     if target_id == getattr(log.target, "id", None):
                         logger.trace("Found entry through cache")
                         entry = log
+
             if entry is None:
                 async for log in guild.audit_logs(limit=5, action=action):
+                    if extra is not None:
+                        if getattr(log.after, extra, None) is None:
+                            continue
                     if target_id == getattr(log.target, "id", None):
                         logger.trace("Found perp through fetch")
                         entry = log
@@ -1829,7 +1837,7 @@ class EventMixin:
         reason = None
         if channel.permissions_for(guild.me).view_audit_log and change_type:
             action = discord.AuditLogAction.member_update
-            entry = await self.get_audit_log_entry(guild, member, action)
+            entry = await self.get_audit_log_entry(guild, member, action, extra=change_type)
             if entry and getattr(entry.after, change_type, None) is not None:
                 perp = getattr(entry, "user", None)
                 reason = getattr(entry, "reason", None)
