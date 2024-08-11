@@ -1830,7 +1830,7 @@ class EventMixin:
         if channel.permissions_for(guild.me).view_audit_log and change_type:
             action = discord.AuditLogAction.member_update
             entry = await self.get_audit_log_entry(guild, member, action)
-            if entry and getattr(entry.after, change_type, None):
+            if entry and getattr(entry.after, change_type, None) is not None:
                 perp = getattr(entry, "user", None)
                 reason = getattr(entry, "reason", None)
         if perp:
