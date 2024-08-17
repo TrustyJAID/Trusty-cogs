@@ -354,6 +354,8 @@ class SeasonStats(Stats):
     leagueAbbrev: Optional[str] = None
     teamName: Optional[dict] = field(default_factory=dict)
     sequence: Optional[int] = None
+    teamCommonName: Optional[dict] = field(default_factory=dict)
+    teamPlaceNameWithPreposition: Optional[dict] = field(default_factory=dict)
 
     def get_str(self):
         season_str = str(self.season)
@@ -403,6 +405,8 @@ class PlayerStats:
     teamLogo: Optional[str] = None
     sweaterNumber: Optional[int] = None
     shootsCatches: Optional[str] = None
+    teamCommonName: Optional[dict] = field(default_factory=dict)
+    teamPlaceNameWithPreposition: Optional[dict] = field(default_factory=dict)
 
     @classmethod
     def from_json(cls, data: dict) -> PlayerStats:

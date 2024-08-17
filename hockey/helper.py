@@ -278,7 +278,7 @@ class TeamFinder(discord.app_commands.Transformer):
             "hockey notifications defaultstate",
             "hockey notifications defaultgoal",
         ]
-        include_inactive = ctx.command.qualified_name in ["hockey roster"]
+        include_inactive = ctx.command.qualified_name in []
         if argument in TEAMS.keys():
             return argument
         for team, data in TEAMS.items():
