@@ -1030,6 +1030,7 @@ class ReTrigger(
         """
         Set whether or not to send this trigger will allow role mentions
 
+        `<style>` either `everyone`, `users`, or `roles`.
         `<trigger>` is the name of the trigger.
         `[set_to]` either `true` or `false` on whether to allow this trigger
         to actually ping roles if the bot has correct permissions.
