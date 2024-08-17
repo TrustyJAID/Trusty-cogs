@@ -263,7 +263,6 @@ insults: List[str] = [
     ),
     _("Your father could've used a condom but here you are."),
     _("You look like a randomized sim."),
-    _("*Puts you in the oven.*"),
     _("You're so stupid."),
     _("Sorry, I can't hear you over how annoying you are."),
     _("I've got better things to do."),
