@@ -189,11 +189,12 @@ class HockeySetCommands(HockeyMixin):
                             await existing_events[game_id].edit(
                                 start_time=start, end_time=end, reason="Start time changed"
                             )
+                            edited += 1
                         if existing_events[game_id].description != description:
                             await existing_events[game_id].edit(
                                 description=description, reason="Description has changed"
                             )
-                        edited += 1
+                            edited += 1
                     except Exception:
                         # I don't care if these don't edit properly
                         pass
@@ -217,7 +218,7 @@ class HockeySetCommands(HockeyMixin):
                 await asyncio.sleep(1)
         msg = f"Finished creating events for {added}/{number_of_games} games."
         if edited != 0:
-            msg += f"Edited {edited} events with changed details."
+            msg += f" Edited {edited} events with changed details."
         await ctx.send(msg)
 
     @hockeyset_commands.command(name="poststandings", aliases=["poststanding"])
