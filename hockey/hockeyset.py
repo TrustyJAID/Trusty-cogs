@@ -138,7 +138,7 @@ class HockeySetCommands(HockeyMixin):
         view.message = await ctx.send(
             _(
                 "This will create {number_of_games} discord events for the remaining {team} games."
-                "This can take a long time to complate. Are you sure you want to run this?"
+                "This can take a long time to complete. Are you sure you want to run this?"
             ).format(number_of_games=number_of_games, team=team),
             view=view,
         )
@@ -155,20 +155,27 @@ class HockeySetCommands(HockeyMixin):
             event_id = re.search(r"\n(\d{6,})", event.description)
             if event_id is not None:
                 existing_events[event_id.group(1)] = event
+        added = 0
+        edited = 0
         async with ctx.typing():
             for game in games:
+
                 start = game.game_start
                 end = start + timedelta(hours=3)
                 home = game.home_team
                 away = game.away_team
                 image_team = away if team == home else home
                 image_file = images_path / f"{image_team}.png"
-                if not os.path.isfile(image_file):
+                image = None
+                if not os.path.isfile(image_file) or os.path.getsize(image_file) == 0:
                     async with self.session.get(TEAMS[image_team]["logo"]) as resp:
                         image = await resp.read()
                     with image_file.open("wb") as outfile:
                         outfile.write(image)
-                image = open(image_file, "rb")
+                if os.path.getsize(image_file) != 0:
+                    with open(image_file, "rb") as x:
+                        image = x.read()
+
                 name = f"{away} @ {home}"
                 broadcasts = humanize_list([b.get("network", "Unknown") for b in game.broadcasts])
                 description = name
@@ -186,6 +193,7 @@ class HockeySetCommands(HockeyMixin):
                             await existing_events[game_id].edit(
                                 description=description, reason="Description has changed"
                             )
+                        edited += 1
                     except Exception:
                         # I don't care if these don't edit properly
                         pass
@@ -198,16 +206,19 @@ class HockeySetCommands(HockeyMixin):
                         location=game.venue,
                         end_time=end,
                         entity_type=discord.EntityType.external,
-                        image=image.read(),
+                        image=image or discord.utils.MISSING,
                         privacy_level=discord.PrivacyLevel.guild_only,
                     )
+                    added += 1
                 except Exception:
                     log.exception(
                         "Error creating scheduled event in %s for team %s", ctx.guild.id, team
                     )
-                image.close()
                 await asyncio.sleep(1)
-        await ctx.send(f"Finished creating events for {number_of_games} games.")
+        msg = f"Finished creating events for {added}/{number_of_games} games."
+        if edited != 0:
+            msg += f"Edited {edited} events with changed details."
+        await ctx.send(msg)
 
     @hockeyset_commands.command(name="poststandings", aliases=["poststanding"])
     @commands.mod_or_permissions(manage_channels=True)
