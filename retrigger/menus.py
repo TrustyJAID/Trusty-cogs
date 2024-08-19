@@ -193,8 +193,14 @@ class ReTriggerPages(menus.ListPageSource):
                 info += _("__Roles Added__: Deleted Roles\n")
         if whitelist_s:
             info += _("__Allowlist__: ") + whitelist_s + "\n"
+            info += _("- Threads included: {true_or_false}\n").format(
+                true_or_false=trigger.include_threads
+            )
         if blacklist_s:
             info += _("__Blocklist__: ") + blacklist_s + "\n"
+            info += _("- Threads included: {true_or_false}\n").format(
+                true_or_false=trigger.include_threads
+            )
         if trigger.cooldown:
             time = trigger.cooldown["time"]
             style = trigger.cooldown["style"]

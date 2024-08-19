@@ -95,7 +95,7 @@ class ReTrigger(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.28.2"
+    __version__ = "2.29.0"
 
     def __init__(self, bot):
         super().__init__()
@@ -876,6 +876,35 @@ class ReTrigger(
         # self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} read thread titles: {read_threads}").format(
             name=trigger.name, read_threads=trigger.read_thread_title
+        )
+        await ctx.send(msg)
+
+    @_edit.command(name="includethreads")
+    @checks.mod_or_permissions(manage_messages=True)
+    @wrapped_additional_help()
+    async def toggle_include_threads(
+        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+    ) -> None:
+        """
+        Toggle whether the allowlist/blocklist will include threads within the channel.
+        `<trigger>` is the name of the trigger.
+
+        This will allow a trigger to run only within a channel and not within threads if
+        the channel is added to the allowlist or only run within threads in a channel if
+        the channel is added to the blocklist. Forum channels can only have threads
+        so are exempt from this toggle.
+
+        # Note: this only affects allowed/blocked triggers for specific channels.
+        """
+        if type(trigger) is str:
+            return await self._no_trigger(ctx, trigger)
+
+        # trigger.read_thread_title = not trigger.read_thread_title
+        trigger.modify("include_threads", not trigger.include_threads, ctx.author, ctx.message.id)
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        msg = _("Trigger {name} Include Threads: {read_threads}").format(
+            name=trigger.name, read_threads=trigger.include_threads
         )
         await ctx.send(msg)
 

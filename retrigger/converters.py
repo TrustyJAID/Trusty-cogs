@@ -297,6 +297,7 @@ class Trigger:
         "nsfw",
         "read_embeds",
         "read_thread_title",
+        "include_threads",
         "_created_at",
         "thread",
         "remove_roles",
@@ -348,6 +349,7 @@ class Trigger:
         self.nsfw: bool = kwargs.get("nsfw", False)
         self.read_embeds: bool = kwargs.get("read_embeds", False)
         self.read_thread_title: bool = kwargs.get("read_thread_title", True)
+        self.include_threads: bool = kwargs.get("include_threads", True)
         self.thread: TriggerThread = kwargs.get("thread", TriggerThread())
         self.remove_roles: List[int] = kwargs.get("remove_roles", [])
         self.add_roles: List[int] = kwargs.get("add_roles", [])
@@ -466,8 +468,11 @@ class Trigger:
                 can_run = True
             if channel.category_id and channel.category_id in self.whitelist:
                 can_run = True
-            if isinstance(channel, (discord.Thread, discord.ForumChannel)):
-                if channel.parent.id in self.whitelist:
+            if isinstance(channel, discord.Thread):
+                include_threads = self.include_threads or isinstance(
+                    channel.parent, discord.ForumChannel
+                )
+                if channel.parent.id in self.whitelist and include_threads:
                     # this is a thread
                     can_run = True
             if author is not None:
@@ -484,8 +489,11 @@ class Trigger:
                 can_run = False
             if channel.category_id and channel.category_id in self.blacklist:
                 can_run = False
-            if isinstance(channel, (discord.Thread, discord.ForumChannel)):
-                if channel.parent.id in self.blacklist:
+            if isinstance(channel, discord.Thread):
+                include_threads = self.include_threads or isinstance(
+                    channel.parent, discord.ForumChannel
+                )
+                if channel.parent.id in self.blacklist and include_threads:
                     # this is a thread
                     can_run = False
             if author is not None:
@@ -566,6 +574,7 @@ class Trigger:
             "nsfw": self.nsfw,
             "read_embeds": self.read_embeds,
             "read_thread_title": self.read_thread_title,
+            "include_threads": self.include_threads,
             "thread": self.thread.to_json(),
             "remove_roles": self.remove_roles,
             "add_roles": self.add_roles,

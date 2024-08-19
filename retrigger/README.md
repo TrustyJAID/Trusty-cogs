@@ -293,6 +293,9 @@ Edit various settings in a set trigger. under `[p]retrigger edit`
 ### readthreads
  - Toggle whether a filter trigger will check thread titles.
    - This only works in conjunction with delete triggers. If a thread is created with a title that would match the delete triggers pattern the thread will be deleted. This also requires the bot to have manage_threads permission in the channel the threads are created in.
+### includethreads
+ - Toggle whether the allowlist/blocklist will include threads within the channel.
+   - This will allow a trigger to run only within a channel and not within threads if the channel is added to the allowlist or only run within threads in a channel if the channel is added to the blocklist. Forum channels can only have threads so are exempt from this toggle.
 ### nsfw
  - Toggle whether a trigger is considered NSFW preventing it from activating in non Age Restricted channels.
 ### reply
