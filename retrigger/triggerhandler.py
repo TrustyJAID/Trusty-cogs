@@ -483,7 +483,16 @@ class TriggerHandler(ReTriggerMixin):
                 content += " " + " ".join(f.filename for f in message.attachments)
 
             if trigger.ocr_search and ALLOW_OCR:
-                content += await self.get_image_text(message)
+                try:
+                    content += await self.get_image_text(message)
+                except Exception:
+                    log.exception(
+                        "Error extracting text from image on trigger: %s, in channel: %s, message: %s",
+                        trigger,
+                        channel.id,
+                        message.id,
+                    )
+                    pass
             if trigger.read_embeds and len(message.embeds) > 0:
                 content += "\n".join(
                     self.convert_embed_to_string(embed, index)
@@ -546,6 +555,8 @@ class TriggerHandler(ReTriggerMixin):
         """
         content = " "
         for attachment in message.attachments:
+            if attachment.content_type and "image" not in attachment.content_type:
+                continue
             temp = BytesIO()
             await attachment.save(temp)
             task = functools.partial(pytesseract.image_to_string, Image.open(temp))
