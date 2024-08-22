@@ -21,7 +21,7 @@ class WildernessFlashEvents(Enum):
     evil_bloodwood_tree = 13
 
     def __str__(self):
-        return self.name.replace("_", " ").title()
+        return self.name.replace("_", " ").title().replace("The", "the")
 
     def __len__(self):
         return len(WildernessFlashEvents)

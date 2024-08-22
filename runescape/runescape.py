@@ -440,7 +440,6 @@ class Runescape(commands.Cog):
     async def wilderness(self, ctx: commands.Context) -> None:
         """Show Runescapes Daily, Weekly, and Monthly reset times."""
         async with ctx.typing():
-            use_links = await ctx.embed_requested()
             msg = "## Wilderness Flash Event Schedule\n"
             max_spaces = 26
             today = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
@@ -454,15 +453,11 @@ class Runescape(commands.Cog):
                 )
                 ts = discord.utils.format_dt(event.get_next(today), "R")
                 special_header = "### " if event.special else ""
-                if use_links:
-                    msg += f"{special_header}- `{event_name.ljust(max_spaces)}` - {ts} [link]({url})\n"
-                else:
-                    msg += f"{special_header}- `{event_name.ljust(max_spaces)}` - {ts}\n"
+                msg += f"{special_header}- `{event_name.ljust(max_spaces)}` - {ts} [link]({url})\n"
             wild_rewards_url = "https://runescape.wiki/w/Sack_of_very_wild_rewards"
-            if use_links:
-                msg += f"*Special events have a chance to drop a [sack of very wild rewards]({wild_rewards_url})."
-            else:
-                msg += f"*Special events have a chance to drop a sack of very wild rewards.\n{wild_rewards_url}"
+            msg += (
+                f"-# *Special events can drop a [sack of very wild rewards]({wild_rewards_url})."
+            )
         await ctx.maybe_send_embed(msg)
 
     ######################################################################################
