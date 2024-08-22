@@ -541,7 +541,7 @@ class HockeyCommands(HockeyMixin):
         if not player:
             await ctx.send(_("No player could be found by that name."))
             return
-        if include_headshot is None:
+        if include_headshot is None and isinstance(ctx.author, discord.Member):
             include_headshot = not ctx.author.is_on_mobile()
         try:
             await BaseMenu(
