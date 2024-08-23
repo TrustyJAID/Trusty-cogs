@@ -344,22 +344,29 @@ class CurrentWeather:
         sunrise_ts = f"<t:{self.sunrise}:t>" if self.sunrise else _("No Data")
         sunset_ts = f"<t:{self.sunset}:t>" if self.sunset else _("No Data")
         windspeed = str(self.wind_speed) + " " + self.units.get().speed
+        wind_gust = ""
         cloudiness_emoji = WEATHER_EMOJIS[get_cloud_num(self.clouds or 0)]
+        if self.wind_gust:
+            wind_gust = (
+                _("  - \N{WIND BLOWING FACE}\N{VARIATION SELECTOR-16} **Wind Gusts**: ")
+                + f"{self.wind_gust} {self.units.get().speed}\n"
+            )
         ret = _(
-            "{weather_emoji} **Weather**: {weather}\n"
-            "\N{FACE WITH COLD SWEAT} **Humidity**: {humidity}%\n"
-            "\N{DASH SYMBOL} **Wind Speed**: {wind_speed} {direction}\n"
-            "\N{THERMOMETER} **Temperature**: {temp}\n"
-            "{cloudiness_emoji} **Cloudiness**: {clouds}%\n"
-            "\N{SUNRISE OVER MOUNTAINS} **Sunrise**: {sunrise_ts}\n"
-            "\N{SUNSET OVER BUILDINGS} **Sunset**: {sunset_ts}\n"
-            "\N{BLACK SUN WITH RAYS}\N{VARIATION SELECTOR-16} **UV Index**: {uvi}\n"
-            "\N{BALLOON} **Atmospheric Pressure**: {pressure} hPa\n"
+            "- {weather_emoji} **Weather**: {weather}\n"
+            "- \N{FACE WITH COLD SWEAT} **Humidity**: {humidity}%\n"
+            "- \N{DASH SYMBOL} **Wind Speed**: {wind_speed} {direction}\n{wind_gust}"
+            "- \N{THERMOMETER} **Temperature**: {temp}\n"
+            "- {cloudiness_emoji} **Cloudiness**: {clouds}%\n"
+            "- \N{SUNRISE OVER MOUNTAINS} **Sunrise**: {sunrise_ts}\n"
+            "- \N{SUNSET OVER BUILDINGS} **Sunset**: {sunset_ts}\n"
+            "- \N{BLACK SUN WITH RAYS}\N{VARIATION SELECTOR-16} **UV Index**: {uvi}\n"
+            "- \N{BALLOON} **Atmospheric Pressure**: {pressure} hPa\n"
         ).format(
             weather_emoji="".join(i.emoji for i in self.weather),
             weather=humanize_list([i.description for i in self.weather]),
             humidity=self.humidity,
             wind_speed=windspeed,
+            wind_gust=wind_gust,
             direction=self.wind_dir,
             temp=self.temp,
             cloudiness_emoji=cloudiness_emoji,
@@ -370,15 +377,15 @@ class CurrentWeather:
             pressure=self.pressure,
         )
         if self.visibility:
-            ret += _("\N{EYEGLASSES} **Visibility**: {visibility} m\n").format(
+            ret += _("- \N{EYEGLASSES} **Visibility**: {visibility} m\n").format(
                 visibility=self.visibility
             )
         if self.rain:
-            ret += _("\N{CLOUD WITH RAIN}\N{VARIATION SELECTOR-16} **Rain**: {rain}\n").format(
+            ret += _("- \N{CLOUD WITH RAIN}\N{VARIATION SELECTOR-16} **Rain**: {rain}\n").format(
                 rain=str(self.rain)
             )
         if self.snow:
-            ret += _("\N{CLOUD WITH SNOW}\N{VARIATION SELECTOR-16} **Snow**: {snow}\n").format(
+            ret += _("- \N{CLOUD WITH SNOW}\N{VARIATION SELECTOR-16} **Snow**: {snow}\n").format(
                 snow=str(self.snow)
             )
         return ret
@@ -616,6 +623,30 @@ class OneCall:
         if "cod" in data and data["cod"] != "200":
             raise APIError(data["message"])
         return cls.from_json(data, units, name, state, country)
+
+    def text(
+        self, include_forecast: Optional[bool] = None, include_hourly: Optional[bool] = None
+    ) -> str:
+        if self.state:
+            location = f"{self.name}, {self.state}, {self.country}"
+        else:
+            location = f"{self.name}, {self.country}"
+        msg = _("Weather for {location}").format(location=location) + "\n"
+        if not include_forecast and not include_hourly:
+            if self.daily and self.daily[0].summary:
+                msg += self.daily[0].summary + "\n"
+            msg += _("Current Weather") + f" (<t:{self.current.dt}:R>)\n{self.current}\n"
+        elif include_forecast:
+            for day in self.daily[:3]:
+                msg += f"<t:{day.dt}:D>\n{day}\n"
+        if include_hourly:
+            for hour in self.hourly[:3]:
+                msg += f"<t:{hour.dt}:t> (<t:{hour.dt}:R>)\n{hour}\n"
+        alerts = "\n".join(str(a) for a in self.alerts)
+        if alerts:
+            msg += alerts + "\n"
+        msg += _("-# Powered by <https://openweathermap.org>")
+        return msg
 
     def embed(
         self, include_forecast: Optional[bool] = None, include_hourly: Optional[bool] = None

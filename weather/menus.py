@@ -62,8 +62,10 @@ class WeatherPages(menus.ListPageSource):
         if self._last_coords is None:
             self._last_coords = page
             self._last_we = we
-        em = we.embed(include_forecast=self.forecast, include_hourly=self.hourly)
-        return em
+        if await view.ctx.embed_requested():
+            return we.embed(include_forecast=self.forecast, include_hourly=self.hourly)
+        else:
+            return we.text(include_forecast=self.forecast, include_hourly=self.hourly)
 
 
 class StopButton(discord.ui.Button):

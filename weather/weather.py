@@ -21,7 +21,7 @@ class Weather(commands.Cog):
     """Get weather data from https://openweathermap.org"""
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.5.0"
+    __version__ = "1.5.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -94,7 +94,6 @@ class Weather(commands.Cog):
         forecast="Whether or not to include the 5 day forecast information",
         units="The units to display, standard is kelvin",
     )
-    @commands.bot_has_permissions(embed_links=True)
     async def weather(
         self,
         ctx: commands.Context,
@@ -132,13 +131,11 @@ class Weather(commands.Cog):
         ).start(ctx=ctx)
 
     @weather.command(name="zip")
-    @commands.bot_has_permissions(embed_links=True)
     @discord.app_commands.describe(
         zipcode="zip/postal code, country code format",
         forecast="Whether or not to include the 5 day forecast information",
         units="The units to display, standard is kelvin",
     )
-    @commands.bot_has_permissions(embed_links=True)
     async def weather_by_zip(
         self,
         ctx: commands.Context,
@@ -173,14 +170,12 @@ class Weather(commands.Cog):
         ).start(ctx=ctx)
 
     @weather.command(name="coords", aliases=["co", "coordinates"])
-    @commands.bot_has_permissions(embed_links=True)
     @discord.app_commands.describe(
         lat="The latitude",
         lon="The longitude",
         forecast="Whether or not to include the 5 day forecast information",
         units="The units to display, standard is kelvin",
     )
-    @commands.bot_has_permissions(embed_links=True)
     async def weather_by_coordinates(
         self,
         ctx: commands.Context,
