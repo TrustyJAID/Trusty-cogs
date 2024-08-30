@@ -663,7 +663,9 @@ class EventMixin:
                             "https://discord.gg/{code}\nInvited by: {inviter}"
                         ).format(
                             code=invite.code,
-                            inviter=str(getattr(invite, "inviter", _("Widget Integration"))),
+                            inviter=str(
+                                getattr(invite.inviter, "mention", _("Widget Integration"))
+                            ),
                         )
 
             if not possible_link:
@@ -679,8 +681,11 @@ class EventMixin:
                             # The invite link was on its last uses and subsequently
                             # deleted so we're fairly sure this was the one used
                             try:
-                                if (inviter := guild.get_member(data["inviter"])) is None:
+                                inviter = guild.get_member(data["inviter"])
+                                if inviter is None:
                                     inviter = await self.bot.fetch_user(data["inviter"])
+                                if inviter is not None:
+                                    inviter = inviter.mention
                             except (discord.errors.NotFound, discord.errors.Forbidden):
                                 inviter = _("Unknown or deleted user ({inviter})").format(
                                     inviter=data["inviter"]
@@ -694,7 +699,8 @@ class EventMixin:
             entry = await self.get_audit_log_entry(guild, None, action)
             if entry:
                 possible_link = _("https://discord.gg/{code}\nInvited by: {inviter}").format(
-                    code=entry.target.code, inviter=str(entry.target.inviter)
+                    code=entry.target.code,
+                    inviter=getattr(entry.target.inviter, "mention", _("Unknown")),
                 )
         return possible_link
 
