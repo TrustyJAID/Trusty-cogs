@@ -1,9 +1,8 @@
 import asyncio
-from typing import Dict, Literal, Optional, Tuple, Union
+from typing import Dict, Literal, Optional, Tuple
 
 import discord
 from discord.ext import tasks
-from pytz import NonExistentTimeError
 from red_commons.logging import getLogger
 from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
@@ -28,7 +27,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "2.1.3"
+    __version__ = "2.1.4"
     __author__ = "TrustyJAID"
     __flavor__ = "Admins are sleep deprived :)"
 
@@ -281,7 +280,9 @@ class EventPoster(commands.Cog):
             return
         event_data = await self.config.guild(ctx.guild).events()
         event = Event.from_json(self.bot, event_data[str(ctx.author.id)])
-        msg = event.mention(include_maybe) + ":\n" + message
+        msg = event.mention(include_maybe) + ":\n"
+        if message is not None:
+            msg += message
         for page in pagify(msg):
             await ctx.send(page, allowed_mentions=discord.AllowedMentions(users=True))
             # include AllowedMentions here just incase someone has user mentions disabled
@@ -424,7 +425,7 @@ class EventPoster(commands.Cog):
             msg = _("You don't have any events running.")
             await ctx.send(msg)
             return
-        elif not clear:
+        if not clear:
             event_data = await self.config.guild(ctx.guild).events()
             event = Event.from_json(self.bot, event_data[str(ctx.author.id)])
             if not event:
@@ -446,9 +447,9 @@ class EventPoster(commands.Cog):
             )
             return
         else:
-            async with self.config.guild(ctx.guild).events() as events:
-                event = Event.from_json(self.bot, events[str(ctx.author.id)])
-                await event.end_event()
+            event_data = await self.config.guild(ctx.guild).events()
+            event = Event.from_json(self.bot, event_data[str(ctx.author.id)])
+            await event.end_event()
             msg = _("Your event has been cleared.")
             await ctx.send(msg)
 
@@ -479,7 +480,7 @@ class EventPoster(commands.Cog):
             return
         em = await event.make_event_embed(ctx)
         msg = _(
-            "{member} is currently hosting. Type `{prefix}clearevent yes` to clear it."
+            "{member} is currently hosting. Type `{prefix}event set remove @hoster` to clear it."
         ).format(member=member.display_name, prefix=ctx.clean_prefix)
         await ctx.send(
             msg,
@@ -1078,9 +1079,9 @@ class EventPoster(commands.Cog):
             await self.config.guild(ctx.guild).cleanup_seconds.clear()
         await ctx.send(reply)
 
-    @event_settings.command(name="maxevents")
-    @checks.mod_or_permissions(manage_messages=True)
-    @commands.guild_only()
+    # @event_settings.command(name="maxevents")
+    # @checks.mod_or_permissions(manage_messages=True)
+    # @commands.guild_only()
     async def set_max_events(
         self, ctx: commands.Context, number_of_events: Optional[int] = None
     ) -> None:
@@ -1091,10 +1092,10 @@ class EventPoster(commands.Cog):
         at one time.
 
         Note: If this is set then the event author must cancel the event manually
-        by either reacting to the x on the event itself or `[p]clearevent`. This
-        can also be handled automatically with `[p]eventset cleanup` where events
+        by either reacting to the x on the event itself or `[p]event clear yes`. This
+        can also be handled automatically with `[p]event set cleanup` where events
         will last until the designated time after an event has started. Alternatively
-        a mod or admin can cancel an event through `[p]eventset remove`
+        a mod or admin can cancel an event through `[p]event set remove`
         """
 
         if number_of_events is not None and number_of_events <= 0:

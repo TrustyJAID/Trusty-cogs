@@ -1,6 +1,6 @@
 import re
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple, Union, cast
+from typing import Dict, List, Optional, Union
 
 import discord
 import pytz
@@ -12,7 +12,7 @@ from discord.utils import snowflake_time
 from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.bot import Red
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
 
 log = getLogger("red.trusty-cogs.EventPoster")
