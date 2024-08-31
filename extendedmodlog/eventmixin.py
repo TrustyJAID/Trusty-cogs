@@ -446,6 +446,7 @@ class EventMixin:
             return
         time = message.created_at
         perp = None
+        reason = None
         if channel.permissions_for(guild.me).view_audit_log and check_audit_log:
             action = discord.AuditLogAction.message_delete
             entry = await self.get_audit_log_entry(guild, message.author, action)
@@ -498,7 +499,9 @@ class EventMixin:
             embed.add_field(name=_("Channel"), value=message_channel.mention)
             embed.add_field(name=_("Author"), value=message.author.mention)
             if perp:
-                embed.add_field(name=_("Deleted by"), value=perp)
+                embed.add_field(name=_("Deleted by"), value=perp.mention)
+            if reason:
+                embed.add_field(name=_("Reason"), value=reason)
             if message.attachments:
                 files = "\n".join(f"- {inline(a.filename)}" for a in message.attachments)
                 embed.add_field(name=_("Attachments"), value=files[:1024])
@@ -1081,7 +1084,13 @@ class EventMixin:
         self,
         guild: discord.Guild,
         target: Union[
-            discord.abc.GuildChannel, discord.Member, discord.User, discord.Role, int, None
+            discord.abc.GuildChannel,
+            discord.Member,
+            discord.User,
+            discord.Role,
+            discord.Invite,
+            int,
+            None,
         ],
         action: discord.AuditLogAction,
         *,
@@ -1090,6 +1099,8 @@ class EventMixin:
         entry = None
         if isinstance(target, int) or target is None:
             target_id = target
+        elif isinstance(target, discord.Invite):
+            target_id = target.code
         else:
             target_id = target.id
 
@@ -1106,6 +1117,9 @@ class EventMixin:
                     if target_id == getattr(log.target, "id", None):
                         logger.trace("Found entry through cache")
                         entry = log
+                    if target_id == getattr(log.target, "code", None):
+                        logger.trace("Found invite code entry through cache")
+                        entry = log
 
             if entry is None:
                 async for log in guild.audit_logs(limit=5, action=action):
@@ -1116,6 +1130,9 @@ class EventMixin:
                         logger.trace("Found perp through fetch")
                         entry = log
                         break
+                    if target_id == getattr(log.target, "code", None):
+                        logger.trace("Found invite code entry through fetch")
+                        entry = log
         return entry
 
     @commands.Cog.listener()
@@ -2005,7 +2022,9 @@ class EventMixin:
         """
         New in discord.py 1.3
         """
-        guild = invite.guild
+        if invite.guild is None:
+            return
+        guild = self.bot.get_guild(invite.guild.id)
         if guild.id not in self.settings:
             return
         if await self.bot.cog_disabled_in_guild(self, guild):
@@ -2047,6 +2066,7 @@ class EventMixin:
             "max_uses": _("Max Uses:"),
             "max_age": _("Max Age:"),
             "temporary": _("Temporary:"),
+            "scheduled_event": _("Scheduled Event:"),
         }
         invite_time = invite.created_at or datetime.datetime.now(datetime.timezone.utc)
         msg = _("{emoji} {time} Invite created ").format(
@@ -2059,15 +2079,33 @@ class EventMixin:
             timestamp=invite_time,
         )
         worth_updating = False
+
         if getattr(invite, "inviter", None):
             embed.description = _("{author} created an invite for {channel}.").format(
-                author=invite.inviter.mention, channel=invite.channel.mention
+                author=getattr(invite.inviter, "mention", invite.inviter),
+                channel=getattr(invite.channel, "mention", str(invite.channel)),
             )
+        elif guild.widget_enabled and guild.widget_channel:
+            embed.description = _("Widget in {channel} created a new invite.").format(
+                channel=guild.widget_channel.mention
+            )
+        if embed.description is None:
+            embed.description = invite.url
+        else:
+            embed.description += f"\n{invite.url}"
         for attr, name in invite_attrs.items():
             before_attr = getattr(invite, attr)
             if before_attr:
                 if attr == "max_age":
                     before_attr = humanize_timedelta(seconds=before_attr)
+                if attr == "channel":
+                    before_attr = getattr(before_attr, "mention", before_attr)
+                if attr == "inviter":
+                    before_attr = getattr(before_attr, "mention", before_attr)
+                if attr == "code":
+                    before_attr = box(before_attr)
+                if attr == "scheduled_event":
+                    before_attr = getattr(invite.scheduled_event, "url", "")
                 worth_updating = True
                 msg += f"{name} {before_attr}\n"
                 embed.add_field(name=name, value=str(before_attr))
@@ -2083,7 +2121,9 @@ class EventMixin:
         """
         New in discord.py 1.3
         """
-        guild = invite.guild
+        if invite.guild is None:
+            return
+        guild = self.bot.get_guild(invite.guild.id)
         if guild.id not in self.settings:
             return
         if await self.bot.cog_disabled_in_guild(self, guild):
@@ -2110,6 +2150,7 @@ class EventMixin:
             "uses": _("Used: "),
             "max_age": _("Max Age:"),
             "temporary": _("Temporary:"),
+            "scheduled_event": _("Scheduled Event:"),
         }
         invite_time = invite.created_at or datetime.datetime.now(datetime.timezone.utc)
         msg = _("{emoji} {time} Invite deleted ").format(
@@ -2125,15 +2166,41 @@ class EventMixin:
             embed.description = _("{author} deleted or used up an invite for {channel}.").format(
                 author=invite.inviter.mention, channel=invite.channel.mention
             )
+        elif guild.widget_enabled and guild.widget_channel:
+            embed.description = _("Widget in {channel} invite deleted or used up.").format(
+                channel=guild.widget_channel.mention
+            )
+        if embed.description is None:
+            embed.description = invite.url
+        else:
+            embed.description += f"\n{invite.url}"
+        entry = await self.get_audit_log_entry(guild, invite, discord.AuditLogAction.invite_delete)
+        perp = getattr(entry, "user", None)
+        reason = getattr(entry, "reason", None)
         worth_updating = False
         for attr, name in invite_attrs.items():
             before_attr = getattr(invite, attr)
             if before_attr:
                 if attr == "max_age":
                     before_attr = humanize_timedelta(seconds=before_attr)
+                if attr == "channel":
+                    before_attr = getattr(before_attr, "mention", before_attr)
+                if attr == "inviter":
+                    before_attr = getattr(before_attr, "mention", before_attr)
+                if attr == "code":
+                    before_attr = box(before_attr)
+                if attr == "scheduled_event":
+                    before_attr = getattr(invite.scheduled_event, "url", "")
                 worth_updating = True
                 msg += f"{name} {before_attr}\n"
                 embed.add_field(name=name, value=str(before_attr))
+        if perp:
+            perp_str = getattr(perp, "mention", str(perp))
+            msg += _("Deleted by") + f" {perp}.\n"
+            embed.add_field(name=_("Deleted by"), value=perp_str)
+        if reason:
+            msg += _("Reason") + f": {perp}\n"
+            embed.add_field(name=_("Reason"), value=reason)
         if not worth_updating:
             return
         if embed_links:
