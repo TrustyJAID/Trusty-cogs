@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 import discord
 from red_commons.logging import getLogger
@@ -45,7 +45,7 @@ class RoleToolsMessages(RoleToolsMixin):
         buttons: commands.Greedy[ButtonRoleConverter],
         menus: commands.Greedy[SelectRoleConverter],
         *,
-        message: str,
+        text: Optional[str] = None,
     ) -> None:
         """
         Send a select menu to a specified channel for role assignment
@@ -54,7 +54,7 @@ class RoleToolsMessages(RoleToolsMixin):
         `[buttons]...` - The names of the buttons you want included in the
         `[menus]...` - The names of the select menus you want included in the
         message up to a maximum of 5.
-        `<message>` - The message to be included with the select menu.
+        `[text]` - The text to be included with the select menu.
 
         Note: There is a maximum of 25 slots available on one message. Each menu
         uses up 5 slots while each button uses up 1 slot.
@@ -77,8 +77,8 @@ class RoleToolsMessages(RoleToolsMixin):
             new_view.add_item(select)
         for button in buttons:
             new_view.add_item(button)
-
-        msg = await channel.send(content=message[:2000], view=new_view)
+        content = text[:2000] if text else None
+        msg = await channel.send(content=content, view=new_view)
         message_key = f"{msg.channel.id}-{msg.id}"
 
         await self.save_settings(ctx.guild, message_key, buttons=buttons, select_menus=menus)
@@ -176,7 +176,7 @@ class RoleToolsMessages(RoleToolsMixin):
         channel: discord.TextChannel,
         menus: commands.Greedy[SelectRoleConverter],
         *,
-        message: str,
+        text: Optional[str] = None,
     ) -> None:
         """
         Send a select menu to a specified channel for role assignment
@@ -184,7 +184,7 @@ class RoleToolsMessages(RoleToolsMixin):
         `<channel>` - the channel to send the button role buttons to.
         `[menus]...` - The names of the select menus you want included in the
         message up to a maximum of 5.
-        `<message>` - The message to be included with the select menu.
+        `[text]` - The text to be included with the select menu.
         """
         if not channel.permissions_for(ctx.me).send_messages:
             await ctx.send(
@@ -207,7 +207,8 @@ class RoleToolsMessages(RoleToolsMixin):
             return
         for select in menus:
             new_view.add_item(select)
-        msg = await channel.send(content=message, view=new_view)
+        content = text[:2000] if text else None
+        msg = await channel.send(content=content, view=new_view)
         message_key = f"{msg.channel.id}-{msg.id}"
 
         await self.save_settings(ctx.guild, message_key, buttons=[], select_menus=menus)
@@ -257,7 +258,7 @@ class RoleToolsMessages(RoleToolsMixin):
         channel: discord.TextChannel,
         buttons: commands.Greedy[ButtonRoleConverter],
         *,
-        message: str,
+        text: Optional[str] = None,
     ) -> None:
         """
         Send buttons to a specified channel with optional message.
@@ -265,7 +266,7 @@ class RoleToolsMessages(RoleToolsMixin):
         `<channel>` - the channel to send the button role buttons to.
         `[buttons]...` - The names of the buttons you want included in the
         message up to a maximum of 25.
-        `<message>` - The message to be included with the buttons.
+        `[text]` - The text to be included with the buttons.
         """
         if not channel.permissions_for(ctx.me).send_messages:
             await ctx.send(
@@ -282,7 +283,8 @@ class RoleToolsMessages(RoleToolsMixin):
         log.verbose("send_buttons buttons: %s", buttons)
         for button in buttons:
             new_view.add_item(button)
-        msg = await channel.send(content=message, view=new_view)
+        content = text[:2000] if text else None
+        msg = await channel.send(content=content, view=new_view)
         message_key = f"{msg.channel.id}-{msg.id}"
 
         await self.save_settings(ctx.guild, message_key, buttons=buttons, select_menus=[])
