@@ -427,8 +427,8 @@ class TeamRecord:
         streak = Streak(
             **{
                 "streakType": "wins",
-                "streakNumber": data["streakCount"],
-                "streakCode": data["streakCode"],
+                "streakNumber": data.get("streakCount", 0),
+                "streakCode": data.get("streakCode", "N/A"),
             }
         )
         return cls(
@@ -456,7 +456,7 @@ class TeamRecord:
             row=0,
             games_played=int(data["gamesPlayed"]),
             streak=streak,
-            points_percentage=float(data["pointPctg"]),
+            points_percentage=float(data.get("pointPctg", 0.0)),
             pp_division_rank=0,
             pp_conference_rank=0,
             pp_league_rank=0,

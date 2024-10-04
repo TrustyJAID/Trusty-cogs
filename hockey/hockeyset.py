@@ -159,7 +159,6 @@ class HockeySetCommands(HockeyMixin):
         edited = 0
         async with ctx.typing():
             for game in games:
-
                 start = game.game_start
                 end = start + timedelta(hours=3)
                 home = game.home_team
