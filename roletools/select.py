@@ -183,7 +183,11 @@ class RoleToolsSelect(RoleToolsMixin):
             for item in replacement_view.children:
                 if item.custom_id == custom_id:
                     replacement_view.remove_item(item)
-            replacement_view.add_item(select_menus)
+            try:
+                replacement_view.add_item(select_menus)
+            except ValueError:
+                log.error("Error editing old menu on Select Menu %s", custom_id)
+                continue
 
         select_menus.update_options(ctx.guild)
         view = RoleToolsView(self, timeout=180.0)

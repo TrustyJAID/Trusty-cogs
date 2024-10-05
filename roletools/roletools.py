@@ -349,7 +349,7 @@ class RoleTools(
         self,
         ctx: Context,
         role: RoleHierarchyConverter,
-        *who: Union[discord.Role, discord.TextChannel, discord.Member, str],
+        *who: Union[discord.Role, discord.TextChannel, discord.Thread, discord.Member, str],
     ) -> None:
         """
         Gives a role to designated members.
@@ -383,7 +383,16 @@ class RoleTools(
         async with ctx.typing():
             members = []
             for entity in who:
-                if isinstance(entity, discord.TextChannel) or isinstance(entity, discord.Role):
+                if isinstance(entity, discord.Thread):
+                    try:
+                        thread_members = await entity.fetch_members()
+                        for m in thread_members:
+                            if mem := ctx.guild.get_member(m.id):
+                                members.append(mem)
+                    except Exception:
+                        log.error("Could not find members of thread in %s", entity)
+
+                elif isinstance(entity, discord.TextChannel) or isinstance(entity, discord.Role):
                     members += entity.members
                 elif isinstance(entity, discord.Member):
                     members.append(entity)
