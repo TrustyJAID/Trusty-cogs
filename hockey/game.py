@@ -947,7 +947,45 @@ class Game:
                     # This is to keep shots consistent between edits
                     # Shots should not update as the game continues
                     bot.dispatch("hockey_goal_edit", self, goal)
-                    asyncio.create_task(goal.edit_team_goal(bot, self))
+
+                    # This is here in order to prevent the bot attempting to edit the same
+                    # goal b2b causing increase of requests to discord for editing and
+                    # hopefully reducing instances of rate limiting.
+                    # The premise is that when we create this task, store a reference to it
+                    # on the cog and when we want to edit see if there is already a task running.
+                    # If a task is running we will instead wait for that task to finish and then
+                    # run the same code. This way they work one after another instead of parallell.
+                    # The done callback removes the task reference when the task is done so
+                    # this should be efficient.
+
+                    key = f"{self.game_id}-{goal.goal_id}"
+
+                    def done_edit_callback(task):
+                        task_name = task.get_name()
+                        try:
+                            del cog._edit_tasks[task_name]
+                        except Exception:
+                            log.exception(
+                                "Error removing edit task from list, unknown task name %s",
+                                task_name,
+                            )
+
+                    if key not in cog._edit_tasks:
+                        log.debug("Creating edit task for %s", key)
+                        cog._edit_tasks[key] = asyncio.create_task(
+                            goal.edit_team_goal(bot, self), name=key
+                        )
+                        cog._edit_tasks[key].add_done_callback(done_edit_callback)
+                    else:
+                        log.debug("Found existing edit task, waiting for %s", key)
+                        task = cog._edit_tasks[key]
+                        await task.wait()
+                        log.debug("Done waiting for %s", key)
+                        cog._edit_tasks[key] = asyncio.create_task(
+                            goal.edit_team_goal(bot, self), name=key
+                        )
+                        cog._edit_tasks[key].add_done_callback(done_edit_callback)
+
                     async with cog.config.teams() as teams:
                         for team in teams:
                             if (

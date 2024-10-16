@@ -175,6 +175,7 @@ class Hockey(
         self._commit = ""
         self.api = NewAPI()
         self.saving_goals = {}
+        self._edit_tasks = {}
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
