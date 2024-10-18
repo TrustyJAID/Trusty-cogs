@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import discord
@@ -69,6 +69,23 @@ class Goal:
     def emoji(self) -> Union[discord.PartialEmoji, str]:
         return self.team.emoji
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Goal):
+            return False
+        if (
+            self.description == other.description
+            and str(self.link) == str(other.link)
+            # if one of these is a URL then the standard == will be false causing
+            # us to constantly try and edit goals we've already edited.
+            # So instead, let's just cast to string.
+            and self.goal_id == other.goal_id
+        ):
+            return True
+        return False
+
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
+
     def to_json(self) -> dict:
         return {
             "goal_id": self.goal_id,
@@ -85,7 +102,7 @@ class Goal:
             "strength": self.strength,
             "empty_net": self.empty_net,
             "event": self.event,
-            "link": str(self.link) if self.link else None,
+            "link": str(self.link) if self.link is not None else None,
             "image": self.image,
             "home_shots": self.home_shots,
             "away_shots": self.away_shots,
@@ -420,6 +437,13 @@ class Goal:
                 continue
             channel = await get_channel_obj(bot, int(channel_id), {"guild_id": int(guild_id)})
             if channel is None:
+                continue
+            if datetime.now(timezone.utc) - discord.utils.snowflake_time(
+                int(message_id)
+            ) >= timedelta(hours=1):
+                # Discord has a limit on how many messages older than 1 hour that can be edited.
+                # So we will just ignore any since they are likely complete and pushed out
+                # of view of chat anyway.
                 continue
             if channel.is_news():
                 asyncio.create_task(self.edit_goal(bot, channel, message_id, em, text))

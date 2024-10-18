@@ -941,12 +941,21 @@ class Game:
             if str(goal.goal_id) in team_data[goal.team_name]["goal_id"]:
                 # attempts to edit the goal if the scorers have changed
                 old_goal = Goal(**team_data[goal.team_name]["goal_id"][str(goal.goal_id)]["goal"])
-                if goal.description != old_goal.description or goal.link != old_goal.link:
+                if goal != old_goal:
                     # goal.home_shots = old_goal.home_shots
                     # goal.away_shots = old_goal.away_shots
                     # This is to keep shots consistent between edits
                     # Shots should not update as the game continues
                     bot.dispatch("hockey_goal_edit", self, goal)
+                    log.debug(
+                        "Before desc=%s after desc=%s equal=%s before link=%s after link=%s equal=%s",
+                        old_goal.description,
+                        goal.description,
+                        old_goal.description == goal.description,
+                        old_goal.link,
+                        goal.link,
+                        old_goal.link == goal.link,
+                    )
 
                     # This is here in order to prevent the bot attempting to edit the same
                     # goal b2b causing increase of requests to discord for editing and
@@ -979,7 +988,7 @@ class Game:
                     else:
                         log.debug("Found existing edit task, waiting for %s", key)
                         task = cog._edit_tasks[key]
-                        await task.wait()
+                        await asyncio.wait_for(task, timeout=30)
                         log.debug("Done waiting for %s", key)
                         cog._edit_tasks[key] = asyncio.create_task(
                             goal.edit_team_goal(bot, self), name=key
