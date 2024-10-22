@@ -284,7 +284,7 @@ class Fun(commands.Cog):
                     reactions.append(f"{reactions.pop()}{VARIATION_CHAR}")
 
         log.debug(reactions)
-        my_emojis = [r.emoji for r in message.reactions if r.me]
+        my_emojis = [getattr(r, "emoji") for r in getattr(message, "reactions", []) if r.me]
         if message.channel.permissions_for(ctx.me).add_reactions and message is not None:
             for reaction in reactions:
                 if reaction in my_emojis:
