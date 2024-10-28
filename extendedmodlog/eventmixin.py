@@ -2025,6 +2025,8 @@ class EventMixin:
         if invite.guild is None:
             return
         guild = self.bot.get_guild(invite.guild.id)
+        if guild is None:
+            return
         if guild.id not in self.settings:
             return
         if await self.bot.cog_disabled_in_guild(self, guild):
@@ -2124,6 +2126,8 @@ class EventMixin:
         if invite.guild is None:
             return
         guild = self.bot.get_guild(invite.guild.id)
+        if guild is None:
+            return
         if guild.id not in self.settings:
             return
         if await self.bot.cog_disabled_in_guild(self, guild):
