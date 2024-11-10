@@ -181,7 +181,7 @@ class RoleToolsMessages(RoleToolsMixin):
         """
         Send a select menu to a specified channel for role assignment
 
-        `<channel>` - the channel to send the button select menus to.
+        `<channel>` - the channel to send the select menus to.
         `[menus]...` - The names of the select menus you want included in the
         message up to a maximum of 5.
         `[text]` - The text to be included with the select menu.
