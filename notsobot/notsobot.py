@@ -1355,7 +1355,7 @@ class NotSoBot(commands.Cog):
 
     def make_pixel(self, b: BytesIO, pixels: int) -> Tuple[discord.File, int]:
         bg = (0, 0, 0)
-        img = Image.open(b)
+        img = Image.open(b).convert("RGBA")
         img = img.resize((int(img.size[0] / pixels), int(img.size[1] / pixels)), Image.NEAREST)
         img = img.resize((int(img.size[0] * pixels), int(img.size[1] * pixels)), Image.NEAREST)
         load = img.load()
@@ -1374,7 +1374,7 @@ class NotSoBot(commands.Cog):
 
     def make_pixel_gif(self, b, pixels):
         try:
-            image = Image.open(b)
+            image = Image.open(b).convert("RGBA")
             gif_list = [frame.copy() for frame in ImageSequence.Iterator(image)]
         except IOError:
             return ":warning: Cannot load gif."
