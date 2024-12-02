@@ -1,0 +1,32 @@
+{
+    "author": [
+        "TrustyJAID"
+    ],
+    "description": "Generate an alignment chart from users!",
+    "disabled": false,
+    "end_user_data_statement": "This cog does not persistently store data or metadata about users. This cog can store images uploaded by the user or provided for the purpose of generating alignment charts.",
+    "hidden": false,
+    "install_msg": "This cog contains a data folder with a single font and can download and store images for watermarks and icons for alignment charts.",
+    "max_bot_version": "0.0.0",
+    "min_bot_version": "3.5.0",
+    "min_python_version": [
+        3,
+        7,
+        2
+    ],
+    "name": "Alignment",
+    "permissions": [
+        "attach_files"
+    ],
+    "required_cogs": {},
+    "requirements": [
+        "pillow"
+    ],
+    "short": "Create an alignment chart!",
+    "tags": [
+        "fun",
+        "memes",
+        "meme"
+    ],
+    "type": "COG"
+}
