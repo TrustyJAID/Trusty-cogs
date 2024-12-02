@@ -24,7 +24,7 @@ IMAGE_LINKS: Pattern = re.compile(
 
 
 class Bingo(commands.Cog):
-    __version__ = "1.2.1"
+    __version__ = "1.2.2"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -33,9 +33,10 @@ class Bingo(commands.Cog):
         self.config.register_guild(
             tiles=[],
             stamp_colour="#e6d705",
-            text_colour="#FFFFFF",
-            background_colour="#FFFFFF",
-            box_colour="#000000",
+            text_colour="#FFF8E7",
+            textborder_colour="#333333",
+            background_colour="#010028",
+            box_colour="#FFF8E7",
             watermark=None,
             icon=None,
             background_tile=None,
@@ -44,6 +45,13 @@ class Bingo(commands.Cog):
             seed=0,
         )
         self.config.register_member(stamps=[])
+
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+        Nothing to delete. Information saved is a set of points on a bingo card and
+        does not represent end user data.
+        """
+        return
 
     @commands.group(name="bingoset")
     @commands.mod_or_permissions(manage_messages=True)
@@ -55,13 +63,17 @@ class Bingo(commands.Cog):
         pass
 
     @bingoset.command(name="stamp")
-    async def bingoset_stamp(self, ctx: commands.Context, colour: discord.Colour):
+    async def bingoset_stamp(self, ctx: commands.Context, colour: Optional[discord.Colour] = None):
         """
         Set the colour of the "stamp" that fills the box.
 
         `colour` - must be a hex colour code
         """
-        await self.config.guild(ctx.guild).stamp_colour.set(str(colour))
+        if colour is None:
+            await self.config.guild(ctx.guild).stamp_colour.clear()
+        else:
+            await self.config.guild(ctx.guild).stamp_colour.set(str(colour))
+        colour = await self.config.guild(ctx.guild).stamp_colour()
         await ctx.send(f"The Bingo card stamp has been set to {colour}")
 
     @bingoset.command(name="name")
@@ -75,33 +87,47 @@ class Bingo(commands.Cog):
         await ctx.send(f"The Bingo card name has been set to {name}")
 
     @bingoset.command(name="text")
-    async def bingoset_text(self, ctx: commands.Context, colour: discord.Colour):
+    async def bingoset_text(self, ctx: commands.Context, colour: Optional[discord.Colour] = None):
         """
         Set the colour of the text.
 
         `colour` - must be a hex colour code
         """
-        await self.config.guild(ctx.guild).text_colour.set(str(colour))
+        if colour is None:
+            await self.config.guild(ctx.guild).text_colour.clear()
+        else:
+            await self.config.guild(ctx.guild).text_colour.set(str(colour))
+        colour = await self.config.guild(ctx.guild).text_colour()
         await ctx.send(f"The Bingo card text has been set to {colour}")
 
     @bingoset.command(name="background")
-    async def bingoset_background(self, ctx: commands.Context, colour: discord.Colour):
+    async def bingoset_background(
+        self, ctx: commands.Context, colour: Optional[discord.Colour] = None
+    ):
         """
         Set the colour of the Bingo card background.
 
         `colour` - must be a hex colour code
         """
-        await self.config.guild(ctx.guild).background_colour.set(str(colour))
+        if colour is None:
+            await self.config.guild(ctx.guild).background_colour.clear()
+        else:
+            await self.config.guild(ctx.guild).background_colour.set(str(colour))
+        colour = await self.config.guild(ctx.guild).background_colour()
         await ctx.send(f"The Bingo card background has been set to {colour}")
 
     @bingoset.command(name="box")
-    async def bingoset_box(self, ctx: commands.Context, colour: discord.Colour):
+    async def bingoset_box(self, ctx: commands.Context, colour: Optional[discord.Colour] = None):
         """
         Set the colour of the Bingo card boxes border.
 
         `colour` - must be a hex colour code
         """
-        await self.config.guild(ctx.guild).box_colour.set(str(colour))
+        if colour is None:
+            await self.config.guild(ctx.guild).box_colour.clear()
+        else:
+            await self.config.guild(ctx.guild).box_colour.set(str(colour))
+        colour = await self.config.guild(ctx.guild).box_colour()
         await ctx.send(f"The Bingo card box colour has been set to {colour}")
 
     @bingoset.command(name="bingo")
@@ -132,7 +158,8 @@ class Bingo(commands.Cog):
             return
         elif image_url is None and ctx.message.attachments:
             image = ctx.message.attachments[0]
-            filename = image.filename
+            ext = image.filename.split(".")[-1]
+            filename = f"{ctx.guild.id}-watermark.{ext}"
             await image.save(cog_data_path(self) / filename)
             await self.config.guild(ctx.guild).watermark.set(filename)
             await ctx.send("Saved the image as a watermark.")
@@ -144,7 +171,7 @@ class Bingo(commands.Cog):
                 async with session.get(image_url) as resp:
                     data = await resp.read()
             ext = image_url.split(".")[-1]
-            filename = f"{ctx.message.id}.{ext[:3] if 'jpeg' not in ext.lower() else ext[:4]}"
+            filename = f"{ctx.guild.id}-watermark.{ext}"
             with open(cog_data_path(self) / filename, "wb") as outfile:
                 outfile.write(data)
             await self.config.guild(ctx.guild).watermark.set(filename)
@@ -163,7 +190,8 @@ class Bingo(commands.Cog):
             return
         elif image_url is None and ctx.message.attachments:
             image = ctx.message.attachments[0]
-            filename = image.filename
+            ext = image.filename.split(".")[-1]
+            filename = f"{ctx.guild.id}-icon.{ext}"
             await image.save(cog_data_path(self) / filename)
             await self.config.guild(ctx.guild).icon.set(filename)
             await ctx.send("Saved the image as an icon.")
@@ -175,7 +203,7 @@ class Bingo(commands.Cog):
                 async with session.get(image_url) as resp:
                     data = await resp.read()
             ext = image_url.split(".")[-1]
-            filename = f"{ctx.message.id}.{ext[:3] if 'jpeg' not in ext.lower() else ext[:4]}"
+            filename = f"{ctx.guild.id}-icon.{ext}"
             with open(cog_data_path(self) / filename, "wb") as outfile:
                 outfile.write(data)
             await self.config.guild(ctx.guild).icon.set(filename)
@@ -197,10 +225,12 @@ class Bingo(commands.Cog):
             return
         elif image_url is None and ctx.message.attachments:
             image = ctx.message.attachments[0]
-            filename = image.filename
+            ext = image.filename.split(".")[-1]
+            filename = f"{ctx.guild.id}-bgtile.{ext}"
             await image.save(cog_data_path(self) / filename)
             await self.config.guild(ctx.guild).background_tile.set(filename)
-            await ctx.send("Saved the image as an icon.")
+            await ctx.send("Saved the image as an background tile.")
+            return
         else:
             if not IMAGE_LINKS.search(image_url):
                 await ctx.send("That is not a valid image URL. It must be either jpg or png.")
@@ -209,7 +239,7 @@ class Bingo(commands.Cog):
                 async with session.get(image_url) as resp:
                     data = await resp.read()
             ext = image_url.split(".")[-1]
-            filename = f"{ctx.message.id}.{ext[:3] if 'jpeg' not in ext.lower() else ext[:4]}"
+            filename = f"{ctx.guild.id}-bgtile.{ext}"
             with open(cog_data_path(self) / filename, "wb") as outfile:
                 outfile.write(data)
             await self.config.guild(ctx.guild).background_tile.set(filename)
@@ -267,6 +297,8 @@ class Bingo(commands.Cog):
                 v = await self.config.guild(ctx.guild).watermark()
             if k == "icon":
                 v = await self.config.guild(ctx.guild).icon()
+            if k == "background_tile":
+                v = await self.config.guild(ctx.guild).background_tile()
             name = k.split("_")[0]
             msg += f"{name.title()}: `{v}`\n"
         await ctx.maybe_send_embed(msg)
@@ -356,6 +388,7 @@ class Bingo(commands.Cog):
         ret = {
             "background_colour": await self.config.guild(ctx.guild).background_colour(),
             "text_colour": await self.config.guild(ctx.guild).text_colour(),
+            "textborder_colour": await self.config.guild(ctx.guild).textborder_colour(),
             "stamp_colour": await self.config.guild(ctx.guild).stamp_colour(),
             "box_colour": await self.config.guild(ctx.guild).box_colour(),
             "name": await self.config.guild(ctx.guild).name(),
@@ -372,13 +405,14 @@ class Bingo(commands.Cog):
     async def create_bingo_card(
         self,
         tiles: List[str],
-        name: str = "",
-        guild_name: str = "",
-        bingo: str = "BINGO",
-        background_colour: str = "#FFFFFF",
-        text_colour: str = "#FFFFFF",
-        stamp_colour: str = "#E9072B",
-        box_colour: str = "#000000",
+        name: str,
+        guild_name: str,
+        bingo: str,
+        background_colour: str,
+        text_colour: str,
+        textborder_colour: str,
+        stamp_colour: str,
+        box_colour: str,
         watermark: Optional[Image.Image] = None,
         icon: Optional[Image.Image] = None,
         background_tile: Optional[Image.Image] = None,
@@ -392,6 +426,7 @@ class Bingo(commands.Cog):
             bingo=bingo,
             background_colour=background_colour,
             text_colour=text_colour,
+            textborder_colour=textborder_colour,
             stamp_colour=stamp_colour,
             box_colour=box_colour,
             watermark=watermark,
@@ -410,13 +445,14 @@ class Bingo(commands.Cog):
     def _create_bingo_card(
         self,
         options: List[str],
-        name: str = "",
-        guild_name: str = "",
-        bingo: str = "BINGO",
-        background_colour: str = "#FFFFFF",
-        text_colour: str = "#FFFFFF",
-        stamp_colour: str = "#FF0000",
-        box_colour: str = "#000000",
+        name: str,
+        guild_name: str,
+        bingo: str,
+        background_colour: str,
+        text_colour: str,
+        textborder_colour: str,
+        stamp_colour: str,
+        box_colour: str,
         watermark: Optional[Image.Image] = None,
         icon: Optional[Image.Image] = None,
         background_tile: Optional[Image.Image] = None,
@@ -442,7 +478,7 @@ class Bingo(commands.Cog):
             fill=text_colour,
             stroke_width=1,
             align="right",
-            stroke_fill="black",
+            stroke_fill=textborder_colour,
             anchor="rs",
             font=credit_font,
         )
@@ -475,7 +511,7 @@ class Bingo(commands.Cog):
                 letter,
                 fill=text_colour,
                 stroke_width=4,
-                stroke_fill="black",
+                stroke_fill=textborder_colour,
                 anchor="ms",
                 font=font,
             )
@@ -533,13 +569,13 @@ class Bingo(commands.Cog):
                         line,
                         fill=text_colour,
                         stroke_width=1,
-                        stroke_fill="black",
+                        stroke_fill=textborder_colour,
                         anchor="ms",
                         font=font2,
                     )
                     text_y += font_height
 
         temp = BytesIO()
-        base.save(temp, format="png", optimize=True)
+        base.save(temp, format="webp", optimize=True)
         temp.seek(0)
-        return discord.File(temp, filename="bingo.png")
+        return discord.File(temp, filename="bingo.webp")
