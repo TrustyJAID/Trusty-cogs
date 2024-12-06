@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import discord
 from red_commons.logging import getLogger
@@ -37,7 +37,9 @@ class RoleToolsMessages(RoleToolsMixin):
             return False
         return True
 
-    @roletools_message.command(name="send", with_app_command=False)
+    @roletools_message.command(
+        name="send", with_app_command=False, usage="<channel> <buttons...> <menus...> [text]"
+    )
     async def send_message(
         self,
         ctx: Context,
@@ -51,14 +53,16 @@ class RoleToolsMessages(RoleToolsMixin):
         Send a select menu to a specified channel for role assignment
 
         `<channel>` - the channel to send the button role buttons to.
-        `[buttons]...` - The names of the buttons you want included in the
-        `[menus]...` - The names of the select menus you want included in the
+        `<buttons...>` - The names of the buttons you want included in the
+        `<menus...>` - The names of the select menus you want included in the
         message up to a maximum of 5.
         `[text]` - The text to be included with the select menu.
 
         Note: There is a maximum of 25 slots available on one message. Each menu
         uses up 5 slots while each button uses up 1 slot.
         """
+        menus: List[SelectRole] = list({m.custom_id: m for m in menus}.values())
+        buttons: List[ButtonRole] = list({b.custom_id: b for b in buttons}.values())
         if not channel.permissions_for(ctx.me).send_messages:
             await ctx.send(
                 _("I do not have permission to send messages in {channel}.").format(
@@ -73,7 +77,7 @@ class RoleToolsMessages(RoleToolsMixin):
             await ctx.send(msg)
             return
         new_view = RoleToolsView(self)
-        for select in menus:
+        for select in set(menus):
             new_view.add_item(select)
         for button in buttons:
             new_view.add_item(button)
@@ -81,7 +85,9 @@ class RoleToolsMessages(RoleToolsMixin):
         msg = await channel.send(content=content, view=new_view)
         message_key = f"{msg.channel.id}-{msg.id}"
 
-        await self.save_settings(ctx.guild, message_key, buttons=buttons, select_menus=menus)
+        await self.save_settings(
+            ctx.guild, message_key, buttons=set(buttons), select_menus=set(menus)
+        )
         if ctx.guild.id not in self.views:
             self.views[ctx.guild.id] = {}
         self.views[ctx.guild.id][message_key] = new_view
@@ -127,7 +133,9 @@ class RoleToolsMessages(RoleToolsMixin):
             self.settings[guild_id]["select_menus"]
         )
 
-    @roletools_message.command(name="edit", with_app_command=False)
+    @roletools_message.command(
+        name="edit", with_app_command=False, usage="<message> <buttons...> <menus...>"
+    )
     async def edit_message(
         self,
         ctx: Context,
@@ -139,12 +147,14 @@ class RoleToolsMessages(RoleToolsMixin):
         Edit a bots message to include Role Buttons
 
         `<message>` - The existing message to add role buttons or select menus to. Must be a bots message.
-        `[buttons]...` - The names of the buttons you want to include up to a maximum of 25.
-        `[menus]...` - The names of the select menus you want to include up to a maximum of 5.
+        `<buttons...>` - The names of the buttons you want to include up to a maximum of 25.
+        `<menus...>` - The names of the select menus you want to include up to a maximum of 5.
 
         Note: There is a maximum of 25 slots available on one message. Each menu
         uses up 5 slots while each button uses up 1 slot.
         """
+        menus: List[SelectRole] = list({m.custom_id: m for m in menus}.values())
+        buttons: List[ButtonRole] = list({b.custom_id: b for b in buttons}.values())
         if not await self.check_totals(ctx, buttons=len(buttons), menus=len(menus)):
             return
         if ctx.guild.id not in self.views:
@@ -169,7 +179,9 @@ class RoleToolsMessages(RoleToolsMixin):
         self.views[ctx.guild.id][message_key] = new_view
         await ctx.send(_("Message edited."))
 
-    @roletools_message.command(name="sendselect", with_app_command=False)
+    @roletools_message.command(
+        name="sendselect", with_app_command=False, usage="<channel> <menus...> [text]"
+    )
     async def send_select(
         self,
         ctx: Context,
@@ -182,10 +194,11 @@ class RoleToolsMessages(RoleToolsMixin):
         Send a select menu to a specified channel for role assignment
 
         `<channel>` - the channel to send the select menus to.
-        `[menus]...` - The names of the select menus you want included in the
+        `<menus...>` - The names of the select menus you want included in the
         message up to a maximum of 5.
         `[text]` - The text to be included with the select menu.
         """
+        menus: List[SelectRole] = list({m.custom_id: m for m in menus}.values())
         if not channel.permissions_for(ctx.me).send_messages:
             await ctx.send(
                 _("I do not have permission to send messages in {channel}.").format(
@@ -215,7 +228,9 @@ class RoleToolsMessages(RoleToolsMixin):
         self.views[ctx.guild.id][message_key] = new_view
         await ctx.send(_("Message sent."))
 
-    @roletools_message.command(name="editselect", with_app_command=False)
+    @roletools_message.command(
+        name="editselect", with_app_command=False, usage="<message> <menus...>"
+    )
     async def edit_with_select(
         self,
         ctx: Context,
@@ -226,8 +241,9 @@ class RoleToolsMessages(RoleToolsMixin):
         Edit a bots message to include Select Menus
 
         `<message>` - The existing message to add select menus to. Must be a bots message.
-        `[menus]...` - The names of the select menus you want to include up to a maximum of 5.
+        `<menus...>` - The names of the select menus you want to include up to a maximum of 5.
         """
+        menus: List[SelectRole] = list({m.custom_id: m for m in menus}.values())
         if not await self.check_totals(ctx, buttons=0, menus=len(menus)):
             return
         if ctx.guild.id not in self.views:
@@ -251,7 +267,9 @@ class RoleToolsMessages(RoleToolsMixin):
         self.views[ctx.guild.id][message_key] = new_view
         await ctx.send(_("Message edited."))
 
-    @roletools_message.command(name="sendbutton", with_app_command=False)
+    @roletools_message.command(
+        name="sendbutton", with_app_command=False, usage="<channel> <buttons...> [text]"
+    )
     async def send_buttons(
         self,
         ctx: Context,
@@ -264,10 +282,11 @@ class RoleToolsMessages(RoleToolsMixin):
         Send buttons to a specified channel with optional message.
 
         `<channel>` - the channel to send the button role buttons to.
-        `[buttons]...` - The names of the buttons you want included in the
+        `<buttons...>` - The names of the buttons you want included in the
         message up to a maximum of 25.
         `[text]` - The text to be included with the buttons.
         """
+        buttons: List[ButtonRole] = list({b.custom_id: b for b in buttons}.values())
         if not channel.permissions_for(ctx.me).send_messages:
             await ctx.send(
                 _("I do not have permission to send messages in {channel}.").format(
@@ -291,7 +310,9 @@ class RoleToolsMessages(RoleToolsMixin):
         self.views[ctx.guild.id][message_key] = new_view
         await ctx.send(_("Message sent."))
 
-    @roletools_message.command(name="editbutton", with_app_command=False)
+    @roletools_message.command(
+        name="editbutton", with_app_command=False, usage="<message> <buttons...>"
+    )
     async def edit_with_buttons(
         self,
         ctx: Context,
@@ -302,8 +323,9 @@ class RoleToolsMessages(RoleToolsMixin):
         Edit a bots message to include Role Buttons
 
         `<message>` - The existing message to add role buttons to. Must be a bots message.
-        `[buttons]...` - The names of the buttons you want to include up to a maximum of 25.
+        `<buttons...>` - The names of the buttons you want to include up to a maximum of 25.
         """
+        buttons: List[ButtonRole] = list({b.custom_id: b for b in buttons}.values())
         if not await self.check_totals(ctx, buttons=len(buttons), menus=0):
             return
         if ctx.guild.id not in self.views:

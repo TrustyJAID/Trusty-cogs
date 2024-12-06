@@ -99,7 +99,7 @@ class RoleToolsSelect(RoleToolsMixin):
         Setup role select menus
         """
 
-    @select.command(name="create", usage="<name> [options...] [extras]")
+    @select.command(name="create", usage="<name> <options...> [extras]")
     async def create_select_menu(
         self,
         ctx: Context,
@@ -112,7 +112,7 @@ class RoleToolsSelect(RoleToolsMixin):
         Create a select menu
 
         - `<name>` - The name for you to use when you send a message with this menu.
-        - `[options]...` - The select menu options you designated previously.
+        - `<options...>` - The select menu options you designated previously.
         - `[extras]`
          - `min:` - The minimum number of items from this menu to be selected.
          - `max:` - The maximum number of items from this menu that can be selected.
@@ -135,6 +135,7 @@ class RoleToolsSelect(RoleToolsMixin):
             )
             await ctx.send(msg)
             return
+        options = list({o.name: o for o in options}.values())
         if len(options) < 1:
             msg = _("You have not provided any valid select options to use.")
             await ctx.send(msg)
