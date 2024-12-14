@@ -12,7 +12,6 @@ insults: List[str] = [
     _(
         "You're so fat that when you were diagnosed with a flesh eating bacteria - the doctors gave you 87 years to live."
     ),
-    _("You're so fat you've got more chins than a Hong Kong phone book."),
     _("Yo Mama so fat she's on both sides of the family."),
     _("Yo Mama so fat that even Dora couldn't explore her."),
     _("Yo Mama so fat that she doesn't need the internet; she's already world wide."),
@@ -149,7 +148,6 @@ insults: List[str] = [
     _("You're so stupid, it takes you an hour to cook minute rice."),
     _("Is that your face? Or did your neck just throw up?"),
     _("You're so ugly you have to trick or treat over the phone."),
-    _("I'd hit you but we don't hit girls around here."),
     _("Dumbass."),
     _("Bitch."),
     _("I'd give you a nasty look but you've already got one."),
@@ -210,11 +208,10 @@ insults: List[str] = [
     _("I hope you outlive your children."),
     _("Are you and your dick having a competition to see who can disappoint me the most?"),
     _("Yo mamma is so ugly her portraits hang themselves."),
-    _("Your birth certificate is an apology from the abortion clinic."),
     _("If you were anymore inbred you'd be a sandwich."),
     _("Say hello to your wife and my kids for me."),
     _(
-        "You are thick-headed bastards with a bloated bureaucracy, designed to compensate for your small and poor self-esteem, cocksuckers. You have the brains to ban the person who has come to support channel your bot, accusing him of violating the ephemeral ephemeral rules, stupid morons. By the way i have one of the biggest server(5.5k  people, ~30 anytime voiceonline members), and i know something about managing, and of these rules - dont be an asshole. You are fucking asshole, maybe it is product of your life alone, or your life with your mom, anyway - you are retard and your soul is a fucking bunch of stupid self-esteems."
+        "You are thick-headed bastards with a bloated bureaucracy, designed to compensate for your small and poor self-esteem, cocksuckers. You have the brains to ban the person who has come to support channel your bot, accusing him of violating the ephemeral ephemeral rules, stupid morons. By the way i have one of the biggest server(5.5k  people, ~30 anytime voiceonline members), and i know something about managing, and of these rules - dont be an asshole. You are fucking asshole, maybe it is product of your life alone, or your life with your mom, anyway - you are r█████ and your soul is a fucking bunch of stupid self-esteems."
     ),
     _("Don’t feel bad, there are many people who have no talent!"),
     _("I’d like to kick you in the teeth, but why should I improve your looks?"),
@@ -230,7 +227,7 @@ insults: List[str] = [
     _(
         "Your psychiatrist told you you were crazy and when you wanted a second opinion. He said okay, you're ugly too."
     ),
-    _("Behind every fat person there is a beautiful person. No seriously, your in the way."),
+    _("Behind every fat person there is a beautiful person. No seriously, you're in the way."),
     _("Calling you an idiot would be an insult to all the stupid people."),
     _("Some babies were dropped on their heads but you were clearly thrown at a wall."),
     _("Why don't you go play in the traffic."),
@@ -256,7 +253,6 @@ insults: List[str] = [
     _("Hey, you have something on your chin... no, the 3rd one down."),
     _("Are your parents siblings?"),
     _("Looks like you traded in your neck for an extra chin!"),
-    _("I'd like to help you out. Which way did you came in?"),
     _("You look better from the back..."),
     _(
         "Blue whales are amazing creatures! They can grow up to over a hundred feet long, and it's stomach can hold literally thousands of pound of krill, which after being passed though its system, exists through a multi-foot diameter anus, the second biggest asshole on Earth, after you."
@@ -270,7 +266,6 @@ insults: List[str] = [
     _("Your IQ is actually lower than The Mariana Trench."),
     _("You're so annoying even the flies stay away from your stench."),
     _("Go away, please."),
-    _("It looks like your face caught fire and someone tried to put it out with a hammer."),
     _("Your family tree must be a cactus because everyone on it is a prick."),
     _("Someday you will go far, and I hope you stay there."),
     _("The zoo called. They're wondering how you got out of your cage."),
@@ -301,7 +296,6 @@ insults: List[str] = [
     _(
         "You have two parts of your brain, 'left' and 'right'. In the left side, there's nothing right. In the right side, there's nothing left."
     ),
-    _("Is your ass jealous of the amount of shit that just comes out of your mouth?"),
     _("I don't engage in mental combat with the unarmed."),
     _("You sound reasonable. It must be time to up my medication!"),
     _("If I had a face like yours, I'd sue my parents."),
