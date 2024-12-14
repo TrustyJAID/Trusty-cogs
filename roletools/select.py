@@ -5,7 +5,7 @@ from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .abc import RoleToolsMixin
 from .components import RoleToolsView, SelectRole, SelectRoleOption
@@ -144,18 +144,16 @@ class RoleToolsSelect(RoleToolsMixin):
             msg = _("The name should be less than 70 characters long.")
             await ctx.send(msg)
             return
-        min_values = extras.min_values
-        max_values = extras.max_values
-        if min_values is None:
-            min_values = 1
-        if max_values is None:
-            max_values = len(options)
+        min_values = max(min(25, getattr(extras, "min_values", 1) or 1), 0)
+        max_values = max(
+            min(len(options), getattr(extras, "max_values", len(options)) or len(options)), 1
+        )
         messages = []
         custom_id = f"RTSelect-{name.lower()}-{ctx.guild.id}"
         select_menu_settings = {
             "options": [o.name for o in options],
-            "min_values": max(min(25, min_values), 0),
-            "max_values": max(min(25, max_values), 0),
+            "min_values": min_values,
+            "max_values": max_values,
             "placeholder": extras.placeholder,
             "name": name.lower(),
             "messages": messages,
@@ -176,6 +174,7 @@ class RoleToolsSelect(RoleToolsMixin):
             options=options,
             placeholder=extras.placeholder,
         )
+        failed_fixes = []
         for message_id in select_menu_settings["messages"]:
             # fix old menus with the new one when interacted with
             replacement_view = self.views.get(ctx.guild.id, {}).get(message_id, None)
@@ -188,14 +187,30 @@ class RoleToolsSelect(RoleToolsMixin):
                 replacement_view.add_item(select_menus)
             except ValueError:
                 log.error("Error editing old menu on Select Menu %s", custom_id)
+                failed_fixes.append(message_id)
                 continue
-
         select_menus.update_options(ctx.guild)
         view = RoleToolsView(self, timeout=180.0)
         view.add_item(select_menus)
 
         msg_str = _("Here is how your select menu will look.")
-        msg = await ctx.send(msg_str, view=view)
+        await ctx.send(msg_str, view=view)
+        if failed_fixes:
+            msg = ""
+            for view_id in failed_fixes:
+                channel_id, message_id = view_id.split("-")
+                channel = ctx.guild.get_channel(int(channel_id))
+                if channel is None:
+                    continue
+                message = discord.PartialMessage(channel=channel, id=int(message_id))
+                msg += f"- {message.jump_url}\n"
+            pages = []
+            full_msg = _(
+                "The following existing select menus could not be edited with the new settings.\n{failed}"
+            ).format(failed=msg)
+            for page in pagify(full_msg):
+                pages.append(page)
+            await ctx.send_interactive(pages)
 
     @select.command(name="delete", aliases=["del", "remove"])
     async def delete_select_menu(self, ctx: Context, *, name: str) -> None:

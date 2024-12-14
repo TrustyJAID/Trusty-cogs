@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional, Set
+from typing import List, Optional
 
 import discord
 from red_commons.logging import getLogger
@@ -82,7 +82,28 @@ class RoleToolsMessages(RoleToolsMixin):
         for button in buttons:
             new_view.add_item(button)
         content = text[:2000] if text else None
-        msg = await channel.send(content=content, view=new_view)
+        try:
+            msg = await channel.send(content=content, view=new_view)
+        except discord.HTTPException as e:
+            log.exception(
+                "Error sending message in channel %s in guild %s",
+                channel.id,
+                channel.guild.id,
+            )
+            await ctx.send(
+                _("There was an error sending to {channel}. Reason: {reason}").format(
+                    channel=channel.mention, reason=e.text
+                )
+            )
+            # Right now this just displays discord's error message but could probably
+            # be improved to parse the error and display to the user which component
+            # is actually erroring. This requires accessing private attributes
+            # in d.py though so I will skip it for now. Namely only item._rendered_row
+            # contains the actual row with reference to the item we could convert to components
+            # but I don't think I can accurately match that back to the actual object.
+            # TODO: Parse discord's error with the following regex
+            # In (?P<key>components\.(?P<row>\d)\.components\.(?P<column>\d)\.(?P<attribute>\w+))
+            return
         message_key = f"{msg.channel.id}-{msg.id}"
 
         await self.save_settings(
@@ -172,11 +193,31 @@ class RoleToolsMessages(RoleToolsMixin):
             new_view.add_item(select_menu)
         for button in buttons:
             new_view.add_item(button)
-        await message.edit(view=new_view)
+        failed_to_edit = None
+        try:
+            await message.edit(view=new_view)
+        except discord.HTTPException as e:
+            failed_to_edit = e.text
+            log.exception(
+                "Error editing message %s in channel %s in guild %s",
+                message.id,
+                message.channel.id,
+                message.guild.id,
+            )
         message_key = f"{message.channel.id}-{message.id}"
         await self.check_and_replace_existing(ctx.guild.id, message_key)
         await self.save_settings(ctx.guild, message_key, buttons=buttons, select_menus=menus)
         self.views[ctx.guild.id][message_key] = new_view
+        if failed_to_edit:
+            await ctx.send(
+                _(
+                    "There was an error editing the message. "
+                    "It's possible the emojis were deleted or there was some "
+                    "misconfiguration with the view. You may need to rebuild things "
+                    "from scratch with the changes. Reason: {reason}"
+                ).format(reason=failed_to_edit)
+            )
+            return
         await ctx.send(_("Message edited."))
 
     @roletools_message.command(
@@ -221,7 +262,20 @@ class RoleToolsMessages(RoleToolsMixin):
         for select in menus:
             new_view.add_item(select)
         content = text[:2000] if text else None
-        msg = await channel.send(content=content, view=new_view)
+        try:
+            msg = await channel.send(content=content, view=new_view)
+        except discord.HTTPException as e:
+            log.exception(
+                "Error sending message in channel %s in guild %s",
+                channel.id,
+                channel.guild.id,
+            )
+            await ctx.send(
+                _("There was an error sending to {channel}. Reason: {reason}").format(
+                    channel=channel.mention, reason=e.text
+                )
+            )
+            return
         message_key = f"{msg.channel.id}-{msg.id}"
 
         await self.save_settings(ctx.guild, message_key, buttons=[], select_menus=menus)
@@ -259,12 +313,32 @@ class RoleToolsMessages(RoleToolsMixin):
         new_view = RoleToolsView(self)
         for select_menu in menus:
             new_view.add_item(select_menu)
-        await message.edit(view=new_view)
+        failed_to_edit = None
+        try:
+            await message.edit(view=new_view)
+        except discord.HTTPException as e:
+            failed_to_edit = e.text
+            log.exception(
+                "Error editing message %s in channel %s in guild %s",
+                message.id,
+                message.channel.id,
+                message.guild.id,
+            )
         message_key = f"{message.channel.id}-{message.id}"
         await self.check_and_replace_existing(ctx.guild.id, message_key)
 
         await self.save_settings(ctx.guild, message_key, buttons=[], select_menus=menus)
         self.views[ctx.guild.id][message_key] = new_view
+        if failed_to_edit:
+            await ctx.send(
+                _(
+                    "There was an error editing the message. "
+                    "It's possible the emojis were deleted or there was some "
+                    "misconfiguration with the view. You may need to rebuild things "
+                    "from scratch with the changes. Reason: {reason}"
+                ).format(reason=failed_to_edit)
+            )
+            return
         await ctx.send(_("Message edited."))
 
     @roletools_message.command(
@@ -303,7 +377,20 @@ class RoleToolsMessages(RoleToolsMixin):
         for button in buttons:
             new_view.add_item(button)
         content = text[:2000] if text else None
-        msg = await channel.send(content=content, view=new_view)
+        try:
+            msg = await channel.send(content=content, view=new_view)
+        except discord.HTTPException as e:
+            log.exception(
+                "Error sending message in channel %s in guild %s",
+                channel.id,
+                channel.guild.id,
+            )
+            await ctx.send(
+                _("There was an error sending to {channel}. Reason: {reason}").format(
+                    channel=channel.mention, reason=e.text
+                )
+            )
+            return
         message_key = f"{msg.channel.id}-{msg.id}"
 
         await self.save_settings(ctx.guild, message_key, buttons=buttons, select_menus=[])
@@ -337,10 +424,30 @@ class RoleToolsMessages(RoleToolsMixin):
         new_view = RoleToolsView(self)
         for button in buttons:
             new_view.add_item(button)
-        await message.edit(view=new_view)
+        failed_to_edit = None
+        try:
+            await message.edit(view=new_view)
+        except discord.HTTPException as e:
+            failed_to_edit = e.text
+            log.exception(
+                "Error editing message %s in channel %s in guild %s",
+                message.id,
+                message.channel.id,
+                message.guild.id,
+            )
         message_key = f"{message.channel.id}-{message.id}"
         await self.check_and_replace_existing(ctx.guild.id, message_key)
 
         await self.save_settings(ctx.guild, message_key, buttons=buttons, select_menus=[])
         self.views[ctx.guild.id][message_key] = new_view
+        if failed_to_edit:
+            await ctx.send(
+                _(
+                    "There was an error editing the message. "
+                    "It's possible the emojis were deleted or there was some "
+                    "misconfiguration with the view. You may need to rebuild things "
+                    "from scratch with the changes. Reason: {reason}"
+                ).format(reason=failed_to_edit)
+            )
+            return
         await ctx.send(_("Message edited."))

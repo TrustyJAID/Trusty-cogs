@@ -5,6 +5,7 @@ from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import pagify
 
 from .abc import RoleToolsMixin
 from .components import ButtonRole, RoleToolsView
@@ -152,6 +153,7 @@ class RoleToolsButtons(RoleToolsMixin):
             role_id=role.id,
             name=name.lower(),
         )
+        failed_fixes = []
         for message_id in button_settings["messages"]:
             # fix old buttons with the new one when interacted with
             replacement_view = self.views.get(ctx.guild.id, {}).get(message_id, None)
@@ -160,11 +162,30 @@ class RoleToolsButtons(RoleToolsMixin):
             for item in replacement_view.children:
                 if item.custom_id == custom_id:
                     replacement_view.remove_item(item)
-            replacement_view.add_item(button)
+            try:
+                replacement_view.add_item(button)
+            except ValueError:
+                failed_fixes.append(message_id)
         button.replace_label(ctx.guild)
         view = RoleToolsView(self, timeout=180.0)
         view.add_item(button)
         await ctx.send("Here is how your button will look.", view=view)
+        if failed_fixes:
+            msg = ""
+            for view_id in failed_fixes:
+                channel_id, message_id = view_id.split("-")
+                channel = ctx.guild.get_channel(int(channel_id))
+                if channel is None:
+                    continue
+                message = discord.PartialMessage(channel=channel, id=int(message_id))
+                msg += f"- {message.jump_url}\n"
+            pages = []
+            full_msg = _(
+                "The following existing buttons could not be edited with the new settings.\n{failed}"
+            ).format(failed=msg)
+            for page in pagify(full_msg):
+                pages.append(page)
+            await ctx.send_interactive(pages)
         await self.confirm_selfassignable(ctx, [role])
 
     @buttons.command(name="delete", aliases=["del", "remove"])

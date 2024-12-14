@@ -245,6 +245,7 @@ class SelectRole(discord.ui.Select):
         missing_role = False
         pending = False
         wait = None
+        config = self.view.cog.config
         for role_id in role_ids:
             role = guild.get_role(role_id)
             if role is None:
@@ -255,7 +256,7 @@ class SelectRole(discord.ui.Select):
                 # # even if it's your own code
                 # ## Especially if it's your own code
                 continue
-            config = self.view.cog.config
+
             if role not in interaction.user.roles:
                 if not await config.role(role).selfassignable():
                     msg += _(
@@ -278,6 +279,10 @@ class SelectRole(discord.ui.Select):
                     interaction.user, [role], _("Role Selection")
                 )
                 if response:
+                    reason = response[0].reason
+                    msg += _("The {role} role could not be given because: {reason}").format(
+                        role=role.mention, reason=reason
+                    )
                     continue
                 added_roles.append(role)
             elif role in interaction.user.roles:
@@ -287,7 +292,15 @@ class SelectRole(discord.ui.Select):
                     ).format(role=role.mention)
                     continue
                 # log.debug("Removing role from %s in %s", interaction.user.name, guild)
-                await self.view.cog.remove_roles(interaction.user, [role], _("Role Selection"))
+                response = await self.view.cog.remove_roles(
+                    interaction.user, [role], _("Role Selection")
+                )
+                if response:
+                    reason = response[0].reason
+                    msg += _("The {role} role could not be removed because: {reason}").format(
+                        role=role.mention, reason=reason
+                    )
+                    continue
                 removed_roles.append(role)
         if wait is not None:
             msg += _(
