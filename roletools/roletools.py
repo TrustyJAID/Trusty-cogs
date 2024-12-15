@@ -85,7 +85,7 @@ class RoleTools(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.5.15"
+    __version__ = "1.5.16"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -280,57 +280,37 @@ class RoleTools(
         else:
             await self.selfrole_remove(ctx, role=role)
 
-    async def selfrole_add(self, ctx: Context, *, role: SelfRoleConverter) -> None:
+    async def selfrole_add(self, ctx: Context, *, role: discord.Role) -> None:
         """
         Give yourself a role
 
         `<role>` The role you want to give yourself
         """
         await ctx.typing()
-        author = ctx.author
+        author: discord.Member = ctx.author
 
         if not await self.config.role(role).selfassignable():
             msg = _("The {role} role is not currently selfassignable.").format(role=role.mention)
             await ctx.send(msg)
             return
-        if required := await self.config.role(role).required():
-            has_required = True
-            for role_id in required:
-                r = ctx.guild.get_role(role_id)
-                if r is None:
-                    async with self.config.role(role).required() as required_roles:
-                        required_roles.remove(role_id)
-                    continue
-                if r not in author.roles:
-                    has_required = False
-            if not has_required:
-                msg = _(
-                    "I cannot grant you the {role} role because you "
-                    "are missing a required role."
-                ).format(role=role.mention)
-                await ctx.send(msg)
-                return
-        if cost := await self.config.role(role).cost():
-            currency_name = await bank.get_currency_name(ctx.guild)
-            if not await bank.can_spend(author, cost):
-                msg = _(
-                    "You do not have enough {currency_name} to acquire "
-                    "this role. You need {cost} {currency_name}."
-                ).format(currency_name=currency_name, cost=cost)
-                await ctx.send(msg)
-                return
-        await self.give_roles(author, [role], _("Selfrole command."))
+        response = await self.give_roles(author, [role], _("Selfrole command."))
+        if response:
+            msg = _("I could not assign that role for the following reasons:\n")
+            for r in response:
+                msg += r.reason
+            await ctx.send(msg)
+            return
         msg = _("You have been given the {role} role.").format(role=role.mention)
         await ctx.send(msg)
 
-    async def selfrole_remove(self, ctx: Context, *, role: SelfRoleConverter) -> None:
+    async def selfrole_remove(self, ctx: Context, *, role: discord.Role) -> None:
         """
         Remove a role from yourself
 
         `<role>` The role you want to remove.
         """
         await ctx.typing()
-        author = ctx.author
+        author: discord.Member = ctx.author
 
         if not await self.config.role(role).selfremovable():
             msg = _("The {role} role is not currently self removable.").format(role=role.mention)
