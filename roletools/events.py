@@ -325,6 +325,11 @@ class RoleToolsEvents(RoleToolsMixin):
                         )
                         continue
             if (cost := await self.config.role(role).cost()) and check_cost:
+                currency_name = await bank.get_currency_name(guild)
+                msg = _(
+                    "You do not have enough {currency_name} to acquire "
+                    "this role. You need {cost} {currency_name}."
+                ).format(currency_name=currency_name, cost=cost)
                 if await bank.can_spend(member, cost):
                     try:
                         await bank.withdraw_credits(member, cost)
@@ -334,9 +339,7 @@ class RoleToolsEvents(RoleToolsMixin):
                             role,
                             member,
                         )
-                        ret.append(
-                            RoleChangeResponse(role, _("You do not have enough credits."), False)
-                        )
+                        ret.append(RoleChangeResponse(role, msg, False))
                         continue
                 else:
                     log.info(
@@ -344,9 +347,8 @@ class RoleToolsEvents(RoleToolsMixin):
                         role,
                         member,
                     )
-                    ret.append(
-                        RoleChangeResponse(role, _("You do not have enough credits."), False)
-                    )
+
+                    ret.append(RoleChangeResponse(role, msg, False))
                     continue
             if (inclusive := await self.config.role(role).inclusive_with()) and check_inclusive:
                 inclusive_roles = []
