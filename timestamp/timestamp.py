@@ -363,11 +363,14 @@ class Timestamp(commands.Cog):
                     command=command
                 )
             try:
+                locale = i18n.get_babel_locale()
                 new_time = time.datetime(tzinfo=zone).astimezone(ZoneInfo("UTC"))
-                from_tz = get_timezone_name(time.datetime(tzinfo=zone))
-                short_from_tz = get_timezone_name(time.datetime(tzinfo=zone), width="short")
-                to_tz = get_timezone_name(new_time)
-                short_to_tz = get_timezone_name(new_time, width="short")
+                from_tz = get_timezone_name(time.datetime(tzinfo=zone), locale=locale)
+                short_from_tz = get_timezone_name(
+                    time.datetime(tzinfo=zone), width="short", locale=locale
+                )
+                to_tz = get_timezone_name(new_time, locale=locale)
+                short_to_tz = get_timezone_name(new_time, width="short", locale=locale)
             except ValueError as e:
                 await ctx.send(e)
                 return
