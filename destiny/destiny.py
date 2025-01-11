@@ -121,18 +121,23 @@ class Destiny(commands.Cog):
     async def load_cache(self):
         tokens = await self.bot.get_shared_api_tokens("bungie")
         self.api = DestinyAPI(self, **tokens)
-        if await self.config.cache_manifest() > 1:
+        if await self.config.cache_manifest() < 2:
             self._ready.set()
             return
         loop = asyncio.get_running_loop()
         for file in cog_data_path(self).iterdir():
-            if not file.is_file():
+            if (
+                not file.is_file()
+                or not file.name.endswith(".json")
+                or file.name.startswith("settings")
+            ):
+                # ignore config's settings file and
                 continue
             task = functools.partial(self.api.load_file, file=file)
             name = file.name.replace(".json", "")
             try:
                 self.api._manifest[name] = await asyncio.wait_for(
-                    loop.run_in_executor(None, task), timeout=60
+                    loop.run_in_executor(None, task), timeout=180
                 )
             except asyncio.TimeoutError:
                 log.info("Error loading manifest data")
