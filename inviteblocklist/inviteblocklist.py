@@ -169,7 +169,7 @@ class InviteBlocklist(commands.Cog):
         if await self.check_immunity_list(message) is True:
             log.debug("%r is immune from invite blocklist", message)
             return
-        find = INVITE_RE.finditer(message.clean_content)
+        find = INVITE_RE.findall(message.clean_content)
         guild = message.guild
         error_message = (
             "There was an error fetching a potential invite link. "
@@ -190,7 +190,7 @@ class InviteBlocklist(commands.Cog):
             return
         if whitelist := await self.config.guild(guild).whitelist():
             for i in find:
-                inv = resolve_invite(i.group(0))
+                inv = resolve_invite(i)
                 try:
                     invite = await self.bot.fetch_invite(inv.code)
                 except discord.errors.NotFound:
@@ -214,7 +214,7 @@ class InviteBlocklist(commands.Cog):
             return
         if blacklist := await self.config.guild(guild).blacklist():
             for i in find:
-                inv = resolve_invite(i.group(0))
+                inv = resolve_invite(i)
                 try:
                     invite = await self.bot.fetch_invite(inv.code)
                 except discord.errors.NotFound:
