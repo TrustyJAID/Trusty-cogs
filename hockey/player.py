@@ -423,6 +423,12 @@ class PlayerStats:
         last5 = data.pop("last5Games", [])
         current_team = data.pop("currentTeamRoster", [])
         draft = data.pop("draftDetails", {})
+        to_rem = []
+        for key in data.keys():
+            if key not in cls.__dataclass_fields__:
+                to_rem.append(key)
+        for key in to_rem:
+            data.pop(key)
         return cls(
             draftDetails=draft,
             featuredStats=featured,
