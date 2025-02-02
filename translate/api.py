@@ -595,7 +595,7 @@ class GoogleTranslateAPI:
         msgs = await self.translate_message(
             message, to_lang=None, flag=str(payload.emoji), reacted_user=reacted_user
         )
-        if msgs is None:
+        if not msgs:
             log.debug("The translation failed")
             return
         channel = message.channel
