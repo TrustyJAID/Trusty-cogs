@@ -118,7 +118,8 @@ class AutoMod(commands.Cog):
     ):
         """
         Create an automod rule in the server
-
+        - `<name>` The name of the rule for future reference.
+        - `<rule>` What the rule will do using the following information.
         Usage:
         - `trigger:` The name of a saved trigger.
         - `actions:` The name(s) of saved actions.
@@ -128,7 +129,7 @@ class AutoMod(commands.Cog):
         - `reason:` An optional reason for creating this rule.
 
         Example:
-            `[p]automod create rule trigger: mytrigger actions: timeoutuser notifymods enabled: true roles: @mods`
+            `[p]automod create rule rule_name trigger: mytrigger actions: timeoutuser notifymods enabled: true roles: @mods`
             Will create an automod rule with the saved trigger `mytrigger` and
             the saved actions `timeoutuser` and `notifymods`.
         """
