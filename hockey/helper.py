@@ -162,6 +162,8 @@ class Team:
         for name, data in TEAMS.items():
             if team_name == name:
                 return cls.from_id(data["id"])
+        if not team_name:
+            team_name = _("Unknown Team")
         return cls(
             id=0,
             name=team_name,
