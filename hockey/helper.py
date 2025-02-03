@@ -158,11 +158,11 @@ class Team:
         )
 
     @classmethod
-    def from_name(cls, team_name: str) -> Team:
+    def from_name(cls, team_name: str, abbrev: Optional[str] = None) -> Team:
         for name, data in TEAMS.items():
             if team_name == name:
                 return cls.from_id(data["id"])
-        if not team_name:
+        if not team_name.strip():
             team_name = _("Unknown Team")
         return cls(
             id=0,
@@ -173,7 +173,7 @@ class Team:
             away_colour="#ffffff",
             division=_("unknown"),
             conference=_("unknown"),
-            tri_code="".join([i[0].upper() for i in team_name.split(" ")]),
+            tri_code=abbrev or "".join([i.upper() for i in team_name.split(" ")]),
             nickname=[],
             team_url="",
             timezone="US/Pacific",
@@ -183,12 +183,17 @@ class Team:
 
     @classmethod
     def from_nhle(cls, data: dict, home: bool = False) -> Team:
-        name = data.get("name", {}).get("default") or data.get("placeName", {}).get("default")
+        name = (
+            data.get("commonName", {}).get("default")
+            or data.get("name", {}).get("default")
+            or data.get("placeName", {}).get("default")
+        )
+        abbrev = data.get("abbrev", None)
         team_id = data.get("id", -1)
         team_ids = set(i["id"] for i in TEAMS.values())
         if team_id in team_ids:
             return cls.from_id(team_id)
-        return cls.from_name(name)
+        return cls.from_name(name, abbrev)
 
 
 class Broadcast(NamedTuple):
