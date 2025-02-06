@@ -355,7 +355,7 @@ class ScheduleList(menus.PageSource):
             home_team = game.home_team
             away_team = game.away_team
             home_emoji = discord.PartialEmoji.from_str("\N{HOUSE BUILDING}")
-            away_emoji = discord.PartialEmoji.from_str("\N{AIRPLANE}")
+            away_emoji = discord.PartialEmoji.from_str("\N{AIRPLANE}\N{VARIATION SELECTOR-16}")
             home_abr = home_team
             away_abr = away_team
             broadcast_str = ""
@@ -369,11 +369,11 @@ class ScheduleList(menus.PageSource):
                         + humanize_list([b.get("network", "Unknown") for b in game.broadcasts])
                     )
             if home_team in TEAMS:
-                home_emoji = discord.PartialEmoji.from_str(TEAMS[home_team]["emoji"])
-                home_abr = TEAMS[home_team]["tri_code"]
+                home_emoji = game.home.emoji
+            home_abr = game.home.tri_code or home_team
             if away_team in TEAMS:
-                away_emoji = discord.PartialEmoji.from_str(TEAMS[away_team]["emoji"])
-                away_abr = TEAMS[away_team]["tri_code"]
+                away_emoji = game.away.emoji
+            away_abr = game.away.tri_code or away_team
 
             postponed = game.schedule_state != "OK"
             game_state = game.game_state.emoji()
