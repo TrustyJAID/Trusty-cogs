@@ -164,7 +164,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
         guild = ctx.guild
         await ctx.typing()
-        if guild.id in self.starboards:
+        if guild.id in self.starboards and len(self.starboards[guild.id]) > 0:
             pages = [
                 {"embed": await self.format_starboard(ctx, starboard)}
                 for starboard in self.starboards[guild.id].values()
