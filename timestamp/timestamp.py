@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from enum import Enum
 from typing import List, Literal, Optional
 from zoneinfo import ZoneInfo, available_timezones
 
@@ -22,6 +23,19 @@ RELATIVE_CONVERTER = RelativedeltaConverter(
 _ = i18n.Translator("Timestamp", __file__)
 
 log = getLogger("red.trusty-cogs.timestamp")
+
+
+class TimestampStyle(Enum):
+    relative = "R"
+    short_time = "t"
+    long_time = "T"
+    short_date = "d"
+    long_date = "D"
+    short_date_time = "f"
+    long_date_time = "F"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class TimezoneConverter(discord.app_commands.Transformer):
@@ -119,6 +133,11 @@ class AbsoluteTimeFlags(commands.FlagConverter, case_insensitive=True):
         description="The base timezone referenced.",
         converter=TimezoneConverter,
     )
+    style: Optional[TimestampStyle] = commands.flag(
+        name="style",
+        default=None,
+        description="The style of timestamp to post, if not provided an embed with all of them will display.",
+    )
 
     def datetime(self, tzinfo: ZoneInfo) -> datetime:
         now = datetime.now(tz=self.timezone or tzinfo)
@@ -139,7 +158,7 @@ class Timestamp(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.0"
+    __version__ = "1.4.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -329,10 +348,11 @@ class Timestamp(commands.Cog):
         )
 
     async def send_all_styles(self, ctx: commands.Context, new_time: datetime, *, msg: str = ""):
-        msg += f"ISO\n{box(new_time.isoformat())}"
-        for i in TIMESTAMP_STYLES:
-            ts = format_dt(new_time, i)
-            msg += f"{ts}\n{box(ts)}"
+        msg += f"ISO 8601 Timestamp\n{box(new_time.isoformat())}"
+        for style in TimestampStyle:
+            ts = format_dt(new_time, style.value)
+            name = style.name.replace("_", " ").title()
+            msg += f"{name}: {ts}\n{box(ts)}"
         await ctx.maybe_send_embed(msg)
 
     @discord_timestamp.command(name="absolute", aliases=["a"])
@@ -348,8 +368,10 @@ class Timestamp(commands.Cog):
         - `hour:` The hour you want the timestamp to be for. Defaults to current hour if not provided.
         - `minute:` The minute you want the timestamp to be for. Defaults to 0 if not provided.
         - `second:` The second you want the timestamp to be for. Defaults to 0 if not provided.
+        - `style:` The style of timestamp to generate from: `t`, `T`, `d`, `D`, `f`, `F`, or `R`
+            if not provided an embed containing all options will be shown.
         Example:
-            `[p]ts a year: 2023 month: 7 day: 11 hour: 12`
+            `[p]ts a style: F year: 2023 month: 7 day: 11 hour: 12`
             Will produce <t:1689076800:F> with no timezone set.
         """
         async with ctx.typing():
@@ -374,6 +396,9 @@ class Timestamp(commands.Cog):
             except ValueError as e:
                 await ctx.send(e)
                 return
+        if time.style is not None:
+            await ctx.send(format_dt(new_time, time.style))
+            return
         await self.send_all_styles(
             ctx, new_time, msg=f"{msg}\n{from_tz} ({short_from_tz}) to {to_tz} ({short_to_tz})\n"
         )
@@ -381,10 +406,17 @@ class Timestamp(commands.Cog):
     @discord_timestamp.command(name="relative", aliases=["r"])
     @discord.app_commands.describe(relative_time="The time relative to now. e.g. in 2 hours.")
     async def relative_timestamp(
-        self, ctx: commands.Context, *, relative_time: RELATIVE_CONVERTER
+        self,
+        ctx: commands.Context,
+        style: Optional[TimestampStyle] = None,
+        *,
+        relative_time: RELATIVE_CONVERTER,
     ):
         """
         Produce a timestamp relative to right now.
+
+        - `style:` The style of timestamp to generate from: `t`, `T`, `d`, `D`, `f`, `F`, or `R`
+            if not provided an embed containing all options will be shown.
 
         Accepts: `years`, `months`, `weeks`, `days`, `hours`, `minutes`, and `seconds`.
 
@@ -397,15 +429,26 @@ class Timestamp(commands.Cog):
         new_time = ctx.message.created_at + relative_time
         td = humanize_timedelta(timedelta=new_time - ctx.message.created_at)
         # convert back to a timedelta from the relativedelta and humanize
+        if style is not None:
+            await ctx.send(format_dt(new_time, style))
+            return
         await self.send_all_styles(ctx, new_time, msg=f"{td}\n")
 
     @discord_timestamp.command(name="snowflake", aliases=["s"])
     @discord.app_commands.describe(
         snowflake="A discord ID. e.g. channel ID, user ID, or server ID show their creation date."
     )
-    async def snowflake_timestamp(self, ctx: commands.Context, snowflake: int):
+    async def snowflake_timestamp(
+        self,
+        ctx: commands.Context,
+        style: Optional[TimestampStyle],
+        snowflake: int,
+    ):
         """
         Produce a snowflake's timestamp
+
+        - `style:` The style of timestamp to generate from: `t`, `T`, `d`, `D`, `f`, `F`, or `R`
+            if not provided an embed containing all options will be shown.
 
         Snowflakes are discord ID's and contain the time of creation within them.
         This command can expose that as discord timestamps.
@@ -414,6 +457,11 @@ class Timestamp(commands.Cog):
             `[p]ts s 218773382617890828`
             Will produce <t:1472230039:F>.
         """
+        if snowflake is None:
+            snowflake = ctx.message.id
         await ctx.typing()
         new_time = snowflake_time(snowflake)
+        if style is not None:
+            await ctx.send(format_dt(new_time, style))
+            return
         await self.send_all_styles(ctx, new_time, msg=f"Discord ID `{snowflake}`\n")
