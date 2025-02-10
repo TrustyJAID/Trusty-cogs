@@ -116,6 +116,22 @@ class Bingo(commands.Cog):
         colour = await self.config.guild(ctx.guild).background_colour()
         await ctx.send(f"The Bingo card background has been set to {colour}")
 
+    @bingoset.command(name="textborder")
+    async def bingoset_text_border(
+        self, ctx: commands.Context, colour: Optional[discord.Colour] = None
+    ):
+        """
+        Set the colour of the text border.
+
+        `colour` - must be a hex colour code
+        """
+        if colour is None:
+            await self.config.guild(ctx.guild).textborder_colour.clear()
+        else:
+            await self.config.guild(ctx.guild).textborder_colour.set(str(colour))
+        colour = await self.config.guild(ctx.guild).textborder_colour()
+        await ctx.send(f"The Bingo card text border has been set to {colour}")
+
     @bingoset.command(name="box")
     async def bingoset_box(self, ctx: commands.Context, colour: Optional[discord.Colour] = None):
         """
