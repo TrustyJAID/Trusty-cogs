@@ -17,7 +17,69 @@ log = getLogger("red.Trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
 
 
-class SpotifySelectTrack(discord.ui.Select):
+class _Responder:
+    async def respond(
+        self,
+        interaction: discord.Interaction,
+        message: str,
+        view: discord.ui.View = discord.utils.MISSING,
+        ephemeral: bool = False,
+    ):
+        if interaction.response.is_done():
+            await interaction.followup.send(message, view=view, ephemeral=ephemeral)
+        else:
+            await interaction.response.send_message(message, view=view, ephemeral=ephemeral)
+
+
+class _SpotifyDeviceView(discord.ui.View):
+    def __init__(self, ctx: commands.Context):
+        super().__init__(timeout=180)
+        self.ctx = ctx
+        if isinstance(ctx, discord.Interaction):
+            self.author = ctx.user
+        else:
+            self.author = ctx.author
+        self.device_id = None
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.author.id:
+            await interaction.response.send_message(
+                _("You are not authorized to interact with this."), ephemeral=True
+            )
+            return False
+        return True
+
+
+class SpotifySelectDevice(discord.ui.Select):
+    def __init__(
+        self,
+        options: List[discord.SelectOption],
+        user_token: str,
+        sender: tekore.AsyncSender,
+        send_callback=True,
+    ):
+        super().__init__(
+            min_values=1, max_values=1, options=options, placeholder=_("Pick a device")
+        )
+        self._sender = sender
+        self.user_token = user_token
+        self.send_callback = send_callback
+        self.device_id = None
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.device_id = self.values[0]
+        self.device_id = self.values[0]
+        if not self.send_callback:
+            await interaction.response.edit_message(view=None)
+            self.view.stop()
+            return
+        user_spotify = tekore.Spotify(sender=self._sender)
+        with user_spotify.token_as(self.user_token):
+            now = await user_spotify.playback()
+            await user_spotify.playback_transfer(self.values[0], now.is_playing)
+
+
+class SpotifySelectTrack(discord.ui.Select, _Responder):
     def __init__(
         self,
         tracks: List[tekore.FullTrack],
@@ -58,8 +120,31 @@ class SpotifySelectTrack(discord.ui.Select):
                         if d.id == device_id:
                             device = d
                     if not device:
-                        await self.cog.no_device(interaction)
-                        return
+                        new_view = _SpotifyDeviceView(interaction)
+                        options = []
+                        for device in devices[:25]:
+                            options.append(
+                                discord.SelectOption(label=device.name[:25], value=device.id)
+                            )
+                        options.insert(0, discord.SelectOption(label="None", value="None"))
+                        select_view = SpotifySelectDevice(
+                            options, self.user_token, self.cog._sender, send_callback=False
+                        )
+                        new_view.add_item(select_view)
+                        msg = _("Pick the device you want to start playing on.")
+                        await self.respond(interaction, msg, view=new_view, ephemeral=True)
+                        await new_view.wait()
+                        device_id = (
+                            select_view.device_id if select_view.device_id != "None" else None
+                        )
+
+                        if device_id:
+                            for d in devices:
+                                if d.id == device_id:
+                                    device = d
+                        else:
+                            await self.cog.no_device(interaction)
+                            return
                 else:
                     device = cur.device
                 await user_spotify.playback_start_context(
@@ -69,7 +154,8 @@ class SpotifySelectTrack(discord.ui.Select):
                     track = await user_spotify.track(track_id, market="from_token")
                 track_name = track.name
                 artists = humanize_list([i.name for i in track.artists])
-                await interaction.response.send_message(
+                await self.respond(
+                    interaction,
                     _("Playing {track} by {artist} on {device}.").format(
                         track=track_name, artist=artists, device=device.name
                     ),
@@ -89,7 +175,7 @@ class SpotifySelectTrack(discord.ui.Select):
         await self.view.show_checked_page(page, interaction)
 
 
-class PlayPauseButton(discord.ui.Button):
+class PlayPauseButton(discord.ui.Button, _Responder):
     def __init__(
         self,
         style: discord.ButtonStyle,
@@ -120,8 +206,31 @@ class PlayPauseButton(discord.ui.Button):
                         if d.id == device_id:
                             device = d
                     if not device:
-                        await self.cog.no_device(interaction)
-                        return
+                        new_view = _SpotifyDeviceView(interaction)
+                        options = []
+                        for device in devices[:25]:
+                            options.append(
+                                discord.SelectOption(label=device.name[:25], value=device.id)
+                            )
+                        options.insert(0, discord.SelectOption(label="None", value="None"))
+                        select_view = SpotifySelectDevice(
+                            options, self.user_token, self.cog._sender, send_callback=False
+                        )
+                        new_view.add_item(select_view)
+                        msg = _("Pick the device you want to start playing on.")
+                        await self.respond(interaction, msg, view=new_view, ephemeral=True)
+                        await new_view.wait()
+                        device_id = (
+                            select_view.device_id if select_view.device_id != "None" else None
+                        )
+
+                        if device_id:
+                            for d in devices:
+                                if d.id == device_id:
+                                    device = d
+                        else:
+                            await self.cog.no_device(interaction)
+                            return
                 else:
                     device = cur.device
                     device_id = device.id
@@ -134,7 +243,8 @@ class PlayPauseButton(discord.ui.Button):
                         await user_spotify.playback_pause(device_id=device_id)
                         self.emoji = spotify_emoji_handler.get_emoji("play")
                     else:
-                        await interaction.response.send_message(
+                        await self.respond(
+                            interaction,
                             _("Resuming Spotify playback on {device}.").format(device=device.name),
                             ephemeral=True,
                         )
@@ -146,7 +256,8 @@ class PlayPauseButton(discord.ui.Button):
                         artists = humanize_list(
                             [i.name for i in self.view.source.current_track.artists]
                         )
-                        await interaction.response.send_message(
+                        await self.respond(
+                            interaction,
                             _("Playing {track} by {artist} on {device}.").format(
                                 track=track_name, artist=artists, device=device.name
                             ),
@@ -160,7 +271,8 @@ class PlayPauseButton(discord.ui.Button):
                         artists = humanize_list(
                             [i.name for i in self.view.source.current_track.artists]
                         )
-                        await interaction.response.send_message(
+                        await self.respond(
+                            interaction,
                             _("Playing {track} by {artist} on {device}.").format(
                                 track=track_name, artist=artists, device=device.name
                             ),
@@ -287,7 +399,7 @@ class ShuffleButton(discord.ui.Button):
                             device = d
                     if not device:
                         await interaction.response.send_message(
-                            _("I could not find an active device to play songs on."),
+                            _("I could not find an active device playing songs to shuffle."),
                             ephemeral=True,
                         )
                         return
@@ -532,7 +644,7 @@ class LikeButton(discord.ui.Button):
         await self.view.show_checked_page(page, interaction)
 
 
-class PlayAllButton(discord.ui.Button):
+class PlayAllButton(discord.ui.Button, _Responder):
     def __init__(
         self,
         style: discord.ButtonStyle,
@@ -563,8 +675,31 @@ class PlayAllButton(discord.ui.Button):
                         if d.id == device_id:
                             device = d
                     if not device:
-                        await self.cog.no_device(interaction)
-                        return
+                        new_view = _SpotifyDeviceView(interaction)
+                        options = []
+                        for device in devices[:25]:
+                            options.append(
+                                discord.SelectOption(label=device.name[:25], value=device.id)
+                            )
+                        options.insert(0, discord.SelectOption(label="None", value="None"))
+                        select_view = SpotifySelectDevice(
+                            options, self.user_token, self.cog._sender, send_callback=False
+                        )
+                        new_view.add_item(select_view)
+                        msg = _("Pick the device you want to start playing on.")
+                        await self.respond(interaction, msg, view=new_view, ephemeral=True)
+                        await new_view.wait()
+                        device_id = (
+                            select_view.device_id if select_view.device_id != "None" else None
+                        )
+
+                        if device_id:
+                            for d in devices:
+                                if d.id == device_id:
+                                    device = d
+                        else:
+                            await self.cog.no_device(interaction)
+                            return
                 else:
                     device = cur.device
                 if self.view.source.current_track.type == "track":
@@ -575,13 +710,18 @@ class PlayAllButton(discord.ui.Button):
                     await user_spotify.playback_start_context(
                         self.view.source.current_track.uri, device_id=device_id
                     )
-                await interaction.response.send_message(
-                    _("Now playing all songs on {device}.").format(device=device.name),
+                await self.respond(
+                    interaction,
+                    _("Now playing all songs on {device}.").format(
+                        device=device.name if device is not None else "Unknown Device"
+                    ),
                     ephemeral=True,
                 )
         except tekore.Unauthorised:
-            await interaction.response.send_message.send(
-                _("I am not authorized to perform this action for you."), ephemeral=True
+            await self.respond(
+                interaction,
+                _("I am not authorized to perform this action for you."),
+                ephemeral=True,
             )
         except tekore.NotFound:
             await self.cog.no_device(interaction)
@@ -594,7 +734,7 @@ class PlayAllButton(discord.ui.Button):
             await interaction.response.defer()
 
 
-class QueueTrackButton(discord.ui.Button):
+class QueueTrackButton(discord.ui.Button, _Responder):
     def __init__(
         self,
         style: discord.ButtonStyle,
@@ -625,15 +765,39 @@ class QueueTrackButton(discord.ui.Button):
                         if d.id == device_id:
                             device = d
                     if not device:
-                        await self.cog.no_device(interaction)
-                        return
+                        new_view = _SpotifyDeviceView(interaction)
+                        options = []
+                        for device in devices[:25]:
+                            options.append(
+                                discord.SelectOption(label=device.name[:25], value=device.id)
+                            )
+                        options.insert(0, discord.SelectOption(label="None", value="None"))
+                        select_view = SpotifySelectDevice(
+                            options, self.user_token, self.cog._sender, send_callback=False
+                        )
+                        new_view.add_item(select_view)
+                        msg = _("Pick the device you want to start playing on.")
+                        await self.respond(interaction, msg, view=new_view, ephemeral=True)
+                        await new_view.wait()
+                        device_id = (
+                            select_view.device_id if select_view.device_id != "None" else None
+                        )
+
+                        if device_id:
+                            for d in devices:
+                                if d.id == device_id:
+                                    device = d
+                        else:
+                            await self.cog.no_device(interaction)
+                            return
                 else:
                     device = cur.device
                 if self.view.source.current_track.type == "track":
                     await user_spotify.playback_queue_add(
                         self.view.source.current_track.uri, device_id=device_id
                     )
-                    await interaction.response.send_message(
+                    await self.respond(
+                        interaction,
                         _("{track} by {artist} has been added to your queue on {device}.").format(
                             track=self.view.source.current_track.name,
                             artist=humanize_list(
@@ -743,32 +907,3 @@ class SpotifySelectOption(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         index = int(self.values[0])
         await self.view.show_checked_page(index, interaction)
-
-
-class SpotifySelectDevice(discord.ui.Select):
-    def __init__(
-        self,
-        options: List[discord.SelectOption],
-        user_token: str,
-        sender: tekore.AsyncSender,
-        send_callback=True,
-    ):
-        super().__init__(
-            min_values=1, max_values=1, options=options, placeholder=_("Pick a device")
-        )
-        self._sender = sender
-        self.user_token = user_token
-        self.send_callback = send_callback
-        self.device_id = None
-
-    async def callback(self, interaction: discord.Interaction):
-        self.view.device_id = self.values[0]
-        self.device_id = self.values[0]
-        if not self.send_callback:
-            await interaction.response.edit_message(view=None)
-            self.view.stop()
-            return
-        user_spotify = tekore.Spotify(sender=self._sender)
-        with user_spotify.token_as(self.user_token):
-            now = await user_spotify.playback()
-            await user_spotify.playback_transfer(self.values[0], now.is_playing)

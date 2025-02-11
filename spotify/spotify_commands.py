@@ -1170,6 +1170,8 @@ class SpotifyCommands(SpotifyMixin):
             for p in new.items:
                 playlists.append(p)
         for playlist in playlists:
+            if playlist is None:
+                continue
             if url_or_playlist_name.lower() in playlist.name.lower():
                 await client.playback_start_context(playlist.uri, device_id=device_id)
                 if ctx.interaction:

@@ -48,7 +48,7 @@ class Spotify(
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.7.3"
+    __version__ = "1.8.0"
 
     def __init__(self, bot):
         super().__init__()
