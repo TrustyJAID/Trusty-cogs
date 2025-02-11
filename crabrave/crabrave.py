@@ -2,12 +2,14 @@ import asyncio
 import functools
 import logging
 import os
+from enum import Enum
+from typing import List
 
 import aiohttp
 import discord
 import moviepy
 import yt_dlp as youtube_dl
-from moviepy.editor import CompositeVideoClip, TextClip, VideoFileClip
+from moviepy import CompositeVideoClip, TextClip, VideoFileClip, audio, video
 from red_commons.logging import getLogger
 from redbot.core import checks, commands
 from redbot.core.data_manager import cog_data_path
@@ -23,13 +25,29 @@ FONT_FILE = "https://github.com/matomo-org/travis-scripts/raw/master/fonts/Verda
 log = getLogger("red.trusty-cogs.crabrave")
 
 
+class CrabStyle(Enum):
+    DEFAULT = 0
+    MIKU = 1
+
+    def video_path(self) -> str:
+        return {CrabStyle.DEFAULT: "/crab_template.mp4", CrabStyle.MIKU: "/miku_template.mp4"}[
+            self
+        ]
+
+    def audio_path(self) -> str:
+        return {CrabStyle.DEFAULT: "crabraveaudio.mp3", CrabStyle.MIKU: "mikuraveaudio.mp3"}[self]
+
+    def filename(self) -> str:
+        return {CrabStyle.DEFAULT: "crabrave.mp4", CrabStyle.MIKU: "mikurave.mp4"}[self]
+
+
 class CrabRave(commands.Cog):
     """
     Create your very own crab rave
     """
 
     __author__ = ["DankMemer Team", "TrustyJAID", "thisisjvgrace"]
-    __version__ = "1.1.3"
+    __version__ = "1.2.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -99,23 +117,30 @@ class CrabRave(commands.Cog):
     @commands.cooldown(1, 20, commands.BucketType.guild)
     @commands.max_concurrency(2, commands.BucketType.default)
     @checks.bot_has_permissions(attach_files=True)
-    async def crab(self, ctx: commands.Context, *, text: str):
+    async def crab(self, ctx: commands.Context, *, text: str) -> None:
         """Make crab rave videos
 
         There must be exactly 1 `,` to split the message
         """
         async with ctx.typing():
             t = ctx.message.clean_content[len(f"{ctx.prefix}{ctx.invoked_with}") :]
-            t = t.upper().replace(", ", ",").split(",")
+            t = t.upper().split(",")
             if not await self.check_video_file(CRAB_LINK, "crab_template.mp4"):
-                return await ctx.send("I couldn't download the template file.")
+                await ctx.send("I couldn't download the template file.")
+                return
             if not await self.check_font_file():
-                return await ctx.send("I couldn't download the font file.")
+                await ctx.send("I couldn't download the font file.")
+                return
             if len(t) != 2:
-                return await ctx.send("You must submit exactly two strings split by comma")
+                ctx.command.reset_cooldown(ctx)
+                await ctx.send("You must submit exactly two strings split by comma")
+                return
             if (not t[0] and not t[0].strip()) or (not t[1] and not t[1].strip()):
-                return await ctx.send("Cannot render empty text")
-            fake_task = functools.partial(self.make_crab, t=t, u_id=ctx.message.id)
+                await ctx.send("Cannot render empty text")
+                return
+            fake_task = functools.partial(
+                self.make_crab, text=t, u_id=ctx.message.id, style=CrabStyle.DEFAULT
+            )
             loop = asyncio.get_running_loop()
             task = loop.run_in_executor(None, fake_task)
 
@@ -127,61 +152,67 @@ class CrabRave(commands.Cog):
                 return
             fp = cog_data_path(self) / f"{ctx.message.id}crabrave.mp4"
             file = discord.File(str(fp), filename="crabrave.mp4")
-            try:
-                await ctx.send(files=[file])
-            except Exception:
-                log.error("Error sending crabrave video", exc_info=True)
-                pass
-            try:
-                os.remove(fp)
-            except Exception:
-                log.error("Error deleting crabrave video", exc_info=True)
+        try:
+            await ctx.send(files=[file])
+        except Exception:
+            log.error("Error sending crabrave video", exc_info=True)
+            pass
+        try:
+            os.remove(fp)
+        except Exception:
+            log.error("Error deleting crabrave video", exc_info=True)
 
-    def make_crab(self, t: str, u_id: int) -> bool:
+    def make_crab(self, text: List[str], u_id: int, style: CrabStyle) -> bool:
         """Non blocking crab rave video generation from DankMemer bot
 
         https://github.com/DankMemer/meme-server/blob/master/endpoints/crab.py
         """
         fp = str(cog_data_path(self) / f"Verdana.ttf")
-        clip = VideoFileClip(str(cog_data_path(self)) + "/crab_template.mp4")
+        clip = VideoFileClip(str(cog_data_path(self)) + style.video_path())
         # clip.volume(0.5)
-        text = TextClip(
-            t[0], fontsize=48, color="white", stroke_width=2, stroke_color="black", font=fp
-        )
-        text2 = (
+        top_text = (
             TextClip(
-                "____________________",
-                fontsize=48,
+                fp,
+                text=text[0].strip(),
+                font_size=48,
                 color="white",
-                font=fp,
+                stroke_width=2,
+                stroke_color="black",
+                text_align="center",
             )
-            .set_position(("center", 210))
-            .set_duration(15.4)
+            .with_position(("center", 200))
+            .with_duration(15.4)
         )
-        text = text.set_position(("center", 200)).set_duration(15.4)
-        text3 = (
+        bottom_text = (
             TextClip(
-                t[1], fontsize=48, color="white", stroke_width=2, stroke_color="black", font=fp
+                fp,
+                text=text[1].strip(),
+                font_size=48,
+                color="white",
+                stroke_width=2,
+                stroke_color="black",
             )
-            .set_position(("center", 270))
-            .set_duration(15.4)
+            .with_position(("center", 270))
+            .with_duration(15.4)
         )
 
-        video = CompositeVideoClip(
-            [clip, text.crossfadein(1), text2.crossfadein(1), text3.crossfadein(1)]
-        ).set_duration(15.4)
-        video = video.volumex(0.1)
-        video.write_videofile(
-            str(cog_data_path(self)) + f"/{u_id}crabrave.mp4",
+        cf = video.fx.CrossFadeIn(1)
+        volume = audio.fx.MultiplyVolume(0.1)
+
+        new_video = CompositeVideoClip(
+            [clip, cf.apply(top_text), cf.apply(bottom_text)]
+        ).with_duration(15.4)
+        new_video = new_video.with_effects([volume])
+        new_video.write_videofile(
+            str(cog_data_path(self)) + f"/{u_id}{style.filename()}",
             threads=1,
             preset="superfast",
-            verbose=False,
             logger=None,
-            temp_audiofile=str(cog_data_path(self) / f"{u_id}crabraveaudio.mp3")
+            temp_audiofile=str(cog_data_path(self) / f"{u_id}{style.audio_path()}")
             # ffmpeg_params=["-filter:a", "volume=0.5"]
         )
         clip.close()
-        video.close()
+        new_video.close()
         return True
 
     @commands.command(aliases=["mikurave"])
@@ -195,16 +226,23 @@ class CrabRave(commands.Cog):
         """
         async with ctx.typing():
             t = ctx.message.clean_content[len(f"{ctx.prefix}{ctx.invoked_with}") :]
-            t = t.upper().replace(", ", ",").split(",")
+            t = t.upper().split(",")
             if not await self.check_video_file(MIKU_LINK, "miku_template.mp4"):
-                return await ctx.send("I couldn't download the template file.")
+                await ctx.send("I couldn't download the template file.")
+                return
             if not await self.check_font_file():
-                return await ctx.send("I couldn't download the font file.")
+                await ctx.send("I couldn't download the font file.")
+                return
             if len(t) != 2:
-                return await ctx.send("You must submit exactly two strings split by comma")
+                ctx.command.reset_cooldown(ctx)
+                await ctx.send("You must submit exactly two strings split by comma")
+                return
             if (not t[0] and not t[0].strip()) or (not t[1] and not t[1].strip()):
-                return await ctx.send("Cannot render empty text")
-            fake_task = functools.partial(self.make_miku, t=t, u_id=ctx.message.id)
+                await ctx.send("Cannot render empty text")
+                return
+            fake_task = functools.partial(
+                self.make_crab, text=t, u_id=ctx.message.id, style=CrabStyle.MIKU
+            )
             loop = asyncio.get_running_loop()
             task = loop.run_in_executor(None, fake_task)
 
@@ -216,60 +254,12 @@ class CrabRave(commands.Cog):
                 return
             fp = cog_data_path(self) / f"{ctx.message.id}mikurave.mp4"
             file = discord.File(str(fp), filename="mikurave.mp4")
-            try:
-                await ctx.send(files=[file])
-            except Exception:
-                log.error("Error sending mikurave video", exc_info=True)
-                pass
-            try:
-                os.remove(fp)
-            except Exception:
-                log.error("Error deleting mikurave video", exc_info=True)
-
-    def make_miku(self, t: str, u_id: int) -> bool:
-        """Non blocking miku rave video generation from DankMemer bot
-
-        https://github.com/DankMemer/meme-server/blob/master/endpoints/crab.py
-        """
-        fp = str(cog_data_path(self) / f"Verdana.ttf")
-        clip = VideoFileClip(str(cog_data_path(self)) + "/miku_template.mp4")
-        # clip.volume(1.0)
-        text = TextClip(t[0], fontsize=48, color="DarkSlateGrey", font=fp)
-        text2 = (
-            TextClip(
-                "____________________",
-                fontsize=48,
-                color="DarkSlateGrey",
-                font=fp,
-            )
-            .set_position(("center", 210))
-            .set_duration(40.0)
-        )
-        text = text.set_position(("center", 200)).set_duration(40.0)
-        text3 = (
-            TextClip(
-                t[1],
-                fontsize=48,
-                color="DarkSlateGrey",
-                font=fp,
-            )
-            .set_position(("center", 270))
-            .set_duration(40.0)
-        )
-
-        video = CompositeVideoClip(
-            [clip, text.crossfadein(1), text2.crossfadein(1), text3.crossfadein(1)]
-        ).set_duration(40.0)
-        video = video.volumex(0.7)
-        video.write_videofile(
-            str(cog_data_path(self)) + f"/{u_id}mikurave.mp4",
-            threads=1,
-            preset="superfast",
-            verbose=False,
-            logger=None,
-            temp_audiofile=str(cog_data_path(self) / f"{u_id}mikuraveaudio.mp3")
-            # ffmpeg_params=["-filter:a", "volume=0.5"]
-        )
-        clip.close()
-        video.close()
-        return True
+        try:
+            await ctx.send(files=[file])
+        except Exception:
+            log.error("Error sending mikurave video", exc_info=True)
+            pass
+        try:
+            os.remove(fp)
+        except Exception:
+            log.error("Error deleting mikurave video", exc_info=True)
