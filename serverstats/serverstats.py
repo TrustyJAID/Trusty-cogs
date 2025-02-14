@@ -367,32 +367,33 @@ class ServerStats(commands.GroupCog):
         """
         Post a large size emojis in chat
         """
-        await ctx.channel.typing()
-        d_emoji = discord.PartialEmoji.from_str(emoji)
-        if d_emoji.is_custom_emoji():
-            ext = "gif" if d_emoji.animated else "png"
-            url = "https://cdn.discordapp.com/emojis/{id}.{ext}?v=1".format(id=d_emoji.id, ext=ext)
-            filename = "{name}.{ext}".format(name=d_emoji.name, ext=ext)
+        async with ctx.typing():
+            d_emoji = discord.PartialEmoji.from_str(emoji)
+            d_emoji._state = ctx.channel._state
+            if d_emoji.is_custom_emoji():
+                url = d_emoji.url
+                file = await d_emoji.to_file()
+            else:
+                try:
+                    """https://github.com/glasnt/emojificate/blob/master/emojificate/filter.py"""
+                    cdn_fmt = "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/{codepoint:x}.png"
+                    url = cdn_fmt.format(codepoint=ord(str(emoji)))
+                    filename = "emoji.png"
+                except TypeError:
+                    await ctx.send(_("That doesn't appear to be a valid emoji"))
+                    return
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(url) as resp:
+                            image = BytesIO(await resp.read())
+                    file = discord.File(image, filename=filename)
+                except Exception:
+                    await ctx.send(_("That doesn't appear to be a valid emoji"))
+                    return
+        if ctx.channel.permissions_for(ctx.me).attach_files:
+            await ctx.send(file=file)
         else:
-            try:
-                """https://github.com/glasnt/emojificate/blob/master/emojificate/filter.py"""
-                cdn_fmt = (
-                    "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/{codepoint:x}.png"
-                )
-                url = cdn_fmt.format(codepoint=ord(str(emoji)))
-                filename = "emoji.png"
-            except TypeError:
-                await ctx.send(_("That doesn't appear to be a valid emoji"))
-                return
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
-                    image = BytesIO(await resp.read())
-        except Exception:
-            await ctx.send(_("That doesn't appear to be a valid emoji"))
-            return
-        file = discord.File(image, filename=filename)
-        await ctx.send(file=file)
+            await ctx.send(url)
 
     @commands.hybrid_command(aliases=["bs"])
     async def botstats(self, ctx: commands.Context) -> None:
