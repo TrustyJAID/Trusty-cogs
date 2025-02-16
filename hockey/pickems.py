@@ -53,7 +53,10 @@ class PickemsButton(discord.ui.Button):
         log.verbose("PickemsButton game_start: %s", self.view.game_start)
         if str(interaction.user.id) in self.view.votes:
             vote = self.view.votes[str(interaction.user.id)]
-            emoji = discord.PartialEmoji.from_str(TEAMS[vote]["emoji"])
+            try:
+                emoji = discord.PartialEmoji.from_str(TEAMS[vote]["emoji"])
+            except KeyError:
+                emoji = self.emoji
             if time_now > self.view.game_start:
                 await self.respond(
                     interaction,
@@ -161,7 +164,7 @@ class Pickems(discord.ui.View):
     async def on_error(
         self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item
     ):
-        log.error("Pickems %s - %s", error, item)
+        log.exception("Pickems %s - %s", error, item)
 
     async def update_buttons(self):
         home_count = sum(1 for i in self.votes.values() if i == self.home_team)
