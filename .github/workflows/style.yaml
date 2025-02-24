@@ -12,10 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
-      - uses: actions/setup-python@v5
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+      - name: Display Python version
+        run: python - c "import sys; print(sys.version)"
       - name: Install Black and iSort
-      - run: "python -m pip install black==22.3.0 isort==5.10.1"
-        name: Run stylediff
-      - run: "make stylediff"
+        run: "python -m pip install black==22.3.0 isort==5.10.1"
+      - name: Run stylediff
+        run: "make stylediff"
