@@ -1028,7 +1028,7 @@ class HockeyCommands(HockeyMixin):
                 "https://discord.gg/rishockey\n"  # r/ishockey
                 # "https://discord.gg/c3Q7Fq4T\n" # SDPN
                 "https://discord.gg/thehockeyguy\n"  # THG
-                "https://discord.gg/P3aFDDXqym\n"  # PWHL
+                "https://discord.gg/Eaawx4QHHU\n"  # PWHL
             )
             await ctx.channel.send(msg1)
             for division in team_list:
