@@ -20,7 +20,7 @@ class Conversions(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.2"
+    __version__ = "1.3.3"
 
     def __init__(self, bot: Red) -> None:
         self.bot = bot
@@ -401,7 +401,8 @@ class Conversions(commands.Cog):
         `[currency]` is the currency you want to convert to defaults to USD
         """
         stock = "https://query1.finance.yahoo.com/v8/finance/chart/{}"
-        async with self.session.get(stock.format(ticker.upper())) as resp:
+        headers = {"User-Agent": f"Red Trusty-cogs conversions on {self.bot.user.name}"}
+        async with self.session.get(stock.format(ticker.upper()), headers=headers) as resp:
             data = await resp.json()
         if not data["chart"]["result"]:
             await ctx.send(
@@ -492,8 +493,9 @@ class Conversions(commands.Cog):
         """Function to convert different currencies"""
         conversion = None
         try:
+            headers = {"User-Agent": f"Red Trusty-cogs conversions on {self.bot.user.name}"}
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{currency1}{currency2}=x"
-            async with self.session.get(url) as resp:
+            async with self.session.get(url, headers=headers) as resp:
                 data = await resp.json()
             results = data.get("chart", {}).get("result", [])
             conversion = results[0].get("meta", {}).get("regularMarketPrice")
