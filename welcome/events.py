@@ -110,7 +110,7 @@ class Events:
             if bad_words:
                 for word in bad_words:
                     username = username.replace(word, replace_word)
-        em = discord.Embed(description=converted_msg)
+        em = discord.Embed(description=converted_msg[:4096])
         colour = EMBED_DATA.get("colour", 0)
         goodbye_colour = EMBED_DATA.get("colour_goodbye", 0)
         em.colour = colour
