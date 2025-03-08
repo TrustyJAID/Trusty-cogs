@@ -520,6 +520,10 @@ class PlayerStats:
     def url(self):
         return f"https://www.nhl.com/player/{self.first_name.lower()}-{self.last_name.lower()}-{self.id}"
 
+    @property
+    def hockey_reference_url(self) -> str:
+        return f"https://www.hockey-reference.com/search/search.fcgi?hint=&search={self.first_name}+{self.last_name}"
+
     def __str__(self) -> str:
         return f"{self.full_name}, born {self.birth_date}"
 
@@ -592,6 +596,7 @@ class PlayerStats:
             _("[Puckpedia]({cf_url})").format(cf_url=self.puckpedia_url),
             _("[The Stanley Cap]({cf_url})").format(cf_url=self.the_stanley_cap_url),
             _("[Capwages]({cf_url})").format(cf_url=self.capwages_url),
+            _("[Hockey Reference]({cf_url})").format(cf_url=self.hockey_reference_url),
         ]
         if getattr(self, "dda_id", None):
             links.append(
