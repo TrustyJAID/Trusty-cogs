@@ -994,6 +994,32 @@ class Destiny(commands.Cog):
             source = BungieTweetsSource(all_tweets)
         await BaseMenu(source=source, cog=self).start(ctx=ctx)
 
+    @destiny.command(name="bsky")
+    async def latest_bungie_help_post(self, ctx: commands.Context):
+        """Get the latest posts from Bungie Help on BlueSky"""
+    
+        async with ctx.typing(ephemeral=False):
+            entries = await self.api.get_bsky_posts("bungiehelp.bungie.net")
+            
+            embeds = []
+            for entry in entries:
+                embed = discord.Embed()
+                embed.title = entry["post"]["author"]["displayName"]
+                embed.description = entry["post"]["record"]["text"]
+                embed.set_footer(text=datetime.datetime.fromisoformat(entry["post"]["record"]["createdAt"]).strftime("%Y-%m-%d %H:%M:%S"))
+                
+                embed.set_author(name=entry["post"]["author"]["displayName"], icon_url=entry["post"]["author"]["avatar"])
+                
+                embeds.append(embed)
+        await BaseMenu(
+            source=BasePages(
+                pages=embeds,
+                use_author=True,
+                footer_pagination=False,
+            ),
+            cog=self,
+        ).start(ctx=ctx)
+
     async def get_seal_icon(self, record: dict) -> Optional[str]:
         if record["parentNodeHashes"]:
             node_defs = await self.api.get_definition(

@@ -128,10 +128,11 @@ class ClanPendingView(discord.ui.View):
 
 
 class BasePages(menus.ListPageSource):
-    def __init__(self, pages: list, use_author: bool = False):
+    def __init__(self, pages: list, use_author: bool = False, footer_pagination: bool = True):
         super().__init__(pages, per_page=1)
         self.pages = pages
         self.select_options = []
+        self.footer_pagination = footer_pagination
         for count, page in enumerate(pages):
             self.select_options.append(
                 discord.SelectOption(
@@ -145,7 +146,8 @@ class BasePages(menus.ListPageSource):
         return True
 
     async def format_page(self, menu: menus.MenuPages, page):
-        page.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        if self.footer_pagination:
+            page.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return page
 
 
