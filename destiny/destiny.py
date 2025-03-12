@@ -279,7 +279,7 @@ class Destiny(commands.Cog):
                 for old in data["posted_bsky"].copy():
                     if old not in article_keys and len(data["posted_bsky"]) > 100:
                         data["posted_bsky"].remove(old)
-            await self.config.guild(guild).posted_tweets.set(data["posted_bsky"])
+            await self.config.guild(guild).posted_bsky.set(data["posted_bsky"])
 
     @tasks.loop(seconds=300)
     async def tweet_checker(self):
