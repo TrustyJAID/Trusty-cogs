@@ -54,6 +54,8 @@ DEV_BOTS = [552261846951002112]
 BASE_URL = URL("https://www.bungie.net")
 BASE_HEADERS = {"User-Agent": "Red-TrustyCogs-DestinyCog"}
 
+BSKY_URL = "https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed"
+
 COMPONENTS = DestinyComponents(
     DestinyComponentType.profiles,
     DestinyComponentType.profile_inventories,
@@ -234,6 +236,17 @@ class DestinyAPI:
         async with self.extra_session.get(url) as resp:
             data = await resp.json()
         return [BungieTweet(**i) for i in data]
+
+    async def get_bsky_posts(self, profile: str) -> list:
+        posts = []
+        url = f"{BSKY_URL}?actor={profile}&filter=posts_no_replies"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                data = await response.json()
+                if data["feed"]:
+                    for post in data["feed"]:
+                        posts.append(post)
+        return posts
 
     async def post_url(
         self,
