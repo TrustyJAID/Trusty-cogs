@@ -28,6 +28,7 @@ from yarl import URL
 from .api import DestinyAPI
 from .converter import (
     LOADOUT_COLOURS,
+    BungieBSKYAccount,
     BungieXAccount,
     DestinyActivity,
     DestinyActivityModeType,
@@ -44,6 +45,7 @@ from .errors import Destiny2APIError, Destiny2MissingManifest, ServersUnavailabl
 from .menus import (
     BaseMenu,
     BasePages,
+    BungieBSKYSource,
     BungieNewsSource,
     BungieTweetsSource,
     ClanPendingView,
@@ -69,7 +71,7 @@ class Destiny(commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "2.0.0"
+    __version__ = "2.1.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -93,7 +95,9 @@ class Destiny(commands.Cog):
             news_channel=None,
             posted_news=[],
             posted_tweets=[],
+            posted_bsky=[],
             tweets_channel=None,
+            bsky_channel=None,
         )
         self.dashboard_authed: Dict[int, dict] = {}
         self.message_authed: Dict[int, dict] = {}
@@ -101,6 +105,7 @@ class Destiny(commands.Cog):
         self.manifest_check_loop.start()
         self.news_checker.start()
         self.tweet_checker.start()
+        self.bsky_checker.start()
         self._manifest: dict = {}
         self._loadout_temp: dict = {}
         self._repo = ""
@@ -117,6 +122,7 @@ class Destiny(commands.Cog):
         self.manifest_check_loop.cancel()
         self.news_checker.cancel()
         self.tweet_checker.cancel()
+        self.bsky_checker.cancel()
 
     async def load_cache(self):
         tokens = await self.bot.get_shared_api_tokens("bungie")
@@ -237,6 +243,43 @@ class Destiny(commands.Cog):
         if match:
             self.message_authed[message.author.id] = {"code": match.group(1)}
             self.waiting_auth[message.author.id].set()
+
+    @tasks.loop(seconds=300)
+    async def bsky_checker(self):
+        all_posts = []
+        for account in BungieBSKYAccount:
+            try:
+                all_posts.extend(await self.api.bungie_bsky_posts(account))
+            except Exception:
+                log.exception("Error Checking bungiehelp.org")
+                continue
+        all_posts.sort(key=lambda x: x.time, reverse=True)
+        if len(all_posts) < 1:
+            return
+
+        guilds = await self.config.all_guilds()
+        article_keys = [a.cid for a in all_posts]
+        for guild_id, data in guilds.items():
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                continue
+            channel = guild.get_channel(data["bsky_channel"])
+            if channel is None:
+                continue
+            if not channel.permissions_for(guild.me).send_messages:
+                continue
+            for post in all_posts:
+                if post.cid in data["posted_bsky"]:
+                    continue
+                if not post.url:
+                    continue
+                await channel.send(content=post.url)
+                data["posted_bsky"].append(post.cid)
+            if len(data["posted_bsky"]) > 100:
+                for old in data["posted_bsky"].copy():
+                    if old not in article_keys and len(data["posted_bsky"]) > 100:
+                        data["posted_bsky"].remove(old)
+            await self.config.guild(guild).posted_tweets.set(data["posted_bsky"])
 
     @tasks.loop(seconds=300)
     async def tweet_checker(self):
@@ -438,7 +481,7 @@ class Destiny(commands.Cog):
             try:
                 tweets = []
                 for account in BungieXAccount:
-                    tweets.extend(await self.bungie_tweets(account))
+                    tweets.extend(await self.api.bungie_tweets(account))
             except Destiny2APIError:
                 await ctx.send(
                     _("There was an error getting the current news posts. Please try again later.")
@@ -456,6 +499,51 @@ class Destiny(commands.Cog):
             await self.config.guild(ctx.guild).posted_tweets.clear()
             await self.config.guild(ctx.guild).tweets_channel.clear()
             await ctx.send(_("I will no longer automaticall post Bungie Help in this server."))
+
+    @destiny_set.command(name="bsky", aliases=["bluesky"])
+    @commands.mod_or_permissions(manage_messages=True)
+    async def destiny_set_bsky(
+        self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
+    ):
+        """
+        Setup a channel to receive Bungie Help Bluesky Posts automatically
+
+        - `<channel>` The channel you want tweets posted in.
+        """
+        if ctx.guild is None:
+            await ctx.send(_("This command can only be run inside a server."))
+            return
+        if channel is not None:
+            if not channel.permissions_for(ctx.me).send_messages:
+                await ctx.send(
+                    _("I don't have permission to send messages in {channel}.").format(
+                        channel=channel.mention
+                    )
+                )
+                return
+            try:
+                bsky = []
+                for account in BungieBSKYAccount:
+                    bsky.extend(await self.api.bungie_bsky_posts(account))
+            except Destiny2APIError:
+                await ctx.send(
+                    _("There was an error getting the current news posts. Please try again later.")
+                )
+                return
+            current = [a.cid for a in bsky]
+            await self.config.guild(ctx.guild).posted_bsky.set(current)
+            await self.config.guild(ctx.guild).bsky_channel.set(channel.id)
+            await ctx.send(
+                _("I will now post new Bungie Help BlueSky posts in {channel}.").format(
+                    channel=channel.mention
+                )
+            )
+        else:
+            await self.config.guild(ctx.guild).posted_bsky.clear()
+            await self.config.guild(ctx.guild).bsky_channel.clear()
+            await ctx.send(
+                _("I will no longer automatically post Bungie Help BlueSky posts in this server.")
+            )
 
     async def send_error_msg(self, ctx: commands.Context, error: Exception):
         if isinstance(error, ServersUnavailable):
@@ -994,37 +1082,26 @@ class Destiny(commands.Cog):
             source = BungieTweetsSource(all_tweets)
         await BaseMenu(source=source, cog=self).start(ctx=ctx)
 
-    @destiny.command(name="bsky")
-    async def latest_bungie_help_post(self, ctx: commands.Context):
+    @destiny.command(name="bsky", aliases=["bluesky"])
+    async def latest_bungie_help_post(
+        self, ctx: commands.Context, account: Optional[BungieBSKYAccount] = None
+    ):
         """Get the latest posts from Bungie Help on BlueSky"""
 
         async with ctx.typing(ephemeral=False):
-            entries = await self.api.get_bsky_posts("bungiehelp.bungie.net")
+            try:
+                if account is None:
+                    all_posts = []
+                    for account in BungieBSKYAccount:
+                        all_posts.extend(await self.api.bungie_bsky_posts(account))
+                else:
+                    all_posts = await self.api.bungie_bsky_posts(account)
+                all_posts.sort(key=lambda x: x.time, reverse=True)
+            except Destiny2APIError as e:
+                return await self.send_error_msg(ctx, e)
 
-            embeds = []
-            for entry in entries:
-                embed = discord.Embed()
-                embed.title = entry["post"]["author"]["displayName"]
-                embed.description = entry["post"]["record"]["text"]
-
-                embed.set_footer(
-                    text=datetime.datetime.fromisoformat(
-                        entry["post"]["record"]["createdAt"]
-                    ).strftime("%Y-%m-%d %H:%M:%S")
-                )
-
-                embed.set_author(
-                    name=entry["post"]["author"]["displayName"],
-                    icon_url=entry["post"]["author"]["avatar"],
-                )
-
-                embeds.append(embed)
         await BaseMenu(
-            source=BasePages(
-                pages=embeds,
-                use_author=True,
-                footer_pagination=False,
-            ),
+            source=BungieBSKYSource(all_posts),
             cog=self,
         ).start(ctx=ctx)
 

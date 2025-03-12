@@ -45,6 +45,87 @@ LOADOUT_COLOURS = {
 # Generated from the dominant colour of each image using
 # this algorithm https://stackoverflow.com/a/61730849
 
+BSKY_RE = re.compile(r"^at:\/\/(?P<did>[^/]+)\/(?P<collection>[^/]+)\/(?P<rkey>[^/]+)$")
+
+
+class BSKYAuthor:
+    def __init__(self, **kwargs):
+        self.did: str = kwargs.get("did", "")
+        self.handle: str = kwargs.get("handle", "")
+        self.display_name: str = kwargs.get("displayName", "")
+        self.avatar: str = kwargs.get("avatar", "")
+        self.labels: List[str] = kwargs.get("labels", [])
+        self.created_at: datetime = kwargs.get("createdAt", datetime.now(tz=timezone.utc))
+
+    @classmethod
+    def from_json(cls, data: dict) -> BSKYAuthor:
+        try:
+            created_at = data.pop("createdAt")
+            created_at = datetime.fromisoformat(created_at)
+        except Exception:
+            created_at = datetime.now(tz=timezone.utc)
+        return cls(**data, createdAt=created_at)
+
+
+class BSKYRecord:
+    def __init__(self, **kwargs):
+        self._type: str = kwargs.get("$type", "")
+        self.created_at: datetime = kwargs.get("createdAt", datetime.now(tz=timezone.utc))
+        self.facets: List[str] = kwargs.get("facets", [])
+        self.text: str = kwargs.get("text", "")
+
+    @classmethod
+    def from_json(cls, data: dict) -> BSKYRecord:
+        try:
+            created_at = data.pop("createdAt")
+            created_at = datetime.fromisoformat(created_at)
+        except Exception:
+            created_at = datetime.now(tz=timezone.utc)
+        return cls(**data, createdAt=created_at)
+
+
+class BungieBSKYPost:
+    def __init__(self, **kwargs):
+        self.uri: str = kwargs.get("uri", "")
+        self.cid: str = kwargs.get("cid", "")
+        self.author: BSKYAuthor = BSKYAuthor.from_json(kwargs.get("author", {}))
+        self.record: BSKYRecord = BSKYRecord.from_json(kwargs.get("record", {}))
+        self.reply_count: int = kwargs.get("replyCount", 0)
+        self.repost_count: int = kwargs.get("repostCount", 0)
+        self.quote_count: int = kwargs.get("quoteCount", 0)
+        self.indexed_at: str = kwargs.get("indexedAt", "")
+        self.labels: List[str] = kwargs.get("labels", [])
+
+    @property
+    def url(self) -> str:
+        match = BSKY_RE.match(self.uri)
+        if not match:
+            return ""
+        did = match.group("did")
+        rkey = match.group("rkey")
+        collection = match.group("collection")
+        if collection == "app.bsky.feed.post":
+            return f"https://bsky.app/profile/{did}/post/{rkey}"
+        return ""
+
+    @property
+    def time(self) -> datetime:
+        return self.record.created_at
+
+    @property
+    def text(self) -> str:
+        return self.record.text
+
+    def embed(self) -> discord.Embed:
+        em = discord.Embed(
+            title=self.author.display_name,
+            url=self.url,
+            timestamp=self.record.created_at,
+        )
+        em.description = self.record.text
+        em.set_author(name=self.author.display_name, icon_url=self.author.avatar)
+        return em
+
 
 class BungieTweet:
     def __init__(self, **kwargs):
@@ -83,6 +164,12 @@ class BungieTweet:
     @property
     def time(self) -> datetime:
         return datetime.fromtimestamp(self.unix, tz=timezone.utc)
+
+
+class BungieBSKYAccount(Enum):
+    BungieHelp = "bungiehelp.bungie.net"
+    DestinyTheGame = "destinythegame.bungie.net"
+    Destiny2Team = "destiny2team.bungie.net"
 
 
 class BungieXAccount(Enum):

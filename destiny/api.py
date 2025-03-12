@@ -22,6 +22,8 @@ from yarl import URL
 
 from .converter import (
     STRING_VAR_RE,
+    BungieBSKYAccount,
+    BungieBSKYPost,
     BungieMembershipType,
     BungieTweet,
     BungieXAccount,
@@ -237,15 +239,15 @@ class DestinyAPI:
             data = await resp.json()
         return [BungieTweet(**i) for i in data]
 
-    async def get_bsky_posts(self, profile: str) -> list:
+    async def bungie_bsky_posts(self, profile: BungieBSKYAccount) -> List[BungieBSKYPost]:
         posts = []
-        url = f"{BSKY_URL}?actor={profile}&filter=posts_no_replies"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                data = await response.json()
-                if data["feed"]:
-                    for post in data["feed"]:
-                        posts.append(post)
+        params = {"actor": profile.value, "filter": "posts_no_replies"}
+        async with self.extra_session.get(BSKY_URL, params=params) as response:
+            data = await response.json()
+            if data["feed"]:
+                for post in data["feed"]:
+
+                    posts.append(BungieBSKYPost(**post["post"]))
         return posts
 
     async def post_url(
