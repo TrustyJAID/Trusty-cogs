@@ -1,16 +1,18 @@
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Union
+from zoneinfo import ZoneInfo
 
 import discord
 import pytz
+from babel.dates import format_time, get_timezone_name
 from dateutil import parser
 from dateutil.tz import gettz
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
-from discord.utils import snowflake_time
+from discord.utils import format_dt, snowflake_time
 from red_commons.logging import getLogger
-from redbot.core import Config, commands
+from redbot.core import Config, commands, i18n
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
@@ -37,6 +39,60 @@ TIME_RE_STRING = r"|".join(
     ]
 )
 TIME_RE = re.compile(TIME_RE_STRING, re.I)
+TIMESTAMP_RE = re.compile(r"<t:(?P<timestamp>\d+):?(?P<format>R|t|T|d|D|f|F)?>")
+
+
+class TimezoneConverter(discord.app_commands.Transformer):
+    async def convert(self, ctx: commands.Context, argument: str) -> ZoneInfo:
+        if "/" in argument:
+            try:
+                return ZoneInfo(argument)
+            except Exception:
+                raise commands.BadArgument(_("That is not a valid timezone."))
+        locale = i18n.get_babel_locale()
+        now = datetime.now()
+        cog = ctx.bot.get_cog("Timestamp")
+        at = cog.at
+        for zone in at:
+            tnow = now.astimezone(ZoneInfo(zone))
+            try:
+                name = get_timezone_name(tnow, locale=locale)
+                short = get_timezone_name(tnow, width="short", locale=locale)
+                tz = f"{short} {name} ({zone})"
+            except LookupError:
+                continue
+            if len(argument) <= 3 and argument.lower() == short.lower():
+                return ZoneInfo(zone)
+            elif argument.lower() in tz.lower():
+                return ZoneInfo(zone)
+        raise commands.BadArgument(_("That is not a valid timezone."))
+
+    async def transform(self, interaction: discord.Interaction, argument: str) -> ZoneInfo:
+        ctx = await interaction.client.get_context(interaction)
+        return await self.convert(ctx, argument)
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        g_locale = await i18n.get_locale_from_guild(interaction.client, interaction.guild)
+        locale = i18n.get_babel_locale(g_locale)
+        choices = []
+        now = datetime.now()
+        cog = interaction.client.get_cog("Timestamp")
+        at = cog.at
+        for zone in at:
+            tnow = now.astimezone(ZoneInfo(zone))
+            zone_name = zone
+            try:
+                name = get_timezone_name(tnow, locale=locale)
+                short = get_timezone_name(tnow, width="short", locale=locale)
+                ts_now = format_time(tnow, format="short", locale=locale)
+                zone_name = f"{short} {name} ({zone}) {ts_now}"
+            except Exception:
+                pass
+            if current.lower() in zone_name.lower():
+                choices.append(discord.app_commands.Choice(name=zone_name, value=zone))
+        return choices[:25]
 
 
 class WrongView(discord.ui.View):
@@ -426,34 +482,64 @@ class Event(discord.ui.View):
 
     async def start_time(self) -> Optional[datetime]:
         date = None
-        if self.start is None:
-            # assume it's a timedelta first
-            # if it's not a timedelta we can try searching for a date
-            time_data = {}
-            for time in TIME_RE.finditer(self.event):
-                for k, v in time.groupdict().items():
-                    if v:
-                        time_data[k] = int(v)
-            if time_data:
-                date = datetime.now(timezone.utc) + timedelta(**time_data)
-            else:
-                try:
-                    date, tokens = parser.parse(
-                        self.event, fuzzy_with_tokens=True, tzinfos=TIMEZONES.get_zones()
-                    )
-                    if date and "tomorrow" in self.event.lower():
-                        date += timedelta(days=1)
-                    date.replace(tzinfo=timezone.utc)
-                except Exception:
-                    log.debug("Error parsing datetime.")
-            if date:
-                log.debug("setting start date")
-                self.start = date
-                return date
-            else:
-                return None
+        # assume it's a timedelta first
+        # if it's not a timedelta we can try searching for a date
+        ts = TIMESTAMP_RE.search(self.event)
+        if ts:
+            date = datetime.fromtimestamp(int(ts.group("timestamp")))
+            date.replace(tzinfo=timezone.utc)
+            self.start = date
+            return date
+        zone = ZoneInfo("UTC")
+        if usertz := await self.cog.config.user_from_id(self.hoster).timezone():
+            zone = ZoneInfo(usertz)
+
+        time_data = {}
+        for time in TIME_RE.finditer(self.event):
+            for k, v in time.groupdict().items():
+                if v:
+                    time_data[k] = int(v)
+
+        if time_data:
+            date = datetime.now(timezone.utc) + timedelta(**time_data)
+            self.event = TIME_RE.sub("", self.event) + " " + format_dt(date, style="R")
         else:
-            return self.start
+            try:
+                date, tokens = parser.parse(
+                    self.event, fuzzy_with_tokens=True, tzinfos=TIMEZONES.get_zones()
+                )
+                if date and "tomorrow" in self.event.lower():
+                    date += timedelta(days=1)
+                log.debug("using new timezone creator %s", date)
+                time = datetime(
+                    year=date.year,
+                    month=date.month,
+                    day=date.day,
+                    hour=date.hour,
+                    minute=date.minute,
+                    second=date.second,
+                    tzinfo=zone,
+                )
+                date = time.astimezone(ZoneInfo("UTC"))
+                new_event_title = ""
+                added_date = False
+                for t in tokens:
+                    if not t.strip():
+                        added_date = True
+                        new_event_title += format_dt(date, style="F")
+                        continue
+                    new_event_title += t.strip() + " "
+                if not added_date:
+                    new_event_title += format_dt(date, style="F")
+                self.event = new_event_title
+            except Exception:
+                log.debug("Error parsing datetime.")
+        if date:
+            log.debug("setting start date")
+            self.start = date
+            return date
+        else:
+            return None
 
     def should_remove(self, seconds: int) -> bool:
         """
@@ -572,6 +658,9 @@ class Event(discord.ui.View):
             ctx = await self.get_ctx(self.bot)
         hoster = ctx.guild.get_member(self.hoster)
         em = discord.Embed()
+        start = await self.start_time()
+        if start is not None:
+            em.timestamp = start
         em.set_author(
             name=_("{hoster} is hosting").format(hoster=hoster), icon_url=hoster.display_avatar
         )
@@ -639,9 +728,6 @@ class Event(discord.ui.View):
                 text=_("Approved by {approver}").format(approver=approver),
                 icon_url=approver.display_avatar,
             )
-        start = await self.start_time()
-        if start is not None:
-            em.timestamp = start
 
         thumbnail = await self.get_thumbnail(ctx)
         if thumbnail:

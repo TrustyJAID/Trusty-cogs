@@ -1,16 +1,26 @@
 import asyncio
+from datetime import datetime, timedelta
 from typing import Dict, Literal, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 import discord
+from babel.dates import format_time, get_timezone_location, get_timezone_name
 from discord.ext import tasks
 from red_commons.logging import getLogger
 from redbot import VersionInfo, version_info
-from redbot.core import Config, checks, commands
+from redbot.core import Config, checks, commands, i18n
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
 from redbot.core.utils.views import SimpleMenu
 
-from .event_obj import ApproveView, ConfirmView, Event, ValidImage, WrongView
+from .event_obj import (
+    ApproveView,
+    ConfirmView,
+    Event,
+    TimezoneConverter,
+    ValidImage,
+    WrongView,
+)
 
 log = getLogger("red.trusty-cogs.EventPoster")
 
@@ -27,7 +37,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "2.1.4"
+    __version__ = "2.2.0"
     __author__ = "TrustyJAID"
     __flavor__ = "Admins are sleep deprived :)"
 
@@ -53,6 +63,7 @@ class EventPoster(commands.Cog):
         default_user = {"player_class": ""}
         self.config.register_guild(**default_guild)
         self.config.register_member(**default_user)
+        self.config.register_user(timezone=None)
         self.event_cache: Dict[int, Dict[int, Event]] = {}
         self._ready: asyncio.Event = asyncio.Event()
         self.cleanup_old_events.start()
@@ -92,6 +103,7 @@ class EventPoster(commands.Cog):
         for guild_id, members in all_members.items():
             if user_id in members:
                 await self.config.member_from_ids(guild_id, user_id).clear()
+        await self.config.user_from_id(user_id).clear()
 
     @tasks.loop(seconds=60)
     async def cleanup_old_events(self):
@@ -808,6 +820,79 @@ class EventPoster(commands.Cog):
     @commands.guild_only()
     async def event_settings(self, ctx: commands.Context) -> None:
         """Manage server specific settings for events"""
+
+    def get_timezone_info(self, zone: ZoneInfo) -> str:
+        locale = i18n.get_babel_locale()
+        now = datetime.now().astimezone(zone)
+        zone_name = zone.key
+        short = zone.tzname(now)
+        location = None
+        try:
+            zone_name = get_timezone_name(now, locale=locale)
+            short = get_timezone_name(now, width="short", locale=locale)
+            location = get_timezone_location(now, locale=locale)
+        except LookupError:
+            log.error("Error parsing timezone %s", zone.key)
+        include = {"key": zone.key, "name": zone_name, "short": short}
+        translate = {
+            "key": _("Key"),
+            "name": _("Name"),
+            "short": _("Short"),
+            "offset": _("UTC Offset"),
+            "location": _("Location"),
+            "now": _("Time Now"),
+        }
+        utcoffset = zone.utcoffset(now) or timedelta(seconds=0)
+
+        # because humanize_timedelta doesn't handle negative timedeltas
+        if utcoffset < timedelta(seconds=0):
+            include["offset"] = f"`-{humanize_timedelta(seconds=-utcoffset.total_seconds())}`"
+        elif utcoffset == timedelta(seconds=0):
+            include["offset"] = "`+0`"
+        else:
+            include["offset"] = f"`+{humanize_timedelta(timedelta=utcoffset)}`"
+        if utcoffset is not None:
+            ts_now = format_time(now, format="short", locale=locale)
+            include["now"] = ts_now
+        if location is not None:
+            include["location"] = location
+        msg = ""
+        for key, value in include.items():
+            name = translate[key]
+            if key == "key":
+                msg += f"- {value}\n"
+                continue
+            msg += f" - {name}: {value}\n"
+
+        return msg
+
+    @event_settings.command(name="timezone")
+    async def set_user_timezone(
+        self,
+        ctx: commands.Context,
+        timezone: discord.app_commands.Transform[ZoneInfo, TimezoneConverter],
+    ) -> None:
+        """
+        Set your timezone for conversions
+
+        To see the available timezones use the command:
+        - `[p]timestamp timezone`
+
+        Choose the timezone closest to your actual location for best results.
+        Timezone names like PST, PT, MDT, MST, etc. are abbreviations and don't
+        represent the full daylight saving time calculation. Whereas
+        a timezone like `America/Pacific` Will automatically adjust
+        for timezones in your location. Unless, of course, you always
+        follow a timezone like MST.
+        """
+        await self.config.user(ctx.author).timezone.set(timezone.key)
+        zone_info = self.get_timezone_info(timezone)
+        timezone_name = timezone.key
+        await ctx.send(
+            _("I have set your timezone to `{timezone_name}`.\n{zone_info}").format(
+                timezone_name=timezone_name, zone_info=zone_info
+            )
+        )
 
     @event_settings.command(name="settings")
     @commands.guild_only()
