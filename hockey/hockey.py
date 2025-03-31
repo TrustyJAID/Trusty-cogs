@@ -102,6 +102,8 @@ class Hockey(
             update_gdt=True,
             rules="",
             team_rules="",
+            rules_channel=None,
+            rules_message=None,
             game_state_notifications=False,
             goal_notifications=False,
             start_notifications=False,
@@ -237,6 +239,35 @@ class Hockey(
             except Exception:
                 pass
         await self._get_commit()
+
+    @commands.Cog.listener()
+    async def on_guild_update(self, before: discord.Guild, after: discord.Guild):
+        """
+        auto update oilers server rules page
+        """
+        rules_channel_id = await self.config.guild(before).rules_channel()
+        if rules_channel_id is None:
+            return
+        rules_channel = after.get_channel(rules_channel_id)
+        if rules_channel is None:
+            log.info("Rules channel (%s) in %r was not found, removing.", rules_channel_id, after)
+            await self.config.guild(after).rules_channel.clear()
+            return
+
+        if before.icon != after.icon or before.name != after.name:
+            rules = await self.config.guild(after).rules()
+            team = await self.config.guild(after).team_rules()
+            msg_id = await self.config.guild(after).rules_message()
+            try:
+                msg = await rules_channel.fetch_message(msg_id)
+                em = await self.make_rules_embed(after, team, rules)
+
+                await msg.edit(embed=em)
+            except discord.NotFound:
+                await self.config.guild(after).rules_channel.clear()
+                log.info("Rules message in %r was not found, removing.", after)
+            except Exception:
+                log.error("Error editing rules page in %r", after)
 
     def hockey_loop_error(self, future: asyncio.Future):
         try:

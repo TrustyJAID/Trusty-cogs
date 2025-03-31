@@ -679,9 +679,16 @@ class HockeyCommands(HockeyMixin):
 
     @hockey_commands.command(hidden=True, with_app_command=False)
     @commands.mod_or_permissions(manage_messages=True)
-    async def rules(self, ctx: commands.Context) -> None:
+    async def rules(
+        self, ctx: commands.Context, channel: discord.TextChannel = commands.CurrentChannel
+    ) -> None:
         """
-        Display a nice embed of server specific rules
+        Display a nice embed of server specific rules.
+
+        - `[channel=<this channel>]` The optional channel to send the rules embed in.
+        If not provided will use the channel this command is run in.
+
+        This will automatically update when the server icon or server name has changed.
         """
         if not ctx.guild:
             await ctx.send(_("This command can only work inside a server."))
@@ -696,7 +703,10 @@ class HockeyCommands(HockeyMixin):
         em = await self.make_rules_embed(ctx.guild, team, rules)
         if ctx.channel.permissions_for(ctx.guild.me).manage_messages:
             await ctx.message.delete()
-        await ctx.send(embed=em)
+
+        msg = await channel.send(embed=em)
+        await self.config.guild(ctx.guild).rules_channel.set(channel.id)
+        await self.config.guild(ctx.guild).rules_message.set(msg.id)
 
     @staticmethod
     async def make_rules_embed(guild: discord.Guild, team: str, rules: str) -> discord.Embed:
@@ -944,7 +954,7 @@ class HockeyCommands(HockeyMixin):
         if not team:
             await ctx.send(_("You must provide a valid current team."))
             return
-        team = team[0]
+
         if not ctx.channel.permissions_for(ctx.guild.me).embed_links:
             await ctx.send(_("I don't have embed links permission!"))
             return
