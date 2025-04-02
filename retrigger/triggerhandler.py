@@ -25,7 +25,7 @@ try:
     import pytesseract
 
     ALLOW_OCR = True
-except ImportError:
+except (ImportError, ValueError):
     ALLOW_OCR = False
 
 try:
