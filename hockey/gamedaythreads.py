@@ -212,16 +212,45 @@ class GameDayThreads(HockeyMixin):
         """
         Creates the next gdt for the server
         """
-        if not ctx.guild:
+        guild = ctx.guild
+        if guild is None:
             await ctx.send(_("This command can only work inside a server."))
             return
         await ctx.typing()
-        if not await self.config.guild(ctx.guild).gdt_team():
+        if not await self.config.guild(guild).gdt_team():
             msg = _("No team was setup for game day threads in this server.")
             await ctx.send(msg)
-        if await self.config.guild(ctx.guild).create_threads():
+            return
+
+        channel_id = await self.config.guild(guild).gdt_channel()
+        if not channel_id:
+            msg = _("No channel has been setup for game day threads in this server.")
+            await ctx.send(msg)
+            return
+        channel = guild.get_channel(channel_id)
+        if not channel:
+            msg = _("The game day channel {channel_id} could not be found.").format(
+                channel_id=channel_id
+            )
+            await ctx.send(msg)
+            return
+
+        if not channel.permissions_for(guild.me).create_public_threads:
+            msg = _("I don't have permission to create public threads in {channel}.").format(
+                channel=channel.mention
+            )
+            await ctx.send(msg)
+            return
+        if not channel.permissions_for(guild.me).send_messages:
+            msg = _("I don't have permission to send messages in {channel}.").format(
+                channel=channel.mention
+            )
+            await ctx.send(msg)
+            return
+
+        if await self.config.guild(guild).create_threads():
             try:
-                await self.create_gdt(ctx.guild)
+                made = await self.create_gdt(guild)
             except aiohttp.ClientConnectorError:
                 await ctx.send(
                     _("There's an issue accessing the NHL API at the moment. Try again later.")
@@ -234,7 +263,11 @@ class GameDayThreads(HockeyMixin):
             )
             await ctx.send(msg)
             return
-        msg = _("Game day threads created.")
+        if made:
+            msg = _("Game day threads created.")
+
+        else:
+            msg = _("Something went wrong trying to create game day threads.")
         await ctx.send(msg)
 
     @gdt.command(name="toggle")
@@ -392,7 +425,15 @@ class GameDayThreads(HockeyMixin):
             )
             return
         if not channel.permissions_for(guild.me).create_public_threads:
-            msg = _("I don't have permission to create public threads in this channel.")
+            msg = _("I don't have permission to create public threads in {channel}.").format(
+                channel=channel.mention
+            )
+            await ctx.send(msg)
+            return
+        if not channel.permissions_for(guild.me).send_messages:
+            msg = _("I don't have permission to send messages in {channel}.").format(
+                channel=channel.mention
+            )
             await ctx.send(msg)
             return
         await self.delete_gdt(guild)
@@ -401,7 +442,7 @@ class GameDayThreads(HockeyMixin):
         await self.config.guild(guild).create_threads.set(True)
         if team.lower() != "all":
             try:
-                await self.create_gdt(guild)
+                made = await self.create_gdt(guild)
             except aiohttp.ClientConnectorError:
                 await ctx.send(
                     _("There's an issue accessing the NHL API at the moment. Try again later.")
@@ -422,10 +463,13 @@ class GameDayThreads(HockeyMixin):
                     continue
                 if (game.game_start - datetime.now(timezone.utc)) > timedelta(days=7):
                     continue
-                await self.create_gdt(guild, game)
-        msg = _("Game Day threads for {team} setup in {channel}").format(
-            team=team, channel=channel.mention
-        )
+                made = await self.create_gdt(guild, game)
+        if made:
+            msg = _("Game Day threads for {team} setup in {channel}").format(
+                team=team, channel=channel.mention
+            )
+        else:
+            msg = _("Something went wrong creating game day threads.")
         await ctx.send(msg)
 
     #######################################################################
@@ -480,7 +524,7 @@ class GameDayThreads(HockeyMixin):
                         continue
                     await self.create_gdt(guild, game)
 
-    async def create_gdt(self, guild: discord.Guild, game_data: Optional[Game] = None) -> None:
+    async def create_gdt(self, guild: discord.Guild, game_data: Optional[Game] = None) -> bool:
         """
         Creates a game day channel for the given game object
         if no game object is passed it looks for the set team for the guild
@@ -489,17 +533,17 @@ class GameDayThreads(HockeyMixin):
         channel_id = await self.config.guild(guild).gdt_channel()
         if not channel_id:
             log.debug("Not channel ID")
-            return
+            return False
         channel = guild.get_channel(channel_id)
         if channel is None:
             # Return none if there's no category to create the channel
             log.debug("Not channel")
-            return
+            return False
         if guild.me.is_timed_out():
-            return
+            return False
         if not channel.permissions_for(guild.me).create_public_threads:
             log.info("Cannot create new GDT in %r due to too many missing permissions.", guild)
-            return
+            return False
         # if len(category.channels) >= 50:
         #     log.info(
         #         f"Cannot create new GDC in {repr(guild)} due to too many channels in category."
@@ -514,13 +558,13 @@ class GameDayThreads(HockeyMixin):
             if next_games != []:
                 next_game = next_games[0]
                 if next_game is None:
-                    return
+                    return False
                 if (next_game.game_start - datetime.now(timezone.utc)) > timedelta(days=7):
-                    return
+                    return False
             else:
                 # Return if no more games are playing for this team
                 log.debug("No games playing")
-                return
+                return False
         else:
             team = game_data.home_team
             next_game = game_data
@@ -615,13 +659,13 @@ class GameDayThreads(HockeyMixin):
                 if role_mention:
                     await new_chn.send(role_mention, allowed_mentions=am)
             except discord.Forbidden:
-                log.error("Error creating thread in %r", guild)
-                return
+                log.error("Error creating thread in %r, Forbidden from Discord", guild)
+                return False
             except Exception:
                 log.exception("Error creating thread in %r", guild)
-                return
+                return False
         if new_chn is None:
-            return
+            return False
 
         async with self.config.guild(guild).gdt_chans() as current_gdt:
             current_gdt[str(next_game.game_id)] = new_chn.id
@@ -647,6 +691,7 @@ class GameDayThreads(HockeyMixin):
         # Gets the timezone to use for game day channel topic
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")
         # guild_team = await config.guild(guild).gdc_team()
+        return True
 
     async def delete_gdt(self, guild: discord.Guild) -> None:
         """
