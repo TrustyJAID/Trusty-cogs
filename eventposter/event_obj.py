@@ -465,11 +465,13 @@ class Event(discord.ui.View):
     def check_join_enabled(self):
         if self.max_slots and len(self.members) >= self.max_slots:
             self.join_button.disabled = True
-            self.select_view.disabled = True
+            if self.select_view is not None:
+                self.select_view.disabled = True
             log.trace("Setting Join Button to %s", self.join_button.disabled)
         if self.max_slots and len(self.members) < self.max_slots:
             self.join_button.disabled = False
-            self.select_view.disabled = False
+            if self.select_view is not None:
+                self.select_view.disabled = False
             log.debug("Setting Join Button to %s", self.join_button.disabled)
 
     async def interaction_check(self, interaction: discord.Interaction):
