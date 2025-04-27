@@ -38,6 +38,8 @@ def wrapped_additional_help():
      - `voice_change`   - Voice channel join/leave
      - `member_join`
      - `member_left`
+     - `member_ban`
+     - `member_unban`
      - `invite_created`
      - `invite_deleted`
      - `thread_create`
@@ -137,6 +139,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
             "voice_change": _("Voice changes"),
             "user_join": _("Member join"),
             "user_left": _("Member left"),
+            "user_ban": _("Member banned"),
+            "user_unban": _("Member unbanned"),
             "channel_change": _("Channel changes"),
             "channel_create": _("Channel created"),
             "channel_delete": _("Channel deleted"),

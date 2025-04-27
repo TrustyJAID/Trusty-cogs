@@ -84,6 +84,8 @@ class EventChooser(Converter):
             "voice_change",
             "user_join",
             "user_left",
+            "user_ban",
+            "user_unban",
             "channel_change",
             "channel_create",
             "channel_delete",
@@ -140,6 +142,8 @@ class EventMixin:
             "voice_change": discord.Colour.magenta(),
             "user_join": discord.Colour.green(),
             "user_left": discord.Colour.dark_green(),
+            "user_ban": discord.Colour.from_rgb(0, 0, 0),
+            "user_unban": discord.Colour.default(),
             "channel_change": discord.Colour.teal(),
             "channel_create": discord.Colour.teal(),
             "channel_delete": discord.Colour.dark_teal(),
@@ -774,6 +778,87 @@ class EventMixin:
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild: discord.Guild, member: discord.Member):
+        guild = member.guild
+        await asyncio.sleep(5)
+        if guild.id not in self.settings:
+            return
+        if not self.settings[guild.id]["user_ban"]["enabled"]:
+            return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
+        try:
+            channel = await self.modlog_channel(guild, "user_ban")
+        except RuntimeError:
+            return
+        embed_links = (
+            channel.permissions_for(guild.me).embed_links
+            and self.settings[guild.id]["user_ban"]["embed"]
+        )
+        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        # set guild level i18n
+        time = datetime.datetime.now(datetime.timezone.utc)
+        entry = await self.get_audit_log_entry(guild, member, discord.AuditLogAction.ban)
+        joined = member.joined_at
+        member_time = None
+        if joined is not None:
+            m_date = discord.utils.format_dt(joined, "D")
+            m_rel = discord.utils.format_dt(joined, "R")
+            member_time = f"{m_date} ({m_rel})"
+
+        perp = getattr(entry, "user", None)
+        reason = getattr(entry, "reason", None)
+        if embed_links:
+            embed = discord.Embed(
+                description=member,
+                colour=await self.get_event_colour(guild, "user_ban"),
+                timestamp=time,
+            )
+            embed.add_field(name=_("Member"), value=member.mention)
+            embed.add_field(name=_("Member ID"), value=box(str(member.id)))
+            embed.add_field(name=_("Total Users:"), value=str(len(guild.members)))
+            if member_time is not None:
+                embed.add_field(name=_("Member since:"), value=member_time)
+
+            if perp:
+                embed.add_field(name=_("Banned"), value=perp.mention)
+            if reason:
+                embed.add_field(name=_("Reason"), value=str(reason), inline=False)
+            embed.set_author(
+                name=_("{member} ({m_id}) was banned from the guild").format(
+                    member=member, m_id=member.id
+                ),
+                url=member.display_avatar,
+                icon_url=member.display_avatar,
+            )
+            embed.set_thumbnail(url=member.display_avatar)
+            await channel.send(embed=embed, allowed_mentions=self.allowed_mentions)
+        else:
+            time = datetime.datetime.now(datetime.timezone.utc)
+            msg = _(
+                "{emoji} {time} **{member}**(`{m_id}`) was banned from the guild. Total members: {users}"
+            ).format(
+                emoji=self.settings[guild.id]["user_ban"]["emoji"],
+                time=discord.utils.format_dt(time),
+                member=member,
+                m_id=member.id,
+                users=len(guild.members),
+            )
+            if perp:
+                msg = _(
+                    "{emoji} {time} **{member}**(`{m_id}`) "
+                    "was banned by {perp}. Total members: {users}"
+                ).format(
+                    emoji=self.settings[guild.id]["user_ban"]["emoji"],
+                    time=discord.utils.format_dt(time),
+                    member=member,
+                    m_id=member.id,
+                    perp=perp,
+                    users=len(guild.members),
+                )
+            await channel.send(msg, allowed_mentions=self.allowed_mentions)
+
         """
         This is only used to track that the user was banned and not kicked/removed
         """
@@ -781,6 +866,95 @@ class EventMixin:
             self._ban_cache[guild.id] = [member.id]
         else:
             self._ban_cache[guild.id].append(member.id)
+
+    @commands.Cog.listener()
+    async def on_member_unban(self, guild: discord.Guild, member: discord.Member):
+        guild = member.guild
+        await asyncio.sleep(5)
+        if guild.id not in self.settings:
+            return
+        if not self.settings[guild.id]["user_unban"]["enabled"]:
+            return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
+        try:
+            channel = await self.modlog_channel(guild, "user_unban")
+        except RuntimeError:
+            return
+        embed_links = (
+            channel.permissions_for(guild.me).embed_links
+            and self.settings[guild.id]["user_unban"]["embed"]
+        )
+        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        # set guild level i18n
+        time = datetime.datetime.now(datetime.timezone.utc)
+        entry = await self.get_audit_log_entry(guild, member, discord.AuditLogAction.ban)
+        joined = member.joined_at
+        member_time = None
+        if joined is not None:
+            m_date = discord.utils.format_dt(joined, "D")
+            m_rel = discord.utils.format_dt(joined, "R")
+            member_time = f"{m_date} ({m_rel})"
+
+        perp = getattr(entry, "user", None)
+        reason = getattr(entry, "reason", None)
+        if embed_links:
+            embed = discord.Embed(
+                description=member,
+                colour=await self.get_event_colour(guild, "user_unban"),
+                timestamp=time,
+            )
+            embed.add_field(name=_("Member"), value=member.mention)
+            embed.add_field(name=_("Member ID"), value=box(str(member.id)))
+            embed.add_field(name=_("Total Users:"), value=str(len(guild.members)))
+            if member_time is not None:
+                embed.add_field(name=_("Member since:"), value=member_time)
+
+            if perp:
+                embed.add_field(name=_("Unbanned"), value=perp.mention)
+            if reason:
+                embed.add_field(name=_("Reason"), value=str(reason), inline=False)
+            embed.set_author(
+                name=_("{member} ({m_id}) was unbanned from the guild").format(
+                    member=member, m_id=member.id
+                ),
+                url=member.display_avatar,
+                icon_url=member.display_avatar,
+            )
+            embed.set_thumbnail(url=member.display_avatar)
+            await channel.send(embed=embed, allowed_mentions=self.allowed_mentions)
+        else:
+            time = datetime.datetime.now(datetime.timezone.utc)
+            msg = _(
+                "{emoji} {time} **{member}**(`{m_id}`) was unbanned from the guild. Total members: {users}"
+            ).format(
+                emoji=self.settings[guild.id]["user_unban"]["emoji"],
+                time=discord.utils.format_dt(time),
+                member=member,
+                m_id=member.id,
+                users=len(guild.members),
+            )
+            if perp:
+                msg = _(
+                    "{emoji} {time} **{member}**(`{m_id}`) "
+                    "was unbanned by {perp}. Total members: {users}"
+                ).format(
+                    emoji=self.settings[guild.id]["user_unban"]["emoji"],
+                    time=discord.utils.format_dt(time),
+                    member=member,
+                    m_id=member.id,
+                    perp=perp,
+                    users=len(guild.members),
+                )
+            await channel.send(msg, allowed_mentions=self.allowed_mentions)
+
+        """
+        This is only used to track that the user was unbanned
+        """
+        if guild.id in self._ban_cache and member.id in self._ban_cache[guild.id]:
+            self._ban_cache[guild.id].remove(member.id)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
@@ -867,6 +1041,8 @@ class EventMixin:
                     users=len(guild.members),
                 )
             await channel.send(msg, allowed_mentions=self.allowed_mentions)
+
+
 
     async def get_permission_change(
         self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel, embed_links: bool
