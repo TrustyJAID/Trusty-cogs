@@ -244,7 +244,10 @@ class DestinyAPI:
         params = {"actor": profile.value, "filter": "posts_no_replies"}
         async with self.extra_session.get(BSKY_URL, params=params) as response:
             data = await response.json()
-            if data["feed"]:
+            if not response.status == 200:
+                log.info("Bluesky returned status code %s", response.status)
+                return posts
+            if data.get("feed", None):
                 for post in data["feed"]:
 
                     posts.append(BungieBSKYPost(**post["post"]))

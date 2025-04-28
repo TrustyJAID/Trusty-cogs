@@ -251,7 +251,7 @@ class Destiny(commands.Cog):
             try:
                 all_posts.extend(await self.api.bungie_bsky_posts(account))
             except Exception:
-                log.exception("Error Checking bungiehelp.org")
+                log.exception("Error Checking bluesky API")
                 continue
         all_posts.sort(key=lambda x: x.time, reverse=True)
         if len(all_posts) < 1:
@@ -270,6 +270,11 @@ class Destiny(commands.Cog):
                 continue
             for post in all_posts:
                 if post.cid in data["posted_bsky"]:
+                    continue
+                if post.time - datetime.datetime.now(datetime.timezone.utc) > datetime.timedelta(
+                    days=1
+                ):
+                    # ignore posts older than 1 day
                     continue
                 if not post.url:
                     continue
