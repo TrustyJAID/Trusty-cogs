@@ -485,6 +485,9 @@ class Event:
         return description
 
     def get_highlight(self, content: Optional[dict]) -> Optional[URL]:
+        clip = self.details.get("highlightClipSharingUrl", None)
+        if clip is not None:
+            return URL(clip)
         if content is None:
             return None
         clip_id = None
@@ -1034,6 +1037,18 @@ class NewAPI(HockeyAPI):
             data = await resp.json()
         return data
 
+    async def gamecenter_right_rail(self, game_id: int):
+        url = URL(f"/v1/gamecenter/{game_id}/right-rail")
+        async with self.session.get(url) as resp:
+            if resp.status != 200:
+                log.error("Error accessing the games right rail. %s", resp.status)
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
+            log.trace("Hockey GC rr headers %s", resp.headers)
+            data = await resp.json()
+        return data
+
     async def gamecenter_boxscore(self, game_id: int):
         url = URL(f"/v1/gamecenter/{game_id}/boxscore")
         async with self.session.get(url) as resp:
@@ -1126,16 +1141,27 @@ class NewAPI(HockeyAPI):
             return await self.to_game(data, content=landing)
         data = await self.gamecenter_pbp(game_id)
         try:
-            landing = await self.gamecenter_landing(game_id)
+            landing = await self.gamecenter_right_rail(game_id)
         except Exception:
             landing = None
         return await self.to_game(data, content=landing)
 
-    async def get_game_recap(self, game_id: int) -> Optional[URL]:
-        landing = await self.gamecenter_landing(game_id)
-        recap = landing.get("summary", {}).get("gameVideo", {}).get("condensedGame")
-        if recap is None:
-            recap = landing.get("gameVideo", {}).get("condensedGame")
+    async def get_game_recap(self, game_id: int, fr: bool = False) -> Optional[URL]:
+        rr = await self.gamecenter_right_rail(game_id)
+        key = "threeMinRecap"
+        if fr:
+            key = "threeMinRecapFr"
+        recap = rr.get("gameVideo", {}).get(key)
+        if recap is not None:
+            return VIDEO_URL.with_query({"videoId": recap})
+        return None
+
+    async def get_condensed_game_video(self, game_id: int, fr: bool = False) -> Optional[URL]:
+        rr = await self.gamecenter_right_rail(game_id)
+        key = "condesnedGame"
+        if fr:
+            key = "condensedGameFr"
+        recap = rr.get("gameVideo", {}).get(key)
         if recap is not None:
             return VIDEO_URL.with_query({"videoId": recap})
         return None
