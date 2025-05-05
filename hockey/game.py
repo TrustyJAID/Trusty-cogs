@@ -190,6 +190,7 @@ class Game:
         self.api = kwargs.get("api", None)
         self.url = kwargs.get("url", None)
         self.landing: Optional[dict] = kwargs.get("landing", None)
+        self.right_rail: Optional[dict] = kwargs.get("right_rail", None)
 
     def __repr__(self):
         return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(

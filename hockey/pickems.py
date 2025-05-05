@@ -292,7 +292,7 @@ class Pickems(discord.ui.View):
         return False
 
     async def get_game(self, api) -> Optional[Game]:
-        return await api.get_game_from_id(self.game_id)
+        return await api.get_game_from_id(self.game_id, include_extras=False)
 
     async def check_winner(self, game: Optional[Game] = None) -> bool:
         """
