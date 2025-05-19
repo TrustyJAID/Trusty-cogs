@@ -633,20 +633,6 @@ class HockeyPickems(HockeyMixin):
                         del chans[str(earliest_chan)]
                     except KeyError:
                         pass
-            if to_rem_chans:
-                for channel_id in to_rem_chans:
-                    c = guild.get_channel(int(channel_id))
-                    if c is not None:
-                        try:
-                            await c.delete()
-                        except Exception:
-                            log.exception("Error deleting channel %s", repr(old_chan))
-                            pass
-                async with self.pickems_config.guild(guild).pickems_channels() as chans:
-                    try:
-                        del chans[str(channel_id)]
-                    except KeyError:
-                        pass
             if latest_date:
                 channel_data = await self.create_pickems_channels_and_message(
                     [guild], latest_date + timedelta(days=1)

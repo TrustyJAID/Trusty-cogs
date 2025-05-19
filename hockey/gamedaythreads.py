@@ -218,7 +218,7 @@ class GameDayThreads(HockeyMixin):
             return
         await ctx.typing()
         if not await self.config.guild(guild).gdt_team():
-            msg = _("No team was setup for game day threads in this server.")
+            msg = _("No team has been setup for game day threads in this server.")
             await ctx.send(msg)
             return
 
@@ -440,6 +440,7 @@ class GameDayThreads(HockeyMixin):
         await self.config.guild(guild).gdt_channel.set(channel.id)
         await self.config.guild(guild).gdt_team.set(team)
         await self.config.guild(guild).create_threads.set(True)
+        made = False
         if team.lower() != "all":
             try:
                 made = await self.create_gdt(guild)
