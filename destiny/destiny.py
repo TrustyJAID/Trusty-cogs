@@ -247,6 +247,23 @@ class Destiny(commands.Cog):
     @tasks.loop(seconds=300)
     async def bsky_checker(self):
         all_posts = []
+        guilds = await self.config.all_guilds()
+        to_post = {}
+        for guild_id, data in guilds.items():
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                continue
+            if data["bsky_channel"]:
+                channel = guild.get_channel(data["bsky_channel"])
+                if channel is None:
+                    continue
+                if not channel.permissions_for(guild.me).send_messages:
+                    continue
+                to_post[guild_id] = channel
+        if not to_post:
+            # No one is requesting tweets so we can ignore the API call
+            log.trace("No server's requesting bluesky post information")
+            return
         for account in BungieBSKYAccount:
             try:
                 all_posts.extend(await self.api.bungie_bsky_posts(account))
@@ -257,19 +274,11 @@ class Destiny(commands.Cog):
         if len(all_posts) < 1:
             return
 
-        guilds = await self.config.all_guilds()
         article_keys = [a.cid for a in all_posts]
-        for guild_id, data in guilds.items():
-            guild = self.bot.get_guild(guild_id)
-            if guild is None:
-                continue
-            channel = guild.get_channel(data["bsky_channel"])
-            if channel is None:
-                continue
-            if not channel.permissions_for(guild.me).send_messages:
-                continue
+        for channel in to_post.values():
+            posted = await self.config.guild(channel.guild).posted_bsky()
             for post in all_posts:
-                if post.cid in data["posted_bsky"]:
+                if post.cid in posted:
                     continue
                 if post.time - datetime.datetime.now(datetime.timezone.utc) > datetime.timedelta(
                     days=1
@@ -278,17 +287,38 @@ class Destiny(commands.Cog):
                     continue
                 if not post.url:
                     continue
-                await channel.send(content=post.url)
-                data["posted_bsky"].append(post.cid)
-            if len(data["posted_bsky"]) > 100:
-                for old in data["posted_bsky"].copy():
-                    if old not in article_keys and len(data["posted_bsky"]) > 100:
-                        data["posted_bsky"].remove(old)
-            await self.config.guild(guild).posted_bsky.set(data["posted_bsky"])
+                try:
+                    await channel.send(content=post.url)
+                except Exception:
+                    log.error("Error Posting BlueSky post in %s", channel)
+                posted.append(post.cid)
+            if len(posted) > 100:
+                for old in posted.copy():
+                    if old not in article_keys and len(posted) > 100:
+                        posted.remove(old)
+            await self.config.guild(channel.guild).posted_bsky.set(posted)
 
     @tasks.loop(seconds=300)
     async def tweet_checker(self):
         all_tweets = []
+        guilds = await self.config.all_guilds()
+        to_post = {}
+        for guild_id, data in guilds.items():
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                continue
+
+            if data["tweets_channel"]:
+                channel = guild.get_channel(data["tweets_channel"])
+                if channel is None:
+                    continue
+                if not channel.permissions_for(guild.me).send_messages:
+                    continue
+                to_post[guild_id] = channel
+        if not to_post:
+            # No one is requesting tweets so we can ignore the API call
+            log.trace("No server's requesting twitter post information")
+            return
         for account in BungieXAccount:
             try:
                 all_tweets.extend(await self.api.bungie_tweets(account))
@@ -299,29 +329,24 @@ class Destiny(commands.Cog):
         if len(all_tweets) < 1:
             return
 
-        guilds = await self.config.all_guilds()
         article_keys = [a.id for a in all_tweets]
-        for guild_id, data in guilds.items():
-            guild = self.bot.get_guild(guild_id)
-            if guild is None:
-                continue
-            channel = guild.get_channel(data["tweets_channel"])
-            if channel is None:
-                continue
-            if not channel.permissions_for(guild.me).send_messages:
-                continue
+        for channel in to_post.values():
+            posted = await self.config.guild(channel.guild).posted_tweets()
             for tweet in all_tweets:
-                if tweet.id in data["posted_tweets"]:
+                if tweet.id in posted:
                     continue
                 if not tweet.url:
                     continue
-                await channel.send(content=tweet.url)
-                data["posted_tweets"].append(tweet.id)
-            if len(data["posted_tweets"]) > 100:
-                for old in data["posted_tweets"].copy():
-                    if old not in article_keys and len(data["posted_tweets"]) > 100:
-                        data["posted_tweets"].remove(old)
-            await self.config.guild(guild).posted_tweets.set(data["posted_tweets"])
+                try:
+                    await channel.send(content=tweet.url)
+                except Exception:
+                    log.error("Error posting tweet in %s", channel)
+                posted.append(tweet.id)
+            if len(posted) > 100:
+                for old in posted.copy():
+                    if old not in article_keys and len(posted) > 100:
+                        posted.remove(old)
+            await self.config.guild(channel.guild).posted_tweets.set(posted)
 
     @tweet_checker.before_loop
     async def before_tweet_checker(self):

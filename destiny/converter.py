@@ -167,7 +167,7 @@ class BungieTweet:
 
 
 class BungieBSKYAccount(Enum):
-    BungieHelp = "bungiehelp.bungie.net"
+    BungieHelp = "bungieserverstatus.bungie.net"
     DestinyTheGame = "destinythegame.bungie.net"
     Destiny2Team = "destiny2team.bungie.net"
 

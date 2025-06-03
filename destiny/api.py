@@ -236,7 +236,12 @@ class DestinyAPI:
     async def bungie_tweets(self, account: BungieXAccount) -> List[BungieTweet]:
         url = URL(f"https://bungiehelp.org/data/{account.path}")
         async with self.extra_session.get(url) as resp:
-            data = await resp.json()
+            try:
+                data = await resp.json()
+            except Exception:
+                return []
+        if not data:
+            return []
         return [BungieTweet(**i) for i in data]
 
     async def bungie_bsky_posts(self, profile: BungieBSKYAccount) -> List[BungieBSKYPost]:
