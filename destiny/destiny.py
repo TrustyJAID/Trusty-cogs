@@ -280,7 +280,7 @@ class Destiny(commands.Cog):
             for post in all_posts:
                 if post.cid in posted:
                     continue
-                if post.time - datetime.datetime.now(datetime.timezone.utc) > datetime.timedelta(
+                if datetime.datetime.now(datetime.timezone.utc) - post.time > datetime.timedelta(
                     days=1
                 ):
                     # ignore posts older than 1 day
