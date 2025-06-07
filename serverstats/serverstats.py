@@ -10,7 +10,7 @@ import discord
 import psutil
 from red_commons.logging import getLogger
 from redbot import VersionInfo, version_info
-from redbot.core import Config, checks, commands
+from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
@@ -472,15 +472,15 @@ class ServerStats(commands.GroupCog):
             await ctx.send("\n".join(description)[:2000])
 
     @commands.hybrid_group()
-    @checks.mod_or_permissions(manage_channels=True)
-    @checks.bot_has_permissions(manage_channels=True)
+    @commands.mod_or_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     async def channeledit(self, ctx: commands.Context) -> None:
         """Modify channel options"""
         pass
 
     @channeledit.command(name="name")
-    @checks.mod_or_permissions(manage_channels=True)
-    @checks.bot_has_permissions(manage_channels=True)
+    @commands.mod_or_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     async def channel_name(
         self,
         ctx: commands.Context,
@@ -502,8 +502,8 @@ class ServerStats(commands.GroupCog):
         await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(name="position")
-    @checks.mod_or_permissions(manage_channels=True)
-    @checks.bot_has_permissions(manage_channels=True)
+    @commands.mod_or_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     async def channel_position(
         self,
         ctx: commands.Context,
@@ -528,8 +528,8 @@ class ServerStats(commands.GroupCog):
         await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(name="sync")
-    @checks.mod_or_permissions(manage_channels=True)
-    @checks.bot_has_permissions(manage_channels=True)
+    @commands.mod_or_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     async def channel_sync(
         self,
         ctx: commands.Context,
@@ -550,8 +550,8 @@ class ServerStats(commands.GroupCog):
         await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(name="nsfw")
-    @checks.mod_or_permissions(manage_channels=True)
-    @checks.bot_has_permissions(manage_channels=True)
+    @commands.mod_or_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     async def channel_nsfw(
         self, ctx: commands.Context, toggle: bool, channel: discord.TextChannel = None
     ) -> None:
@@ -569,8 +569,8 @@ class ServerStats(commands.GroupCog):
         await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(name="topic")
-    @checks.mod_or_permissions(manage_channels=True)
-    @checks.bot_has_permissions(manage_channels=True)
+    @commands.mod_or_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     async def channel_topic(
         self, ctx: commands.Context, channel: Optional[discord.TextChannel], *, topic: str
     ) -> None:
@@ -588,8 +588,8 @@ class ServerStats(commands.GroupCog):
         await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(name="bitrate")
-    @checks.mod_or_permissions(manage_channels=True)
-    @checks.bot_has_permissions(manage_channels=True)
+    @commands.mod_or_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     async def channel_bitrate(
         self, ctx: commands.Context, channel: discord.VoiceChannel, bitrate: int
     ) -> None:
@@ -618,8 +618,8 @@ class ServerStats(commands.GroupCog):
         await ctx.tick(message=_("Command complete."))
 
     @channeledit.command(name="userlimit")
-    @checks.mod_or_permissions(manage_channels=True)
-    @checks.bot_has_permissions(manage_channels=True)
+    @commands.mod_or_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
     async def channel_userlimit(
         self, ctx: commands.Context, channel: discord.VoiceChannel, limit: int
     ) -> None:
@@ -650,8 +650,8 @@ class ServerStats(commands.GroupCog):
     @channeledit.command(
         name="permissions", aliases=["perms", "permission"], with_app_command=False
     )
-    @checks.mod_or_permissions(manage_permissions=True)
-    @checks.bot_has_permissions(manage_permissions=True)
+    @commands.mod_or_permissions(manage_permissions=True)
+    @commands.bot_has_permissions(manage_permissions=True)
     async def edit_channel_perms(
         self,
         ctx: commands.Context,
@@ -811,7 +811,7 @@ class ServerStats(commands.GroupCog):
 
     @commands.group()
     @commands.guild_only()
-    @checks.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(add_reactions=True)
     async def pruneroles(self, ctx: commands.Context) -> None:
         """
         Perform various actions on users who haven't spoken in x days
@@ -877,8 +877,8 @@ class ServerStats(commands.GroupCog):
             await ctx.send(_("No one was found to be inactive in this time."))
 
     @pruneroles.command()
-    @checks.mod_or_permissions(kick_members=True)
-    @checks.bot_has_permissions(kick_members=True, add_reactions=True)
+    @commands.mod_or_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True, add_reactions=True)
     async def kick(
         self, ctx: commands.Context, days: int, role: discord.Role = None, reinvite: bool = True
     ) -> None:
@@ -922,8 +922,8 @@ class ServerStats(commands.GroupCog):
         await ctx.send(_("Done."))
 
     @pruneroles.command()
-    @checks.mod_or_permissions(manage_roles=True)
-    @checks.bot_has_permissions(manage_roles=True, add_reactions=True)
+    @commands.mod_or_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True, add_reactions=True)
     async def add(self, ctx: commands.Context, days: int, *new_roles: discord.Role) -> None:
         """
         Give roles to users who haven't spoken in x days
@@ -965,8 +965,8 @@ class ServerStats(commands.GroupCog):
         await ctx.send(_("Done."))
 
     @pruneroles.command()
-    @checks.mod_or_permissions(manage_roles=True)
-    @checks.bot_has_permissions(manage_roles=True, add_reactions=True)
+    @commands.mod_or_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True, add_reactions=True)
     async def remove(self, ctx: commands.Context, days: int, *removed_roles: discord.Role) -> None:
         """
         Remove roles from users who haven't spoken in x days.
@@ -1009,7 +1009,7 @@ class ServerStats(commands.GroupCog):
         await ctx.send(_("Done."))
 
     @commands.command()
-    @checks.is_owner()
+    @commands.is_owner()
     @commands.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     async def setguildjoin(
@@ -1025,7 +1025,7 @@ class ServerStats(commands.GroupCog):
         await ctx.send(msg)
 
     @commands.command()
-    @checks.is_owner()
+    @commands.is_owner()
     async def removeguildjoin(self, ctx: commands.Context) -> None:
         """
         Stop bots join/leave server messages
@@ -1034,7 +1034,7 @@ class ServerStats(commands.GroupCog):
         await ctx.send(_("No longer posting joined or left servers."))
 
     @commands.command(hidden=True)
-    @checks.is_owner()
+    @commands.is_owner()
     async def checkcheater(self, ctx: commands.Context, user_id: int) -> None:
         """
         Checks for possible cheaters abusing the global bank and server powers
@@ -1165,7 +1165,7 @@ class ServerStats(commands.GroupCog):
             ).start(ctx=ctx)
 
     @commands.command(hidden=True)
-    @checks.is_owner()
+    @commands.is_owner()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def topservers(self, ctx: commands.Context) -> None:
         """
@@ -1192,7 +1192,7 @@ class ServerStats(commands.GroupCog):
         ).start(ctx=ctx)
 
     @commands.command(hidden=True)
-    @checks.is_owner()
+    @commands.is_owner()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def newservers(self, ctx: commands.Context) -> None:
         """
@@ -1219,14 +1219,14 @@ class ServerStats(commands.GroupCog):
         ).start(ctx=ctx)
 
     @commands.hybrid_group()
-    @checks.admin_or_permissions(manage_guild=True)
+    @commands.admin_or_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def guildedit(self, ctx: commands.Context) -> None:
         """Edit various guild settings"""
         pass
 
     @guildedit.command(name="name")
-    @checks.admin_or_permissions(manage_guild=True)
+    @commands.admin_or_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def guild_name(self, ctx: commands.Context, *, name: str):
         """
@@ -1243,7 +1243,7 @@ class ServerStats(commands.GroupCog):
         await ctx.send(_("Server name set to {name}.").format(name=name))
 
     @guildedit.command(name="verificationlevel", aliases=["verification"])
-    @checks.admin_or_permissions(manage_guild=True)
+    @commands.admin_or_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def verifivation_level(self, ctx: commands.Context, *, level: str) -> None:
         """
@@ -1282,7 +1282,7 @@ class ServerStats(commands.GroupCog):
         await ctx.send(_("Server verification level set to {level}").format(level=level))
 
     @guildedit.command(name="systemchannel", aliases=["welcomechannel"])
-    @checks.admin_or_permissions(manage_guild=True)
+    @commands.admin_or_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def system_channel(
         self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
@@ -1304,7 +1304,7 @@ class ServerStats(commands.GroupCog):
         await ctx.send(_("Server systemchannel set to {channel}").format(channel=channel_name))
 
     @guildedit.command(name="afkchannel")
-    @checks.admin_or_permissions(manage_guild=True)
+    @commands.admin_or_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def afk_channel(
         self, ctx: commands.Context, channel: Optional[discord.VoiceChannel] = None
@@ -1325,7 +1325,7 @@ class ServerStats(commands.GroupCog):
         await ctx.send(_("Server afk channel set to {channel}").format(channel=channel_name))
 
     @guildedit.command(name="afktimeout")
-    @checks.admin_or_permissions(manage_guild=True)
+    @commands.admin_or_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def afk_timeout(self, ctx: commands.Context, timeout: int) -> None:
         """
@@ -1347,7 +1347,7 @@ class ServerStats(commands.GroupCog):
 
     @commands.hybrid_command()
     @commands.guild_only()
-    @checks.mod_or_permissions(manage_messages=True)
+    @commands.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def topmembers(
         self,
@@ -1384,7 +1384,7 @@ class ServerStats(commands.GroupCog):
         ).start(ctx=ctx)
 
     @commands.command()
-    @checks.is_owner()
+    @commands.is_owner()
     async def listchannels(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
         Lists channels and their position and ID for a server
@@ -1523,7 +1523,7 @@ class ServerStats(commands.GroupCog):
 
     @commands.hybrid_command()
     @commands.bot_has_permissions(embed_links=True)
-    @checks.admin()
+    @commands.admin()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def getguilds(self, ctx: commands.Context, *, guilds: MultiGuildConverter) -> None:
         """
@@ -1545,7 +1545,7 @@ class ServerStats(commands.GroupCog):
 
     @commands.hybrid_command()
     @commands.guild_only()
-    @checks.mod_or_permissions(manage_messages=True)
+    @commands.mod_or_permissions(manage_messages=True)
     async def nummembers(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
         Display number of users on a server
@@ -1561,7 +1561,7 @@ class ServerStats(commands.GroupCog):
 
     @commands.guild_only()
     @commands.hybrid_command(aliases=["rolestats"])
-    @checks.mod_or_permissions(manage_messages=True)
+    @commands.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def getroles(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
@@ -1603,7 +1603,7 @@ class ServerStats(commands.GroupCog):
         return highest, users
 
     @commands.hybrid_command(name="getreactions", aliases=["getreaction"])
-    @checks.mod_or_permissions(manage_messages=True)
+    @commands.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def get_reactions(self, ctx: commands.Context, message: discord.Message) -> None:
         """
@@ -1738,7 +1738,7 @@ class ServerStats(commands.GroupCog):
         return _ret
 
     @commands.hybrid_command(name="serverstats")
-    @checks.mod_or_permissions(manage_messages=True)
+    @commands.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     @commands.guild_only()
     async def server_stats(
@@ -1818,8 +1818,9 @@ class ServerStats(commands.GroupCog):
         await ctx.send(embed=em)
 
     @commands.hybrid_command(name="channelstats")
-    @commands.guild_only()
+    @commands.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(embed_links=True)
+    @commands.guild_only()
     async def channel_stats(
         self,
         ctx: commands.Context,
