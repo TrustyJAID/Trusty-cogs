@@ -64,8 +64,6 @@ class ReTriggerPages(menus.ListPageSource):
         self.selection = trigger
         msg_list = []
         embeds = view.ctx.channel.permissions_for(view.ctx.guild.me).embed_links
-        good = "\N{WHITE HEAVY CHECK MARK}"
-        bad = "\N{NEGATIVE SQUARED CROSS MARK}"
         # trigger = await Trigger.from_json(triggers)
         self.enabled = trigger.enabled
         author = self.guild.get_member(trigger.author)
@@ -108,7 +106,7 @@ class ReTriggerPages(menus.ListPageSource):
         )
         info = info.format(
             name=trigger.name,
-            enabled=good if trigger.enabled else bad,
+            enabled=str(trigger.enabled),
             author=author.mention,
             created=discord.utils.format_dt(trigger.created_at, style="R"),
             count=trigger.count,
