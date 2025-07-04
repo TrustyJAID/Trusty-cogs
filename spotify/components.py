@@ -89,8 +89,11 @@ class SpotifySelectTrack(discord.ui.Select, _Responder):
         current_track: Optional[tekore.FullTrack],
     ):
         super().__init__(min_values=1, max_values=1, placeholder=placeholder)
+        self.tracks = {}
         for track in tracks:
             emoji = None
+            if track.id in self.tracks:
+                continue
             if current_track and track.id == current_track.id:
                 emoji = spotify_emoji_handler.get_emoji("volume_up")
             self.add_option(
@@ -99,9 +102,9 @@ class SpotifySelectTrack(discord.ui.Select, _Responder):
                 value=track.id,
                 emoji=emoji,
             )
+            self.tracks[track.id] = track
         self.cog = cog
         self.user_token = user_token
-        self.tracks = {t.id: t for t in tracks}
 
     async def callback(self, interaction: discord.Interaction):
         track_id = self.values[0]
