@@ -959,7 +959,17 @@ class NASAAstronomyPictureOfTheDay:
     @classmethod
     def from_json(cls, data: dict) -> NASAAstronomyPictureOfTheDay:
         date = datetime.fromisoformat(data.pop("date"))
-        return cls(date=date, **data)
+        return cls(
+            date=date,
+            explanation=data.get("explanation", ""),
+            media_type=data.get("media_type", ""),
+            service_version=data.get("service_version", ""),
+            title=data.get("title", ""),
+            url=data.get("url", ""),
+            hdurl=data.get("hdurl"),
+            copyright=data.get("copyright"),
+            thumbnail_url=data.get("thumbnail_url"),
+        )
 
     @classmethod
     async def from_url(

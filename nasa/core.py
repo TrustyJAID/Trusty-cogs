@@ -96,7 +96,7 @@ class NASACog(commands.Cog):
             return
         try:
             apod = NASAAstronomyPictureOfTheDay.from_json(data)
-        except KeyError:
+        except (KeyError, TypeError):
             if "msg" in data:
                 log.exception(f"Error in Astronomy Photo of the Day loop {data['msg']}")
             else:
