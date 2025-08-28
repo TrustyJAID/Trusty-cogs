@@ -299,7 +299,6 @@ class HockeySetCommands(HockeyMixin):
                         "Error creating scheduled event in %s for team %s", ctx.guild.id, team
                     )
                 await asyncio.sleep(1)
-                break
         msg = f"Finished creating events for {added}/{number_of_games} games."
         if edited != 0:
             msg += f" Edited {edited} events with changed details."
