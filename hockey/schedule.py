@@ -251,10 +251,7 @@ class Schedule(menus.PageSource):
             description = f"{away_team} @ {home_team}"
             emoji = None
             if home_team in TEAMS:
-                if home_team in TEAMS and TEAMS[home_team]["emoji"]:
-                    emoji = discord.PartialEmoji.from_str(TEAMS[home_team]["emoji"])
-                else:
-                    emoji = discord.PartialEmoji.from_str("\N{HOUSE BUILDING}")
+                emoji = self.api.get_team_emoji(home_team)
             self.select_options.append(
                 discord.SelectOption(
                     label=label, value=str(game.id), description=description, emoji=emoji
