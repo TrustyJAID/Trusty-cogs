@@ -2,10 +2,12 @@ import asyncio
 import os
 import re
 from datetime import timedelta
+from io import BytesIO
 from typing import Optional, Union
 
 import aiohttp
 import discord
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.data_manager import cog_data_path
@@ -15,7 +17,7 @@ from redbot.core.utils.views import ConfirmView
 
 from .abc import HockeyMixin
 from .constants import TEAMS
-from .helper import StandingsFinder, StateFinder, TeamFinder
+from .helper import StandingsFinder, StateFinder, Team, TeamFinder
 from .standings import Conferences, Divisions
 
 _ = Translator("Hockey", __file__)
@@ -109,6 +111,94 @@ class HockeySetCommands(HockeyMixin):
         Commands for setting up discord guild events
         """
 
+    async def make_banner(self, home_team: Team, away_team: Team) -> Optional[BytesIO]:
+        tear_url = "https://i.imgur.com/hwZEMbI.png"
+        logos_path = cog_data_path(self) / "teamlogos"
+        tear_path = logos_path.joinpath("tear.png")
+        imgs = {"tear": tear_path}
+        # First download the required images to disk checking if they already exist
+        try:
+            for name, path in imgs.items():
+                if not os.path.isfile(path) or os.path.getsize(path) == 0:
+                    if name != "tear":
+                        logo_url = TEAMS[name]["logo"]
+                        if "banner_logo" in TEAMS[name]:
+                            logo_url = TEAMS[name]["banner_logo"]
+                    else:
+                        logo_url = tear_url
+                    async with self.session.get(logo_url) as resp:
+                        image = await resp.read()
+                    with path.open("wb") as outfile:
+                        outfile.write(image)
+        except Exception:
+            log.error(
+                "I could not download the tear image. Please download it from https://i.imgur.com/hwZEMbI.png and place it in %s named tear.png",
+                tear_path,
+            )
+            return None
+
+        loop = asyncio.get_running_loop()
+        # task = functools.partial(self._make_banner, home_team=home_team, away_team=away_team)
+        try:
+            task = loop.run_in_executor(None, self._make_banner, home_team, away_team)
+            banner = await asyncio.wait_for(task, timeout=60)
+        except Exception:
+            log.exception("Error generating banner for %s @ %s", away_team, home_team)
+            return None
+        else:
+            return banner
+
+    def _make_banner(self, home_team: Team, away_team: Team) -> BytesIO:
+        base = (800, 320)
+        # load all the images from disk first
+        logo_path = cog_data_path(self).joinpath("teamlogos")
+        home_path = logo_path.joinpath(home_team.filename)
+        home_logo = Image.open(home_path)
+        away_path = logo_path.joinpath(away_team.filename)
+        away_logo = Image.open(away_path)
+        # background_path = LOGOS.joinpath("rogersplace.png")
+        tear_path = logo_path.joinpath("tear.png")
+        tear = Image.open(tear_path).convert("RGBA")
+
+        home_colour = home_team.colour.to_rgb()
+        away_colour = away_team.colour.to_rgb()
+        image = Image.new("RGBA", size=base, color=home_colour)
+        draw = ImageDraw.Draw(image)
+
+        tear_img = Image.new("RGBA", (800, 320), color=away_colour)
+        tear_mask = tear.copy().convert("L")
+
+        tear_im = Image.composite(tear_img, tear, tear_mask)
+
+        font = ImageFont.load_default(size=120)
+
+        image.alpha_composite(tear_im)
+        # background = Image.open(background_path).convert("RGBA")
+        # offset = (int((800 - background.size[0]) / 2), int((320 - background.size[1]) / 2))
+        # image.paste(background, offset)
+        left, top, right, bottom = font.getbbox("@")
+        x = (right - left) / 2
+        y = (bottom - top) / 2
+
+        draw.text(
+            (400 - x, 130 - y), "@", font=font, fill="white", stroke_width=2, stroke_fill="black"
+        )
+        home = ImageOps.contain(home_logo, (400, 170))
+        away = ImageOps.contain(away_logo, (400, 170))
+        padding = 100
+        image.paste(away, (0 + padding, 75), away)
+        image.paste(home, (800 - away.size[0] - padding, 75), home)
+        # image.save(f"banners/{away_team}@{home_team}.webp", format="webp")
+        # close all the images that were loaded from disk
+        home_logo.close()
+        away_logo.close()
+        tear.close()
+        temp = BytesIO()
+        temp.name = f"{away_team}@{home_team}.webp"
+        image.save(temp, format="webp")
+        temp.seek(0)
+        return temp
+
     @hockey_events.command(name="set")
     @commands.bot_has_permissions(manage_events=True)
     @commands.admin_or_permissions(manage_guild=True)
@@ -161,19 +251,13 @@ class HockeySetCommands(HockeyMixin):
             for game in games:
                 start = game.game_start
                 end = start + timedelta(hours=3)
-                home = game.home_team
-                away = game.away_team
-                image_team = away if team == home else home
-                image_file = images_path / f"{image_team}.png"
-                image = None
-                if not os.path.isfile(image_file) or os.path.getsize(image_file) == 0:
-                    async with self.session.get(TEAMS[image_team]["logo"]) as resp:
-                        image = await resp.read()
-                    with image_file.open("wb") as outfile:
-                        outfile.write(image)
-                if os.path.getsize(image_file) != 0:
-                    with open(image_file, "rb") as x:
-                        image = x.read()
+                home = game.home
+                away = game.away
+                # image_team = away if team == home else home
+                # image_file = images_path / f"{image_team}.png"
+                image = await self.make_banner(home, away)
+                if image is not None:
+                    image = image.read()
 
                 name = f"{away} @ {home}"
                 broadcasts = humanize_list([b.get("network", "Unknown") for b in game.broadcasts])
@@ -215,6 +299,7 @@ class HockeySetCommands(HockeyMixin):
                         "Error creating scheduled event in %s for team %s", ctx.guild.id, team
                     )
                 await asyncio.sleep(1)
+                break
         msg = f"Finished creating events for {added}/{number_of_games} games."
         if edited != 0:
             msg += f" Edited {edited} events with changed details."

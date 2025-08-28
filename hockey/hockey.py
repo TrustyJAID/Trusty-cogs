@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from abc import ABC
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -13,6 +14,7 @@ import yaml
 from red_commons.logging import getLogger
 from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
+from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box
@@ -65,7 +67,7 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "4.4.0"
+    __version__ = "4.5.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -82,6 +84,7 @@ class Hockey(
             loop_error_guild=None,
             player_db=0,
             schema_version=0,
+            emojis={},
         )
         self.config.register_guild(
             standings_channel=None,
@@ -175,9 +178,10 @@ class Hockey(
         # data from the wrong file location
         self._repo = ""
         self._commit = ""
-        self.api = NewAPI()
+        self.api: NewAPI = NewAPI(cog_data_path(self))
         self.saving_goals = {}
         self._edit_tasks = {}
+        self.emojis = {}
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -239,6 +243,22 @@ class Hockey(
             except Exception:
                 pass
         await self._get_commit()
+
+    async def load_bot_emojis(self):
+        await self.bot.wait_until_red_ready()
+        try:
+            emojis = await self.bot.fetch_application_emojis()
+        except Exception:
+            log.exception("Error grabbing bot emojis")
+        else:
+            for team, data in TEAMS.items():
+                background = data.get("background", "dark")
+                team_name = re.sub(r"[^A-Za-z0-9\_]", "", team)
+                emoji_name = f"{team_name}_{background}"
+                emoji = discord.utils.find(lambda e: e.name == emoji_name, emojis)
+                if emoji is not None:
+                    self.api.team_emojis[team] = emoji
+        self._ready.set()
 
     @commands.Cog.listener()
     async def on_guild_update(self, before: discord.Guild, after: discord.Guild):
@@ -308,6 +328,7 @@ class Hockey(
             self.hockey_commands.app_command.allowed_installs = (
                 discord.app_commands.installs.AppInstallationType(guild=True, user=True)
             )
+        asyncio.create_task(self.load_bot_emojis())
 
     async def migrate_settings(self) -> None:
         schema_version = await self.config.schema_version()
@@ -323,7 +344,6 @@ class Hockey(
             await self._schema_2_to_3()
             schema_version += 1
             await self.config.schema_version.set(schema_version)
-        self._ready.set()
 
     async def _schema_2_to_3(self) -> None:
         await self.config.teams.clear()

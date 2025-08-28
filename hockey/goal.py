@@ -283,6 +283,9 @@ class Goal:
             channel_image_setting = await config.channel(channel).include_goal_image()
             include_goal_image = guild_image_setting or channel_image_setting
             send_em = goal_embed.copy()
+            files = []
+            if self.team.file is not None:
+                files.append(self.team.file)
             if include_goal_image and self.image:
                 send_em.set_image(url=self.image)
             # publish_goals = "Goal" in await config.channel(channel).publish_states()
@@ -345,12 +348,12 @@ class Goal:
                 # msg_list[str(channel.id)] = msg.id
 
             if not roles_text or "missed" in self.event.lower():
-                msg = await channel.send(embed=send_em)
+                msg = await channel.send(embed=send_em, files=files)
                 # msg_list[str(channel.id)] = msg.id
 
             else:
                 msg = await channel.send(
-                    roles_text, embed=send_em, allowed_mentions=allowed_mentions
+                    roles_text, embed=send_em, files=files, allowed_mentions=allowed_mentions
                 )
                 # msg_list[str(channel.id)] = msg.id
             return channel.guild.id, channel.id, msg.id
@@ -427,8 +430,12 @@ class Goal:
         old_data = await get_team(bot, self.team_name, game_data.game_start_str, self.game_id)
         og_msg = old_data["goal_id"].get(str(self.goal_id), {}).get("messages")
         updated_goal = cog.get_current_goal(game_data.game_id, self.goal_id)
-        em = await updated_goal.goal_post_embed(game_data)
-        text = await updated_goal.goal_post_text(game_data)
+        if updated_goal is not None:
+            em = await updated_goal.goal_post_embed(game_data)
+            text = await updated_goal.goal_post_text(game_data)
+        else:
+            em = await self.goal_post_embed(game_data)
+            text = await self.goal_post_text(game_data)
         if og_msg is None:
             return
         async for guild_id, channel_id, message_id in AsyncIter(og_msg, delay=5, steps=5):
@@ -588,7 +595,7 @@ class Goal:
         colour = self.team.colour
         title = f"🚨 {self.team_name} #{self.jersey_no} {self.strength} {self.event} 🚨"
         url = self.team.team_url
-        logo = self.team.logo
+        logo = f"attachment://{self.team.filename}"
         if not shootout:
             em = discord.Embed(description=f"{self.description}")
             if self.link:

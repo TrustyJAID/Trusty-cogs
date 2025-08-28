@@ -366,3 +366,31 @@ class HockeySelectPlayer(discord.ui.Select):
         player = self.view.source.players.get(player_id)
         index = self.view.source.pages.index(player)
         await self.view.show_page(index, interaction)
+
+
+class MenuActionRow(discord.ui.ActionRow):
+    def __init__(self):
+        super().__init__()
+        self.stop_button = StopButton()
+        self.first_button = FirstItemButton(discord.ButtonStyle.grey, 0)
+        self.back_button = BackButton(discord.ButtonStyle.grey, 0)
+        self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
+        self.last_button = LastItemButton(discord.ButtonStyle.grey, 0)
+        self.add_item(self.stop_button)
+        self.add_item(self.first_button)
+        self.add_item(self.back_button)
+        self.add_item(self.forward_button)
+        self.add_item(self.last_button)
+
+
+class GamesExtrasActions(discord.ui.ActionRow):
+    def __init__(self):
+        super().__init__()
+        self.filter = FilterButton(discord.ButtonStyle.grey, 0)
+        self.gameflow = GameflowButton(discord.ButtonStyle.grey, 0)
+        self.heatmap = HeatmapButton(discord.ButtonStyle.grey, 0)
+        self.broadcast = BroadcastsButton(0)
+        self.add_item(self.filter)
+        self.add_item(self.gameflow)
+        self.add_item(self.heatmap)
+        self.add_item(self.broadcast)

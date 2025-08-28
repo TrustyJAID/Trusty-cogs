@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from typing import Dict, List, Literal, NamedTuple, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, NamedTuple, Optional, Union
 
 import aiohttp
 import discord
@@ -13,6 +13,9 @@ from tabulate import tabulate
 
 from .constants import HEADSHOT_URL, TEAMS
 from .helper import Team
+
+if TYPE_CHECKING:
+    from .api import NewAPI
 
 _ = Translator("Hockey", __file__)
 
@@ -393,6 +396,7 @@ class PlayerStats:
     last5Games: List[dict]
     seasonTotals: List[SeasonStats]
     awards: List[dict]
+    _api: NewAPI
     currentTeamRoster: List[dict]
     heightInInches: Optional[int] = None
     heightInCentimeters: Optional[int] = None
@@ -409,7 +413,7 @@ class PlayerStats:
     teamPlaceNameWithPreposition: Optional[dict] = field(default_factory=dict)
 
     @classmethod
-    def from_json(cls, data: dict) -> PlayerStats:
+    def from_json(cls, data: dict, api: NewAPI) -> PlayerStats:
         featured_stats = data.pop("featuredStats", None)
         featured = None
         if featured_stats:
@@ -437,6 +441,7 @@ class PlayerStats:
             awards=awards,
             last5Games=last5,
             currentTeamRoster=current_team,
+            _api=api,
             **data,
         )
 
@@ -613,9 +618,9 @@ class PlayerStats:
             if team_name is None:
                 log.verbose("SimplePlayer team_id: %s", team_id)
                 team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
-            return Team.from_json(TEAMS[team_name], team_name)
+            return Team.from_json(TEAMS[team_name], team_name, self._api)
         except (IndexError, KeyError):
-            return Team.from_json({}, _("Unknown Team"))
+            return Team.from_json({}, _("Unknown Team"), self._api)
 
     def get_embed(
         self, season: Optional[str] = None, include_headshot: Optional[bool] = True

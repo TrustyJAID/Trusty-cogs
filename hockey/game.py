@@ -210,20 +210,28 @@ class Game:
         return URL(self.home.logo)
 
     @property
+    def home_image(self) -> str:
+        return self.home.filename
+
+    @property
+    def away_image(self) -> str:
+        return self.away.filename
+
+    @property
     def away_logo(self) -> URL:
         return URL(self.away.logo)
 
     @property
-    def home_emoji(self) -> Union[discord.PartialEmoji, str]:
+    def home_emoji(self) -> Union[discord.PartialEmoji, discord.Emoji, str]:
         if str(self.home.emoji) == "_":
             # d.py coerces empty strings to _ for client renderability.
             # I don't entirely understand why but it breaks equality when expecting
             # nothing as the emoji name making this a bit more convoluted than necessary.
-            return discord.PartialEmoji.from_str("\N{HOUSE BUILDING}\N{VARIATION SELECTOR-16}")
+            return discord.PartialEmoji.from_str("\N{HOUSE BUILDING}")
         return self.home.emoji
 
     @property
-    def away_emoji(self) -> Union[discord.PartialEmoji, str]:
+    def away_emoji(self) -> Union[discord.PartialEmoji, discord.Emoji, str]:
         if str(self.home.emoji) == "_":
             return discord.PartialEmoji.from_str("\N{AIRPLANE}\N{VARIATION SELECTOR-16}")
         return self.away.emoji
@@ -252,6 +260,13 @@ class Game:
         a timestamp for formation of discord timestamps
         """
         return int(self.game_start.timestamp())
+
+    def files(self) -> List[discord.File]:
+        ret = []
+        for t in [self.home, self.away]:
+            if t.file is not None:
+                ret.append(t.file)
+        return ret
 
     def game_type_str(self):
         game_types = {
@@ -293,6 +308,88 @@ class Game:
             if goal.goal_id == goal_id:
                 return goal
         return None
+
+    async def goal_sections(
+        self, period_goals: Optional[Literal["1st", "2nd", "3rd"]] = None
+    ) -> List[Dict[str, str]]:
+        goal_msg = ""
+        first_goals = [goal for goal in self.goals if goal.period_ord == "1st"]
+        second_goals = [goal for goal in self.goals if goal.period_ord == "2nd"]
+        third_goals = [goal for goal in self.goals if goal.period_ord == "3rd"]
+        ot_goals = [goal for goal in self.goals if "OT" in goal.period_ord]
+        so_goals = [goal for goal in self.goals if goal.period_ord == "SO"]
+        list_goals = {
+            "1st": first_goals,
+            "2nd": second_goals,
+            "3rd": third_goals,
+            "OT": ot_goals,
+        }
+        fields = []
+        if period_goals:
+            list_goals = {period_goals: list_goals[period_goals]}
+        for goals in list_goals:
+            ordinal = goals
+            goal_msg = ""
+
+            period_start_str = ""
+            period_start = self.period_starts.get(ordinal)
+            if period_start:
+                period_start_ts = int(period_start.timestamp())
+                period_start_str = f"(<t:{period_start_ts}:t>)"
+
+            for goal in list_goals[ordinal]:
+                emoji = goal.emoji
+                left = ""
+                if goal.time_remaining:
+                    left = _("\n{time} left in the {ord} period").format(
+                        time=goal.time_remaining, ord=goal.period_ord
+                    )
+                if goal.link:
+                    goal_msg += _(
+                        "{emoji} [{team} {strength} Goal By {description} {left}]({link})\n\n"
+                    ).format(
+                        emoji=emoji,
+                        team=goal.team_name,
+                        strength=goal.strength,
+                        description=goal.description,
+                        link=goal.link,
+                        left=left,
+                    )
+                else:
+                    goal_msg += _(
+                        "{emoji} {team} {strength} Goal By {description} {left}\n\n"
+                    ).format(
+                        emoji=emoji,
+                        team=goal.team_name,
+                        strength=goal.strength,
+                        description=goal.description,
+                        left=left,
+                    )
+
+            count = 0
+            continued = _("(Continued)")
+            fields.append(
+                dict(
+                    name=_("{ordinal} Period {time} Goals {continued}").format(
+                        ordinal=ordinal,
+                        time=period_start_str,
+                        continued="" if count == 0 else continued,
+                    ),
+                    value=goal_msg,
+                    inline=False,
+                )
+            )
+        if len(so_goals) != 0:
+            home_msg, away_msg = await self.goals[-1].get_shootout_display(self)
+            # get the last goal so that we always post the full current
+            # shootout display here
+            fields.append(
+                dict(name=_("{team} Shootout").format(team=self.home_team), value=home_msg)
+            )
+            fields.append(
+                dict(name=_("{team} Shootout").format(team=self.away_team), value=away_msg)
+            )
+        return fields
 
     async def goal_fields(
         self, period_goals: Optional[Literal["1st", "2nd", "3rd"]] = None
@@ -378,6 +475,143 @@ class Game:
             )
         return fields
 
+    async def make_game_view(
+        self,
+        include_plays: bool = False,
+        period_goals: Optional[Literal["1st", "2nd", "3rd"]] = None,
+        include_heatmap: bool = False,
+        include_gameflow: bool = False,
+        include_goals: bool = True,
+    ):
+        container = discord.ui.Container()
+
+        team_url = self.home.team_url
+        # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
+        title = "{away} @ {home} {state}".format(
+            away=self.away_team, home=self.home_team, state=str(self.game_state)
+        )
+        colour = self.home.colour
+
+        # em = discord.Embed(timestamp=self.game_start)
+        home_field = f"{self.home_emoji} {self.home_team}"
+        away_field = f"{self.away_emoji} {self.away_team}"
+        if colour is not None:
+            container.accent_colour = colour
+
+        container.add_item(discord.ui.TextDisplay(title))
+        game_start = discord.utils.format_dt(self.game_start)
+        container.add_item(discord.ui.TextDisplay(f"Game Start: {game_start}"))
+        container.add_item(discord.ui.Separator())
+        home_thumb = discord.ui.Thumbnail(str(self.home.logo))
+        away_thumb = discord.ui.Thumbnail(str(self.away.logo))
+        media = None
+        description = ""
+        if self.game_state is GameState.preview:
+            home_str, away_str, desc, url = await self.get_stats_msg()
+            if desc is not None:
+                description += desc
+            if url is not None:
+                media = discord.UnfurledMediaItem(str(url))
+                # em.set_image(url=url)
+
+            home_section = discord.ui.Section(
+                f"**{home_field}**\n{home_str}", accessory=home_thumb
+            )
+
+            away_section = discord.ui.Section(
+                f"**{away_field}**\n{away_str}", accessory=away_thumb
+            )
+            # em.add_field(name=home_field, value=home_str)
+            # em.add_field(name=away_field, value=away_str)
+            container.add_item(away_section)
+            container.add_item(discord.ui.Separator())
+            container.add_item(home_section)
+        if self.game_type is GameType.playoffs and not self.game_state.is_preview():
+            try:
+                playoffs = await self.api.get_playoffs(self.game_start.year)
+                series = playoffs.get_series(self.home, self.away)
+                log.debug("Playoffs series %s", series)
+                if playoffs.logo:
+                    media = discord.UnfurledMediaItem(str(playoffs.logo))
+                if series.logo:
+                    media = discord.UnfurledMediaItem(str(series.logo))
+
+                # em.set_image(url=series.logo or playoffs.logo)
+                description += f"[{series.title}]({series.url})"
+            except Exception:
+                log.exception("Error getting playoffs data.")
+
+        if include_heatmap:
+            # em.set_image(url=self.heatmap_url())
+            description += f"\n[Natural Stat Trick]({self.nst_url()})"
+        if include_gameflow:
+            # em.set_image(url=self.gameflow_url())
+            description += f"\n[Natural Stat Trick]({self.nst_url()})"
+
+        if not self.game_state.is_preview():
+            home_msg = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
+                home_score=self.home_score, home_shots=self.home_shots
+            )
+            away_msg = _("Goals: **{away_score}**\nShots: **{away_shots}**").format(
+                away_score=self.away_score, away_shots=self.away_shots
+            )
+            home_section = discord.ui.Section(
+                f"**{home_field}**\n{home_msg}", accessory=home_thumb
+            )
+            away_section = discord.ui.Section(
+                f"**{away_field}**\n{away_msg}", accessory=away_thumb
+            )
+            container.add_item(away_section)
+            container.add_item(home_section)
+            # em.add_field(name=home_field, value=home_msg)
+            # em.add_field(name=away_field, value=away_msg)
+
+            if self.goals != [] and include_goals:
+                fields = await self.goal_sections(period_goals)
+                for field in fields:
+                    f_title = field["name"]
+                    f_desc = field["value"]
+                    if not f_desc:
+                        continue
+                    container.add_item(discord.ui.Separator())
+                    container.add_item(discord.ui.TextDisplay(f"**{f_title}**\n{f_desc}"))
+                    # em.add_field(name=field["name"], value=field["value"], inline=False)
+            if self.first_star is not None:
+                stars = f"⭐ {self.first_star.as_link()}\n⭐⭐ {self.second_star.as_link()}\n⭐⭐⭐ {self.third_star.as_link()}"
+                # em.add_field(name=_("Stars of the game"), value=stars, inline=False)
+                container.add_item(discord.ui.Separator())
+                stars_text = discord.ui.TextDisplay(
+                    _("**Stars of the game**\n{stars}").format(stars=stars)
+                )
+                if self.first_star.headshot:
+                    star_shot = discord.UnfurledMediaItem(str(self.first_star.headshot))
+                    container.add_item(
+                        discord.ui.Section(stars_text, accessory=discord.ui.Thumbnail(star_shot))
+                    )
+                else:
+                    container.add_item(stars_text)
+            if self.recap_url is not None:
+                container.add_item(discord.ui.TextDisplay(f"\n[Recap]({self.recap_url})"))
+            if self.game_state.is_live():
+                period = self.period_ord
+                if self.period_time_left[0].isdigit():
+                    msg = _("{time} Left in the {ordinal} period").format(
+                        time=self.period_time_left, ordinal=period
+                    )
+                else:
+                    msg = _("{time} Left of the {ordinal} period").format(
+                        time=self.period_time_left, ordinal=period
+                    )
+                if include_plays:
+                    description += _("Last Play: {play}").format(play=self.plays[-1].description)
+                # em.add_field(name="Period", value=msg)
+        # if description:
+        # em.description = description
+        if media is not None:
+            container.add_item(discord.ui.MediaGallery(discord.MediaGalleryItem(media)))
+
+        return container
+
     async def make_game_embed(
         self,
         include_plays: bool = False,
@@ -402,19 +636,21 @@ class Game:
         away_field = f"{self.away_emoji} {self.away_team}"
         if colour is not None:
             em.colour = colour
-        em.set_author(name=title, url=team_url, icon_url=self.home_logo)
-        em.set_thumbnail(url=self.home_logo)
+        em.set_author(name=title, url=team_url, icon_url=self.home.file_url)
+        em.set_thumbnail(url=self.home.file_url)
         em.set_footer(
             text=_("{game_type} Game start ").format(game_type=self.game_type_str()),
-            icon_url=self.away_logo,
+            icon_url=self.away.file_url,
         )
         description = ""
+        em.set_image(url="attachment://banner.webp")
         if self.game_state is GameState.preview:
             home_str, away_str, desc, url = await self.get_stats_msg()
             if desc is not None:
                 description += desc
             if url is not None:
                 em.set_image(url=url)
+
             em.add_field(name=home_field, value=home_str)
             em.add_field(name=away_field, value=away_str)
         if self.game_type is GameType.playoffs and not self.game_state.is_preview():
@@ -513,9 +749,11 @@ class Game:
         if self.first_star is not None:
             stars = f"⭐ {self.first_star.as_link()}\n⭐⭐ {self.second_star.as_link()}\n⭐⭐⭐ {self.third_star.as_link()}"
             em.add_field(name=_("Stars of the game"), value=stars, inline=False)
-        em.set_author(name=title, url=home_url, icon_url=self.home_logo)
-        em.set_thumbnail(url=self.home_logo)
-        em.set_footer(text=_("Game start "), icon_url=self.away_logo)
+        home_image = self.home.file_url
+        away_image = self.away.file_url
+        em.set_author(name=title, url=home_url, icon_url=home_image)
+        em.set_thumbnail(url=home_image)
+        em.set_footer(text=_("Game start "), icon_url=away_image)
         if self.recap_url is not None:
             description += f"[Recap]({self.recap_url})\n"
         if description:
@@ -743,7 +981,8 @@ class Game:
         if channel.guild.me.is_timed_out():
             return
         try:
-            msg = await channel.send(embed=embed)
+            files = self.files()
+            msg = await channel.send(embed=embed, files=files)
             if publish and channel.is_news():
                 pass
                 # await msg.publish()
@@ -813,6 +1052,7 @@ class Game:
         can_embed = channel.permissions_for(guild.me).embed_links
         publish_states = []  # await config.channel(channel).publish_states()
         # can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
+        files = self.files()
 
         if self.game_state.is_live():
             start_roles: Set[discord.Role] = set()
@@ -868,7 +1108,9 @@ class Game:
                 if not can_embed:
                     await channel.send(f"{text}\n{state_text}", allowed_mentions=allowed_mentions)
                 else:
-                    await channel.send(text, embed=state_embed, allowed_mentions=allowed_mentions)
+                    await channel.send(
+                        text, embed=state_embed, files=files, allowed_mentions=allowed_mentions
+                    )
                 if self.game_state in publish_states:
                     try:
                         if channel.is_news():
@@ -890,7 +1132,7 @@ class Game:
                 if not can_embed:
                     preview_msg = await channel.send(state_text)
                 else:
-                    preview_msg = await channel.send(embed=state_embed)
+                    preview_msg = await channel.send(embed=state_embed, files=files)
 
                 # Create new pickems object for the game
                 if self.game_state.is_preview():
@@ -1088,12 +1330,3 @@ class Game:
             await channel.send(msg)
         except Exception:
             log.exception("Could not post goal in %s", repr(channel))
-
-    @classmethod
-    def from_data(cls, data: dict):
-        goals = [Goal.from_data(**i) for i in data.pop("goals", [])]
-        home_team = data.pop("home_team", "unknown team")
-        away_team = data.pop("away_team", "unknown team")
-        home = Team.from_json(TEAMS.get(home_team, {}), home_team)
-        away = Team.from_json(TEAMS.get(away_team, {}), away_team)
-        return cls(**data, home=home, away=away, goals=goals)

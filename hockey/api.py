@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, TypedDict, Union
 
 import aiohttp
+import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
@@ -36,6 +37,10 @@ ORDINALS = {
     4: _("4th"),
     5: _("5th"),
 }
+
+FRANCHISES_URL = URL(
+    "https://records.nhl.com/site/api/franchise?include=teams.id&include=teams.active&include=teams.triCode&include=teams.placeName&include=teams.commonName&include=teams.fullName&include=teams.logos&include=teams.conference.name&include=teams.division.name&include=teams.franchiseTeam.firstSeason.id&include=teams.franchiseTeam.lastSeason.id&include=teams.franchiseTeam.teamCommonName"
+)
 
 
 class CayenneExp(NamedTuple):
@@ -610,7 +615,7 @@ class ScheduledGame:
         raise NotImplementedError  # not working so no point building this yet
 
     @classmethod
-    def from_nhle(cls, data: dict, url: URL) -> ScheduledGame:
+    def from_nhle(cls, data: dict, url: URL, api: NewAPI) -> ScheduledGame:
         game_id = data["id"]
         game_type = GameType.from_int(data["gameType"])
         venue = data["venue"].get("default", "Unknown")
@@ -632,8 +637,8 @@ class ScheduledGame:
         schedule_state = data["gameScheduleState"]
         period = data.get("periodDescriptor", {}).get("number", -1)
         game_state = GameState.from_nhle(data["gameState"], period)
-        home = Team.from_nhle(home_team_data, home=True)
-        away = Team.from_nhle(away_team_data, home=False)
+        home = Team.from_nhle(home_team_data, api, home=True)
+        away = Team.from_nhle(away_team_data, api, home=False)
         return cls(
             id=game_id,
             home_team=home_team,
@@ -666,16 +671,16 @@ class Schedule:
         return [g for g in self.games if g.game_state.value < GameState.live.value]
 
     @classmethod
-    def from_nhle(cls, data: dict, url: URL) -> Schedule:
+    def from_nhle(cls, data: dict, url: URL, api: NewAPI) -> Schedule:
         days = []
         if "games" in data:
             for g in data.get("games", []):
-                days.append([ScheduledGame.from_nhle(g, url)])
+                days.append([ScheduledGame.from_nhle(g, url, api)])
 
         for day in data.get("gameWeek", []):
             games = []
             for game in day.get("games", []):
-                games.append(ScheduledGame.from_nhle(game, url))
+                games.append(ScheduledGame.from_nhle(game, url, api))
             days.append(games)
         return cls(days, url)
 
@@ -707,6 +712,55 @@ class StatsType(Enum):
         return f"{self}ReportData"
 
 
+class RecordsAPI(HockeyAPI):
+    """
+    This represents access to the nhl records api for pulling franchise information
+    """
+
+    def __init__(self, testing: bool = False):
+        super().__init__(URL("https://records.nhl.com"), testing=testing)
+        self._cache: Optional[dict] = None
+        self._last_checked: datetime = datetime(year=1970, month=1, day=1)
+
+    @property
+    def last_checked(self) -> timedelta:
+        return datetime.now() - self._last_checked
+
+    async def get_franchises(self) -> dict:
+        """
+        Get the list of all NHl Franchises and their official logos
+        """
+        if self._cache is not None and self.last_checked.days > 1:
+            return self._cache
+        url = URL("/site/api/franchise")
+        params = {
+            "include": [
+                "teams.id",
+                "teams.active",
+                "teams.triCode",
+                "teams.placeName",
+                "teams.commonName",
+                "teams.fullName",
+                "teams.logos",
+                "teams.conference.name",
+                "teams.division.name",
+                "teams.franchiseTeam.firstSeason.id",
+                "teams.franchiseTeam.lastSeason.id",
+                "teams.franchiseTeam.teamCommonName",
+            ]
+        }
+        async with self.session.get(url, params=params) as resp:
+            if resp.status != 200:
+                log.error("Error accessing the Franchise Records API: %s", resp.status)
+                raise HockeyAPIError(
+                    "There was an error accessing the NHL Franchise Records API.",
+                    resp.status,
+                    resp.url,
+                )
+            self._cache = await resp.json()
+        return self._cache if self._cache is not None else {}
+
+
 class StatsAPI(HockeyAPI):
     """
     This Represents access to the new NHL Stats API
@@ -720,6 +774,18 @@ class StatsAPI(HockeyAPI):
     @staticmethod
     def _cayenne_params(params: List[CayenneExp]) -> str:
         return r" and ".join(str(k) for k in params)
+
+    async def team_logos(self):
+        url = URL("/stats/rest/en/team")
+        params = {"include": ["logos"]}
+        async with self.session.get(url, params=params) as resp:
+            if resp.status != 200:
+                log.error("Error accessing the standings at %s. %s", resp.url, resp.status)
+                raise HockeyAPIError(
+                    "There was an error accessing the API.", resp.status, resp.url
+                )
+            data = await resp.json()
+        return data
 
     async def franchises(self):
         if self._franchises is not None:
@@ -868,14 +934,22 @@ class SearchAPI(HockeyAPI):
 
 
 class NewAPI(HockeyAPI):
-    def __init__(self, testing: bool = False):
+    def __init__(self, cog_path: Path, testing: bool = False):
         super().__init__(URL("https://api-web.nhle.com"), testing=testing)
         self.search_api = SearchAPI(testing=testing)
         self.stats_api = StatsAPI(testing=testing)
+        self.records_api = RecordsAPI(testing=testing)
+        self.team_emojis: Dict[str, discord.Emoji] = {}
+        self.cog_path = cog_path
+
+    @property
+    def logo_path(self) -> Path:
+        return self.cog_path.joinpath("teamlogos")
 
     async def close(self):
         await self.search_api.close()
         await self.stats_api.close()
+        await self.records_api.close()
         await super().close()
 
     def team_to_abbrev(self, team: str) -> Optional[str]:
@@ -887,11 +961,14 @@ class NewAPI(HockeyAPI):
             team_name = team
         return TEAMS.get(team_name, {}).get("tri_code", None)
 
+    def get_team_emoji(self, team_name: str) -> Optional[discord.Emoji]:
+        return self.team_emojis.get(team_name)
+
     async def schedule_now(self) -> Schedule:
         url = URL("/v1/schedule/now")
         if self.testing:
             data = await self.load_testing_data("testschedule.json")
-            return Schedule.from_nhle(data, url=self.base_url.join(url))
+            return Schedule.from_nhle(data, url=self.base_url.join(url), api=self)
 
         async with self.session.get(url) as resp:
             if resp.status != 200:
@@ -901,7 +978,7 @@ class NewAPI(HockeyAPI):
                 )
             log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
-        return Schedule.from_nhle(data, url=self.base_url.join(url))
+        return Schedule.from_nhle(data, url=self.base_url.join(url), api=self)
 
     async def search_player(
         self,
@@ -924,7 +1001,7 @@ class NewAPI(HockeyAPI):
                     "There was an error accessing the API.", resp.status, resp.url
                 )
             data = await resp.json()
-        return PlayerStats.from_json(data)
+        return PlayerStats.from_json(data, api=self)
 
     async def get_roster(self, team: str, *, season: Optional[str] = None):
         if season is None:
@@ -953,7 +1030,7 @@ class NewAPI(HockeyAPI):
                 )
             log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
-        return Schedule.from_nhle(data, url=self.base_url.join(url))
+        return Schedule.from_nhle(data, url=self.base_url.join(url), api=self)
 
     async def club_schedule_season(self, team: str) -> Schedule:
         team_abr = self.team_to_abbrev(team)
@@ -968,7 +1045,7 @@ class NewAPI(HockeyAPI):
                 )
 
             data = await resp.json()
-        return Schedule.from_nhle(data, url=self.base_url.join(url))
+        return Schedule.from_nhle(data, url=self.base_url.join(url), api=self)
 
     async def club_schedule_week(self, team: str, date: Optional[datetime] = None) -> Schedule:
         team_abr = self.team_to_abbrev(team)
@@ -988,7 +1065,7 @@ class NewAPI(HockeyAPI):
                 )
             log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
-        return Schedule.from_nhle(data, url=self.base_url.join(url))
+        return Schedule.from_nhle(data, url=self.base_url.join(url), api=self)
 
     async def club_schedule_month(self, team: str, date: Optional[datetime] = None) -> Schedule:
         team_abr = self.team_to_abbrev(team)
@@ -1008,7 +1085,7 @@ class NewAPI(HockeyAPI):
                 )
             log.trace("Hockey Schedule headers %s", resp.headers)
             data = await resp.json()
-        return Schedule.from_nhle(data, url=self.base_url.join(url))
+        return Schedule.from_nhle(data, url=self.base_url.join(url), api=self)
 
     async def gamecenter_landing(self, game_id: int):
         if self.testing:
@@ -1089,7 +1166,7 @@ class NewAPI(HockeyAPI):
 
     async def get_standings(self) -> Standings:
         data = await self.standings_now()
-        return Standings.from_nhle(data)
+        return Standings.from_nhle(data, self)
 
     async def get_playoffs(self, date: Optional[Union[datetime, int]] = None):
         if date is None:
@@ -1107,7 +1184,7 @@ class NewAPI(HockeyAPI):
                 )
             log.trace("Hockey standings headers %s", resp.headers)
             data = await resp.json()
-        return Playoffs.from_json(data, year)
+        return Playoffs.from_json(data, year, self)
 
     async def get_games_list(
         self,
@@ -1191,18 +1268,22 @@ class NewAPI(HockeyAPI):
         home_data = data.get("homeTeam", {})
         home_id = home_data.get("id", -1)
         home_team = home_data.get("name", {}).get("default")
-        home = Team.from_nhle(home_data, home=True)
+        home = Team.from_nhle(home_data, self, home=True)
         if home_id in TEAM_IDS:
             home_team = TEAM_IDS.get(home_id, "Unknown Team")
-            home = Team.from_json(TEAMS.get(home_team, {}), home_team)
+            home = Team.from_json(
+                TEAMS.get(home_team, {}),
+                home_team,
+                self,
+            )
 
         away_data = data.get("awayTeam", {})
         away_id = away_data.get("id", -1)
         away_team = away_data.get("name", {}).get("default")
-        away = Team.from_nhle(away_data, home=False)
+        away = Team.from_nhle(away_data, self, home=False)
         if away_id in TEAM_IDS:
             away_team = TEAM_IDS.get(away_id, "Unknown Team")
-            away = Team.from_json(TEAMS.get(away_team, {}), away_team)
+            away = Team.from_json(TEAMS.get(away_team, {}), away_team, self)
         game_start = data["startTimeUTC"]
 
         period_ord = ORDINALS.get(period, "")

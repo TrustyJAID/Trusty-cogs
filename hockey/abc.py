@@ -1,6 +1,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 from datetime import datetime
+from io import BytesIO
 from typing import Dict, List, Literal, Optional, Union
 
 import aiohttp
@@ -8,7 +9,7 @@ import discord
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 
-from .api import HockeyAPI
+from .api import NewAPI
 from .game import Game
 from .helper import (
     DateFinder,
@@ -40,7 +41,7 @@ class HockeyMixin(ABC):
         self.session: aiohttp.ClientSession
         self.pickems_config: Config
         self._ready: asyncio.Event
-        self.api: HockeyAPI
+        self.api: NewAPI
 
     #######################################################################
     # hockey_commands.py                                                  #
@@ -339,6 +340,22 @@ class HockeyMixin(ABC):
         weekly: int = None,
         total: int = None,
     ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def hockey_events(self, ctx: commands.Context):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def make_banner(self, home_team: str, away_team: str) -> Optional[BytesIO]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def _make_banner(self, home_team: str, away_team: str) -> BytesIO:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def set_team_events(self, ctx: commands.Context, team: TeamFinder):
         raise NotImplementedError()
 
     @abstractmethod
@@ -710,7 +727,7 @@ class HockeyMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def customemoji(self, ctx: commands.Context) -> None:
+    async def getlogos(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod

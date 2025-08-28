@@ -50,6 +50,36 @@ class StreakType(Enum):
         )
 
 
+class ClinchIndicator(Enum):
+    CLINCHED_PLAYOFF_SPOT = "X"
+    CLINCHED_DIVISION = "Y"
+    PRESIDENTS_TROPHY = "P"
+    CLINCHED_CONFERENCE = "Z"
+    ELIMINATED = "E"
+
+    @classmethod
+    def from_code(cls, code: Optional[str]) -> Optional[ClinchIndicator]:
+        if code is None:
+            return None
+        return {
+            "x": ClinchIndicator.CLINCHED_PLAYOFF_SPOT,
+            "y": ClinchIndicator.CLINCHED_DIVISION,
+            "p": ClinchIndicator.PRESIDENTS_TROPHY,
+            "z": ClinchIndicator.CLINCHED_CONFERENCE,
+            "e": ClinchIndicator.ELIMINATED,
+        }.get(code.lower())
+
+    @property
+    def legend(self) -> str:
+        return {
+            ClinchIndicator.CLINCHED_PLAYOFF_SPOT: _("Clinched Playoff Spot"),
+            ClinchIndicator.CLINCHED_DIVISION: _("Clinched Division"),
+            ClinchIndicator.PRESIDENTS_TROPHY: _("President's Trophy"),
+            ClinchIndicator.CLINCHED_CONFERENCE: _("Clinched Conference"),
+            ClinchIndicator.ELIMINATED: _("Eliminated"),
+        }.get(self, "")
+
+
 @dataclass
 class LeagueRecord:
     wins: int
@@ -113,8 +143,8 @@ class Playoffs:
             return URL(self.bracketLogo)
 
     @classmethod
-    def from_json(cls, data: dict, year: int) -> Playoffs:
-        series = [PlayoffSeries.from_json(i, year) for i in data.pop("series", [])]
+    def from_json(cls, data: dict, year: int, api: NewAPI) -> Playoffs:
+        series = [PlayoffSeries.from_json(i, year, api) for i in data.pop("series", [])]
         return cls(**data, series=series, year=year)
 
     def get_series(self, team_1: Team, team_2: Team) -> Optional[PlayoffSeries]:
@@ -128,6 +158,32 @@ class Playoffs:
             if top_team.id == team_2.id and bot_team.id == team_1.id:
                 return series
 
+    def container(self) -> discord.ui.Container:
+        container = discord.ui.Container()
+        container.add_item(
+            discord.ui.TextDisplay(_("Stanley Cup Playoffs {season}").format(season=self.year))
+        )
+        rounds = {}
+        for series in self.series:
+            top_wins = series.topSeedWins
+            bot_wins = series.bottomSeedWins
+            if series.url:
+                msg = f"[{series.description}]({series.url})\n"
+            else:
+                msg = f"{series.description}\n"
+            msg += f"{top_wins}-{bot_wins}\n"
+            if series.winner is not None:
+                msg += _("Winner: {winner}").format(winner=series.winner)
+            if series.playoffRound not in rounds:
+                rounds[series.playoffRound] = [msg]
+            else:
+                rounds[series.playoffRound].append(msg)
+        for r, info in rounds.items():
+            x = "\n".join(m for m in info)
+            container.add_item(discord.ui.Separator())
+            container.add_item(discord.ui.TextDisplay(f"{r}\n{x}"))
+        return container
+
     def embed(self) -> discord.Embed:
         msg = ""
         if not self.series:
@@ -137,6 +193,7 @@ class Playoffs:
         for series in self.series:
             top_wins = series.topSeedWins
             bot_wins = series.bottomSeedWins
+
             if series.url:
                 msg = f"[{series.description}]({series.url})\n"
             else:
@@ -223,18 +280,18 @@ class PlayoffSeries:
             return self.bottomSeedTeam
 
     @classmethod
-    def from_json(cls, data: dict, year: int) -> PlayoffSeries:
+    def from_json(cls, data: dict, year: int, api: NewAPI) -> PlayoffSeries:
         top_team = data.pop("topSeedTeam", None)
         if top_team:
-            top_team = Team.from_nhle(top_team)
+            top_team = Team.from_nhle(top_team, api)
         bot_team = data.pop("bottomSeedTeam", None)
         if bot_team:
-            bot_team = Team.from_nhle(bot_team)
+            bot_team = Team.from_nhle(bot_team, api)
 
         return cls(**data, topSeedTeam=top_team, bottomSeedTeam=bot_team, year=year)
 
 
-class PlayoffsView(discord.ui.View):
+class PlayoffsView(discord.ui.LayoutView):
     def __init__(self, start_date: Optional[int], api: NewAPI):
         super().__init__()
         self.playoffs = None
@@ -242,10 +299,15 @@ class PlayoffsView(discord.ui.View):
         self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
         self.back_button = BackButton(discord.ButtonStyle.grey, 0)
         self.stop_button = StopButton(discord.ButtonStyle.red, 0)
-        self.add_item(self.stop_button)
-        self.add_item(self.back_button)
-        self.add_item(self.forward_button)
+        # self.add_item(self.stop_button)
+        # self.add_item(self.back_button)
+        # self.add_item(self.forward_button)
         self.api = api
+        self.container = None
+        self.action_row = discord.ui.ActionRow()
+        self.action_row.add_item(self.stop_button)
+        self.action_row.add_item(self.back_button)
+        self.action_row.add_item(self.forward_button)
 
     async def on_timeout(self):
         await self.message.edit(view=None)
@@ -255,7 +317,11 @@ class PlayoffsView(discord.ui.View):
         self.message = await self.send_initial_message(ctx)
 
     async def _get_kwargs_from_page(self):
-        value = self.playoffs.embed()
+        value = self.playoffs.container()
+        if isinstance(value, discord.ui.Container):
+            self.container = value
+            self.container.add_item(self.action_row)
+            return self.container
         if isinstance(value, dict):
             return value
         elif isinstance(value, str):
@@ -268,6 +334,9 @@ class PlayoffsView(discord.ui.View):
         self.playoffs = await self.api.get_playoffs(season)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page()
+        if isinstance(kwargs, discord.ui.Container):
+            self.add_item(kwargs)
+            kwargs = {}
         if interaction.response.is_done():
             await interaction.followup.edit(**kwargs, view=self)
         else:
@@ -287,6 +356,9 @@ class PlayoffsView(discord.ui.View):
             self.playoffs = await self.api.get_playoffs(season)
             self.current_page = self.playoffs.year
         kwargs = await self._get_kwargs_from_page()
+        if isinstance(kwargs, discord.ui.Container):
+            self.add_item(kwargs)
+            kwargs = {}
         return await ctx.send(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
@@ -338,6 +410,7 @@ class TeamRecord:
     league_road_rank: int
     league_home_rank: int
     wildcard_rank: int
+    clinch_indicator: Optional[ClinchIndicator]
     row: int
     games_played: int
     streak: Streak
@@ -389,6 +462,7 @@ class TeamRecord:
             division_road_rank=int(data["divisionRoadRank"]),
             division_home_rank=int(data["divisionHomeRank"]),
             conference_rank=int(data["conferenceRank"]),
+            clinch_indicator=None,
             conference_l10_rank=int(data["conferenceL10Rank"]),
             conference_road_rank=int(data["conferenceRoadRank"]),
             conference_home_rank=int(data["conferenceHomeRank"]),
@@ -410,9 +484,9 @@ class TeamRecord:
         )
 
     @classmethod
-    def from_nhle(cls, data: dict) -> TeamRecord:
+    def from_nhle(cls, data: dict, api: NewAPI) -> TeamRecord:
         team_name = data["teamName"].get("default")
-        team = Team.from_name(team_name)
+        team = Team.from_name(team_name, api)
         division = Division(
             id=0,
             name=data["divisionName"],
@@ -453,6 +527,7 @@ class TeamRecord:
             league_road_rank=int(data["leagueRoadSequence"]),
             league_home_rank=int(data["leagueHomeSequence"]),
             wildcard_rank=int(data["wildcardSequence"]),
+            clinch_indicator=ClinchIndicator.from_code(data.get("clinchIndicator")),
             row=0,
             games_played=int(data["gamesPlayed"]),
             streak=streak,
@@ -489,10 +564,10 @@ class Standings:
         return latest or datetime.now(timezone.utc)
 
     @classmethod
-    def from_nhle(cls, data: dict) -> Standings:
+    def from_nhle(cls, data: dict, api: NewAPI) -> Standings:
         all_records = {}
         for team in data["standings"]:
-            record = TeamRecord.from_nhle(team)
+            record = TeamRecord.from_nhle(team, api)
             all_records[record.team.name] = record
         return cls(records=all_records)
 
@@ -610,7 +685,11 @@ class Standings:
             url="https://www.nhl.com/standings",
             icon_url=nhl_icon,
         )
-        em.set_thumbnail(url=nhl_icon)
+        # em.set_thumbnail(url=nhl_icon)
+        legend = ""
+        for clinch in ClinchIndicator:
+            legend += f"-# {clinch.value} - {clinch.legend}\n"
+        em.add_field(name=_("Legend"), value=legend)
         em.timestamp = utc_to_local(latest_timestamp, "UTC")
         em.set_footer(text="Stats Last Updated", icon_url=nhl_icon)
         return em
@@ -651,11 +730,16 @@ class Standings:
         for name, record in records.items():
             tri_code = TEAMS[name]["tri_code"]
             wc = "*" if record.wildcard_rank in range(1, 3) else ""
+            clinch = record.clinch_indicator
+            team_indicator = f"{tri_code}{wc}"
+            if clinch is not None:
+                team_indicator = f"{tri_code} - {clinch.value}"
+
             rank = getattr(record, f"{rank_type}_rank")
             post_data.append(
                 [
-                    f"{rank}{wc}",
-                    tri_code,
+                    rank,
+                    team_indicator,
                     record.games_played,
                     record.league_record.wins,
                     record.league_record.losses,
@@ -664,7 +748,7 @@ class Standings:
                 ]
             )
         return tabulate(
-            sorted(post_data, key=lambda x: int(x[0].replace("*", ""))),
+            sorted(post_data, key=lambda x: int(x[0])),
             headers=headers,
             numalign="center",
             tablefmt="plain",
@@ -697,7 +781,7 @@ class Standings:
         for name, record in self.all_records.items():
             if record.division.name.lower() != division.name.lower():
                 continue
-            emoji = discord.PartialEmoji.from_str(TEAMS.get(name, {"emoji": ""})["emoji"])
+            emoji = record.team.emoji
             msg += f"{record.division_rank}. {emoji} {record}"
         return msg
 
@@ -718,9 +802,7 @@ class Standings:
         msg = ""
         records = [(r.league_rank, r) for name, r in self.all_records.items()]
         for rank, record in sorted(records, key=lambda x: x[0]):
-            emoji = discord.PartialEmoji.from_str(
-                TEAMS.get(record.team.name, {"emoji": ""})["emoji"]
-            )
+            emoji = record.team.emoji
             msg += f"{record.league_rank}. {emoji} {record}"
         return msg
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import discord
 from red_commons.logging import getLogger
@@ -17,10 +17,12 @@ from .components import (
     FirstItemButton,
     ForwardButton,
     GameflowButton,
+    GamesExtrasActions,
     HeatmapButton,
     HockeySelectGame,
     HockeySelectPlayer,
     LastItemButton,
+    MenuActionRow,
     SkipBackButton,
     SkipForwardButton,
     StopButton,
@@ -35,6 +37,172 @@ if TYPE_CHECKING:
 
 _ = Translator("Hockey", __file__)
 log = getLogger("red.trusty-cogs.hockey")
+
+
+class GamesLayout(discord.ui.LayoutView):
+    def __init__(
+        self,
+        source: menus.PageSource,
+        cog: Optional[commands.Cog] = None,
+        clear_reactions_after: bool = True,
+        delete_message_after: bool = False,
+        timeout: int = 180,
+        message: discord.Message = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(timeout=timeout)
+        self.cog = cog
+        self.source = source
+        self.message = message
+        self.current_page = 0
+        self.ctx: commands.Context = None
+        self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
+        self.back_button = BackButton(discord.ButtonStyle.grey, 0)
+        self.first_item = SkipBackButton(discord.ButtonStyle.grey, 0)
+        self.last_item = SkipForwardButton(discord.ButtonStyle.grey, 0)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.filter_button = FilterButton(discord.ButtonStyle.primary, 1)
+        self.heatmap_button = HeatmapButton(discord.ButtonStyle.primary, 1)
+        self.gameflow_button = GameflowButton(discord.ButtonStyle.primary, 1)
+        self.broadcast_button = BroadcastsButton(1)
+        self.menu_row = MenuActionRow()
+        self.extras_row = GamesExtrasActions()
+        self.select_row = discord.ui.ActionRow()
+
+        if isinstance(self.source, Schedule):
+            self.heatmap_button.label = _("Heatmap {style}").format(style=self.source.style)
+            corsi = "Corsi" if self.source.corsi else "Expected Goals"
+            self.gameflow_button.label = _("Gameflow {corsi} {strength}").format(
+                corsi=corsi, strength=self.source.strength
+            )
+        if isinstance(self.source, PlayByPlay):
+            self.pbp_filter = PlayByPlayFilter(self.source.select_options)
+            self.heatmap_button.disabled = True
+            self.gameflow_button.disabled = True
+            self.broadcast_button.disabled = True
+        self.select_view: Optional[HockeySelectGame] = None
+        self.author = None
+        self.container = None
+
+    async def on_timeout(self):
+        try:
+            await self.message.edit(view=None)
+        except Exception:
+            pass
+
+    async def start(self, ctx: commands.Context):
+        await self.source._prepare_once()
+        if hasattr(self.source, "select_options") and len(self.source.select_options) > 1:
+            self.select_view = HockeySelectGame(self.source.select_options[:25])
+            self.select_row.add_item(self.select_view)
+            # self.add_item(self.select_view)
+        self.ctx = ctx
+        if isinstance(ctx, discord.Interaction):
+            self.author = ctx.user
+        else:
+            self.author = ctx.author
+        self.message = await self.send_initial_message(ctx)
+
+    async def show_page(
+        self,
+        page_number: int,
+        *,
+        interaction: discord.Interaction,
+        skip_next: bool = False,
+        skip_prev: bool = False,
+        game_id: Optional[int] = None,
+    ) -> None:
+        try:
+            page = await self.source.get_page(
+                page_number, skip_next=skip_next, skip_prev=skip_prev, game_id=game_id
+            )
+        except NoSchedule:
+            if interaction.response.is_done():
+                await interaction.followup.edit(content=self.format_error(), embed=None, view=self)
+            else:
+                await interaction.response.edit_message(
+                    content=self.format_error(), embed=None, view=self
+                )
+            return
+        if hasattr(self.source, "select_options") and len(self.source.select_options) > 1:
+            self.select_row.remove_item(self.select_view)
+            if page_number >= 12:
+                self.select_view = HockeySelectGame(
+                    self.source.select_options[page_number - 12 : page_number + 13]
+                )
+            else:
+                self.select_view = HockeySelectGame(self.source.select_options[:25])
+            self.select_row.add_item(self.select_view)
+        self.current_page = page_number
+        kwargs = await self._get_kwargs_from_page(page)
+        if interaction.response.is_done():
+            await interaction.followup.edit(**kwargs, view=self)
+        else:
+            await interaction.response.edit_message(**kwargs, view=self)
+
+    async def _get_kwargs_from_page(self, page):
+        value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
+        if isinstance(value, discord.ui.Container):
+            if self.container is not None:
+                self.remove_item(self.container)
+                self.container.remove_item(self.menu_row)
+                self.container.remove_item(self.extras_row)
+                self.container.remove_item(self.select_row)
+
+            self.container = value
+
+            self.add_item(self.container)
+            self.container.add_item(self.menu_row)
+            self.container.add_item(self.extras_row)
+            self.container.add_item(self.select_row)
+            return {"content": None, "embed": None}
+        if isinstance(value, dict):
+            return value
+        elif isinstance(value, str):
+            return {"content": value, "embed": None}
+        elif isinstance(value, discord.Embed):
+            return {"embed": value, "content": None}
+
+    async def send_initial_message(self, ctx: commands.Context) -> discord.Message:
+        """|coro|
+        The default implementation of :meth:`Menu.send_initial_message`
+        for the interactive pagination session.
+        This implementation shows the first page of the source.
+        """
+        self.author = ctx.author
+
+        try:
+            page = await self.source.get_page(0)
+        except (IndexError, NoSchedule):
+            return await ctx.send(self.format_error(), view=self)
+        kwargs = await self._get_kwargs_from_page(page)
+        self.message = await ctx.send(**kwargs, view=self)
+        return self.message
+
+    def format_error(self):
+        team = ""
+        if self.source.team:
+            team = _("for {teams} ").format(teams=humanize_list(self.source.team))
+        msg = _("No schedule could be found {team}in dates between {last_searched}").format(
+            team=team, last_searched=self.source._last_searched
+        )
+        return msg
+
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
+        try:
+            await self.show_page(page_number, interaction=interaction)
+        except IndexError:
+            # An error happened that can be handled, so ignore it.
+            pass
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        """Just extends the default reaction_check to use owner_ids"""
+        if self.author and interaction.user.id != self.author.id:
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
+            return False
+        return True
 
 
 class GamesMenu(discord.ui.View):
@@ -140,12 +308,15 @@ class GamesMenu(discord.ui.View):
             self.add_item(self.select_view)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
+        if "files" in kwargs:
+            kwargs["attachments"] = kwargs.pop("files")
+
         if interaction.response.is_done():
             await interaction.followup.edit(**kwargs, view=self)
         else:
             await interaction.response.edit_message(**kwargs, view=self)
 
-    async def _get_kwargs_from_page(self, page):
+    async def _get_kwargs_from_page(self, page) -> Dict[str, Any]:
         value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
         if isinstance(value, dict):
             return value
@@ -153,6 +324,7 @@ class GamesMenu(discord.ui.View):
             return {"content": value, "embed": None}
         elif isinstance(value, discord.Embed):
             return {"embed": value, "content": None}
+        return {}
 
     async def send_initial_message(self, ctx: commands.Context) -> discord.Message:
         """|coro|
@@ -167,6 +339,11 @@ class GamesMenu(discord.ui.View):
         except (IndexError, NoSchedule):
             return await ctx.send(self.format_error(), view=self)
         kwargs = await self._get_kwargs_from_page(page)
+        if "files" in kwargs:
+            em = kwargs.get("embed")
+            if em is not None and em.image:
+                if "attachment://" not in em.image.url:
+                    kwargs.pop("files")
         self.message = await ctx.send(**kwargs, view=self)
         return self.message
 

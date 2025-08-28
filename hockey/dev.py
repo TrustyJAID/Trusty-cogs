@@ -1,14 +1,19 @@
 import json
+import os
+import re
 from datetime import date, datetime, timedelta, timezone
+from hashlib import md5
+from io import BytesIO
 from typing import Optional
 
+import aiohttp
 import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .abc import HockeyMixin
 from .constants import TEAMS
@@ -22,6 +27,15 @@ from .standings import Standings
 _ = Translator("Hockey", __file__)
 
 log = getLogger("red.trusty-cogs.hockey")
+
+try:
+    from cairosvg import svg2png
+
+    CAIRO = True
+    from PIL import Image, ImageOps
+except ImportError:
+    log.error("Cairosvg or pillow are not installed so we can't save team logos.")
+    CAIRO = False
 
 
 class HockeyDev(HockeyMixin):
@@ -496,41 +510,139 @@ class HockeyDev(HockeyMixin):
         ).start(ctx=ctx)
 
     @hockeydev.command(with_app_command=False)
-    async def customemoji(self, ctx: commands.Context) -> None:
+    async def getlogos(self, ctx: commands.Context, make_emoji: bool = False) -> None:
         """
-        Set custom emojis for the bot to use
+        Download all of the team's latest logos and upload them as custom emojis for
+        the bot to use.
+        """
+        if not CAIRO:
+            await ctx.send(
+                "Either `cairosvg` or `pillow` is not installed so I can't download team logos."
+            )
+            return
+        async with ctx.typing():
+            session = aiohttp.ClientSession(
+                headers={"User-Agent": "Red-DiscordBot Trusty-cogs Hockey"}
+            )
+            existing = await self.bot.fetch_application_emojis()
+            log.debug(existing)
+            teams = await self.api.stats_api.team_logos()
+            logos_path = cog_data_path(self).joinpath("teamlogos")
+            logos_path.mkdir(exist_ok=True)
+            added = set()
+            changed_logos = set()
 
-        Requires you to upload a .yaml file with
-        emojis that the bot can see
-        an example may be found
-        [here](https://github.com/TrustyJAID/Trusty-cogs/blob/master/hockey/emoji.yaml)
-        if no emoji is provided for a team the Other
-        slot will be filled instead
-        It's recommended to have an emoji for every team
-        to utilize all features of the cog such as pickems
-        """
-        attachments = ctx.message.attachments
-        if attachments == []:
-            await ctx.send(_("Upload the .yaml file to use. Type `exit` to cancel."))
-            msg = await self.wait_for_file(ctx)
-            if msg is None:
-                return
-            try:
-                await self.change_custom_emojis(msg.attachments)
-            except InvalidFileError:
-                await ctx.send(_("That file doesn't seem to be formatted correctly."))
-                return
+            for team in teams.get("data", []):
+                name = team["fullName"]
+                idx = 0
+                static_info = TEAMS.get(name, None)
+                if static_info is None:
+                    # ignore teams I haven't accounted for yet
+                    log.debug("Found an NHL Team not registered in the API: %s", name)
+                    continue
+                secondary = static_info.get("secondary", False)
+                background = static_info.get("background", "dark")
+                end_season = None
+                for logo in sorted(
+                    team.get("logos", []), key=lambda x: x.get("endSeason", 0), reverse=True
+                ):
+                    if end_season is None:
+                        end_season = logo.get("endSeason", -1)
+                    else:
+                        if end_season > logo.get("endSeason", -1):
+                            continue
+                    if name in added:
+                        continue
+                    bg = logo.get("background", "")
+                    if bg != background:
+                        continue
+                    secure_url = logo.get("secureUrl")
+                    if secure_url is None:
+                        continue
+                    if secondary:
+                        secure_url = secure_url.replace(
+                            f"{background}.svg", f"secondary_{background}.svg"
+                        )
+                        async with session.get(secure_url) as resp:
+                            if resp.status != 200:
+                                log.error(
+                                    "There was an error downloading the secondary logo for %s: %s",
+                                    name,
+                                    resp.status,
+                                )
+                                continue
+                            data = await resp.read()
+                    async with session.get(secure_url) as resp:
+                        if resp.status != 200:
+                            log.error(
+                                "There was an error downloading the logo for %s: %s",
+                                name,
+                                resp.status,
+                            )
+                            continue
+                        data = await resp.read()
+                    temp = BytesIO()
+                    svg2png(data, write_to=temp, parent_width=960, parent_height=960)
+                    img = Image.open(temp).convert("RGBA")
+                    bbox = img.getbbox()
+                    crop = img.crop(bbox)
+                    new_img = ImageOps.pad(
+                        crop.copy(), (960, 960), Image.Resampling.LANCZOS, (0, 0, 0, 0)
+                    )
+                    filename = re.sub(r"[^A-Za-z0-9\_]", "", f"{name}_{background}")
+                    logo_path = logos_path.joinpath(filename + ".webp")
+                    if os.path.isfile(logo_path) and os.path.getsize(logo_path) != 0:
+                        with logo_path.open("rb") as oldfile:
+                            old_hash = md5(oldfile.read()).hexdigest()
+                        new_hash_temp = BytesIO()
+                        new_img.save(new_hash_temp, format="webp")
+                        new_hash_temp.seek(0)
+                        new_hash = md5(new_hash_temp.read()).hexdigest()
+                        equal = old_hash == new_hash
+                        if old_hash == new_hash:
+                            log.debug("Old: %s - New: %s - EQ: %s", old_hash, new_hash, equal)
+                            continue
+                    changed_logos.add(name)
+                    new_img.save(logo_path, format="webp")
+                    emoji_img = ImageOps.pad(
+                        crop.copy(), (128, 128), Image.Resampling.LANCZOS, (0, 0, 0, 0)
+                    )
+                    emoji_temp = BytesIO()
+                    emoji_img.save(emoji_temp, format="PNG")
+                    emoji_temp.seek(0)
+
+                    if make_emoji:
+                        to_del = discord.utils.find(lambda e: e.name == filename, existing)
+                        if to_del:
+                            log.debug("Deleting %r", to_del)
+                            try:
+                                await to_del.delete()
+                            except Exception:
+                                log.exception("Error deleting old emoji")
+                        try:
+                            await self.bot.create_application_emoji(
+                                name=filename, image=emoji_temp.read()
+                            )
+                        except Exception:
+                            log.exception("Error creating application emoji.")
+                        added.add(name)
+
+            await session.close()
+            await self.load_bot_emojis()
+        if added:
+            await ctx.send(
+                "I have uploaded the following team emojis: {teams}".format(
+                    teams=humanize_list(list(added))
+                )
+            )
+        elif changed_logos:
+            await ctx.send(
+                "The following team logos have changed since I last downloaded them: {teams}".format(
+                    teams=humanize_list(list(changed_logos))
+                )
+            )
         else:
-            try:
-                await self.change_custom_emojis(attachments)
-            except InvalidFileError:
-                await ctx.send(_("That file doesn't seem to be formatted correctly."))
-                return
-        new_msg = "".join(("<:" + TEAMS[e]["emoji"] + ">") for e in TEAMS)
-        msg = _("New emojis set to: ") + new_msg
-        for page in pagify(msg):
-            await ctx.send(page)
-        await ctx.send("You should reload the cog for everything to work correctly.")
+            await ctx.send("None of the logos have changed since I last downloaded team logos.")
 
     @hockeydev.command(with_app_command=False)
     async def resetgames(self, ctx: commands.Context) -> None:

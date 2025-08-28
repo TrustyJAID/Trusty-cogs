@@ -3,11 +3,13 @@ from typing import List, Optional
 
 import discord
 from red_commons.logging import getLogger
+from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.vendored.discord.ext import menus
 
 from .api import GameEventTypeCode, ScheduledGame
+from .components import GamesExtrasActions, MenuActionRow
 from .constants import TEAMS
 from .errors import NoSchedule
 from .helper import utc_to_local
@@ -102,6 +104,23 @@ class Schedule(menus.PageSource):
             include_plays=self.include_plays,
             include_goals=self.include_goals,
         )
+        # view = await game_obj.make_game_view(
+        # include_plays=self.include_plays, include_goals=self.include_goals
+        # )
+        ret = {"files": []}
+        file_path = cog_data_path(menu.cog).joinpath("teamlogos")
+
+        for t in [game_obj.home, game_obj.away]:
+            if t.file is not None:
+                ret["files"].append(t.file)
+
+        banner_img = await menu.cog.make_banner(game_obj.home, game_obj.away)
+        if banner_img is not None:
+            banner = discord.File(banner_img, filename="banner.webp")
+            if "files" in ret:
+                ret["files"].append(banner)
+            else:
+                ret["files"] = [banner]
         if self.include_heatmap:
             em.set_image(url=game_obj.heatmap_url(style=self.style))
             em.description = f"[Natural Stat Trick]({game_obj.nst_url()})"
@@ -116,7 +135,11 @@ class Schedule(menus.PageSource):
                 broadcasts.append(f"- {country}: {network}")
             broadcast_str = "\n".join(c for c in broadcasts)
             em.add_field(name=_("Broadcasts"), value=broadcast_str)
-        return em
+        ret["embeds"] = [em]
+
+        # view.add_item(MenuActionRow())
+        # view.add_item(GamesExtrasActions())
+        return ret
 
     async def next(self, choice: Optional[int] = None, skip: bool = False) -> dict:
         """

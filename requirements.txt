@@ -1,3 +1,4 @@
+cairosvg
 charset-normalizer
 git+https://github.com/Kareeeeem/jpglitch
 git+https://github.com/TrustyJAID/aPRAW@setup-fix
