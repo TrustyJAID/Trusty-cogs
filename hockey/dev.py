@@ -510,7 +510,7 @@ class HockeyDev(HockeyMixin):
         ).start(ctx=ctx)
 
     @hockeydev.command(with_app_command=False)
-    async def getlogos(self, ctx: commands.Context, make_emoji: bool = False) -> None:
+    async def getlogos(self, ctx: commands.Context, make_emoji: bool = True) -> None:
         """
         Download all of the team's latest logos and upload them as custom emojis for
         the bot to use.
