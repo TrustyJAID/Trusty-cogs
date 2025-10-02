@@ -25,6 +25,13 @@ _ = Translator("Hockey", __file__)
 
 log = getLogger("red.trusty-cogs.Hockey")
 
+try:
+    from PIL import features
+
+    WEBP = features.check("webp")
+except Exception:
+    WEBP = False
+
 
 class GameState(Enum):
     unknown = 0
@@ -643,7 +650,7 @@ class Game:
             icon_url=self.away.file_url,
         )
         description = ""
-        em.set_image(url="attachment://banner.webp")
+        em.set_image(url="attachment://banner.webp" if WEBP else "attachment://banner.png")
         if self.game_state is GameState.preview:
             home_str, away_str, desc, url = await self.get_stats_msg()
             if desc is not None:

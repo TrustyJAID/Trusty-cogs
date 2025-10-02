@@ -46,6 +46,13 @@ _ = Translator("Hockey", __file__)
 
 log = getLogger("red.trusty-cogs.Hockey")
 
+try:
+    from PIL import features
+
+    WEBP = features.check("webp")
+except Exception:
+    WEBP = False
+
 DATE_RE = re.compile(
     r"((19|20)\d\d)[- \/.](0[1-9]|1[012]|[1-9])[- \/.](0[1-9]|[12][0-9]|3[01]|[1-9])"
 )
@@ -105,7 +112,9 @@ class Team:
 
     @property
     def filename(self) -> str:
-        return f"{self.emoji_name}.webp"
+        if WEBP:
+            return f"{self.emoji_name}.webp"
+        return f"{self.emoji_name}.png"
 
     @property
     def file_url(self) -> str:

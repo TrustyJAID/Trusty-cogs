@@ -33,9 +33,17 @@ try:
 
     CAIRO = True
     from PIL import Image, ImageOps
+
 except ImportError:
     log.error("Cairosvg or pillow are not installed so we can't save team logos.")
     CAIRO = False
+
+try:
+    from PIL import features
+
+    WEBP = features.check("webp")
+except Exception:
+    WEBP = False
 
 
 class HockeyDev(HockeyMixin):
@@ -589,13 +597,14 @@ class HockeyDev(HockeyMixin):
                     new_img = ImageOps.pad(
                         crop.copy(), (960, 960), Image.Resampling.LANCZOS, (0, 0, 0, 0)
                     )
+                    file_format = "webp" if WEBP else "png"
                     filename = re.sub(r"[^A-Za-z0-9\_]", "", f"{name}_{background}")
-                    logo_path = logos_path.joinpath(filename + ".webp")
+                    logo_path = logos_path.joinpath(filename + f".{file_format}")
                     if os.path.isfile(logo_path) and os.path.getsize(logo_path) != 0:
                         with logo_path.open("rb") as oldfile:
                             old_hash = md5(oldfile.read()).hexdigest()
                         new_hash_temp = BytesIO()
-                        new_img.save(new_hash_temp, format="webp")
+                        new_img.save(new_hash_temp, format=file_format)
                         new_hash_temp.seek(0)
                         new_hash = md5(new_hash_temp.read()).hexdigest()
                         equal = old_hash == new_hash
@@ -603,7 +612,7 @@ class HockeyDev(HockeyMixin):
                             log.debug("Old: %s - New: %s - EQ: %s", old_hash, new_hash, equal)
                             continue
                     changed_logos.add(name)
-                    new_img.save(logo_path, format="webp")
+                    new_img.save(logo_path, format=file_format)
                     emoji_img = ImageOps.pad(
                         crop.copy(), (128, 128), Image.Resampling.LANCZOS, (0, 0, 0, 0)
                     )

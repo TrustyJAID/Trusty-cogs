@@ -7,7 +7,6 @@ from typing import Optional, Union
 
 import aiohttp
 import discord
-from PIL import Image, ImageDraw, ImageFont, ImageOps
 from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.data_manager import cog_data_path
@@ -23,6 +22,18 @@ from .standings import Conferences, Divisions
 _ = Translator("Hockey", __file__)
 
 log = getLogger("red.trusty-cogs.Hockey")
+
+try:
+    from PIL import Image, ImageDraw, ImageFont, ImageOps
+except ImportError:
+    pass
+
+try:
+    from PIL import features
+
+    WEBP = features.check("webp")
+except Exception:
+    WEBP = False
 
 hockeyset_commands = HockeyMixin.hockeyset_commands
 
@@ -190,12 +201,13 @@ class HockeySetCommands(HockeyMixin):
         image.paste(home, (800 - away.size[0] - padding, 75), home)
         # image.save(f"banners/{away_team}@{home_team}.webp", format="webp")
         # close all the images that were loaded from disk
+        file_format = "webp" if WEBP else "png"
         home_logo.close()
         away_logo.close()
         tear.close()
         temp = BytesIO()
-        temp.name = f"{away_team}@{home_team}.webp"
-        image.save(temp, format="webp")
+        temp.name = f"{away_team}@{home_team}.{file_format}"
+        image.save(temp, format=file_format)
         temp.seek(0)
         return temp
 

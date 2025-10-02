@@ -17,6 +17,13 @@ from .helper import utc_to_local
 _ = Translator("Hockey", __file__)
 log = getLogger("red.trusty-cogs.Hockey")
 
+try:
+    from PIL import features
+
+    WEBP = features.check("webp")
+except Exception:
+    WEBP = False
+
 
 class Schedule(menus.PageSource):
     def __init__(self, **kwargs):
@@ -116,7 +123,7 @@ class Schedule(menus.PageSource):
 
         banner_img = await menu.cog.make_banner(game_obj.home, game_obj.away)
         if banner_img is not None:
-            banner = discord.File(banner_img, filename="banner.webp")
+            banner = discord.File(banner_img, filename="banner.webp" if WEBP else "banner.png")
             if "files" in ret:
                 ret["files"].append(banner)
             else:
