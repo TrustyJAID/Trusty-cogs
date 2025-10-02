@@ -377,6 +377,9 @@ class ScheduleList(menus.PageSource):
         msg = humanize_list(self.team) + "\n"
         day = None
         start_time = None
+        ret = {"files": []}
+        added_logo = False
+
         for game in games:
             game_start = game.game_start
             home_team = game.home_team
@@ -438,30 +441,38 @@ class ScheduleList(menus.PageSource):
                 msg += f"{broadcast_str}\n"
 
             count = 0
-            em = discord.Embed()
-            if len(self.team) == 1:
-                # log.debug(self.team)
-                colour = (
-                    int(TEAMS[self.team[0]]["home"].replace("#", ""), 16)
-                    if self.team[0] in TEAMS
-                    else None
-                )
-                if colour is not None:
-                    em.colour = colour
-                if self.team[0] in TEAMS:
-                    em.set_thumbnail(url=TEAMS[self.team[0]]["logo"])
-            if len(msg) > 4096:
-                for page in pagify(msg, ["Games", "\n"], page_length=1024, priority=True):
-                    if count == 0:
-                        em.description = page
-                        count += 1
-                        continue
-                    else:
-                        em.add_field(name=_("Games Continued"), value=page)
-            else:
-                em.description = msg
+        em = discord.Embed()
+        if len(self.team) == 1:
+            # log.debug(self.team)
+            colour = (
+                int(TEAMS[self.team[0]]["home"].replace("#", ""), 16)
+                if self.team[0] in TEAMS
+                else None
+            )
+            if colour is not None:
+                em.colour = colour
+            if self.team[0] in TEAMS:
+                team_data = game.home if game.home.name == self.team[0] else game.away
+                if team_data.file is not None and not added_logo:
+                    ret["files"].append(team_data.file)
+                    log.debug(f"{team_data.file.filename} - {team_data.file_url}")
+                    em.set_thumbnail(url=team_data.file_url)
+                    log.debug(f"{em.image.url}")
+                    added_logo = True
+        if len(msg) > 4096:
+            for page in pagify(msg, ["Games", "\n"], page_length=1024, priority=True):
+                if count == 0:
+                    em.description = page
+                    count += 1
+                    continue
+                else:
+                    em.add_field(name=_("Games Continued"), value=page)
+        else:
+            em.description = msg
         # return {"content": f"{self.index+1}/{len(self._cache)}", "embed": await game_obj.make_game_embed()}
-        return em
+        ret["embed"] = em
+        log.debug(ret)
+        return ret
 
     async def next(self, skip: bool = False) -> List[dict]:
         """
