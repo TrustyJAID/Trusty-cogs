@@ -220,17 +220,23 @@ class RosterPlayer(NamedTuple):
 @dataclass
 class Roster:
     forwards: Dict[int, RosterPlayer]
+    defensemen: Dict[int, RosterPlayer]
     goalies: Dict[int, RosterPlayer]
 
     @property
     def players(self) -> List[RosterPlayer]:
-        return [p for p in self.forwards.values()] + [p for p in self.goalies.values()]
+        return (
+            [p for p in self.forwards.values()]
+            + [p for p in self.defensemen.values()]
+            + [p for p in self.goalies.values()]
+        )
 
     @classmethod
     def from_json(cls, data: dict) -> Roster:
         forwards = {p["id"]: RosterPlayer.from_json(p) for p in data.get("forwards", [])}
+        defensemen = {p["id"]: RosterPlayer.from_json(p) for p in data.get("defensemen", [])}
         goalies = {p["id"]: RosterPlayer.from_json(p) for p in data.get("goalies", [])}
-        return cls(forwards=forwards, goalies=goalies)
+        return cls(forwards=forwards, defensemen=defensemen, goalies=goalies)
 
 
 @dataclass
