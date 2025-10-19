@@ -484,7 +484,12 @@ class Hockey(
                             data["game"].home_team,
                         )
                         continue
-                    data = await self.api.get_game_from_id(game_id)
+                    try:
+                        data = await self.api.get_game_from_id(game_id)
+                    except Exception as e:
+                        log.error("Error getting informaiton about the game: %s", e)
+                        data = None
+
                     if data is None:
                         continue
                     try:
