@@ -451,7 +451,7 @@ TEAMS = {
         "emoji": "TampaBayLightning:664662915621584906",
         "home": "#002868",
         "id": 14,
-        "invite": "https://discord.gg/WjNvprr",
+        "invite": "https://discord.gg/VV6kMBdwWT",
         "logo": "https://i.imgur.com/LUoZ0Ww.png",
         "background": "alt",
         "banner_logo": "https://i.imgur.com/QFbrEe8.png",
