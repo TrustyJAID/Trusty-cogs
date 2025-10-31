@@ -131,7 +131,7 @@ class GameDayChannels(HockeyMixin):
         if not ctx.guild:
             await ctx.send(_("This command can only work inside a server."))
             return
-        cur_state = await self.config.guild(ctx.guild).gdt_state_updates()
+        cur_state = await self.config.guild(ctx.guild).gdc_state_updates()
         added = []
         removed = []
         if state.value in cur_state:
@@ -140,9 +140,9 @@ class GameDayChannels(HockeyMixin):
         else:
             added.append(state.value)
             cur_state.append(state.value)
-        await self.config.guild(ctx.guild).gdt_state_updates.set(cur_state)
+        await self.config.guild(ctx.guild).gdc_state_updates.set(cur_state)
         if cur_state:
-            msg = _("GDT game updates set to {states}").format(
+            msg = _("GDC game updates set to {states}").format(
                 states=humanize_list(list(set(cur_state)))
             )
             if added:
