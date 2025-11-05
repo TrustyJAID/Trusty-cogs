@@ -715,11 +715,11 @@ async def check_to_post(
         return False
     should_post = False
     state_ints = game_states_to_int(channel_data["game_states"])
-    if game_state.value in state_ints:
+    if not is_goal and game_state.value in state_ints:
         for team in channel_teams:
             if team in post_state:
                 should_post = True
-    if is_goal and "Goal" in channel_data["game_states"]:
+    elif is_goal and "Goal" in channel_data["game_states"]:
         for team in channel_teams:
             if team in post_state:
                 should_post = True
