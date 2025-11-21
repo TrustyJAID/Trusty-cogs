@@ -6,7 +6,7 @@ from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import List, NamedTuple, Optional, Tuple, Union
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 import aiohttp
 import discord
@@ -569,94 +569,6 @@ class OSRSRank(NamedTuple):
 
 @dataclass
 class OSRSProfile:
-    name: str
-    _raw_text: str
-    overall: Optional[OSRSRank] = None
-    attack: Optional[OSRSRank] = None
-    defence: Optional[OSRSRank] = None
-    strength: Optional[OSRSRank] = None
-    hitpoints: Optional[OSRSRank] = None
-    ranged: Optional[OSRSRank] = None
-    prayer: Optional[OSRSRank] = None
-    magic: Optional[OSRSRank] = None
-    cooking: Optional[OSRSRank] = None
-    woodcutting: Optional[OSRSRank] = None
-    fletching: Optional[OSRSRank] = None
-    fishing: Optional[OSRSRank] = None
-    firemaking: Optional[OSRSRank] = None
-    crafting: Optional[OSRSRank] = None
-    smithing: Optional[OSRSRank] = None
-    mining: Optional[OSRSRank] = None
-    herblore: Optional[OSRSRank] = None
-    agility: Optional[OSRSRank] = None
-    thieving: Optional[OSRSRank] = None
-    slayer: Optional[OSRSRank] = None
-    farming: Optional[OSRSRank] = None
-    runecrafting: Optional[OSRSRank] = None
-    hunter: Optional[OSRSRank] = None
-    construction: Optional[OSRSRank] = None
-
-    league_points: Optional[OSRSRank] = None
-    bounty_hunter_hunter: Optional[OSRSRank] = None
-    bounty_hunter_rogue: Optional[OSRSRank] = None
-    clue_scrolls_all: Optional[OSRSRank] = None
-    clue_scrolls_beginner: Optional[OSRSRank] = None
-    clue_scrolls_easy: Optional[OSRSRank] = None
-    clue_scrolls_medium: Optional[OSRSRank] = None
-    clue_scrolls_hard: Optional[OSRSRank] = None
-    clue_scrolls_elite: Optional[OSRSRank] = None
-    clue_scrolls_master: Optional[OSRSRank] = None
-    lms_rank: Optional[OSRSRank] = None
-    soul_wars_zeal: Optional[OSRSRank] = None
-    rofts_closed: Optional[OSRSRank] = None
-    abyssal_sire: Optional[OSRSRank] = None
-    alchemical_hydra: Optional[OSRSRank] = None
-    barrows_chests: Optional[OSRSRank] = None
-    bryophyta: Optional[OSRSRank] = None
-    callisto: Optional[OSRSRank] = None
-    cerberus: Optional[OSRSRank] = None
-    chambers_of_xeric: Optional[OSRSRank] = None
-    chambers_of_xeric_challenge: Optional[OSRSRank] = None
-    chaos_elemental: Optional[OSRSRank] = None
-    chaos_fanatic: Optional[OSRSRank] = None
-    command_zilyana: Optional[OSRSRank] = None
-    corporeal_beast: Optional[OSRSRank] = None
-    crazy_archaeologist: Optional[OSRSRank] = None
-    dagannoth_prime: Optional[OSRSRank] = None
-    dagannoth_rex: Optional[OSRSRank] = None
-    dagannot_supreme: Optional[OSRSRank] = None
-    deranged_archaeologist: Optional[OSRSRank] = None
-    general_graardor: Optional[OSRSRank] = None
-    giant_mole: Optional[OSRSRank] = None
-    grotesque_guardians: Optional[OSRSRank] = None
-    hespori: Optional[OSRSRank] = None
-    kalphite_queen: Optional[OSRSRank] = None
-    king_black_dragon: Optional[OSRSRank] = None
-    kraken: Optional[OSRSRank] = None
-    kree_arra: Optional[OSRSRank] = None
-    kril_tsutsaroth: Optional[OSRSRank] = None
-    mimic: Optional[OSRSRank] = None
-    nex: Optional[OSRSRank] = None
-    nightmare: Optional[OSRSRank] = None
-    phosanis_nightmare: Optional[OSRSRank] = None
-    obor: Optional[OSRSRank] = None
-    srachnis: Optional[OSRSRank] = None
-    scorpia: Optional[OSRSRank] = None
-    skotizo: Optional[OSRSRank] = None
-    tempoross: Optional[OSRSRank] = None
-    the_guantlet: Optional[OSRSRank] = None
-    the_corrupted_gauntlet: Optional[OSRSRank] = None
-    theatre_of_blood: Optional[OSRSRank] = None
-    theatre_of_blood_hard_mode: Optional[OSRSRank] = None
-    thermonuclear_smoke_devil: Optional[OSRSRank] = None
-    tzkal_zuk: Optional[OSRSRank] = None
-    tztok_jad: Optional[OSRSRank] = None
-    venenatis: Optional[OSRSRank] = None
-    vetion: Optional[OSRSRank] = None
-    vorkath: Optional[OSRSRank] = None
-    wintertodt: Optional[OSRSRank] = None
-    zalcano: Optional[OSRSRank] = None
-    zulrah: Optional[OSRSRank] = None
     _ORDER: Tuple[str, ...] = (
         "Overall",
         "Attack",
@@ -682,9 +594,14 @@ class OSRSProfile:
         "Runecrafting",
         "Hunter",
         "Construction",
+        "Sailing",
+        "Grid Points",
         "League Points",
+        "Deadman Points",
         "Bounty Hunter - Hunter",
         "Bounty Hunter - Rogue",
+        "Bounty Hunter (Legacy) - Hunter",
+        "Bounty Hunter (Legacy) - Rogue",
         "Clue Scrolls (all)",
         "Clue Scrolls (beginner)",
         "Clue Scrolls (easy)",
@@ -693,13 +610,20 @@ class OSRSProfile:
         "Clue Scrolls (elite)",
         "Clue Scrolls (master)",
         "LMS - Rank",
+        "PvP Arena - Rank",
         "Soul Wars Zeal",
         "Rifts closed",
+        "Colosseum Glory",
+        "Collections Logged",
         "Abyssal Sire",
         "Alchemical Hydra",
+        "Amoxliatl",
+        "Araxxor",
+        "Artio",
         "Barrows Chests",
         "Bryophyta",
         "Callisto",
+        "Cal'varion",
         "Cerberus",
         "Chambers of Xeric",
         "Chambers of Xeric: Challenge Mode",
@@ -712,6 +636,8 @@ class OSRSProfile:
         "Dagannoth Rex",
         "Dagannoth Supreme",
         "Deranged Archaeologist",
+        "Doom of Mokhaiotl",
+        "Duke Sucellus",
         "General Graardor",
         "Giant Mole",
         "Grotesque Guardians",
@@ -721,49 +647,521 @@ class OSRSProfile:
         "Kraken",
         "Kree'Arra",
         "K'ril Tsutsaroth",
+        "Lunar Chests",
         "Mimic",
         "Nex",
         "Nightmare",
         "Phosani's Nightmare",
         "Obor",
+        "Phantom Muspah",
         "Sarachnis",
         "Scorpia",
+        "Scurrius",
+        "Shellbane Gryphon",
         "Skotizo",
+        "Sol Heredit",
+        "Spindel",
         "Tempoross",
         "The Gauntlet",
         "The Corrupted Gauntlet",
+        "The Hueycoatl",
+        "The Leviathan",
+        "The Royal Titans",
+        "The Whisperer",
         "Theatre of Blood",
         "Theatre of Blood: Hard Mode",
         "Thermonuclear Smoke Devil",
+        "Tombs of Amascut",
+        "Tombs of Amascut: Expert Mode",
         "TzKal-Zuk",
         "TzTok-Jad",
+        "Vardorvis",
         "Venenatis",
         "Vet'ion",
         "Vorkath",
         "Wintertodt",
+        "Yama",
         "Zalcano",
         "Zulrah",
     )
+
+    def __init__(self, name: str, _raw_text: str, _ranks: Dict[str, OSRSRank]):
+        self.name: str = name
+        self._raw_text: str = _raw_text
+        self._ranks = _ranks
+
+    @property
+    def overall(self) -> Optional[OSRSRank]:
+        return self._ranks.get("overall")
+
+    @property
+    def attack(self) -> Optional[OSRSRank]:
+        return self._ranks.get("attack")
+
+    @property
+    def defence(self) -> Optional[OSRSRank]:
+        return self._ranks.get("defence")
+
+    @property
+    def strength(self) -> Optional[OSRSRank]:
+        return self._ranks.get("strength")
+
+    @property
+    def hitpoints(self) -> Optional[OSRSRank]:
+        return self._ranks.get("hitpoints")
+
+    @property
+    def ranged(self) -> Optional[OSRSRank]:
+        return self._ranks.get("ranged")
+
+    @property
+    def prayer(self) -> Optional[OSRSRank]:
+        return self._ranks.get("prayer")
+
+    @property
+    def magic(self) -> Optional[OSRSRank]:
+        return self._ranks.get("magic")
+
+    @property
+    def cooking(self) -> Optional[OSRSRank]:
+        return self._ranks.get("cooking")
+
+    @property
+    def woodcutting(self) -> Optional[OSRSRank]:
+        return self._ranks.get("woodcutting")
+
+    @property
+    def fletching(self) -> Optional[OSRSRank]:
+        return self._ranks.get("fletching")
+
+    @property
+    def fishing(self) -> Optional[OSRSRank]:
+        return self._ranks.get("fishing")
+
+    @property
+    def firemaking(self) -> Optional[OSRSRank]:
+        return self._ranks.get("firemaking")
+
+    @property
+    def crafting(self) -> Optional[OSRSRank]:
+        return self._ranks.get("crafting")
+
+    @property
+    def smithing(self) -> Optional[OSRSRank]:
+        return self._ranks.get("smithing")
+
+    @property
+    def mining(self) -> Optional[OSRSRank]:
+        return self._ranks.get("mining")
+
+    @property
+    def herblore(self) -> Optional[OSRSRank]:
+        return self._ranks.get("herblore")
+
+    @property
+    def agility(self) -> Optional[OSRSRank]:
+        return self._ranks.get("agility")
+
+    @property
+    def thieving(self) -> Optional[OSRSRank]:
+        return self._ranks.get("thieving")
+
+    @property
+    def slayer(self) -> Optional[OSRSRank]:
+        return self._ranks.get("slayer")
+
+    @property
+    def farming(self) -> Optional[OSRSRank]:
+        return self._ranks.get("farming")
+
+    @property
+    def runecrafting(self) -> Optional[OSRSRank]:
+        return self._ranks.get("runecrafting")
+
+    @property
+    def hunter(self) -> Optional[OSRSRank]:
+        return self._ranks.get("hunter")
+
+    @property
+    def construction(self) -> Optional[OSRSRank]:
+        return self._ranks.get("construction")
+
+    @property
+    def sailing(self) -> Optional[OSRSRank]:
+        return self._ranks.get("sailing")
+
+    @property
+    def grid_points(self) -> Optional[OSRSRank]:
+        return self._ranks.get("grid_points")
+
+    @property
+    def league_points(self) -> Optional[OSRSRank]:
+        return self._ranks.get("league_points")
+
+    @property
+    def deadman_points(self) -> Optional[OSRSRank]:
+        return self._ranks.get("deadman_points")
+
+    @property
+    def bounty_hunter__hunter(self) -> Optional[OSRSRank]:
+        return self._ranks.get("bounty_hunter__hunter")
+
+    @property
+    def bounty_hunter__rogue(self) -> Optional[OSRSRank]:
+        return self._ranks.get("bounty_hunter__rogue")
+
+    @property
+    def bounty_hunter_legacy__hunter(self) -> Optional[OSRSRank]:
+        return self._ranks.get("bounty_hunter_legacy__hunter")
+
+    @property
+    def bounty_hunter_legacy__rogue(self) -> Optional[OSRSRank]:
+        return self._ranks.get("bounty_hunter_legacy__rogue")
+
+    @property
+    def clue_scrolls_all(self) -> Optional[OSRSRank]:
+        return self._ranks.get("clue_scrolls_all")
+
+    @property
+    def clue_scrolls_beginner(self) -> Optional[OSRSRank]:
+        return self._ranks.get("clue_scrolls_beginner")
+
+    @property
+    def clue_scrolls_easy(self) -> Optional[OSRSRank]:
+        return self._ranks.get("clue_scrolls_easy")
+
+    @property
+    def clue_scrolls_medium(self) -> Optional[OSRSRank]:
+        return self._ranks.get("clue_scrolls_medium")
+
+    @property
+    def clue_scrolls_hard(self) -> Optional[OSRSRank]:
+        return self._ranks.get("clue_scrolls_hard")
+
+    @property
+    def clue_scrolls_elite(self) -> Optional[OSRSRank]:
+        return self._ranks.get("clue_scrolls_elite")
+
+    @property
+    def clue_scrolls_master(self) -> Optional[OSRSRank]:
+        return self._ranks.get("clue_scrolls_master")
+
+    @property
+    def lms__rank(self) -> Optional[OSRSRank]:
+        return self._ranks.get("lms__rank")
+
+    @property
+    def pvp_arena__rank(self) -> Optional[OSRSRank]:
+        return self._ranks.get("pvp_arena__rank")
+
+    @property
+    def soul_wars_zeal(self) -> Optional[OSRSRank]:
+        return self._ranks.get("soul_wars_zeal")
+
+    @property
+    def rifts_closed(self) -> Optional[OSRSRank]:
+        return self._ranks.get("rifts_closed")
+
+    @property
+    def colosseum_glory(self) -> Optional[OSRSRank]:
+        return self._ranks.get("colosseum_glory")
+
+    @property
+    def collections_logged(self) -> Optional[OSRSRank]:
+        return self._ranks.get("collections_logged")
+
+    @property
+    def abyssal_sire(self) -> Optional[OSRSRank]:
+        return self._ranks.get("abyssal_sire")
+
+    @property
+    def alchemical_hydra(self) -> Optional[OSRSRank]:
+        return self._ranks.get("alchemical_hydra")
+
+    @property
+    def amoxliatl(self) -> Optional[OSRSRank]:
+        return self._ranks.get("amoxliatl")
+
+    @property
+    def araxxor(self) -> Optional[OSRSRank]:
+        return self._ranks.get("araxxor")
+
+    @property
+    def artio(self) -> Optional[OSRSRank]:
+        return self._ranks.get("artio")
+
+    @property
+    def barrows_chests(self) -> Optional[OSRSRank]:
+        return self._ranks.get("barrows_chests")
+
+    @property
+    def bryophyta(self) -> Optional[OSRSRank]:
+        return self._ranks.get("bryophyta")
+
+    @property
+    def callisto(self) -> Optional[OSRSRank]:
+        return self._ranks.get("callisto")
+
+    @property
+    def calvarion(self) -> Optional[OSRSRank]:
+        return self._ranks.get("calvarion")
+
+    @property
+    def cerberus(self) -> Optional[OSRSRank]:
+        return self._ranks.get("cerberus")
+
+    @property
+    def chambers_of_xeric(self) -> Optional[OSRSRank]:
+        return self._ranks.get("chambers_of_xeric")
+
+    @property
+    def chambers_of_xeric_challenge_mode(self) -> Optional[OSRSRank]:
+        return self._ranks.get("chambers_of_xeric_challenge_mode")
+
+    @property
+    def chaos_elemental(self) -> Optional[OSRSRank]:
+        return self._ranks.get("chaos_elemental")
+
+    @property
+    def chaos_fanatic(self) -> Optional[OSRSRank]:
+        return self._ranks.get("chaos_fanatic")
+
+    @property
+    def commander_zilyana(self) -> Optional[OSRSRank]:
+        return self._ranks.get("commander_zilyana")
+
+    @property
+    def corporeal_beast(self) -> Optional[OSRSRank]:
+        return self._ranks.get("corporeal_beast")
+
+    @property
+    def crazy_archaeologist(self) -> Optional[OSRSRank]:
+        return self._ranks.get("crazy_archaeologist")
+
+    @property
+    def dagannoth_prime(self) -> Optional[OSRSRank]:
+        return self._ranks.get("dagannoth_prime")
+
+    @property
+    def dagannoth_rex(self) -> Optional[OSRSRank]:
+        return self._ranks.get("dagannoth_rex")
+
+    @property
+    def dagannoth_supreme(self) -> Optional[OSRSRank]:
+        return self._ranks.get("dagannoth_supreme")
+
+    @property
+    def deranged_archaeologist(self) -> Optional[OSRSRank]:
+        return self._ranks.get("deranged_archaeologist")
+
+    @property
+    def doom_of_mokhaiotl(self) -> Optional[OSRSRank]:
+        return self._ranks.get("doom_of_mokhaiotl")
+
+    @property
+    def duke_sucellus(self) -> Optional[OSRSRank]:
+        return self._ranks.get("duke_sucellus")
+
+    @property
+    def general_graardor(self) -> Optional[OSRSRank]:
+        return self._ranks.get("general_graardor")
+
+    @property
+    def giant_mole(self) -> Optional[OSRSRank]:
+        return self._ranks.get("giant_mole")
+
+    @property
+    def grotesque_guardians(self) -> Optional[OSRSRank]:
+        return self._ranks.get("grotesque_guardians")
+
+    @property
+    def hespori(self) -> Optional[OSRSRank]:
+        return self._ranks.get("hespori")
+
+    @property
+    def kalphite_queen(self) -> Optional[OSRSRank]:
+        return self._ranks.get("kalphite_queen")
+
+    @property
+    def king_black_dragon(self) -> Optional[OSRSRank]:
+        return self._ranks.get("king_black_dragon")
+
+    @property
+    def kraken(self) -> Optional[OSRSRank]:
+        return self._ranks.get("kraken")
+
+    @property
+    def kreearra(self) -> Optional[OSRSRank]:
+        return self._ranks.get("kreearra")
+
+    @property
+    def kril_tsutsaroth(self) -> Optional[OSRSRank]:
+        return self._ranks.get("kril_tsutsaroth")
+
+    @property
+    def lunar_chests(self) -> Optional[OSRSRank]:
+        return self._ranks.get("lunar_chests")
+
+    @property
+    def mimic(self) -> Optional[OSRSRank]:
+        return self._ranks.get("mimic")
+
+    @property
+    def nex(self) -> Optional[OSRSRank]:
+        return self._ranks.get("nex")
+
+    @property
+    def nightmare(self) -> Optional[OSRSRank]:
+        return self._ranks.get("nightmare")
+
+    @property
+    def phosanis_nightmare(self) -> Optional[OSRSRank]:
+        return self._ranks.get("phosanis_nightmare")
+
+    @property
+    def obor(self) -> Optional[OSRSRank]:
+        return self._ranks.get("obor")
+
+    @property
+    def phantom_muspah(self) -> Optional[OSRSRank]:
+        return self._ranks.get("phantom_muspah")
+
+    @property
+    def sarachnis(self) -> Optional[OSRSRank]:
+        return self._ranks.get("sarachnis")
+
+    @property
+    def scorpia(self) -> Optional[OSRSRank]:
+        return self._ranks.get("scorpia")
+
+    @property
+    def scurrius(self) -> Optional[OSRSRank]:
+        return self._ranks.get("scurrius")
+
+    @property
+    def shellbane_gryphon(self) -> Optional[OSRSRank]:
+        return self._ranks.get("shellbane_gryphon")
+
+    @property
+    def skotizo(self) -> Optional[OSRSRank]:
+        return self._ranks.get("skotizo")
+
+    @property
+    def sol_heredit(self) -> Optional[OSRSRank]:
+        return self._ranks.get("sol_heredit")
+
+    @property
+    def spindel(self) -> Optional[OSRSRank]:
+        return self._ranks.get("spindel")
+
+    @property
+    def tempoross(self) -> Optional[OSRSRank]:
+        return self._ranks.get("tempoross")
+
+    @property
+    def the_gauntlet(self) -> Optional[OSRSRank]:
+        return self._ranks.get("the_gauntlet")
+
+    @property
+    def the_corrupted_gauntlet(self) -> Optional[OSRSRank]:
+        return self._ranks.get("the_corrupted_gauntlet")
+
+    @property
+    def the_hueycoatl(self) -> Optional[OSRSRank]:
+        return self._ranks.get("the_hueycoatl")
+
+    @property
+    def the_leviathan(self) -> Optional[OSRSRank]:
+        return self._ranks.get("the_leviathan")
+
+    @property
+    def the_royal_titans(self) -> Optional[OSRSRank]:
+        return self._ranks.get("the_royal_titans")
+
+    @property
+    def the_whisperer(self) -> Optional[OSRSRank]:
+        return self._ranks.get("the_whisperer")
+
+    @property
+    def theatre_of_blood(self) -> Optional[OSRSRank]:
+        return self._ranks.get("theatre_of_blood")
+
+    @property
+    def theatre_of_blood_hard_mode(self) -> Optional[OSRSRank]:
+        return self._ranks.get("theatre_of_blood_hard_mode")
+
+    @property
+    def thermonuclear_smoke_devil(self) -> Optional[OSRSRank]:
+        return self._ranks.get("thermonuclear_smoke_devil")
+
+    @property
+    def tombs_of_amascut(self) -> Optional[OSRSRank]:
+        return self._ranks.get("tombs_of_amascut")
+
+    @property
+    def tombs_of_amascut_expert_mode(self) -> Optional[OSRSRank]:
+        return self._ranks.get("tombs_of_amascut_expert_mode")
+
+    @property
+    def tzkalzuk(self) -> Optional[OSRSRank]:
+        return self._ranks.get("tzkalzuk")
+
+    @property
+    def tztokjad(self) -> Optional[OSRSRank]:
+        return self._ranks.get("tztokjad")
+
+    @property
+    def vardorvis(self) -> Optional[OSRSRank]:
+        return self._ranks.get("vardorvis")
+
+    @property
+    def venenatis(self) -> Optional[OSRSRank]:
+        return self._ranks.get("venenatis")
+
+    @property
+    def vetion(self) -> Optional[OSRSRank]:
+        return self._ranks.get("vetion")
+
+    @property
+    def vorkath(self) -> Optional[OSRSRank]:
+        return self._ranks.get("vorkath")
+
+    @property
+    def wintertodt(self) -> Optional[OSRSRank]:
+        return self._ranks.get("wintertodt")
+
+    @property
+    def yama(self) -> Optional[OSRSRank]:
+        return self._ranks.get("yama")
+
+    @property
+    def zalcano(self) -> Optional[OSRSRank]:
+        return self._ranks.get("zalcano")
+
+    @property
+    def zulrah(self) -> Optional[OSRSRank]:
+        return self._ranks.get("zulrah")
 
     @classmethod
     def from_str(cls, rsn: str, data: str) -> OSRSProfile:
         data = data.replace(" ", "\n")
         log.verbose("OSRSProfile from_str: %s", data)
-        final_data: List[Union[str, OSRSRank]] = [rsn, data]
+        final_data: Dict[str, OSRSRank] = {}
         for line_no, ranks in enumerate(data.split("\n")):
             if line_no >= len(cls._ORDER):
                 # They added something new here so wait until we update
                 continue
+            name = cls._ORDER[line_no]
             r = [int(i) for i in ranks.split(",")]
             if len(r) == 3:
-                final_data.append(
-                    OSRSRank(name=cls._ORDER[line_no], rank=r[0], level=r[1], experience=r[2])
+                final_data[name] = OSRSRank(
+                    name=cls._ORDER[line_no], rank=r[0], level=r[1], experience=r[2]
                 )
             else:
-                final_data.append(
-                    OSRSRank(name=cls._ORDER[line_no], rank=r[0], level=r[1], experience=None)
+                final_data[name] = OSRSRank(
+                    name=cls._ORDER[line_no], rank=r[0], level=r[1], experience=None
                 )
-        return cls(*final_data)
+        return cls(rsn, data, final_data)
 
     @classmethod
     async def get(

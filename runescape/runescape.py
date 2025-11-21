@@ -512,7 +512,7 @@ class Runescape(commands.Cog):
         await BaseMenu(source, self).start(ctx)
 
     @osrs.command(name="stats")
-    async def osrs_stats(self, ctx: commands.Context, runescape_name: str = None) -> None:
+    async def osrs_stats(self, ctx: commands.Context, *, runescape_name: str = None) -> None:
         """Display a players stats in oldschool Runescape."""
         async with ctx.typing():
             if runescape_name is None:
@@ -531,7 +531,7 @@ class Runescape(commands.Cog):
 
     @osrs.command(name="activities")
     @commands.bot_has_permissions(embed_links=True)
-    async def osrs_activities(self, ctx: commands.Context, runescape_name: str = None) -> None:
+    async def osrs_activities(self, ctx: commands.Context, *, runescape_name: str = None) -> None:
         """Display a players Activities in oldschool Runescape Hiscores."""
         async with ctx.typing():
             if runescape_name is None:
