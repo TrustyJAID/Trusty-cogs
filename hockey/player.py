@@ -277,15 +277,15 @@ class Stats:
     def to_data(self):
         keys = {
             _("GP"): "gamesPlayed",
-            _("Shots"): "shots",
             _("Goals"): "goals",
+            _("Assists"): "assists",
+            _("Points"): "points",
+            _("Shots"): "shots",
             _("OT Goals"): "otGoals",
             _("PPG"): "powerPlayGoals",
             _("SHG"): "shorthandedGoals",
             _("GWG"): "gameWinningGoals",
-            _("Points"): "points",
             _("Avg. TOI"): "avgToi",
-            _("Assists"): "assists",
             _("Hits"): "hits",
             _("Faceoff %"): "faceoffWinningPctg",
             _("+/-"): "plusMinus",
@@ -337,10 +337,15 @@ class FeaturedStats:
             career_value = career_data.get(key, None)
             if season_value and career_value:
                 if isinstance(career_value, float):
-                    post_data.append([key, f"{career_value:.2}", f"{season_value:.2}"])
+                    post_data.append([key, f"{career_value:.3f}", f"{season_value:.3f}"])
                 else:
                     post_data.append([key, f"{career_value}", f"{season_value}"])
-        return tabulate(post_data, headers=[_("Stats"), _("Career"), style])
+        return tabulate(
+            post_data,
+            headers=[_("Stats"), _("Career"), style],
+            stralign="left",
+            disable_numparse=True,
+        )
 
 
 @dataclass
@@ -659,10 +664,12 @@ class PlayerStats:
                 career_value = career_stats.get(key, "None")
                 if season_value and career_value:
                     if isinstance(season_value, float):
-                        post_data.append([key, f"{career_value:.2}", f"{season_value:.2}"])
+                        post_data.append([key, f"{career_value:.2f}", f"{season_value:.2f}"])
                     else:
                         post_data.append([key, f"{career_value}", f"{season_value}"])
-            stats_md = tabulate(post_data, headers=[_("Stats"), _("Career"), style])
+            stats_md = tabulate(
+                post_data, headers=[_("Stats"), _("Career"), style], numalign="center"
+            )
 
         if self.featuredStats and stats_md is None:
             stats_md = self.featuredStats.get_str()
