@@ -250,7 +250,7 @@ class PlayerSelect(discord.ui.View):
         self._current_hand = PlayerHand(self.player)
         self.add_item(self._current_hand)
         self._never_have_i_ever = NeverHaveIEverButton()
-        # self.add_item(self._never_have_i_ever)
+        self.add_item(self._never_have_i_ever)
 
     async def edit_hand(self, interaction: discord.Interaction):
         self.remove_item(self._current_hand)
@@ -287,9 +287,8 @@ class NeverHaveIEver(discord.ui.Modal):
         super().__init__(title="Never Have I Ever")
         max_length = 2000 - (80 + len(humanize_list([c.text for c in self.player.hand])))
         self.explanation = discord.ui.TextInput(
-            label="Explain why you don't understand these cards",
             style=discord.TextStyle.paragraph,
-            placeholder="I am dumb person who doesn't understand that 'Bees?' is the funniest card in existence.",
+            placeholder="I am dumb and don't understand why 'Bees?' is the funniest card in existence.",
             required=True,
             min_length=50,
             max_length=max_length,
@@ -299,8 +298,16 @@ class NeverHaveIEver(discord.ui.Modal):
         self.chosen_cards = discord.ui.Select(
             max_values=len(self.cards), min_values=1, placeholder="Your Cards", options=options
         )
-        self.add_item(self.explanation)
-        self.add_item(self.chosen_cards)
+        self.add_item(
+            discord.ui.Label(
+                text="Explain why you can't use these cards.", component=self.explanation
+            )
+        )
+        self.add_item(
+            discord.ui.Label(
+                text="Choose your cards you want to get rid of.", component=self.chosen_cards
+            )
+        )
 
     async def file(self, path: Path, cards: List[WhiteCard]) -> Optional[discord.File]:
         try:
@@ -343,10 +350,11 @@ class NeverHaveIEver(discord.ui.Modal):
             self.player.game.discard_pile.add_white(card)
             self.player.hand.remove(card)
         self.player.game.draw_cards(self.player, len(cards))
+        card_list = "\n".join(f"- {c.text}" for c in cards)
         msg = (
             f"{interaction.user.mention} Discarded the following cards, can you believe it?!\n"
-            f"{humanize_list([c.text for c in cards])}\n"
-            f"{self.explanation.value}"
+            f"{card_list}\n"
+            f"> {self.explanation.value}"
         )
         img = await self.file(self.player.game.path, cards)
         if img is not None:

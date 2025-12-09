@@ -10,7 +10,7 @@
     "hidden": false,
     "install_msg": "This cog downloads and stores a font file and two template images when loaded. Cards Against Humanity\u00ae\ufe0f is licenced under https://creativecommons.org/licenses/by-nc-sa/4.0/ and has not endorsed this works.",
     "max_bot_version": "0.0.0",
-    "min_bot_version": "3.5.0",
+    "min_bot_version": "3.5.21",
     "min_python_version": [
         3,
         9,
