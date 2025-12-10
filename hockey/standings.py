@@ -686,7 +686,7 @@ class Standings:
             icon_url=nhl_icon,
         )
         # em.set_thumbnail(url=nhl_icon)
-        legend = ""
+        legend = "-# \* - Wild Card\n"
         for clinch in ClinchIndicator:
             legend += f"-# {clinch.value} - {clinch.legend}\n"
         em.add_field(name=_("Legend"), value=legend)
