@@ -46,7 +46,7 @@ HEADER = (
     "# Trusty-cogs V3"
     "[![Red-DiscordBot](https://img.shields.io/badge/Red--DiscordBot-V3-red.svg)](https://github.com/Cog-Creators/Red-DiscordBot)"
     "[![Discord.py](https://img.shields.io/badge/Discord.py-rewrite-blue.svg)](https://github.com/Rapptz/discord.py/tree/rewrite)"
-    "[![TrustyJAID](https://cdn.discordapp.com/attachments/371817142854746112/528059607705321482/Follow_me-TrustyJAID-yellow.svg)](https://trustyjaid.com/)"
+    "[![TrustyJAID](https://trustyjaid.com/img/Follow_me-TrustyJAID-yellow.svg)](https://trustyjaid.com/)"
     "[![Donate to help support more cog creation](https://img.shields.io/badge/Paypal-Donate-blue.svg)](https://paypal.me/TrustyJAID)"
     "[![Subscribe on Patreon](https://img.shields.io/badge/Patreon-Follow-orange.svg)](https://www.patreon.com/TrustyJAID)\n\n"
     "TrustyJAID's Cogs for  [Red-DiscordBot](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop)."
@@ -358,21 +358,28 @@ def countlines(include_hidden: bool = False, include_disabled: bool = False):
             continue
         if info.disabled and not include_disabled:
             continue
-        try:
-            for file in os.listdir(cog_path):
-                file_path = cog_path / file
-                if not file_path.is_file():
-                    continue
+
+        def read_folder(path: Path):
+            folder_count = 0
+            for file in os.listdir(path):
+                file_path = path / file
+                if file_path.is_dir():
+                    folder_count += read_folder(file_path)
                 if not file.endswith(".py"):
                     continue
                 try:
                     with open(file_path, "r") as infile:
                         lines = len(infile.readlines())
                         log.debug("%s has %s lines of code", file_path, lines)
-                    cog += lines
-                    total += lines
+                    folder_count += lines
                 except Exception:
                     log.exception(f"Error opening {file_path}")
+                    continue
+            return folder_count
+
+        try:
+            cog = read_folder(cog_path)
+            total += cog
             totals.append((folder, cog))
         except Exception:
             log.exception(f"Error reading {folder}")
@@ -389,35 +396,53 @@ def countchars(include_hidden: bool = False, include_disabled: bool = False):
     """Count the number of lines of .py files in all folders"""
     total = 0
     totals = []
-    log.info("countchars %s", ROOT)
-    for folder in os.listdir(f"{ROOT}/"):
+    log.debug("countlines root: %s", ROOT)
+    for folder in os.listdir(ROOT):
+        cog_path = ROOT / folder
         cog = 0
         if folder.startswith("."):
             continue
+        if not cog_path.is_dir():
+            log.debug("%s is not a directory", cog_path)
+            continue
         try:
-            with open(f"{ROOT}/{folder}/info.json", "r") as infile:
+            with open(cog_path / "info.json", "r") as infile:
                 info = InfoJson.from_json(json.load(infile))
         except Exception:
-            continue
+            info = InfoJson(DEFAULT_AUTHOR, hidden=True, disabled=True)
+            log.debug("Error opening %s info.json", cog_path)
         if info.hidden and not include_hidden:
             continue
         if info.disabled and not include_disabled:
             continue
-        try:
-            for file in glob.glob(f"{ROOT}/{folder}/*.py"):
+
+        def read_folder(path: Path):
+            folder_count = 0
+            for file in os.listdir(path):
+                file_path = path / file
+                if file_path.is_dir():
+                    folder_count += read_folder(file_path)
+                if not file.endswith(".py"):
+                    continue
                 try:
-                    with open(file, "r") as infile:
+                    with open(file_path, "r") as infile:
                         lines = len(infile.read())
-                    cog += lines
-                    total += lines
+                        log.debug("%s has %s lines of code", file_path, lines)
+                    folder_count += lines
                 except Exception:
-                    pass
+                    log.exception(f"Error opening {file_path}")
+                    continue
+            return folder_count
+
+        try:
+            cog = read_folder(cog_path)
+            total += cog
             totals.append((folder, cog))
         except Exception:
-            pass
+            log.exception(f"Error reading {folder}")
     totals = sorted(totals, key=lambda x: x[1], reverse=True)
     totals.insert(0, ("Total", total))
-    print(tabulate.tabulate(totals, headers=["Cog", "# ofchars"], tablefmt="pretty"))
+    print(tabulate.tabulate(totals, headers=["Cog", "# of Lines"], tablefmt="pretty"))
     return totals
 
 
