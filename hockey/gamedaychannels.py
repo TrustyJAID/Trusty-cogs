@@ -384,8 +384,9 @@ class GameDayChannels(HockeyMixin):
                     continue
                 cur_channels = await self.config.guild(guild).gdc_chans()
                 cur_channel = guild.get_channel(cur_channels.get(str(next_game.game_id)))
-                await self.delete_gdc(guild)
+
                 if cur_channel is None:
+                    await self.delete_gdc(guild)
                     await self.create_gdc(guild)
 
             else:
