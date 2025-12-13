@@ -534,11 +534,11 @@ class PlayerStats:
 
     @property
     def url(self):
-        return f"https://www.nhl.com/player/{self.first_name.lower()}-{self.last_name.lower()}-{self.id}"
+        return f"https://www.nhl.com/player/{self.full_name_url.lower()}-{self.id}"
 
     @property
     def hockey_reference_url(self) -> str:
-        return f"https://www.hockey-reference.com/search/search.fcgi?hint=&search={self.first_name}+{self.last_name}"
+        return f"https://www.hockey-reference.com/search/search.fcgi?hint=&search={self.full_name_url.lower()}"
 
     def __str__(self) -> str:
         return f"{self.full_name}, born {self.birth_date}"

@@ -694,27 +694,15 @@ class HockeyDev(HockeyMixin):
         """
         Removes missing channels from the config
         """
-        all_channels = await self.config.all_channels()
-        for channel_id, data in all_channels.items():
-            if not data["guild_id"]:
-                channel = self.bot.get_channel(channel_id)
-                guild = channel.guild
-                await self.config.channel(channel).guild_id.set(guild.id)
-            else:
-                guild = self.bot.get_guild(data["guild_id"])
-                if not guild:
+        async with ctx.typing():
+            all_channels = await self.config.all_channels()
+            for channel_id, data in all_channels.items():
+                chan_or_thread = get_channel_obj(self.bot, channel_id, data)
+                if chan_or_thread is None:
+                    log.info("Removed the following channel %s", channel_id)
                     await self.config.channel_from_id(channel_id).clear()
-                    await self.config.guild_from_id(int(data["guild_id"])).clear()
-                    log.info("Removed the following channels %s", channel_id)
-                    continue
-                channel = guild.get_channel
-
-            if channel is None:
-                await self.config.channel_from_id(channel_id).clear()
-                log.info("Removed the following channels %s", channel_id)
-                continue
-            # if await self.config.channel(channel).to_delete():
-            # await self.config._clear_scope(Config.CHANNEL, str(channels))
+                # if await self.config.channel(channel).to_delete():
+                # await self.config._clear_scope(Config.CHANNEL, str(channels))
         await ctx.send(_("Broken channels removed"))
 
     @hockeydev.command(with_app_command=False)
@@ -723,13 +711,14 @@ class HockeyDev(HockeyMixin):
         Removes a server that no longer exists on the bot
         """
         # all_guilds = await self.config.all_guilds()
-        for guild_id in await self.config.all_guilds():
-            guild = self.bot.get_guild(guild_id)
-            if guild is None:
-                await self.config.guild_from_id(int(guild_id)).clear()
-            else:
-                if not await self.config.guild(guild).create_channels():
-                    await self.config.guild(guild).gdc.clear()
+        async with ctx.typing():
+            for guild_id in await self.config.all_guilds():
+                guild = self.bot.get_guild(guild_id)
+                if guild is None:
+                    await self.config.guild_from_id(int(guild_id)).clear()
+                else:
+                    if not await self.config.guild(guild).create_channels():
+                        await self.config.guild(guild).gdc.clear()
 
         await ctx.send(_("Saved servers the bot is no longer on have been removed."))
 
