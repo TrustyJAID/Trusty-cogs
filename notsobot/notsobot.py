@@ -8,8 +8,7 @@ import sys
 import textwrap
 import uuid
 from io import BytesIO
-from typing import Dict, List, Optional, Tuple, Union
-from urllib.parse import quote
+from typing import Dict, Optional, Tuple, Union
 
 import aiohttp
 import discord
@@ -94,7 +93,7 @@ class NotSoBot(commands.Cog):
     """
 
     __author__ = ["NotSoSuper", "TrustyJAID"]
-    __version__ = "2.6.0"
+    __version__ = "2.7.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -217,7 +216,9 @@ class NotSoBot(commands.Cog):
         except Exception as e:
             await channel.send(e)
 
-    async def safe_send(self, ctx, text, file, file_size):
+    async def safe_send(
+        self, ctx: commands.Context, text: Optional[str], file: discord.File, file_size: int
+    ):
         if not ctx.channel.permissions_for(ctx.me).send_messages:
             return
         if not ctx.channel.permissions_for(ctx.me).attach_files:
@@ -291,7 +292,7 @@ class NotSoBot(commands.Cog):
             log.error("Error downloading to bytes", exc_info=True)
             return False, False
 
-    def do_magik(self, scale, img):
+    def do_magik(self, scale: int, img: BytesIO):
         img.seek(0)
         try:
             list_imgs = []
@@ -299,8 +300,6 @@ class NotSoBot(commands.Cog):
             i = wand.image.Image(file=img)
             i.transform_colorspace("cmyk")
             i.format = "png"
-            if i.size >= (3000, 3000):
-                return ":warning: `Image exceeds maximum resolution >= (3000, 3000).`", 0
             count += 1
             i.transform(resize="800x800")
             i.liquid_rescale(
@@ -458,6 +457,86 @@ class NotSoBot(commands.Cog):
                 await msg.delete()
             except discord.errors.NotFound:
                 pass
+
+    @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
+    async def petimg(
+        self,
+        ctx: commands.Context,
+        urls: ImageFinder = None,
+    ) -> None:
+        """
+        Add petting to an image
+
+        - `[urls=None]` The thing you want to add petting to.
+        """
+
+        if urls is None:
+            urls = await ImageFinder().search_for_images(ctx)
+        url = urls[0]
+        async with ctx.channel.typing():
+            try:
+                b, mime = await self.bytes_download(url)
+                if b is False:
+                    await ctx.send("I could not download that image.")
+                    return
+                loop = asyncio.get_running_loop()
+                image = Image.open(b)
+                task = loop.run_in_executor(None, self.petpet_maker, image)
+            except Exception as e:
+                log.error(e)
+                await ctx.send("There was an issue getting the template file.")
+                return
+            try:
+                file, file_size = await asyncio.wait_for(task, timeout=120)
+            except asyncio.TimeoutError:
+                await ctx.send("Processing the image took too long.")
+                return
+            except Exception:
+                log.exception("Error generating pet image.")
+                await ctx.send("There was an error generating pet image.")
+                return
+        await self.safe_send(ctx, None, file, file_size)
+
+    def petpet_maker(self, base: Image.Image) -> Tuple[discord.File, int]:
+        images = []
+        resolution = (128, 128)
+
+        frames = 10
+        temp = BytesIO()
+        base = base.resize(resolution).convert("RGBA")
+        for i in range(frames):
+            squeeze = i if i < frames / 2 else frames - i
+            width = 0.8 + squeeze * 0.02
+            height = 0.8 - squeeze * 0.05
+            offsetX = (1 - width) * 0.5 + 0.1
+            offsetY = (1 - height) - 0.08
+
+            canvas = Image.new("RGBA", size=resolution, color=(0, 0, 0, 0))
+            canvas.paste(
+                base.resize((round(width * resolution[0]), round(height * resolution[1]))),
+                (round(offsetX * resolution[0]), round(offsetY * resolution[1])),
+            )
+            pet = (
+                Image.open(bundled_data_path(self).joinpath("petpet").joinpath(f"pet{i}.gif"))
+                .convert("RGBA")
+                .resize(resolution)
+            )
+            canvas.paste(pet, mask=pet)
+            images.append(canvas)
+        images[0].save(
+            temp,
+            format="GIF",
+            save_all=True,
+            append_images=images,
+            duration=20,
+            loop=0,
+            disposal=2,
+            optimize=True,
+        )
+        temp.seek(0)
+        file = discord.File(temp, filename="petimage.gif")
+        return file, temp.tell()
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
@@ -779,7 +858,9 @@ class NotSoBot(commands.Cog):
                 img_list.append(img)
                 count += 1
             temp = BytesIO()
-            img.save(temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0)
+            img.save(
+                temp, format="GIF", save_all=True, append_images=img_list, duration=20, loop=0
+            )
             file_size = temp.tell()
             temp.seek(0)
             filename = self.random_filename(True, "gif")
@@ -1393,7 +1474,7 @@ class NotSoBot(commands.Cog):
                         load[i, j + r] = bg
             img_list.append(img)
         final = BytesIO()
-        img.save(final, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0)
+        img.save(final, format="GIF", save_all=True, append_images=img_list, duration=20, loop=0)
         file_size = final.tell()
         final.seek(0)
         filename = self.random_filename(True, "gif")
