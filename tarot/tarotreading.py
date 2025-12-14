@@ -7,6 +7,7 @@ from typing import List, Optional, Union
 
 import discord
 from red_commons.logging import getLogger
+from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
 from redbot.core.utils.views import SimpleMenu
 
@@ -301,7 +302,7 @@ class TarotReading(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.0"
+    __version__ = "1.4.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -396,6 +397,34 @@ class TarotReading(commands.Cog):
     async def tarot_reading(
         self, ctx: commands.Context, user: Union[discord.Member, discord.User], cards: List[int]
     ):
+        view = discord.ui.LayoutView()
+        container = discord.ui.Container(accent_colour=get_colour())
+        container.add_item(discord.ui.TextDisplay("### Tarot reading for {}".format(user.mention)))
+        deck = await self.get_deck(ctx)
+        for meaning in TarotMeaning:
+            container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
+            try:
+                card_id = cards[meaning.value]
+                card = self.tarot_cards[str(card_id)]
+            except IndexError:
+                continue
+            card_img = discord.ui.Thumbnail(
+                self.tarot_cards[str(card_id)].get_card_img(deck),
+                description=f"{card.card_name} - {card.card_meaning}",
+            )
+            section = discord.ui.Section(
+                "### {meaning}: {name}".format(meaning=str(meaning), name=card.card_name),
+                f"__{card.arcana}__\n{card.card_meaning}",
+                accessory=card_img,
+            )
+            container.add_item(section)
+
+        view.add_item(container)
+        await ctx.send(view=view)
+
+    async def tarot_reading_old(
+        self, ctx: commands.Context, user: Union[discord.Member, discord.User], cards: List[int]
+    ):
         embed = discord.Embed(
             title="Tarot reading for {}".format(user.display_name),
             colour=get_colour(),
@@ -438,6 +467,9 @@ class TarotReading(commands.Cog):
         cards = []
         cards = random.sample((range(1, 78)), 5)
         random.setstate(state)
+        if version_info < VersionInfo.from_str("3.5.21"):
+            await self.tarot_reading_old(ctx, member, cards)
+            return
         await self.tarot_reading(ctx, member, cards)
 
     @tarot.command(name="reading")
@@ -451,6 +483,9 @@ class TarotReading(commands.Cog):
         member = user or ctx.message.author
         cards = []
         cards = random.sample((range(1, 78)), 5)
+        if version_info < VersionInfo.from_str("3.5.22"):
+            await self.tarot_reading_old(ctx, member, cards)
+            return
         await self.tarot_reading(ctx, member, cards)
 
     @tarot.command(name="card")
