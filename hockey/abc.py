@@ -743,14 +743,6 @@ class HockeyMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def clear_broken_channels(self, ctx: commands.Context) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def remove_broken_guild(self, ctx: commands.Context) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
     async def testloop(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 

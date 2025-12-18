@@ -290,16 +290,12 @@ class Hockey(
                 log.error("Error editing rules page in %r", after)
 
     def hockey_loop_error(self, future: asyncio.Future):
-        try:
-            if not future.done():
-                message = "Hockey encountered an error: `{exception}`\n{stack}".format(
-                    exception=future.exception(), stack=box(str(future.get_stack()))
-                )
-                log.exception(message)
-                asyncio.create_task(self.hockey_send_error_task(message))
-        except asyncio.CancelledError:
-            # we ignore cancelled errors
-            pass
+        if not future.cancelled() and future.exception():
+            message = "Hockey encountered an error: `{exception}`\n{stack}".format(
+                exception=future.exception(), stack=box(str(future.get_stack()))
+            )
+            log.exception(message)
+            asyncio.create_task(self.hockey_send_error_task(message))
 
     async def hockey_send_error_task(self, message: str):
         guild = None
@@ -462,6 +458,7 @@ class Hockey(
                 # the first preview message to delete old ones
                 await self.check_new_day()
             if self.TEST_LOOP:
+
                 self.current_games = {
                     2020020474: {
                         "count": 0,

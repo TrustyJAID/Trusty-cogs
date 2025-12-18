@@ -223,6 +223,28 @@ class HockeyDev(HockeyMixin):
         await self.pickems_config.unavailable_msg.set(msg)
         await ctx.send(_("Pickems Unavailable message set to:\n{msg}").format(msg=msg))
 
+    @commands.Cog.listener()
+    async def on_patreon_add_guild(self, guild_id: int):
+        """
+        A guild ID was added to patreon features
+        """
+        log.info("Adding Pickems to guild ID %s", guild_id)
+        async with self.pickems_config.allowed_guilds() as allowed:
+            if guild_id not in allowed:
+                allowed.append(guild_id)
+
+    @commands.Cog.listener()
+    async def on_patreon_removed_guild(self, guild_id: int):
+        """
+        A guild ID was removed from patreon features
+        """
+        log.info("Removing guild ID %s from pickems features", guild_id)
+        async with self.pickems_config.allowed_guilds() as allowed:
+            if guild_id in allowed:
+                allowed.remove(guild_id)
+        await self.pickems_config.guild_from_id(guild_id).pickems_channel.clear()
+        await self.pickems_config.guild_from_id(guild_id).pickems_category.clear()
+
     @pickems_dev_commands.command(name="addguild")
     async def pickems_add_guild(self, ctx: commands.Context, guild_id: int):
         """
@@ -688,39 +710,6 @@ class HockeyDev(HockeyMixin):
                 good_channels.append(channel.id)
         await self.config.guild(guild).gdc.set(good_channels)
         await ctx.tick()
-
-    @hockeydev.command(name="clearbrokenchannels", with_app_command=False)
-    async def clear_broken_channels(self, ctx: commands.Context) -> None:
-        """
-        Removes missing channels from the config
-        """
-        async with ctx.typing():
-            all_channels = await self.config.all_channels()
-            for channel_id, data in all_channels.items():
-                chan_or_thread = get_channel_obj(self.bot, channel_id, data)
-                if chan_or_thread is None:
-                    log.info("Removed the following channel %s", channel_id)
-                    await self.config.channel_from_id(channel_id).clear()
-                # if await self.config.channel(channel).to_delete():
-                # await self.config._clear_scope(Config.CHANNEL, str(channels))
-        await ctx.send(_("Broken channels removed"))
-
-    @hockeydev.command(with_app_command=False)
-    async def remove_broken_guild(self, ctx: commands.Context) -> None:
-        """
-        Removes a server that no longer exists on the bot
-        """
-        # all_guilds = await self.config.all_guilds()
-        async with ctx.typing():
-            for guild_id in await self.config.all_guilds():
-                guild = self.bot.get_guild(guild_id)
-                if guild is None:
-                    await self.config.guild_from_id(int(guild_id)).clear()
-                else:
-                    if not await self.config.guild(guild).create_channels():
-                        await self.config.guild(guild).gdc.clear()
-
-        await ctx.send(_("Saved servers the bot is no longer on have been removed."))
 
     @hockeydev.command(hidden=True, with_app_command=False)
     async def testloop(self, ctx: commands.Context) -> None:
