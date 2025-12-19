@@ -163,6 +163,20 @@ class Events:
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         guild = member.guild
+        if await self.config.guild(guild).PENDING() and member.pending:
+            log.debug("Ignoring member join %r to wait for pending", member)
+            return
+        await self.check_member_join(member)
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        guild = after.guild
+        if await self.config.guild(guild).PENDING():
+            if before.pending != after.pending:
+                await self.check_member_join(after)
+
+    async def check_member_join(self, member: discord.Member):
+        guild = member.guild
         if not await self.config.guild(guild).ON():
             return
         if guild is None:
