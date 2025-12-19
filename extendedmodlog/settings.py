@@ -162,5 +162,7 @@ inv_settings = {
         "embed": True,
     },
     "ignored_channels": [],
+    "ignored_users": [],
+    "ignored_mods": [],
     "invite_links": {},
 }
