@@ -565,7 +565,7 @@ class EventMixin:
                             f"{e.title}\n{e.description}" for e in ss.embeds
                         )[:4096]
                     embed.add_field(name=_("Forwarded Message"), value="True")
-                elif len(message.message_shapshots) > 1:
+                elif len(message.message_snapshots) > 1:
                     logger.warning(
                         "Discord has allowed more than 1 message snapshot and this needs to be updated. Please let TrustyJAID know."
                     )
