@@ -2073,6 +2073,8 @@ class EventMixin:
                     before_roles = list(b - a)
                     after_roles = list(a - b)
                     logger.debug("on_member_update after_roles: %s", after_roles)
+                    perps = set()
+                    reasons = set()
                     if before_roles:
                         for role in before_roles:
                             entry = await self.get_audit_log_entry(
@@ -2090,11 +2092,9 @@ class EventMixin:
                                 "{author} had the {role} role removed.\n"
                             ).format(author=after.mention, role=role.mention)
                             if perp:
-                                msg += _("Updated by ") + f"{perp}\n"
-                                embed.add_field(name=_("Updated by "), value=perp.mention)
+                                perps.add(perp.mention)
                             if reason:
-                                msg += _("Reason: ") + f"{reason}\n"
-                                embed.add_field(name=_("Reason"), value=reason, inline=False)
+                                reasons.add(reason)
                             worth_sending = True
 
                     if after_roles:
@@ -2114,12 +2114,19 @@ class EventMixin:
                                 "{author} had the {role} role applied.\n"
                             ).format(author=after.mention, role=role.mention)
                             if perp:
-                                msg += _("Updated by ") + f"{perp}\n"
-                                embed.add_field(name=_("Updated by "), value=perp.mention)
+                                perps.add(perp.mention)
                             if reason:
-                                msg += _("Reason: ") + f"{reason}\n"
-                                embed.add_field(name=_("Reason"), value=reason, inline=False)
+                                reasons.add(reason)
                             worth_sending = True
+                    if perps:
+                        msg += _("Updated by ") + humanize_list(list(perps)) + "."
+                        embed.add_field(
+                            name=_("Updated by "), value="\n".join(f"- {p}" for p in perps)
+                        )
+                    if reasons:
+                        reason_str = "\n".join(f"- {r}" for r in reasons)
+                        msg += _("Reason: ") + reason_str
+                        embed.add_field(name=_("Reason: "), value=reason_str)
                 elif attr == "flags":
                     changed_flags = [
                         key.replace("_", " ").title()
