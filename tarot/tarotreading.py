@@ -483,7 +483,7 @@ class TarotReading(commands.Cog):
         member = user or ctx.message.author
         cards = []
         cards = random.sample((range(1, 78)), 5)
-        if version_info < VersionInfo.from_str("3.5.22"):
+        if version_info < VersionInfo.from_str("3.5.21"):
             await self.tarot_reading_old(ctx, member, cards)
             return
         await self.tarot_reading(ctx, member, cards)
