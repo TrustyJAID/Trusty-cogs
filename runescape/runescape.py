@@ -5,6 +5,7 @@ import aiohttp
 import discord
 from discord.ext import tasks
 from red_commons.logging import getLogger
+from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box
@@ -20,7 +21,7 @@ from .profile import (
     Profile,
 )
 from .tms import TMSTransformer, TravellingMerchant
-from .viswax import RuneGoldberg
+from .viswax import RuneGoldberg, RuneTransformer
 from .wikiapi import GameEnum, WikiAPI, WikiAPIError
 from .wilderness import WildernessFlashEvents
 
@@ -33,7 +34,7 @@ class Runescape(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.5.2"
+    __version__ = "1.5.3"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -166,19 +167,29 @@ class Runescape(commands.Cog):
         await ctx.maybe_send_embed(msg)
 
     @runescape.command(name="vis", aliases=["viswax"])
-    async def runescape_viswax(self, ctx: commands.Context):
+    async def runescape_viswax(
+        self, ctx: commands.Context, known: Optional[RuneTransformer] = None
+    ):
         """
         Get the current combinations for vis wax
 
         https://runescape.wiki/w/Rune_Goldberg_Machine
+
+        - `[known]` If you have the Runescrafting skill cape and know your third slot rune
+        you can provide it here to include on the display.
         """
         await ctx.typing()
-        rgb = RuneGoldberg()
-        if await ctx.embed_requested():
-            em = rgb.embed()
-            await ctx.send(embed=em)
-        else:
-            await ctx.send(str(rgb))
+        rgb = RuneGoldberg(known_rune=known)
+        if version_info < VersionInfo.from_str("3.5.21"):
+            if await ctx.embed_requested():
+                em = rgb.embed()
+                await ctx.send(embed=em)
+            else:
+                await ctx.send(str(rgb))
+            return
+
+        view = rgb.layout()
+        await ctx.send(view=view)
 
     @runescape.command(name="tms", aliases=["merchant"])
     async def runescape_merchant(self, ctx: commands.Context, item: Optional[TMSTransformer]):
@@ -191,25 +202,46 @@ class Runescape(commands.Cog):
         await ctx.typing()
         if item is None:
             tms = TravellingMerchant()
-            if await ctx.embed_requested():
-                embeds = tms.embeds()
-                await ctx.send(embeds=embeds)
-            else:
-                await ctx.send(str(tms))
+            if version_info < VersionInfo.from_str("3.5.21"):
+                if await ctx.embed_requested():
+                    embeds = tms.embeds()
+                    await ctx.send(embeds=embeds)
+                else:
+                    await ctx.send(str(tms))
+                return
+
+            view = tms.layout()
+            await ctx.send(view=view)
         else:
             tms = await TravellingMerchant.find_next(item, 5)
-            msg = f"Next 5 {item} at the Travelling Merchant's Shop\n"
-            msg += "\n".join(i.list_items() for i in tms)
-            if await ctx.embed_requested():
-                em = discord.Embed(
-                    title="Travelling Merchant's Shop",
-                    description=msg,
-                    url="https://runescape.wiki/w/Travelling_Merchant's_Shop",
-                )
-                em.set_thumbnail(url=item.image_url)
-                await ctx.send(embed=em)
-            else:
-                await ctx.send(msg)
+            if version_info < VersionInfo.from_str("3.5.21"):
+                msg = f"Next 5 {item} at the Travelling Merchant's Shop\n"
+                msg += "\n".join(i.list_items() for i in tms)
+                if await ctx.embed_requested():
+                    em = discord.Embed(
+                        title="Travelling Merchant's Shop",
+                        description=msg,
+                        url="https://runescape.wiki/w/Travelling_Merchant's_Shop",
+                    )
+                    em.set_thumbnail(url=item.image_url)
+                    await ctx.send(embed=em)
+                else:
+                    await ctx.send(msg)
+                return
+
+            view = discord.ui.LayoutView()
+            container = discord.ui.Container(accent_colour=discord.ui.Colour.blurple())
+            text = discord.ui.TextDisplay(
+                f"Next 5 [{item}]{item.url} at the Travelling Merchant's Shop\n"
+            )
+            thumbnail = discord.ui.Thumbnail(item.image_url)
+            container.add_item(discord.ui.Section(text, accessory=thumbnail))
+            container.add_item(discord.ui.Separator())
+            for item in tms:
+                container.add_item(discord.ui.TextDisplay(item.list_items()))
+                container.add_item(discord.ui.Separator())
+            view.add_item(container)
+            await ctx.send(view=view)
 
     @runescape.command(name="nemiforest", aliases=["nemi", "forest"])
     async def runescape_nemiforest(self, ctx: commands.Context):

@@ -5,11 +5,14 @@ from enum import Enum
 from typing import Dict, List, Literal, Optional, Tuple
 
 import discord
+from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import humanize_number
 
 from .helpers import get_runedate, name_to_image, runedate_to_datetime
 from .rsrandom import JavaRandom
+
+log = getLogger("red.trusty-cogs.runescape")
 
 
 class TMSTransformer(discord.app_commands.Transformer):
@@ -265,8 +268,8 @@ class TravellingMerchant:
         timestamp = discord.utils.format_dt(runedate_to_datetime(self.runedate), "D")
         # items = humanize_list([str(self.always), str(self.a), str(self.b), str(self.c)])
         _items = [self.always, self.a, self.b, self.c]
-        items = "\n".join(f" - {i}" for i in _items)
-        return f"- {timestamp}\n{items}"
+        items = "\n".join(f" - [{i}]({i.url})" for i in _items)
+        return f"## {timestamp}\n{items}"
 
     def get(self, slot: Literal["A", "B", "C"], *, runedate: Optional[float] = None) -> TMSItems:
         if runedate is not None:
@@ -291,6 +294,32 @@ class TravellingMerchant:
             ems.append(embed)
         return ems
 
+    def layout(self) -> discord.ui.LayoutView:
+        layout = discord.ui.LayoutView()
+        container = discord.ui.Container(accent_colour=discord.Colour.blurple())
+        today = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+        daily = today + timedelta(hours=((0 - today.hour) % 24))
+        timestamp = discord.utils.format_dt(daily, "R")
+        container.add_item(
+            discord.ui.TextDisplay(
+                f"# [Travelling Merchant's Shop](https://runescape.wiki/w/Travelling_Merchant's_Shop)\nResets {timestamp}\n"
+            )
+        )
+        container.add_item(discord.ui.Separator())
+        for slot in ["always", "a", "b", "c"]:
+            item = getattr(self, slot, None)
+            if item is None:
+                continue
+            text = discord.ui.TextDisplay(
+                f"## [{item}]({item.url})\n - {item.use}\n - Cost: {humanize_number(item.cost)}"
+                f"\n - Quantity: {item.quantity_str}\n"
+            )
+            section = discord.ui.Section(text, accessory=discord.ui.Thumbnail(item.image_url))
+            container.add_item(section)
+            container.add_item(discord.ui.Separator())
+        layout.add_item(container)
+        return layout
+
     @classmethod
     async def find_next(cls, item: TMSItems, number: int) -> List[TravellingMerchant]:
         ret = []
@@ -298,12 +327,13 @@ class TravellingMerchant:
         day = 0
         max_days = 1000
         while len(ret) < number:
-            tms = TravellingMerchant(runedate=start_date + day)
+            runedate = start_date + day
+            tms = TravellingMerchant(runedate=runedate)
             day += 1
             if item is tms.a or item is tms.b or item is tms.c or item is tms.always:
                 ret.append(tms)
             # we shouldn't ever go this long but just in case
             # this is a good practice
-            if max_days >= 1000:
+            if day >= max_days:
                 break
         return ret
