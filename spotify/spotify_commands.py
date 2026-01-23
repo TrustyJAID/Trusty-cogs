@@ -497,11 +497,11 @@ class SpotifyCommands(SpotifyMixin):
                 "client_secret <your_client_secret_here>`\n"
                 "You may also provide `redirect_uri` in this command with "
                 "a different redirect you would like to use but this is optional. "
-                "the default redirect_uri is https://localhost/\n\n"
+                "the default redirect_uri is `https://127.0.0.1:2560`\n\n"
                 "Note: The redirect URI Must be set in the Spotify Dashboard and must "
-                "match either `https://localhost/` or the one you set with the `[p]set api` command"
+                "match either `https://127.0.0.1:2560` or the one you set with the `[p]set api` command"
             ).format(prefix=ctx.prefix)
-            keys = {"client_id": "", "client_secret": "", "redirect_uri": "https://localhost/"}
+            keys = {"client_id": "", "client_secret": "", "redirect_uri": "https://127.0.0.1:2560"}
             view = SetApiView("spotify", keys)
             if await ctx.embed_requested():
                 em = discord.Embed(description=message)

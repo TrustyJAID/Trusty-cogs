@@ -155,7 +155,7 @@ class Spotify(
             self._tokens = (
                 tokens.get("client_id"),
                 tokens.get("client_secret"),
-                tokens.get("redirect_uri", "https://localhost/"),
+                tokens.get("redirect_uri", "https://127.0.0.1:2560"),
             )
             self._credentials = tekore.Credentials(*self._tokens, sender=self._sender)
             self._app_token = tekore.request_client_token(*self._tokens[:2])
