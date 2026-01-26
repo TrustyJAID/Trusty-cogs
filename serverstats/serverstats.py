@@ -20,6 +20,7 @@ from redbot.core.utils.chat_formatting import (
     humanize_list,
     humanize_number,
     humanize_timedelta,
+    inline,
     pagify,
 )
 
@@ -45,7 +46,7 @@ class ServerStats(commands.GroupCog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.8.0"
+    __version__ = "1.8.1"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -185,16 +186,25 @@ class ServerStats(commands.GroupCog):
 
         online_stats = {
             _("Humans: "): lambda x: not x.bot,
-            _(" • Bots: "): lambda x: x.bot,
+            _("Bots: "): lambda x: x.bot,
             "\N{LARGE GREEN CIRCLE}": lambda x: x.status is discord.Status.online,
             "\N{LARGE ORANGE CIRCLE}": lambda x: x.status is discord.Status.idle,
             "\N{LARGE RED CIRCLE}": lambda x: x.status is discord.Status.do_not_disturb,
             "\N{MEDIUM WHITE CIRCLE}": lambda x: x.status is discord.Status.offline,
             "\N{LARGE PURPLE CIRCLE}": lambda x: (
-                x.activity is not None and x.activity.type is discord.ActivityType.streaming
+                any(a.type is discord.ActivityType.streaming for a in x.activities)
+            ),
+            "\N{HEADPHONE}": lambda x: any(
+                a.type is discord.ActivityType.listening for a in x.activities
+            ),
+            "\N{VIDEO GAME}": lambda x: any(
+                a.type is discord.ActivityType.playing for a in x.activities
+            ),
+            "\N{TELEVISION}": lambda x: any(
+                a.type is discord.ActivityType.watching for a in x.activities
             ),
         }
-        member_msg = _("Total Users: {}\n").format(bold(total_users))
+        member_msg = _("Total Users: {total}\n").format(total=bold(total_users))
         count = 1
         for emoji, value in online_stats.items():
             try:
@@ -203,9 +213,8 @@ class ServerStats(commands.GroupCog):
                 log.error("Error determining number of users")
                 continue
             else:
-                member_msg += f"{emoji} {bold(humanize_number(num))} " + (
-                    "\n" if count % 2 == 0 else ""
-                )
+                if num > 0:
+                    member_msg += f"- {emoji} {bold(humanize_number(num))}\n"
             count += 1
 
         text_channels = len(guild.text_channels)
@@ -221,20 +230,38 @@ class ServerStats(commands.GroupCog):
         }
 
         features = {
+            "ANIMATED_BANNER": _("Animated Banner"),
             "ANIMATED_ICON": _("Animated Icon"),
+            "AUTO_MODERATION": _("Auto Moderation"),
             "BANNER": _("Banner Image"),
             "COMMERCE": _("Commerce"),
             "COMMUNITY": _("Community"),
+            "CREATOR_MONETIZATION_PROVISIONAL": _("Monetization enabled"),
+            "CREATOR_STORE_PAGE": _("Store Page"),
+            "DEVELOPER_SUPPORT_SERVER": _("Developer Support Server"),
             "DISCOVERABLE": _("Server Discovery"),
+            "ENHANCED_ROLE_COLORS": _("Enhanced Role Colors"),
             "FEATURABLE": _("Featurable"),
+            "GUESTS_ENABLED": _("Guest Invites enabled"),
+            "GUILD_TAGS": _("Guild Tags"),
             "INVITE_SPLASH": _("Splash Invite"),
-            "MEMBER_LIST_DISABLED": _("Member list disabled"),
+            # "MEMBER_LIST_DISABLED": _("Member list disabled"),
+            # Not listed in discord docs
             "MEMBER_VERIFICATION_GATE_ENABLED": _("Membership Screening enabled"),
-            "MORE_EMOJI": _("More Emojis"),
+            # "MORE_EMOJI": _("More Emojis"),
+            # Not listed in discord docs
+            "MORE_SOUNDBOARD": _("More Soundboard sounds"),
+            "MORE_STICKERS": _("More Stickers"),
             "NEWS": _("News Channels"),
             "PARTNERED": _("Partnered"),
             "PREVIEW_ENABLED": _("Preview enabled"),
-            "PUBLIC_DISABLED": _("Public disabled"),
+            # "PUBLIC_DISABLED": _("Public disabled"),
+            # Not listed in discord docs
+            "ROLE_ICONS": _("Role Icons"),
+            "ROLE_SUBSCRIPTIONS_AVAILABLE_FOR_PURCHASE": _("Purchasable Roles"),
+            "ROLE_SUBSCRIPTIONS_ENABLED": _("Role Subscriptions"),
+            "SOUNDBOARD": _("Soundboard"),
+            "TICKETED_EVENTS_ENABLED": _("Ticketed Events"),
             "VANITY_URL": _("Vanity URL"),
             "VERIFIED": _("Verified"),
             "VIP_REGIONS": _("VIP Voice Servers"),
@@ -272,9 +299,10 @@ class ServerStats(commands.GroupCog):
                 "Owner: {owner_mention}\n{owner}\nVerif. level: {verif}\nServer ID: {id}{shard}"
             ).format(
                 owner_mention=bold(str(owner.mention)),
-                owner=bold(str(owner)),
+                owner=f"{bold(owner.global_name or owner.display_name)} ({inline(owner.name)})",
+                # prefer server owner's global name over potential nickname in the server
                 verif=bold(verif[str(guild.verification_level)]),
-                id=bold(str(guild.id)),
+                id=box(guild.id),
                 shard=shard,
             ),
             inline=False,
@@ -283,16 +311,16 @@ class ServerStats(commands.GroupCog):
         em.add_field(
             name=_("Channels:"),
             value=_(
-                "\N{SPEECH BALLOON} Text: {text}\n{nsfw}"
-                "\N{NEWSPAPER} Forums: {forum}\n\N{SPOOL OF THREAD} Threads: {threads}\n"
-                "\N{SPEAKER WITH THREE SOUND WAVES} Voice: {voice}\n"
-                "\N{MICROPHONE} Stage: {stage}"
+                "- \N{SPEECH BALLOON} Text: {text}\n- {nsfw}"
+                "- \N{NEWSPAPER} Forums: {forum}- \n- \N{SPOOL OF THREAD} Threads: {threads}\n"
+                "- \N{SPEAKER WITH THREE SOUND WAVES} Voice: {voice}\n"
+                "- \N{MICROPHONE} Stage: {stage}"
             ).format(
                 text=bold(humanize_number(text_channels)),
                 forum=bold(humanize_number(len(guild.forums))),
                 threads=bold(humanize_number(len(guild.threads))),
-                nsfw=_("\N{NO ONE UNDER EIGHTEEN SYMBOL} Nsfw: {}\n").format(
-                    bold(humanize_number(nsfw_channels))
+                nsfw=_("\N{NO ONE UNDER EIGHTEEN SYMBOL} Nsfw: {nsfw_num}\n").format(
+                    nsfw_num=bold(humanize_number(nsfw_channels))
                 )
                 if nsfw_channels
                 else "",
@@ -303,10 +331,17 @@ class ServerStats(commands.GroupCog):
 
         em.add_field(
             name=_("Misc:"),
-            value=_("AFK channel: {afk_chan}\nAFK timeout: {afk_timeout}\nRoles: {roles}").format(
+            value=_(
+                "- AFK channel: {afk_chan}\n- AFK timeout: {afk_timeout}\n"
+                "- Scheduled Events: {events}\n- Soundboard Sounds: {soundboard}\n"
+                "- Roles: {roles}\n- Preferred Locale: {locale}\n"
+            ).format(
                 afk_chan=bold(str(guild.afk_channel)) if guild.afk_channel else bold(_("Not set")),
                 afk_timeout=bold(humanize_timedelta(seconds=guild.afk_timeout)),
+                events=bold(humanize_number(len(guild.scheduled_events))),
+                soundboard=bold(humanize_number(len(guild.soundboard_sounds))),
                 roles=bold(humanize_number(len(guild.roles))),
+                locale=inline(guild.preferred_locale),
             ),
         )
         nitro_boost = _(
@@ -325,7 +360,8 @@ class ServerStats(commands.GroupCog):
         )
         em.add_field(name=_("Nitro Boost:"), value=nitro_boost)
         if guild_features_list:
-            em.add_field(name=_("Server features:"), value="\n".join(guild_features_list))
+            feature_str = "\n".join(guild_features_list)
+            em.add_field(name=_("Server features:"), value=feature_str)
         if guild.vanity_url:
             # you can only have a vanity URL in expected public servers
             em.add_field(name=_("Vanity URL:"), value=guild.vanity_url, inline=False)
@@ -1059,15 +1095,33 @@ class ServerStats(commands.GroupCog):
         robot = "\N{ROBOT FACE}" if member.bot else ""
         if version_info >= VersionInfo.from_str("3.4.0"):
             public_flags = "\n".join(
-                bold(i.replace("_", " ").title()) for i, v in member.public_flags if v
+                ("- " + bold(i.replace("_", " ").title())) for i, v in member.public_flags if v
             )
+        primary_guild = getattr(member, "primary_guild", None)
+        primary_guild_str = ""
+        if primary_guild is not None:
+            url = "https://discord.com/channels/{guild_id}"
+            primary_guild_str = f"TAG: {primary_guild.tag}"
+            # d.py will always return a PrimaryGuild object if the version supports them
+            # This will show regardless of the user's current primary guild state
+            # even if it's not vidible in the client due to the server losing the perk
+            # if they don't have one set this will show TAG: None
+            if primary_guild.id is not None:
+                url_str = url.format(guild_id=primary_guild.id)
+                primary_guild_str = f"TAG: [{primary_guild.tag}]({url_str})"
         created_on = (
+            "## {display_name} (`{discord_name}`)\n{primary_guild}\n"
             "Joined Discord on {user_created} ({since_created})\n"
             "{public_flags}\nUser ID:\n{user_id}"
         ).format(
+            display_name=member.global_name or member.display_name,
+            # prefer user's global name over potential member nickname
+            # we will be showing nicknames later
+            discord_name=member.name,
             user_created=user_created,
             since_created=since_created,
             public_flags=public_flags,
+            primary_guild=primary_guild_str,
             user_id=box(str(member.id)),
         )
         embed.description = created_on
@@ -1134,22 +1188,20 @@ class ServerStats(commands.GroupCog):
                         is_owner = "\N{CROWN}"
                     if m.nick:
                         nick = f"`{m.nick}` in"
-                    msg += f"{is_owner}{nick} __[{m.guild.name}]({guild_url})__ {guild_join}\n\n"
-                    embed_msg += (
-                        f"{is_owner}{nick} __[{m.guild.name}]({guild_url})__ {guild_join}\n\n"
-                    )
+                    msg += f"- {is_owner}{nick} [{m.guild.name}]({guild_url}) {guild_join}\n"
+                    embed_msg += f"- {is_owner}{nick} [{m.guild.name}]({guild_url}) {guild_join}\n"
                 if ctx.channel.permissions_for(ctx.me).embed_links:
-                    for number, em in enumerate(
-                        pagify(embed_msg, ["\n"], page_length=1024), start=1
-                    ):
+                    for em in pagify(embed_msg, ["\n"], page_length=1024):
                         embed = base_embed.copy()
                         embed.add_field(name=_("Shared Servers"), value=em)
-                        embed.set_footer(
+                        embed_list.append(embed)
+
+                    for number, em in enumerate(embed_list, start=1):
+                        em.set_footer(
                             text=_("Page {number}/{total}").format(
                                 number=number, total=len(embed_list)
                             )
                         )
-                        embed_list.append(embed)
                 else:
                     for page in pagify(msg, ["\n"]):
                         embed_list.append(page)
