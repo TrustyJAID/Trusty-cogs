@@ -10,6 +10,7 @@ from red_commons.logging import getLogger
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 from tabulate import tabulate
+from yarl import URL
 
 from .constants import HEADSHOT_URL, TEAMS
 from .helper import Team
@@ -168,9 +169,9 @@ class SearchPlayer(NamedTuple):
         return int(self.playerId)
 
     @property
-    def url(self):
+    def url(self) -> URL:
         name = self.name.replace(" ", "-").lower()
-        return f"https://www.nhl.com/player/{name}-{self.id}"
+        return URL("https://www.nhl.com/player/").join(URL(f"{name}-{self.id}"))
 
     @classmethod
     def from_json(cls, data: dict) -> SearchPlayer:
@@ -473,8 +474,8 @@ class PlayerStats:
         return f"{self.first_name} {self.last_name}"
 
     @property
-    def full_name_url(self) -> str:
-        return self.full_name.replace(" ", "-")
+    def full_name_url(self) -> URL:
+        return URL(self.full_name.replace(" ", "-"))
 
     @property
     def sweater_number(self) -> Optional[int]:
@@ -513,32 +514,39 @@ class PlayerStats:
         return self.shootsCatches
 
     @property
-    def ep_url(self) -> str:
-        return f"https://www.eliteprospects.com/player/{self.id}/{self.full_name_url}"
+    def ep_url(self) -> URL:
+        return URL("https://www.eliteprospects.com/player/").join(
+            URL(f"{self.id}/{self.full_name_url}")
+        )
 
     @property
-    def cap_friendly_url(self) -> str:
-        return f"https://www.capfriendly.com/players/{self.full_name_url}"
+    def cap_friendly_url(self) -> URL:
+        return URL("https://www.capfriendly.com/players/").join(self.full_name_url)
 
     @property
-    def puckpedia_url(self) -> str:
-        return f"https://puckpedia.com/player/{self.full_name_url.lower()}"
+    def puckpedia_url(self) -> URL:
+        return URL("https://puckpedia.com/player/").join(self.full_name_url)
 
     @property
-    def the_stanley_cap_url(self) -> str:
-        return f"https://thestanleycap.com/players/{self.full_name_url.lower()}-{self.id}"
+    def the_stanley_cap_url(self) -> URL:
+        return URL("https://thestanleycap.com/players/").joinpath(
+            f"{self.full_name_url}-{self.id}"
+        )
 
     @property
-    def capwages_url(self) -> str:
-        return f"https://capwages.com/players/{self.full_name_url.lower()}"
+    def capwages_url(self) -> URL:
+        return URL("https://capwages.com/players/").joinpath(f"{self.full_name_url}".lower())
 
     @property
-    def url(self):
-        return f"https://www.nhl.com/player/{self.full_name_url.lower()}-{self.id}"
+    def url(self) -> URL:
+        return URL("https://www.nhl.com/player/").joinpath(f"{self.full_name_url}-{self.id}")
 
     @property
-    def hockey_reference_url(self) -> str:
-        return f"https://www.hockey-reference.com/search/search.fcgi?hint=&search={self.full_name_url.lower()}"
+    def hockey_reference_url(self) -> URL:
+        return URL("https://www.hockey-reference.com/search/search.fcgi").with_query(
+            search=str(self.full_name_url)
+        )
+        # "?hint=&search={self.full_name_url}"
 
     def __str__(self) -> str:
         return f"{self.full_name}, born {self.birth_date}"
@@ -607,12 +615,12 @@ class PlayerStats:
                 else:
                     msg += name + f"{getattr(self, attr, '')}\n"
         links = [
-            _("[NHL]({ep_url})").format(ep_url=self.url),
+            _("[NHL]({ep_url})").format(ep_url=str(self.url)),
             # _("[Cap Friendly]({cf_url})").format(cf_url=self.cap_friendly_url),
-            _("[Puckpedia]({cf_url})").format(cf_url=self.puckpedia_url),
-            _("[The Stanley Cap]({cf_url})").format(cf_url=self.the_stanley_cap_url),
-            _("[Capwages]({cf_url})").format(cf_url=self.capwages_url),
-            _("[Hockey Reference]({cf_url})").format(cf_url=self.hockey_reference_url),
+            _("[Puckpedia]({cf_url})").format(cf_url=str(self.puckpedia_url)),
+            _("[The Stanley Cap]({cf_url})").format(cf_url=str(self.the_stanley_cap_url)),
+            _("[Capwages]({cf_url})").format(cf_url=str(self.capwages_url)),
+            _("[Hockey Reference]({cf_url})").format(cf_url=str(self.hockey_reference_url)),
         ]
         if getattr(self, "dda_id", None):
             links.append(

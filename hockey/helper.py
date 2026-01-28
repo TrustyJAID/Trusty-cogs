@@ -435,10 +435,21 @@ class PlayerFinder(discord.app_commands.Transformer):
         self, interaction: discord.Interaction, current: str
     ) -> List[discord.app_commands.Choice]:
         cog = interaction.client.get_cog("Hockey")
-        players = await cog.api.search_player(current)
+        if not current:
+            current = "a"
+            # It's a bit weird having autocomplete with zero results
+            # So we will default to the first letter of the alphabet to provide something
+            # since the API will always require the query containing something
+        players = await cog.api.search_player(current, limit=100)
+        # Get the top 100 results since we are filtering down based on input
+        # The default search misses some potentially important players without expanding
+        # the input so we should expand our request depth
         ret = []
         for player in players:
-            ret.append(discord.app_commands.Choice(name=player.name, value=player.name))
+            if current.lower() in player.name.lower():
+                ret.insert(0, discord.app_commands.Choice(name=player.name, value=player.name))
+            else:
+                ret.append(discord.app_commands.Choice(name=player.name, value=player.name))
         return ret[:25]
 
 

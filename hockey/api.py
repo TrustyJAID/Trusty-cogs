@@ -37,9 +37,21 @@ ORDINALS = {
     4: _("4th"),
     5: _("5th"),
 }
-
-FRANCHISES_URL = URL(
-    "https://records.nhl.com/site/api/franchise?include=teams.id&include=teams.active&include=teams.triCode&include=teams.placeName&include=teams.commonName&include=teams.fullName&include=teams.logos&include=teams.conference.name&include=teams.division.name&include=teams.franchiseTeam.firstSeason.id&include=teams.franchiseTeam.lastSeason.id&include=teams.franchiseTeam.teamCommonName"
+FRANCHISES_URL = URL("https://records.nhl.com/site/api/franchise").with_query(
+    include=[
+        "teams.id",
+        "teams.active",
+        "teams.triCode",
+        "teams.placeName",
+        "teams.commonName",
+        "teams.fullName",
+        "teams.logos",
+        "teams.conference.name",
+        "teams.division.name",
+        "teams.franchiseTeam.firstSeason.id",
+        "teams.franchiseTeam.lastSeason.id",
+        "teams.franchiseTeam.teamCommonName",
+    ]
 )
 
 
@@ -257,8 +269,10 @@ class Player:
         return self.lastName.get("default", _("Unknown"))
 
     @property
-    def url(self):
-        return f"https://www.nhl.com/player/{self.first_name.lower()}-{self.last_name.lower()}-{self.id}"
+    def url(self) -> URL:
+        first_name = self.first_name.replace(" ", "-").lower()
+        last_name = self.last_name.replace(" ", "-").lower()
+        return URL("https://www.nhl.com/player/").join(URL(f"{first_name}-{last_name}-{self.id}"))
 
     @property
     def name(self) -> str:
