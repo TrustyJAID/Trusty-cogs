@@ -420,13 +420,15 @@ class PlayerPages(menus.ListPageSource):
     def is_paginating(self) -> bool:
         return len(self.pages) > 1
 
-    async def format_page(self, view: BaseMenu, player: SearchPlayer) -> discord.Embed:
+    async def format_page(
+        self, view: BaseMenu, player: SearchPlayer
+    ) -> Dict[str, Union[discord.Embed, List[discord.File]]]:
         # player = await Player.from_id(page, session=view.cog.session)
         log.trace("PlayerPages player: %s", player)
         player_stats = await view.cog.api.get_player(player.id)
-        em = player_stats.get_embed(self.season, self.include_headshot)
-        em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
-        return em
+        ret = player_stats.get_embed(self.season, self.include_headshot)
+        ret["embed"].set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
+        return ret
 
 
 class SimplePages(menus.ListPageSource):
@@ -518,6 +520,8 @@ class BaseMenu(discord.ui.View):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
+        if "files" in kwargs:
+            kwargs["attachments"] = kwargs.pop("files")
         await self.update_select_view(page_number)
         if interaction.response.is_done():
             await interaction.followup.edit(**kwargs, view=self)

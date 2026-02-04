@@ -677,6 +677,9 @@ class Schedule:
         self.days: List[List[ScheduledGame]] = days
         self.url: URL = url
 
+    def __repr__(self):
+        return f"<Schedule days={len(self.days)} games={len(self.games)}>"
+
     @classmethod
     def from_statsapi(cls, data: dict) -> Schedule:
         raise NotImplementedError

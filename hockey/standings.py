@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Union
 
 import aiohttp
 import discord
@@ -36,6 +36,12 @@ if TYPE_CHECKING:
 _ = Translator("Hockey", __file__)
 
 log = getLogger("red.trusty-cogs.Hockey")
+
+
+class RankType(Enum):
+    division = "division"
+    conference = "conference"
+    league = "league"
 
 
 class StreakType(Enum):
@@ -665,7 +671,7 @@ class Standings:
         except Exception:
             log.exception(f"Error editing standings message in {repr(guild)}")
 
-    async def all_standing_embed(self, table: bool = True) -> discord.Embed:
+    async def all_standing_embed(self, table: bool = True) -> StandingsPage:
         """
         Builds the standing embed when all TEAMS are selected
         """
@@ -693,9 +699,9 @@ class Standings:
         em.add_field(name=_("Legend"), value=legend)
         em.timestamp = utc_to_local(latest_timestamp, "UTC")
         em.set_footer(text="Stats Last Updated", icon_url=nhl_icon)
-        return em
+        return StandingsPage(embed=em, files=[])
 
-    async def league_standing_embed(self, table: bool = True) -> discord.Embed:
+    async def league_standing_embed(self, table: bool = True) -> StandingsPage:
         em = discord.Embed()
         msg = ""
         nhl_icon = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
@@ -709,12 +715,12 @@ class Standings:
             url="https://www.nhl.com/standings",
             icon_url=nhl_icon,
         )
-        em.set_thumbnail(url=nhl_icon)
+        # em.set_thumbnail(url=nhl_icon)
         em.timestamp = utc_to_local(self.last_timestamp(), "UTC")
         em.set_footer(text="Stats Last Updated", icon_url=nhl_icon)
-        return em
+        return StandingsPage(embed=em, files=[])
 
-    async def make_division_standings_embeds(self) -> List[discord.Embed]:
+    async def make_division_standings_embeds(self) -> List[StandingsPage]:
         ret = []
         for division in Divisions:
             ret.append(await self.make_division_standings_embed(division))
@@ -723,7 +729,7 @@ class Standings:
     def make_table(
         self,
         records: Dict[str, TeamRecord],
-        rank_type: Literal["division", "conference", "league"],
+        rank_type: RankType,
     ) -> str:
         headers = ("Rank", "Team", "GP", "W", "L", "OT", "P")
         # "P%", "RW", "G/G", "GA/G", "PP%", "S/G", "SA/G", "FO%")
@@ -736,7 +742,7 @@ class Standings:
             if clinch is not None:
                 team_indicator = f"{tri_code} - {clinch.value}"
 
-            rank = getattr(record, f"{rank_type}_rank")
+            rank = getattr(record, f"{rank_type.value}_rank")
             post_data.append(
                 [
                     rank,
@@ -761,7 +767,7 @@ class Standings:
             if record.division.name != division.name:
                 continue
             records[name] = record
-        return self.make_table(records, "division")
+        return self.make_table(records, RankType.division)
 
     def get_conference_table(self, conference: Conferences) -> str:
         records = {}
@@ -769,13 +775,13 @@ class Standings:
             if record.conference.name != conference.name:
                 continue
             records[name] = record
-        return self.make_table(records, "division")
+        return self.make_table(records, RankType.conference)
 
     def get_all_table(self):
         records = {}
         for name, record in self.all_records.items():
             records[name] = record
-        return self.make_table(records, "division")
+        return self.make_table(records, RankType.league)
 
     def get_division_str(self, division: Divisions) -> str:
         msg = ""
@@ -809,7 +815,7 @@ class Standings:
 
     async def make_division_standings_embed(
         self, division: Divisions, table: bool = True
-    ) -> discord.Embed:
+    ) -> StandingsPage:
         em = discord.Embed()
         # timestamp = datetime.strptime(record[0].last_updated, "%Y-%m-%dT%H:%M:%SZ")
         em.timestamp = self.last_timestamp(division=division)
@@ -827,9 +833,9 @@ class Standings:
         )
         em.set_footer(text="Stats last Updated", icon_url=division_logo)
         em.set_thumbnail(url=division_logo)
-        return em
+        return StandingsPage(embed=em, files=[])
 
-    async def make_conference_standings_embeds(self) -> List[discord.Embed]:
+    async def make_conference_standings_embeds(self) -> List[StandingsPage]:
         ret = []
         for conference in Conferences:
             ret.append(await self.make_conference_standings_embed(conference))
@@ -837,7 +843,7 @@ class Standings:
 
     async def make_conference_standings_embed(
         self, conference: Conferences, table: bool = True
-    ) -> discord.Embed:
+    ) -> StandingsPage:
         em = discord.Embed()
         em.timestamp = utc_to_local(self.last_timestamp(conference=conference), "UTC")
         if table:
@@ -863,9 +869,9 @@ class Standings:
         )
         em.set_thumbnail(url=logo[conference.name])
         em.set_footer(text="Stats last Updated", icon_url=logo[conference.name])
-        return em
+        return StandingsPage(embed=em, files=[])
 
-    async def make_team_standings_embeds(self) -> List[discord.Embed]:
+    async def make_team_standings_embeds(self) -> List[StandingsPage]:
         ret = []
         for team, data in TEAMS.items():
             if not data["active"]:
@@ -873,7 +879,7 @@ class Standings:
             ret.append(await self.make_team_standings_embed(team))
         return ret
 
-    async def make_team_standings_embed(self, team: str) -> discord.Embed:
+    async def make_team_standings_embed(self, team: str) -> StandingsPage:
         record = self.all_records.get(team)
         if record is None:
             raise KeyError(f"{team} is not an available team.")
@@ -882,7 +888,7 @@ class Standings:
         em.set_author(
             name="# {} {}".format(record.league_rank, record.team.name),
             url="https://www.nhl.com/standings",
-            icon_url=TEAMS[record.team.name]["logo"],
+            icon_url=record.team.file_url,
         )
         headers = ("Stat", "Rank")
         conference_data = [
@@ -938,15 +944,27 @@ class Standings:
         )
         # timestamp = datetime.strptime(record.last_updated, "%Y-%m-%dT%H:%M:%SZ")
         em.timestamp = utc_to_local(record.last_updated, "UTC")
-        em.set_footer(text="Stats last Updated", icon_url=TEAMS[record.team.name]["logo"])
-        return em
+        em.set_footer(text="Stats last Updated", icon_url=record.team.file_url)
+        return StandingsPage(embed=em, files=[record.team.file])
+
+
+class StandingsPage:
+    def __init__(self, embed: discord.Embed, files: List[discord.File]):
+        self.embed = embed
+        self.files = files
+
+    def to_edit(self) -> Dict[str, Union[discord.Embed, List[discord.File]]]:
+        return {"embed": self.embed, "attachments": self.files}
+
+    def to_send(self) -> Dict[str, Union[discord.Embed, List[discord.File]]]:
+        return {"embed": self.embed, "files": self.files}
 
 
 class StandingsPages(menus.ListPageSource):
-    def __init__(self, pages: List[discord.Embed]):
+    def __init__(self, pages: List[StandingsPage]):
         super().__init__(pages, per_page=1)
 
-    async def format_page(self, view: discord.ui.View, page: discord.Embed) -> discord.Embed:
+    async def format_page(self, view: discord.ui.View, page: StandingsPage) -> StandingsPage:
         return page
 
 
@@ -954,7 +972,7 @@ class StandingsMenu(discord.ui.View):
     def __init__(self, standings: Standings, start: str):
         super().__init__()
         self.standings = standings
-        self.pages: List[discord.Embed] = []
+        self.pages: List[StandingsPages] = []
         self.context = "all"
         self.current_page = 0
         self.search = start
@@ -1027,9 +1045,14 @@ class StandingsMenu(discord.ui.View):
         self.author = ctx.message.author
         self.message = await self.send_initial_message(ctx)
 
-    async def _get_kwargs_from_page(self, page):
+    async def _get_kwargs_from_page(self, page, is_send: bool = False):
         value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
-        if isinstance(value, dict):
+        if isinstance(value, StandingsPage):
+            if is_send:
+                return value.to_send()
+            else:
+                return value.to_edit()
+        elif isinstance(value, dict):
             return value
         elif isinstance(value, str):
             return {"content": value, "embed": None}
@@ -1056,7 +1079,7 @@ class StandingsMenu(discord.ui.View):
                 if self.search.lower() in page.author.name.lower():
                     self.current_page = self.pages.index(page)
         page = await self.source.get_page(self.current_page)
-        kwargs = await self._get_kwargs_from_page(page)
+        kwargs = await self._get_kwargs_from_page(page, is_send=True)
         return await ctx.send(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:

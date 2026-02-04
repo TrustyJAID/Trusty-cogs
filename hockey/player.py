@@ -643,7 +643,7 @@ class PlayerStats:
 
     def get_embed(
         self, season: Optional[str] = None, include_headshot: Optional[bool] = True
-    ) -> discord.Embed:
+    ) -> Dict[str, Union[discord.Embed, List[discord.File]]]:
         team_data = self.get_team_data()
         em = discord.Embed()
         em.description = self.description()
@@ -687,8 +687,11 @@ class PlayerStats:
                 emoji=team_data.emoji, team_name=team_data.name, stats=box(stats_md, lang="ansi")
             )
             em.add_field(name=_("Stats"), value=stats_str)
-        em.set_author(name=f"{self.full_name} {number}", icon_url=team_data.logo, url=self.url)
-        return em
+        em.set_author(name=f"{self.full_name} {number}", icon_url=team_data.file_url, url=self.url)
+        ret: Dict[str, Union[discord.Embed, List[discord.File]]] = {"embed": em}
+        if team_data.file:
+            ret["files"] = [team_data.file]
+        return ret
 
 
 ################################################################################################
