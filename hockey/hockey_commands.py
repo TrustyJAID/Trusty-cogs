@@ -143,7 +143,7 @@ class HockeyCommands(HockeyMixin):
 
     @hockey_commands.command(aliases=["score"])
     @commands.bot_has_permissions(embed_links=True)
-    @discord.app_commands.describe(date="YYYY-MM-DD")
+    @discord.app_commands.describe(date="YYYY-MM-DD or @time")
     async def games(
         self,
         ctx: commands.Context,
@@ -180,7 +180,7 @@ class HockeyCommands(HockeyMixin):
 
     @hockey_commands.command(aliases=["pbp"])
     @commands.bot_has_permissions(embed_links=True)
-    @discord.app_commands.describe(date="YYYY-MM-DD")
+    @discord.app_commands.describe(date="YYYY-MM-DD or @time")
     async def playbyplay(
         self,
         ctx: commands.Context,
@@ -263,6 +263,7 @@ class HockeyCommands(HockeyMixin):
 
     @hockey_commands.command()
     @commands.bot_has_permissions(embed_links=True)
+    @discord.app_commands.describe(date="YYYY-MM-DD or @time")
     async def heatmap(
         self,
         ctx: commands.Context,
@@ -315,6 +316,7 @@ class HockeyCommands(HockeyMixin):
 
     @hockey_commands.command()
     @commands.bot_has_permissions(embed_links=True)
+    @discord.app_commands.describe(date="YYYY-MM-DD or @time")
     async def gameflow(
         self,
         ctx: commands.Context,
@@ -371,6 +373,7 @@ class HockeyCommands(HockeyMixin):
 
     @hockey_commands.command()
     @commands.bot_has_permissions(embed_links=True)
+    @discord.app_commands.describe(date="YYYY-MM-DD or @time")
     async def schedule(
         self,
         ctx: commands.Context,
@@ -407,6 +410,7 @@ class HockeyCommands(HockeyMixin):
 
     @hockey_commands.command()
     @commands.bot_has_permissions(embed_links=True)
+    @discord.app_commands.describe(date="YYYY-MM-DD or @time")
     async def recap(
         self,
         ctx: commands.Context,

@@ -63,6 +63,8 @@ YEAR_RE = re.compile(r"((19|20)\d\d)-?\/?((19|20)\d\d)?")
 
 TIMEZONE_RE = re.compile(r"|".join(re.escape(zone) for zone in pytz.common_timezones), flags=re.I)
 
+TIMESTAMP_RE = re.compile(r"<t:(-?\d+)(?::[tTdDfFsSR])?>")
+
 
 ACTIVE_TEAM_RE_STR = r""
 for team, data in TEAMS.items():
@@ -292,6 +294,9 @@ class DateFinder(discord.app_commands.Transformer):
             return datetime.now(timezone.utc)
         if argument.lower() == "tomorrow":
             return datetime.now(timezone.utc) + timedelta(days=1)
+        ts = TIMESTAMP_RE.match(argument)
+        if ts:
+            return datetime.fromtimestamp(int(ts.group(1)), tz=timezone.utc)
         find = DATE_RE.search(argument)
         if find:
             date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
