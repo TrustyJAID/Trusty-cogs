@@ -398,10 +398,10 @@ class ScheduleList(menus.PageSource):
                         + "\n   - "
                         + humanize_list([b.get("network", "Unknown") for b in game.broadcasts])
                     )
-            if home_team in TEAMS:
+            if home_team in TEAMS or str(game.home.emoji) != "":
                 home_emoji = game.home.emoji
             home_abr = game.home.tri_code or home_team
-            if away_team in TEAMS:
+            if away_team in TEAMS or str(game.away.emoji) != "":
                 away_emoji = game.away.emoji
             away_abr = game.away.tri_code or away_team
 
