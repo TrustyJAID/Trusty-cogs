@@ -77,6 +77,8 @@ ACTIVE_TEAM_RE = re.compile(ACTIVE_TEAM_RE_STR, flags=re.I)
 
 VERSUS_RE = re.compile(r"vs\.?|versus", flags=re.I)
 
+NHL_LOGO = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
+
 
 @dataclass
 class Team:
@@ -136,10 +138,8 @@ class Team:
             id=data.get("id", 0),
             name=team_name,
             emoji=team_emoji or discord.PartialEmoji.from_str(""),
-            logo=data.get(
-                "logo", "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
-            ),
-            home_colour=data.get("home", "#000000"),
+            logo=data.get("logo", NHL_LOGO),
+            home_colour=data.get("home", "#ffffff"),
             away_colour=data.get("away", "#ffffff"),
             division=data.get("division", _("unknown")),
             conference=data.get("conference", _("unknown")),
@@ -165,7 +165,7 @@ class Team:
                     logo=data.get(
                         "logo", "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
                     ),
-                    home_colour=data.get("home", "#000000"),
+                    home_colour=data.get("home", "#ffffff"),
                     away_colour=data.get("away", "#ffffff"),
                     division=data.get("division", _("unknown")),
                     conference=data.get("conference", _("unknown")),
@@ -183,9 +183,9 @@ class Team:
         return cls(
             id=team_id,
             name=_("Unknown Team"),
-            emoji=discord.PartialEmoji.from_str(""),
-            logo="https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png",
-            home_colour="#000000",
+            emoji=api.get_team_emoji(""),
+            logo=NHL_LOGO,
+            home_colour="#0094FF",
             away_colour="#ffffff",
             division=_("unknown"),
             conference=_("unknown"),
@@ -200,7 +200,9 @@ class Team:
         )
 
     @classmethod
-    def from_name(cls, team_name: str, api: NewAPI, abbrev: Optional[str] = None) -> Team:
+    def from_name(
+        cls, team_name: str, api: NewAPI, abbrev: Optional[str] = None, logo: Optional[str] = None
+    ) -> Team:
         for name, data in TEAMS.items():
             if team_name == name:
                 return cls.from_id(data["id"], api)
@@ -209,9 +211,9 @@ class Team:
         return cls(
             id=0,
             name=team_name,
-            emoji=discord.PartialEmoji.from_str(""),
-            logo="https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png",
-            home_colour="#000000",
+            emoji=api.get_team_emoji(team_name),
+            logo=logo or NHL_LOGO,
+            home_colour="#0094FF",
             away_colour="#ffffff",
             division=_("unknown"),
             conference=_("unknown"),
@@ -234,9 +236,10 @@ class Team:
         abbrev = data.get("abbrev", None)
         team_id = data.get("id", -1)
         team_ids = set(i["id"] for i in TEAMS.values())
+        logo = data.get("darkLogo", None) or data.get("logo", None)
         if team_id in team_ids:
             return cls.from_id(team_id, api)
-        return cls.from_name(name, api, abbrev)
+        return cls.from_name(name, api, abbrev, logo=logo)
 
 
 class Broadcast(NamedTuple):

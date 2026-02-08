@@ -334,6 +334,7 @@ class GameDayChannels(HockeyMixin):
         await self.config.guild(guild).gdc_team.set(team)
         await self.config.guild(guild).delete_gdc.set(delete_gdc)
         await self.config.guild(guild).create_channels.set(True)
+        made = False
         if team.lower() != "all":
             try:
                 await self.create_gdc(guild)
@@ -344,19 +345,31 @@ class GameDayChannels(HockeyMixin):
                 log.exception("Error accessing NHL API")
                 return
         else:
-            game_list = await self.api.get_games()
-            for game in game_list:
-                if (game.game_start - datetime.now(timezone.utc)) > timedelta(days=7):
+            try:
+                schedule = await self.api.get_schedule()
+            except aiohttp.ClientConnectorError:
+                await ctx.send(
+                    _("There's an issue accessing the NHL API at the moment. Try again later.")
+                )
+                log.exception("Error accessing NHL API")
+                return
+            # log.debug("Games list is %s", game_list)
+            for scheduled_game in schedule.games:
+                if scheduled_game.game_state == "Postponed":
+                    log.debug("Game %s is postponed", scheduled_game)
                     continue
-                try:
-                    await self.create_gdc(guild, game)
-                except aiohttp.ClientConnectorError:
-                    await ctx.send(
-                        _("There's an issue accessing the NHL API at the moment. Try again later.")
-                    )
-                    log.exception("Error accessing NHL API")
-                    return
-        await ctx.send(_("Game Day Channels for ") + team + _(" setup in ") + category.name)
+                if (scheduled_game.game_start - datetime.now(timezone.utc)) > timedelta(days=7):
+                    log.debug("Game %s game start is more than 7 days ago", scheduled_game)
+                    continue
+                game = await self.api.get_game_from_id(scheduled_game.id)
+                made = await self.create_gdc(guild, game)
+        if made:
+            msg = _("Game Day channels for {team} setup in {channel}").format(
+                team=team, channel=category.mention
+            )
+        else:
+            msg = _("Something went wrong creating game day channels.")
+        await ctx.send(msg)
 
     #######################################################################
     # GDC logic                                                           #

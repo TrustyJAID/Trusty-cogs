@@ -54,6 +54,21 @@ FRANCHISES_URL = URL("https://records.nhl.com/site/api/franchise").with_query(
     ]
 )
 
+COUNTRY_EMOJIS = {
+    "France": ":flag_fr:",
+    "Italy": ":flag_it:",
+    "Czechia": ":flag_cz:",
+    "Denmark": ":flag_dk:",
+    "Germany": ":flag_de:",
+    "Slovakia": ":flag_sk:",
+    "Sweden": ":flag_se:",
+    "Latvia": ":flag_lv:",
+    "Canada": ":flag_ca:",
+    "USA": ":flag_us:",
+    "Finland": ":flag_fi:",
+    "Switzerland": ":flag_ch:",
+}
+
 
 class CayenneExp(NamedTuple):
     key: str
@@ -635,16 +650,8 @@ class ScheduledGame:
         venue = data["venue"].get("default", "Unknown")
         broadcasts = data["tvBroadcasts"]
         home_team_data = data["homeTeam"]
-        home_team = TEAM_IDS.get(
-            home_team_data["id"],
-            home_team_data.get("placeName", {}).get("default", _("Unknown Team")),
-        )
         home_score = home_team_data.get("score", 0)
         away_team_data = data["awayTeam"]
-        away_team = TEAM_IDS.get(
-            away_team_data["id"],
-            away_team_data.get("placeName", {}).get("default", _("Unknown Team")),
-        )
         away_score = away_team_data.get("score", 0)
         game_start = datetime.strptime(data["startTimeUTC"], "%Y-%m-%dT%H:%M:%SZ")
         game_start = game_start.replace(tzinfo=timezone.utc)
@@ -655,8 +662,8 @@ class ScheduledGame:
         away = Team.from_nhle(away_team_data, api, home=False)
         return cls(
             id=game_id,
-            home_team=home_team,
-            away_team=away_team,
+            home_team=home.name,
+            away_team=away.name,
             home_score=home_score,
             away_score=away_score,
             game_type=game_type,
@@ -978,8 +985,12 @@ class NewAPI(HockeyAPI):
             team_name = team
         return TEAMS.get(team_name, {}).get("tri_code", None)
 
-    def get_team_emoji(self, team_name: str) -> Optional[discord.Emoji]:
-        return self.team_emojis.get(team_name)
+    def get_team_emoji(self, team_name: str) -> Union[discord.Emoji, discord.PartialEmoji]:
+        if team_name in COUNTRY_EMOJIS:
+            return discord.PartialEmoji.from_str(COUNTRY_EMOJIS[team_name])
+        if team_name in self.team_emojis:
+            return self.team_emojis[team_name]
+        return discord.PartialEmoji.from_str("")
 
     async def schedule_now(self) -> Schedule:
         url = URL("/v1/schedule/now")
