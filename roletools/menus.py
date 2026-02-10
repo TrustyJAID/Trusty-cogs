@@ -9,7 +9,7 @@ from red_commons.logging import getLogger
 from redbot.core import bank
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list, pagify
+from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
 from redbot.vendored.discord.ext import menus
 
 log = getLogger("red.Trusty-cogs.RoleTools")
@@ -305,6 +305,7 @@ class RolePages(menus.ListPageSource):
         buttons = humanize_list(role_settings["buttons"])
         select_options = humanize_list(role_settings["select_options"])
         require_any = role_settings["require_any"]
+        duration = role_settings["duration"]
         settings = _(
             "{role}\n```md\n"
             "# ID:           {role_id}\n"
@@ -342,6 +343,10 @@ class RolePages(menus.ListPageSource):
         settings += _("**Created:** {created_at}\n").format(
             created_at=discord.utils.format_dt(role.created_at)
         )
+        if duration:
+            settings += _("**Duration:** {duration}\n").format(
+                duration=humanize_timedelta(seconds=duration)
+            )
         if cost := role_settings.get("cost"):
             currency_name = await bank.get_currency_name(menu.ctx.guild)
             settings += _("**Cost:** {cost} {currency_name}\n").format(

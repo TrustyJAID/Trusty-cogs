@@ -397,6 +397,24 @@ class RoleToolsEvents(RoleToolsMixin):
                 if atomic:
                     await member.remove_roles(*exclusive_roles, reason=_("Exclusive Roles"))
             to_add.add(role)
+        for role in to_add:
+            duration = await self.config.role(role).duration()
+            if duration is not None:
+                temp_role = {
+                    "user_id": member.id,
+                    "role_id": role.id,
+                    "remove_at": int(
+                        (datetime.now(timezone.utc) + timedelta(seconds=duration)).timestamp()
+                    ),
+                }
+                async with self.config.guild(guild).temporary_roles() as temp_roles:
+                    edited = False
+                    for temp in temp_roles:
+                        if temp["user_id"] == member.id and temp["role_id"] == role.id:
+                            temp.update(temp_role)
+                            edited = True
+                    if not edited:
+                        temp_roles.append(temp_role)
         log.debug("Adding %s to %s", to_add, member.name)
         if atomic:
             log.verbose("Atomic is true")

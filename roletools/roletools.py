@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import discord
 from red_commons.logging import getLogger
-from redbot.core import Config, bank, commands
+from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator, cog_i18n
@@ -23,6 +23,7 @@ from .reactions import RoleToolsReactions
 from .requires import RoleToolsRequires
 from .select import RoleToolsSelect
 from .settings import RoleToolsSettings
+from .temprole import RoleToolsTemporary
 
 roletools = RoleToolsMixin.roletools
 
@@ -77,6 +78,7 @@ class RoleTools(
     RoleToolsRequires,
     RoleToolsSettings,
     RoleToolsSelect,
+    RoleToolsTemporary,
     commands.Cog,
     metaclass=CompositeMetaClass,
 ):
@@ -85,7 +87,7 @@ class RoleTools(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.5.16"
+    __version__ = "1.6.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -102,6 +104,7 @@ class RoleTools(
             buttons={},
             select_options={},
             select_menus={},
+            temporary_roles=[],
         )
         self.config.register_role(
             sticky=False,
@@ -116,13 +119,16 @@ class RoleTools(
             required=[],
             require_any=False,
             cost=0,
+            duration=None,
         )
         self.config.register_member(sticky_roles=[])
         self.settings: Dict[int, Any] = {}
         self._ready: asyncio.Event = asyncio.Event()
         self.views: Dict[int, Dict[str, discord.ui.View]] = {}
+        self.layouts: Dict[int, Dict[str, discord.ui.LayoutView]] = {}
         self._repo = ""
         self._commit = ""
+        self.temporary_roles_task.start()
 
     def cog_check(self, ctx: commands.Context) -> bool:
         return self._ready.is_set()
@@ -231,6 +237,7 @@ class RoleTools(
             self.bot.remove_dev_env_value("roletools")
         except Exception:
             pass
+        self.temporary_roles_task.cancel()
 
     async def confirm_selfassignable(
         self, ctx: commands.Context, roles: List[discord.Role]
