@@ -292,7 +292,10 @@ class RolePages(menus.ListPageSource):
         role_settings = await menu.cog.config.role(role).all()
         menu.update_buttons(role_settings)
         msg = _("Role Settings for {role}\n".format(role=role.name))
-        jump_url = "https://discord.com/channels/{guild}/{channel}/{message}"
+        if menu.ctx.command.cog.is_discord:
+            jump_url = "https://discord.com/channels/{guild}/{channel}/{message}"
+        else:
+            jump_url = "https://fluxer.app/channels/{guild}/{channel}/{message}"
         em = discord.Embed(title=msg, colour=role.colour)
         mod_roles = await menu.bot.get_mod_roles(menu.ctx.guild)
         admin_roles = await menu.bot.get_admin_roles(menu.ctx.guild)
@@ -323,7 +326,7 @@ class RolePages(menus.ListPageSource):
             "# Core Bot settings\n"
             "Mod             {mod}\n"
             "Admin           {admin}\n\n"
-            "```"
+            "```\n"
         ).format(
             role=role.mention,
             role_id=role.id,
@@ -449,6 +452,13 @@ class BaseMenu(discord.ui.View):
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
+        self.item_mapping = {
+            self.stop_button.emoji: self.stop_button,
+            self.first_item.emoji: self.first_item,
+            self.back_button.emoji: self.back_button,
+            self.forward_button.emoji: self.forward_button,
+            self.last_item.emoji: self.last_item,
+        }
         if isinstance(source, RolePages):
             self.select_view = RoleToolsSelectOption()
             self.add_item(self.select_view)
@@ -467,6 +477,8 @@ class BaseMenu(discord.ui.View):
 
     async def on_timeout(self):
         await self.message.edit(view=None)
+        if self.ctx.command.cog.is_discord:
+            self.ctx.bot.remove_listener(self.on_reaction, name="on_reaction_add")
 
     def update_buttons(self, data: dict):
         buttons = {
@@ -491,12 +503,36 @@ class BaseMenu(discord.ui.View):
                     )
             button.disabled |= not self.source.current_role.is_assignable()
 
+    async def on_reaction(self, reaction: discord.Reaction, user: discord.abc.User):
+        if user.id not in (
+            *self.ctx.bot.owner_ids,
+            getattr(self.author, "id", None),
+        ):
+            return
+        if reaction.message.id != self.message.id:
+            return
+        for emoji, item in self.item_mapping.items():
+            if not isinstance(item, discord.ui.Button):
+                continue
+            if str(reaction.emoji) == str(emoji):
+                try:
+                    await item.callback(self.ctx)
+                except Exception:
+                    log.exception("Error in reaction replacement")
+
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
         self.bot = self.cog.bot
         self.author = ctx.author
         # await self.source._prepare_once()
         self.message = await self.send_initial_message(ctx)
+        if not ctx.command.cog.is_discord:
+            for emoji in self.item_mapping.keys():
+                try:
+                    await self.message.add_reaction(emoji)
+                except Exception:
+                    log.exception("Error adding reaction to message %s", self.message)
+            ctx.bot.add_listener(self.on_reaction, "on_reaction_add")
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
@@ -523,7 +559,10 @@ class BaseMenu(discord.ui.View):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
-        await interaction.response.edit_message(**kwargs, view=self)
+        if isinstance(interaction, discord.Interaction):
+            await interaction.response.edit_message(**kwargs, view=self)
+        else:
+            await self.message.edit(**kwargs)
 
     async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()

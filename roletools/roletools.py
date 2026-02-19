@@ -10,6 +10,8 @@ from redbot.core.commands import Context
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter, bounded_gather
 from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.predicates import ReactionPredicate
 
 from .abc import RoleToolsMixin
 from .buttons import RoleToolsButtons
@@ -129,6 +131,7 @@ class RoleTools(
         self._repo = ""
         self._commit = ""
         self.temporary_roles_task.start()
+        self.is_discord: bool = discord.utils.oauth_url("").startswith("https://discord.com/")
 
     def cog_check(self, ctx: commands.Context) -> bool:
         return self._ready.is_set()
@@ -251,11 +254,20 @@ class RoleTools(
             ).format(
                 roles=role_list,
             )
-            pred = ConfirmView(ctx.author)
-            pred.message = await ctx.send(
-                msg_str, view=pred, allowed_mentions=discord.AllowedMentions(roles=False)
-            )
-            await pred.wait()
+            if self.is_discord:
+                pred = ConfirmView(ctx.author)
+                pred.message = await ctx.send(
+                    msg_str, view=pred, allowed_mentions=discord.AllowedMentions(roles=False)
+                )
+                await pred.wait()
+            else:
+                msg = await ctx.send(
+                    msg_str, allowed_mentions=discord.AllowedMentions(roles=False)
+                )
+                start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+                pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+                await ctx.bot.wait_for("reaction_add", check=pred)
+
             if pred.result:
                 for role in not_assignable:
                     await self.config.role(role).selfassignable.set(True)
