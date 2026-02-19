@@ -147,6 +147,8 @@ class RoleToolsEvents(RoleToolsMixin):
             if member.joined_at
             else timedelta(minutes=10)
         )
+        if guild.verification_level is None:
+            return False
         if guild.verification_level.value >= 2 and allowed_discord <= timedelta(minutes=5):
             log.debug("Waiting 5 minutes for %s in %s", member.name, guild)
             return 300 - int(allowed_discord.total_seconds())
