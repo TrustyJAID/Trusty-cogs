@@ -246,8 +246,8 @@ class RoleTools(
         if not_assignable:
             role_list = "\n".join(f"- {role.mention}" for role in not_assignable)
             msg_str = _(
-                "The following roles are not self assignable:\n{roles}\n"
-                "Would you liked to make them self assignable and self removeable?"
+                "The following roles are not self-assignable:\n{roles}\n"
+                "Would you liked to make them self-assignable and self-removable?"
             ).format(
                 roles=role_list,
             )
@@ -262,12 +262,12 @@ class RoleTools(
                     await self.config.role(role).selfremovable.set(True)
                 await ctx.channel.send(
                     _(
-                        "The following roles have been made self assignable and self removeable:\n{roles}"
+                        "The following roles have been made self-assignable and self-removeable:\n{roles}"
                     ).format(roles=role_list)
                 )
             else:
                 await ctx.channel.send(
-                    _("Okay I won't make the following rolesself assignable:\n{roles}").format(
+                    _("Okay I won't make the following roles self-assignable:\n{roles}").format(
                         roles=role_list
                     )
                 )
@@ -320,7 +320,7 @@ class RoleTools(
         author: discord.Member = ctx.author
 
         if not await self.config.role(role).selfremovable():
-            msg = _("The {role} role is not currently self removable.").format(role=role.mention)
+            msg = _("The {role} role is not currently self-removable.").format(role=role.mention)
             await ctx.send(msg)
             return
         await self.remove_roles(author, [role], _("Selfrole command."))

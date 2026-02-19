@@ -17,7 +17,7 @@ _ = Translator("RoleTools", __file__)
 class RoleToolsSettings(RoleToolsMixin):
     """This class handles setting the roletools role settings."""
 
-    @roletools.command()
+    @roletools.command(name="selfassignable", aliases=["selfadd", "selfassign"])
     @commands.admin_or_permissions(manage_roles=True)
     async def selfadd(
         self,
@@ -38,26 +38,29 @@ class RoleToolsSettings(RoleToolsMixin):
         cur_setting = await self.config.role(role).selfassignable()
         if true_or_false is None:
             if cur_setting:
-                msg = _("The {role} role is self assignable.").format(role=role.mention)
+                msg = _("The {role} role is self-assignable.").format(role=role.mention)
                 await ctx.send(msg)
             else:
-                command = f"`{ctx.clean_prefix}roletools selfadd yes {role.name}`"
+                invoker = " ".join(
+                    ctx.invoked_parents + [ctx.invoked_with] if ctx.invoked_with else []
+                )
+                command = f"```\n{ctx.clean_prefix}{invoker} true {role.name}\n```"
                 msg = _(
-                    "The {role} role is not self assignable. Run the command "
-                    "{command} to make it self assignable."
+                    "The {role} role is not self-assignable.\nRun the following command "
+                    f"to make it self-assignable. {command}"
                 ).format(role=role.mention, command=command)
                 await ctx.send(msg)
             return
         if true_or_false is True:
             await self.config.role(role).selfassignable.set(True)
-            msg = _("The {role} role is now self assignable.").format(role=role.mention)
+            msg = _("The {role} role is now self-assignable.").format(role=role.mention)
             await ctx.send(msg)
         if true_or_false is False:
             await self.config.role(role).selfassignable.set(False)
-            msg = _("The {role} role is no longer self assignable.").format(role=role.mention)
+            msg = _("The {role} role is no longer self-assignable.").format(role=role.mention)
             await ctx.send(msg)
 
-    @roletools.command()
+    @roletools.command(name="selfremovable", aliases=["selfrem"])
     @commands.admin_or_permissions(manage_roles=True)
     async def selfrem(
         self,
@@ -78,23 +81,26 @@ class RoleToolsSettings(RoleToolsMixin):
         cur_setting = await self.config.role(role).selfremovable()
         if true_or_false is None:
             if cur_setting:
-                msg = _("The {role} role is self removeable.").format(role=role.mention)
+                msg = _("The {role} role is self-removeable.").format(role=role.mention)
                 await ctx.send(msg)
             else:
-                command = f"`{ctx.clean_prefix}roletools selfrem yes {role.name}`"
+                invoker = " ".join(
+                    ctx.invoked_parents + [ctx.invoked_with] if ctx.invoked_with else []
+                )
+                command = f"```\n{ctx.clean_prefix}{invoker} true {role.name}\n```"
                 msg = _(
-                    "The {role} role is not self removable. Run the command "
-                    "{command} to make it self removeable."
+                    "The {role} role is not self-removable.\nRun the following command "
+                    f"to make it self-removable. {command}"
                 ).format(role=role.mention, command=command)
                 await ctx.send(msg)
             return
         if true_or_false is True:
             await self.config.role(role).selfremovable.set(True)
-            msg = _("The {role} role is now self removeable.").format(role=role.mention)
+            msg = _("The {role} role is now self-removable.").format(role=role.mention)
             await ctx.send(msg)
         if true_or_false is False:
             await self.config.role(role).selfremovable.set(False)
-            msg = _("The {role} role is no longer self removeable.").format(role=role.mention)
+            msg = _("The {role} role is no longer self-removable.").format(role=role.mention)
             await ctx.send(msg)
 
     @roletools.command(with_app_command=False)

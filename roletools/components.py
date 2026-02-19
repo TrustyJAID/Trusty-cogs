@@ -109,7 +109,7 @@ class ButtonRole(discord.ui.Button):
         if role not in interaction.user.roles:
             if not await config.role(role).selfassignable():
                 await interaction.response.send_message(
-                    _("{role} is not currently self assignable.").format(role=role.mention),
+                    _("{role} is not currently self-assignable.").format(role=role.mention),
                     ephemeral=True,
                 )
                 return
@@ -153,7 +153,7 @@ class ButtonRole(discord.ui.Button):
         elif role in interaction.user.roles:
             if not await config.role(role).selfremovable():
                 await interaction.response.send_message(
-                    _("{role} is not currently self removable.").format(role=role.mention),
+                    _("{role} is not currently self-removable.").format(role=role.mention),
                     ephemeral=True,
                 )
                 return
@@ -265,7 +265,7 @@ class SelectRole(discord.ui.Select):
             if role not in interaction.user.roles:
                 if not await config.role(role).selfassignable():
                     msg += _(
-                        "{role} Could not be assigned because it is not self assignable."
+                        "{role} Could not be assigned because it is not self-assignable."
                     ).format(role=role.mention)
                     continue
 
@@ -293,7 +293,7 @@ class SelectRole(discord.ui.Select):
             elif role in interaction.user.roles:
                 if not await config.role(role).selfremovable():
                     msg += _(
-                        "{role} Could not be removed because it is not self assignable."
+                        "{role} Could not be removed because it is not self-assignable."
                     ).format(role=role.mention)
                     continue
                 # log.debug("Removing role from %s in %s", interaction.user.name, guild)
