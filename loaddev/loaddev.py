@@ -1,16 +1,38 @@
+from __future__ import annotations
+
+import logging
+from enum import Enum
 from typing import Optional
 
 import discord
-from red_commons.logging import getLogger
+from red_commons import logging as red_logging
 from redbot import version_info
 from redbot.core import Config, checks, commands, i18n
 from redbot.core.dev_commands import Dev, DevOutput, cleanup_code
 from redbot.core.utils.chat_formatting import box, pagify
 from yarl import URL
 
-log = getLogger("red.trusty-cogs.loaddev")
+log = red_logging.getLogger("red.trusty-cogs.loaddev")
 
 _ = i18n.Translator("LoadDev", __file__)
+
+
+class LoggingLevel(Enum):
+    NOTSET = logging.NOTSET
+    TRACE = red_logging.TRACE
+    VERBOSE = red_logging.VERBOSE
+    DEBUG = logging.DEBUG
+    INFO = logging.INFO
+    WARNING = logging.WARNING
+    ERROR = logging.ERROR
+    CRITICAL = logging.CRITICAL
+
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> Optional[LoggingLevel]:
+        for level in LoggingLevel:
+            if level.name == argument.upper():
+                return level
+        raise commands.BadArgument(f"`{argument.upper()}` is not a valid logging level.")
 
 
 class EvalModal(discord.ui.Modal):
@@ -87,10 +109,7 @@ class LoadDev(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=218773382617890828)
-        self.config.register_global(
-            replace_mock=None,
-            auto_load_dev=False,
-        )
+        self.config.register_global(replace_mock=None, auto_load_dev=False)
 
     async def cog_unload(self):
         if not self.bot._cli_flags.dev:
@@ -131,6 +150,50 @@ class LoadDev(commands.Cog):
         Nothing to delete
         """
         return
+
+    @commands.command(name="logginglevel", aliases=["ll"])
+    @commands.is_owner()
+    async def set_logging_level(
+        self, ctx: commands.Context, name: str, level: Optional[LoggingLevel] = None
+    ):
+        """
+        Set the logging level for a specific logger
+
+        -`name` Is the logging name you want to change.
+        - `level` is what level you want to set the logger to.
+        Supported levels are:
+            - `CRITICAL`
+            - `ERROR`
+            - `WARNING`
+            - `INFO`
+            - `DEBUG`
+            - `NOTSET`
+        Depending on how the logger was setup these may also be available:
+            - `TRACE`
+            - `VERBOSE`
+        Setting to `NOTSET` is the typical default behavior and will propagate up
+        to the root logger.
+        """
+        existing = logging.Logger.manager.loggerDict.keys()
+        if name not in existing:
+            await ctx.send(
+                f"No logger with name `{name}` is currently registered. Case is important!"
+            )
+            return
+        logger = red_logging.getLogger(name)
+        if level is not None:
+            if not isinstance(logger, red_logging.RedTraceLogger) and (
+                level is LoggingLevel.TRACE or level is LoggingLevel.VERBOSE
+            ):
+                await ctx.send(
+                    f"The logger `{name}` is not a RedTraceLogger instance and can't have `{level.name}` logging set."
+                )
+                return
+            logger.setLevel(level.value)
+            await ctx.send(f"Logger named `{name}` is now set to `{level.name}`")
+        else:
+            cur_level = LoggingLevel(logger.level)
+            await ctx.send(f"Logger named `{name}` is currently set to `{cur_level.name}`")
 
     @commands.command(aliases=["ebutt"])
     @commands.is_owner()
