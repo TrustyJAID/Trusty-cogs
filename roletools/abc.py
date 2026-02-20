@@ -43,6 +43,7 @@ class RoleToolsMixin(ABC):
         self.settings: Dict[Any, Any]
         self._ready: asyncio.Event
         self.views: Dict[int, Dict[str, discord.ui.View]]
+        self.is_discord: bool
 
     @commands.group()
     @commands.guild_only()

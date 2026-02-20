@@ -53,9 +53,22 @@ class RoleToolsEvents(RoleToolsMixin):
             role = guild.get_role(guild_settings[key])
             if not await self.config.role(role).selfassignable():
                 return
-            member = guild.get_member(payload.user_id)
-            if not role or not member:
+            if not role:
                 return
+
+            member = guild.get_member(payload.user_id)
+
+            if not member:
+                if not self.is_discord:
+                    # Fluxer isn't caching members so we need to fetch
+                    # it's a bit wasteful on api calls so change when possible
+                    try:
+                        member = await guild.fetch_member(payload.user_id)
+                    except Exception:
+                        log.error("Error fetching user on raw reaction event.")
+                        return
+                else:
+                    return
             if member.bot:
                 return
             if await self.check_guild_verification(member, guild):
@@ -87,10 +100,20 @@ class RoleToolsEvents(RoleToolsMixin):
             role = guild.get_role(guild_settings[key])
             if not await self.config.role(role).selfremovable():
                 return
-
-            member = guild.get_member(payload.user_id)
-            if not role or not member:
+            if not role:
                 return
+            member = guild.get_member(payload.user_id)
+            if not member:
+                if not self.is_discord:
+                    # Fluxer isn't caching members so we need to fetch
+                    # it's a bit wasteful on api calls so change when possible
+                    try:
+                        member = await guild.fetch_member(payload.user_id)
+                    except Exception:
+                        log.error("Error fetching user on raw reaction event.")
+                        return
+                else:
+                    return
             if member.bot:
                 return
             log.debug("Removing role from %s in %s", member.name, member.guild)
