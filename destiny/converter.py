@@ -189,7 +189,7 @@ class NewsArticle:
     PubDate: str
     UniqueIdentifier: str
     Description: str
-    ImagePath: str
+    ImagePath: Optional[str] = None
     OptionalMobileImagePath: Optional[str] = None
 
     def pubdate(self) -> datetime:
