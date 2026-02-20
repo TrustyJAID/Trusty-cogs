@@ -268,13 +268,19 @@ class RoleToolsEvents(RoleToolsMixin):
                 large numbers of members getting roles
         """
         ret = []
-        if not member.guild.get_member(member.id):
-            ret.append(
-                RoleChangeResponse(
-                    None, _("A request was made for a user that is not part of the guild."), False
+        if self.is_discord:
+            if not member.guild.get_member(member.id):
+                log.debug(
+                    "A request was made for %s that is not part of the %s", member, member.guild
                 )
-            )
-            return ret
+                ret.append(
+                    RoleChangeResponse(
+                        None,
+                        _("A request was made for a user that is not part of the guild."),
+                        False,
+                    )
+                )
+                return ret
         guild = member.guild
         if not guild.me.guild_permissions.manage_roles:
             ret.append(
@@ -483,11 +489,15 @@ class RoleToolsEvents(RoleToolsMixin):
                 large numbers of members getting roles
         """
         ret = []
-        if not member.guild.get_member(member.id):
-            return
+        if self.is_discord:
+            if not member.guild.get_member(member.id):
+                log.debug(
+                    "A request was made for %s that is not part of the %s", member, member.guild
+                )
+                return []
         guild = member.guild
         if not guild.me.guild_permissions.manage_roles:
-            return
+            return []
         if atomic is None:
             atomic = await self.check_atomicity(guild)
         # log.debug(f"{atomic}")
