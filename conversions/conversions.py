@@ -256,7 +256,7 @@ class Conversions(commands.Cog):
             await ctx.send(msg)
 
     @commands.command()
-    async def crypto(
+    async def cryptoinfo(
         self,
         ctx: commands.Context,
         coin: str,
