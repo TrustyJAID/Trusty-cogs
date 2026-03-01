@@ -6,7 +6,7 @@ import os
 import random
 import textwrap
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
@@ -14,7 +14,7 @@ from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 import discord
 from PIL import Image, ImageDraw, ImageFont
 from red_commons.logging import getLogger
-from redbot.core import commands
+from redbot.core import bank, commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.chat_formatting import escape, humanize_list, pagify
 
@@ -511,12 +511,19 @@ class DiscardPile:
 
 
 class WinnerSelect(discord.ui.Select):
-    def __init__(self, cards: Dict[int, List[WhiteCard]]):
+    def __init__(
+        self,
+        cards: Dict[int, List[WhiteCard]],
+        payout_credits: int = 0,
+        credits_name: str = "Credits",
+    ):
         self.view: Winner
         super().__init__(placeholder="Pick Winner")
         self.cards = cards
+        self.payout_credits = payout_credits
+        self.credits_name = credits_name
         for i, player in enumerate(self.cards.items()):
-            label = f"{i+1}. {','.join(card.text for card in player[1])}"[:80]
+            label = f"{i + 1}. {','.join(card.text for card in player[1])}"[:80]
             self.add_option(label=label, value=f"{player[0]}")
 
     async def callback(self, interaction: discord.Interaction):
@@ -532,21 +539,39 @@ class WinnerSelect(discord.ui.Select):
         kwargs: dict = {"allowed_mentions": discord.AllowedMentions(users=False)}
         if img is not None:
             kwargs["file"] = img
+        content = (
+            f"# {member_str} won with the card(s): {self.view.game.round.black_card.format(cards)}"
+        )
+        if self.payout_credits > 0:
+            content += f"\n-# you will earn {self.payout_credits} {self.credits_name}"
         await interaction.followup.send(
-            f"# {member_str} won with the card(s): {self.view.game.round.black_card.format(cards)}",
+            content,
             **kwargs,
         )
+
         self.view.game.players[int(self.values[0])].points += 1
         self.view.picked_winner = True
         self.view.stop()
+        if self.payout_credits > 0 and isinstance(winner, discord.abc.User):
+            try:
+                await bank.deposit_credits(winner, self.payout_credits)
+            except Exception:
+                log.exception("Tried to deposit credits for %r", winner)
 
 
 class Winner(discord.ui.View):
-    def __init__(self, game: CAHGame, cards: Dict[int, List[WhiteCard]]):
+    def __init__(
+        self,
+        game: CAHGame,
+        cards: Dict[int, List[WhiteCard]],
+        card_czar_duration: int = 30,
+        payout_credits: int = 0,
+        credits_name: str = "Credits",
+    ):
         self.game: CAHGame = game
         self.cards = cards
-        super().__init__(timeout=30)
-        self.select = WinnerSelect(self.cards)
+        super().__init__(timeout=card_czar_duration)
+        self.select = WinnerSelect(self.cards, payout_credits, credits_name)
         self.add_item(self.select)
         self.picked_winner = False
 
@@ -617,7 +642,7 @@ class Round(discord.ui.View):
     def __init__(
         self, game: CAHGame, black_card: BlackCard, end_time: datetime, round_number: int
     ):
-        timeout = end_time.timestamp() - datetime.now().timestamp()
+        timeout = end_time.timestamp() - datetime.now(timezone.utc).timestamp()
         super().__init__(timeout=timeout)
         self.black_card: BlackCard = black_card
         self.game = game
@@ -648,7 +673,7 @@ class Round(discord.ui.View):
             f"Number of Players: {len(self.played_cards)}" if len(self.played_cards) > 0 else ""
         )
         return (
-            f"# Round: {self.round_number+1}\n"
+            f"# Round: {self.round_number + 1}\n"
             f"Card Czar: {self.game._card_czar.mention}\n"
             f"> ## {self.black_card}\n\n"
             f"{self.timestamp}\n"
@@ -699,6 +724,10 @@ class CAHGame:
         ctx: commands.Context,
         card_set: CardSet,
         number_of_rounds: int = 10,
+        round_duration: int = 60,
+        card_czar_duration: int = 30,
+        payout_credits: int = 0,
+        credits_name: str = "Credits",
     ):
         self.number_of_rounds = number_of_rounds
         self.user_start = ctx.author
@@ -715,6 +744,10 @@ class CAHGame:
         self._round_wait: asyncio.Event = asyncio.Event()
         self.path = cog_data_path(ctx.cog)
         self._wait_task: Optional[asyncio.Task] = None
+        self.round_duration = round_duration
+        self.card_czar_duration = card_czar_duration
+        self.payout_credits = payout_credits
+        self.credits_name = credits_name
 
     @property
     def round(self) -> Round:
@@ -775,21 +808,31 @@ class CAHGame:
                 self.black_cards.extend(self.discard_pile.black_cards)
                 self.discard_pile.black_cards = []
             card = random.choice(self.black_cards)
-            end_time = datetime.now() + timedelta(seconds=60)
+            end_time = datetime.now(timezone.utc) + timedelta(seconds=self.round_duration)
             self._round = Round(self, card, end_time, round_number)
             await self.round.start(self.ctx)
-            self._wait_task = asyncio.create_task(self.wait_loop(60))
+            self._wait_task = asyncio.create_task(self.wait_loop(self.round_duration))
             await self._round_wait.wait()
             self._round_wait.clear()
             if self.round.played_cards:
-                winner = Winner(self, self.round.played_cards)
+                winner = Winner(
+                    self,
+                    self.round.played_cards,
+                    self.card_czar_duration,
+                    self.payout_credits,
+                    self.credits_name,
+                )
+                ts = discord.utils.format_dt(
+                    datetime.now(timezone.utc) + timedelta(seconds=self.card_czar_duration),
+                    style="R",
+                )
                 choices = ""
                 for i, cards in enumerate(self.round.played_cards.values()):
-                    choices += f"{i+1}. {self.round.black_card.format(cards)}\n\n"
+                    choices += f"{i + 1}. {self.round.black_card.format(cards)}\n\n"
                 msg = (
                     f"# {self.card_czar.mention} is the Card Czar!\n"
                     f"> ## {self.round.black_card}\n\n"
-                    f"{choices}"
+                    f"{choices}\n-# Time up {ts}"
                 )
                 img = await self.played_cards_file()
                 pages = list(pagify(msg))

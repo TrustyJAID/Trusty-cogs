@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 import aiohttp
 import discord
 from red_commons.logging import getLogger
-from redbot.core import Config, commands
+from redbot.core import Config, bank, commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.chat_formatting import humanize_list
 
@@ -94,13 +94,14 @@ class CardSetTransformer(discord.app_commands.Transformer):
 
 
 class CardsAgainstHumanity(commands.Cog):
-    __version__ = "1.1.0"
+    __version__ = "1.2.0"
     __author__ = ["TrustyJAID", "crhallberg", "Cards Against Humanity®️"]
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 218773382617890828)
-        self.config.register_global(card_sets=[])
+        self.config.register_global(card_sets=[], round_credits=0)
+        self.config.register_guild(round_duration=60, card_czar_duration=30, round_credits=0)
         self.card_sets: Dict[str, CardSet] = {}
         self.running_games: Dict[int, CAHGame] = {}
         self.session = aiohttp.ClientSession(
@@ -193,6 +194,69 @@ class CardsAgainstHumanity(commands.Cog):
         """
         pass
 
+    @cah.group(name="set", with_app_command=False)
+    @commands.mod_or_permissions(manage_messages=True)
+    async def cah_set(self, ctx: commands.Context):
+        """Commands for setting customizations for CAH"""
+
+    @cah_set.command(name="round", aliases=["roundduration"])
+    @commands.mod_or_permissions(manage_messages=True)
+    async def cah_set_round_duration(
+        self, ctx: commands.Context, duration: commands.Range[int, 30, 300]
+    ):
+        """
+        Set how long each round should last for.
+
+        -`<duration>` The number of seconds rounds should last from 30 to 300 seconds.
+        """
+        await self.config.guild(ctx.guild).round_duration.set(duration)
+        await ctx.send(f"Rounds are now set to {duration} seconds.")
+
+    @cah_set.command(name="cardczar", aliases=["czar", "czarlength"])
+    @commands.mod_or_permissions(manage_messages=True)
+    async def cah_set_czar_length(
+        self, ctx: commands.Context, duration: commands.Range[int, 30, 300]
+    ):
+        """
+        Set how long the card czar should have to pick a winner.
+
+        -`<duration>` The number of seconds the card czar should have to pick a winner from 30 to 300 seconds.
+        """
+        await self.config.guild(ctx.guild).card_czar_duration.set(duration)
+        await ctx.send(f"Rounds are now set to {duration} seconds.")
+
+    @cah_set.command(name="credits")
+    @commands.mod_or_permissions(manage_messages=True)
+    async def cah_set_credits(self, ctx: commands.Context, credits: commands.Range[int, 0]):
+        """
+        Set how many credits are awarded to the winner of each round.
+
+        This setting will not work if the bot's bank is set to global.
+
+        - `<credits>` How many credits to award each winner.
+        """
+        credit_name = await bank.get_currency_name(ctx.guild)
+        msg = f"I will now award {credits} {credit_name} for the winner of each round."
+        if await bank.is_global():
+            msg += "\nThe bank is currently set to global so I won't actually award the credits you set."
+        await self.config.guild(ctx.guild).credits.set(credits)
+        await ctx.send(msg)
+
+    @cah_set.command(name="globalcredits")
+    @commands.is_owner()
+    async def cah_set_global_credits(self, ctx: commands.Context, credits: commands.Range[int, 0]):
+        """
+        Set how many credits are awarded to the winner of each round.
+
+        This setting will only work if the bot's bank is set to global.
+
+        - `<credits>` How many credits to award each winner.
+        """
+        credit_name = await bank.get_currency_name(ctx.guild)
+        msg = f"I will now award {credits} {credit_name} for the winner of each round if the bank is set to global."
+        await self.config.credits.set(credits)
+        await ctx.send(msg)
+
     @cah.command(name="download", with_app_command=False, hidden=True)
     async def download(self, ctx: commands.Context):
         """
@@ -257,6 +321,13 @@ class CardsAgainstHumanity(commands.Cog):
                 f"No card sets have been downloaded. Try running `{ctx.clean_prefix}{self.download.qualified_name}`."
             )
             return
+        if await bank.is_global():
+            credits = await self.config.credits()
+        else:
+            credits = await self.config.guild(ctx.guild).credits()
+        round_duration = await self.config.guild(ctx.guild).round_duration()
+        card_czar_duration = await self.config.guild(ctx.guild).card_czar_duration()
+        credits_name = await bank.get_currency_name(ctx.guild)
         cards = card_set
         if card_set is None:
             white_cards = []
@@ -268,7 +339,15 @@ class CardsAgainstHumanity(commands.Cog):
                 black_cards.extend(cardset.black)
             cards = CardSet(name="Official", white=white_cards, black=black_cards, official=True)
 
-        game = CAHGame(ctx, cards, rounds or 10)
+        game = CAHGame(
+            ctx,
+            card_set=cards,
+            number_of_rounds=rounds or 10,
+            round_duration=round_duration,
+            card_czar_duration=card_czar_duration,
+            payout_credits=credits,
+            credits_name=credits_name,
+        )
         self.running_games[ctx.channel.id] = game
         await game.start()
         # del self.running_games[ctx.channel.id]
