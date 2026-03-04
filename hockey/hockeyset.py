@@ -367,18 +367,18 @@ class HockeySetCommands(HockeyMixin):
             return
         if standings_type in [i.name.lower() for i in Divisions]:
             standing = Divisions(standings_type.title())
-            em = await standings.make_division_standings_embed(standing)
+            page = await standings.make_division_standings_embed(standing)
 
         elif standings_type in [i.name.lower() for i in Conferences]:
             standing = Conferences(standings_type.title())
-            em = await standings.make_conference_standings_embed(standing)
+            page = await standings.make_conference_standings_embed(standing)
         else:
-            em = await standings.all_standing_embed()
+            page = await standings.all_standing_embed()
         await self.config.guild(guild).standings_type.set(standings_type)
         await self.config.guild(guild).standings_channel.set(channel.id)
         msg = _("Sending standings to {channel}").format(channel=channel.mention)
         await ctx.send(msg)
-        message = await channel.send(embed=em)
+        message = await channel.send(embed=page.embed, files=page.files)
         await self.config.guild(guild).standings_msg.set(message.id)
         msg = _(
             "{standings_type} standings will now be automatically updated in {channel}."
