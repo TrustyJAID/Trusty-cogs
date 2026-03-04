@@ -659,10 +659,10 @@ class Standings:
 
     @staticmethod
     async def edit_standings_message(
-        embed: discord.Embed, guild: discord.Guild, message: discord.Message, config: Config
+        page: StandingsPage, guild: discord.Guild, message: discord.Message, config: Config
     ) -> None:
         try:
-            await message.edit(embed=embed)
+            await message.edit(embed=page.embed, attachments=page.files)
         except (discord.errors.NotFound, discord.errors.Forbidden):
             await config.guild(guild).post_standings.clear()
             await config.guild(guild).standings_type.clear()
