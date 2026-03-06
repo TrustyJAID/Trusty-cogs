@@ -143,7 +143,9 @@ class HockeyPickems(HockeyMixin):
                 await self.pickems_config.guild_from_id(int(guild_id)).pickems.clear()
                 continue
             # pickems = [Pickems.from_json(p) for p in pickems_list]
-            pickems = {name: Pickems.from_json(p) for name, p in pickems_list.items()}
+            pickems = {
+                name: Pickems.from_json(p, api=self.api) for name, p in pickems_list.items()
+            }
             if not pickems:
                 continue
             self.all_pickems[str(guild_id)] = pickems
@@ -153,21 +155,18 @@ class HockeyPickems(HockeyMixin):
                 except Exception:
                     log.exception("Error adding pickems to the bot %r", pickem)
 
-    def pickems_name(self, game: Game) -> str:
-        return f"{game.away.tri_code}@{game.home.tri_code}-{game.game_start.month}-{game.game_start.day}"
-
     async def find_pickems_object(self, game: Game) -> List[Pickems]:
         """
         Returns a list of all pickems on the bot for that game
         """
         return_pickems = []
-        new_name = f"{game.away_abr}@{game.home_abr}-{game.game_start.month}-{game.game_start.day}"
+        new_name = Pickems.name_from_game(game)
         for guild_id, pickems in self.all_pickems.items():
             guild = self.bot.get_guild(int(guild_id))
             if guild is None:
                 continue
             if pickems is None:
-                pickems = []
+                pickems = {}
             if new_name in pickems:
                 return_pickems.append(pickems[new_name])
 
@@ -272,27 +271,14 @@ class HockeyPickems(HockeyMixin):
         Checks to see if a pickem object is already created for the game
         if not it creates one or adds the message, channel to the current ones
         """
-        new_name = self.pickems_name(game)
+        new_name = Pickems.name_from_game(game)
         if str(guild.id) not in self.all_pickems:
             self.all_pickems[str((guild.id))] = {}
         old_pickem = self.all_pickems[str(guild.id)].get(str(game.game_id))
 
         if old_pickem is None:
-            pickem = Pickems(
-                game_id=game.game_id,
-                game_state=game.game_state,
-                messages=[],
-                guild=guild.id,
-                game_start=game.game_start,
-                home_team=game.home_team,
-                away_team=game.away_team,
-                votes={},
-                name=new_name,
-                winner=None,
-                link=game.link,
-                game_type=game.game_type,
-                should_edit=await self.pickems_config.guild(guild).show_count(),
-            )
+            should_edit = await self.pickems_config.guild(guild).show_count()
+            pickem = Pickems.from_game(game, guild, self.api, should_edit)
 
             self.all_pickems[str(guild.id)][str(game.game_id)] = pickem
             log.debug("creating new pickems %s", new_name)
@@ -312,13 +298,7 @@ class HockeyPickems(HockeyMixin):
                 continue
             if str(game.game_id) in data:
                 pickem = data[str(game.game_id)]
-                if game.game_start != pickem.game_start:
-                    # only attempt to edit if the game ID is the same
-                    # and the game start is different on the pickems from
-                    # the actual game playing today.
-                    pickem.game_start = game.game_start
-                    pickem.enable_buttons()
-                    pickem._should_save = True
+                if pickem.update(game):
                     for message in pickem.messages:
                         try:
                             channel_id, message_id = message.split("-")

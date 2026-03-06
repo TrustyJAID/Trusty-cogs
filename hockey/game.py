@@ -137,6 +137,7 @@ class GameType(Enum):
             1: GameType.pre_season,
             2: GameType.regular_season,
             3: GameType.playoffs,
+            9: GameType.olympics,
         }.get(value, GameType.unknown)
 
 

@@ -55,18 +55,18 @@ FRANCHISES_URL = URL("https://records.nhl.com/site/api/franchise").with_query(
 )
 
 COUNTRY_EMOJIS = {
-    "France": ":flag_fr:",
-    "Italy": ":flag_it:",
-    "Czechia": ":flag_cz:",
-    "Denmark": ":flag_dk:",
-    "Germany": ":flag_de:",
-    "Slovakia": ":flag_sk:",
-    "Sweden": ":flag_se:",
-    "Latvia": ":flag_lv:",
-    "Canada": ":flag_ca:",
-    "USA": ":flag_us:",
-    "Finland": ":flag_fi:",
-    "Switzerland": ":flag_ch:",
+    "France": "\N{REGIONAL INDICATOR SYMBOL LETTER F}\N{REGIONAL INDICATOR SYMBOL LETTER R}",  # ":flag_fr:",
+    "Italy": "\N{REGIONAL INDICATOR SYMBOL LETTER I}\N{REGIONAL INDICATOR SYMBOL LETTER T}",  # ":flag_it:",
+    "Czechia": "\N{REGIONAL INDICATOR SYMBOL LETTER C}\N{REGIONAL INDICATOR SYMBOL LETTER Z}",  # ":flag_cz:",
+    "Denmark": "\N{REGIONAL INDICATOR SYMBOL LETTER D}\N{REGIONAL INDICATOR SYMBOL LETTER K}",  # ":flag_dk:",
+    "Germany": "\N{REGIONAL INDICATOR SYMBOL LETTER D}\N{REGIONAL INDICATOR SYMBOL LETTER E}",  # ":flag_de:",
+    "Slovakia": "\N{REGIONAL INDICATOR SYMBOL LETTER S}\N{REGIONAL INDICATOR SYMBOL LETTER K}",  # ":flag_sk:",
+    "Sweden": "\N{REGIONAL INDICATOR SYMBOL LETTER S}\N{REGIONAL INDICATOR SYMBOL LETTER E}",  # ":flag_se:",
+    "Latvia": "\N{REGIONAL INDICATOR SYMBOL LETTER L}\N{REGIONAL INDICATOR SYMBOL LETTER V}",  # ":flag_lv:",
+    "Canada": "\N{REGIONAL INDICATOR SYMBOL LETTER C}\N{REGIONAL INDICATOR SYMBOL LETTER A}",  # ":flag_ca:",
+    "USA": "\N{REGIONAL INDICATOR SYMBOL LETTER U}\N{REGIONAL INDICATOR SYMBOL LETTER S}",  # ":flag_us:",
+    "Finland": "\N{REGIONAL INDICATOR SYMBOL LETTER F}\N{REGIONAL INDICATOR SYMBOL LETTER I}",  # ":flag_fi:",
+    "Switzerland": "\N{REGIONAL INDICATOR SYMBOL LETTER C}\N{REGIONAL INDICATOR SYMBOL LETTER H}",  # ":flag_ch:",
 }
 
 

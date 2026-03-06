@@ -4,6 +4,7 @@ from typing import Optional
 import aiohttp
 import discord
 from red_commons.logging import getLogger
+from redbot import VersionInfo, version_info
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import bold, humanize_list
@@ -521,9 +522,17 @@ class GameDayChannels(HockeyMixin):
             except Exception:
                 log.error("Error posting game preview in GDC channel.")
                 return
-
-        if new_chn.permissions_for(guild.me).manage_messages:
-            await preview_msg.pin()
+        if version_info < VersionInfo.from_str("3.5.23"):
+            pin_perms = new_chn.permissions_for(guild.me).manage_messages
+        else:
+            pin_perms = new_chn.permissions_for(guild.me).pin_messages
+        if pin_perms:
+            try:
+                await preview_msg.pin()
+            except discord.errors.Forbidden:
+                log.info("Missing permission to pin messages in %r", new_chn)
+            except Exception:
+                log.exception("Error pinning message in %r", new_chn)
 
     async def clear_gdc(self, guild: discord.Guild) -> None:
         """

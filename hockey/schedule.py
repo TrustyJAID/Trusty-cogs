@@ -423,8 +423,7 @@ class ScheduleList(menus.PageSource):
             if postponed:
                 game_state = "\N{CROSS MARK}"
             msg += (
-                f"- {away_emoji} {away_abr} @ "
-                f"{home_emoji} {home_abr} - {time_str} - {game_state}"
+                f"- {away_emoji} {away_abr} @ {home_emoji} {home_abr} - {time_str} - {game_state}"
             )
 
             if game_start < datetime.now(timezone.utc):

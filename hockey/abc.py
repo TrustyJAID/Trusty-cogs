@@ -17,6 +17,7 @@ from .helper import (
     PlayerFinder,
     StandingsFinder,
     StateFinder,
+    Team,
     TeamFinder,
     YearFinder,
 )
@@ -351,7 +352,7 @@ class HockeyMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def _make_banner(self, home_team: str, away_team: str) -> BytesIO:
+    def _make_banner(self, home_team: Team, away_team: Team) -> BytesIO:
         raise NotImplementedError()
 
     @abstractmethod
@@ -500,10 +501,6 @@ class HockeyMixin(ABC):
 
     @abstractmethod
     async def before_pickems_loop(self) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def pickems_name(self, game: Game) -> str:
         raise NotImplementedError()
 
     @abstractmethod

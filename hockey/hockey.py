@@ -270,7 +270,11 @@ class Hockey(
             return
         rules_channel = after.get_channel(rules_channel_id)
         if rules_channel is None:
-            log.info("Rules channel (%s) in %r was not found, removing.", rules_channel_id, after)
+            log.info(
+                "Rules channel (%s) in %r was not found, removing.",
+                rules_channel_id,
+                after,
+            )
             await self.config.guild(after).rules_channel.clear()
             return
 
@@ -458,7 +462,6 @@ class Hockey(
                 # the first preview message to delete old ones
                 await self.check_new_day()
             if self.TEST_LOOP:
-
                 self.current_games = {
                     2020020474: {
                         "count": 0,

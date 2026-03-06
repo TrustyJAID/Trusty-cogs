@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import discord
 from red_commons.logging import getLogger
@@ -11,12 +11,21 @@ from .constants import TEAMS
 from .errors import NotAValidTeamError, UserHasVotedError, VotingHasEndedError
 from .game import Game, GameState, GameType
 
+if TYPE_CHECKING:
+    from .api import NewAPI
+
 _ = Translator("Hockey", __file__)
 log = getLogger("red.trusty-cogs.Hockey")
 
 
 class PickemsButton(discord.ui.Button):
-    def __init__(self, team: str, emoji: discord.PartialEmoji, disabled: bool, custom_id: str):
+    def __init__(
+        self,
+        team: str,
+        emoji: Union[discord.Emoji, discord.PartialEmoji],
+        disabled: bool,
+        custom_id: str,
+    ):
         self.team = team
         super().__init__(
             style=discord.ButtonStyle.primary,
@@ -118,6 +127,7 @@ class Pickems(discord.ui.View):
         link: Optional[str],
         game_type: GameType,
         should_edit: bool,
+        _api: NewAPI,
     ):
         self.game_id = game_id
         self.game_state = game_state
@@ -127,13 +137,18 @@ class Pickems(discord.ui.View):
         self.home_team = home_team
         self.away_team = away_team
         self.votes = votes
-        self._raw_home_emoji = TEAMS.get(self.home_team, {}).get("emoji", "\N{HOUSE BUILDING}")
-        self.home_emoji = discord.PartialEmoji.from_str(self._raw_home_emoji)
-        self._raw_away_emoji = TEAMS.get(self.away_team, {}).get("emoji", "\N{AIRPLANE}")
-        self.away_emoji = discord.PartialEmoji.from_str(self._raw_away_emoji)
+        self._api = _api
+        self.home_emoji = self._api.get_team_emoji(self.home_team)
+        if not str(self.home_emoji):
+            self.home_emoji = discord.PartialEmoji.from_str("\N{HOUSE BUILDING}")
+        self.away_emoji = self._api.get_team_emoji(self.away_team)
+        log.debug("%s @ %s %s", self.away_emoji, self.home_emoji, name)
+        if not str(self.away_emoji):
+            self.away_emoji = discord.PartialEmoji.from_str("\N{AIRPLANE}")
         self.winner = winner
         self.name = name
         self.link = link
+
         self._should_save: bool = True
         # Start true so we save instantiated pickems
         self.game_type: GameType = game_type
@@ -155,6 +170,56 @@ class Pickems(discord.ui.View):
         self.add_item(self.away_button)
         self.should_edit: bool = should_edit
 
+    @staticmethod
+    def name_from_game(game: Game) -> str:
+        return f"{game.away.tri_code}@{game.home.tri_code}-{game.game_start.month}-{game.game_start.day}"
+
+    @classmethod
+    def from_game(cls, game: Game, guild: discord.Guild, api: NewAPI, should_edit: bool):
+        return cls(
+            game_id=game.game_id,
+            game_state=game.game_state,
+            messages=[],
+            guild=guild.id,
+            game_start=game.game_start,
+            home_team=game.home_team,
+            away_team=game.away_team,
+            votes={},
+            name=Pickems.name_from_game(game),
+            winner=None,
+            link=game.link,
+            game_type=game.game_type,
+            should_edit=should_edit,
+            _api=game.api,
+        )
+
+    def update(self, game: Game) -> Optional[bool]:
+        if game.game_id != self.game_id:
+            return None
+        changed = False
+        if self.home_team != game.home_team:
+            self.home_team = game.home_team
+            changed = True
+            self._should_save = True
+        if self.away_team != game.away_team:
+            self.away_team = game.away_team
+            changed = True
+            self._should_save = True
+        if self.game_start != game.game_start:
+            self.game_start = game.game_start
+            changed = True
+            self._should_save = True
+        self.update_emojis()
+        return changed
+
+    def update_emojis(self):
+        self.home_emoji = self._api.get_team_emoji(self.home_team)
+        if not str(self.home_emoji):
+            self.home_emoji = discord.PartialEmoji.from_str("\N{HOUSE BUILDING}")
+        self.away_emoji = self._api.get_team_emoji(self.away_team)
+        if not str(self.away_emoji):
+            self.away_emoji = discord.PartialEmoji.from_str("\N{AIRPLANE}")
+
     def __repr__(self):
         return (
             "<Pickems game_id={0.game_id} game_state={0.game_state} "
@@ -171,12 +236,14 @@ class Pickems(discord.ui.View):
         away_count = sum(1 for i in self.votes.values() if i == self.away_team)
         self.home_button.label = f"{self.home_team} ({home_count})"
         self.away_button.label = f"{self.away_team} ({away_count})"
+        self.update_emojis()
 
     def disable_buttons(self) -> bool:
         if self.home_button.disabled and self.away_button.disabled:
             return False
         self.home_button.disabled = True
         self.away_button.disabled = True
+        self.update_emojis()
         return True
 
     def enable_buttons(self) -> bool:
@@ -184,6 +251,7 @@ class Pickems(discord.ui.View):
             return False
         self.home_button.disabled = False
         self.away_button.disabled = False
+        self.update_emojis()
         return True
 
     def compare_game(self, game: Game) -> bool:
@@ -240,7 +308,7 @@ class Pickems(discord.ui.View):
         }
 
     @classmethod
-    def from_json(cls, data: dict) -> Pickems:
+    def from_json(cls, data: dict, api: NewAPI) -> Pickems:
         log.trace("Pickems from_json data: %s", data)
         game_start = datetime.strptime(data["game_start"], "%Y-%m-%dT%H:%M:%SZ")
         game_start = game_start.replace(tzinfo=timezone.utc)
@@ -262,6 +330,7 @@ class Pickems(discord.ui.View):
             link=data.get("link", None),
             game_type=GameType(data.get("game_type", "R")),
             should_edit=data.get("should_edit", True),
+            _api=api,
         )
 
     async def set_pickem_winner(self, game: Game) -> bool:
