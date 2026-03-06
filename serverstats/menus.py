@@ -302,7 +302,11 @@ class BaseView(discord.ui.View):
         return self._source
 
     async def on_timeout(self):
-        await self.message.edit(view=None)
+        try:
+            await self.message.edit(view=None)
+        except Exception:
+            # I don't really care if this errors so I want to explicitly ignore it
+            pass
 
     async def start(self, ctx: commands.Context):
         await self.send_initial_message(ctx)
