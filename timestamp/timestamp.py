@@ -352,7 +352,7 @@ class Timestamp(commands.Cog):
         for style in TimestampStyle:
             ts = format_dt(new_time, style.value)
             name = style.name.replace("_", " ").title()
-            msg += f"{name}: {ts}\n{box(ts)}"
+            msg += f"{name}: {ts}\n{box(ts)}\n"
         await ctx.maybe_send_embed(msg)
 
     @discord_timestamp.command(name="absolute", aliases=["a"])
