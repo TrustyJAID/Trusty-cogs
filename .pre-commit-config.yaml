@@ -1,12 +1,12 @@
 default_language_version:
-    python: python3.8
+  python: python3.8
 fail_fast: false
 ci:
-    skip: [readmegen, makerequirements]
-    autoupdate_schedule: quarterly
+  skip: [readmegen, makerequirements]
+  autoupdate_schedule: quarterly
 exclude: '^.+\.pot?$'
 repos:
--   repo: local
+  - repo: local
     hooks:
       - id: readmegen
         name: readmegen
@@ -36,36 +36,33 @@ repos:
         pass_filenames: false
         require_serial: true
         verbose: true
--   repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.1.0
     hooks:
-    -   id: check-yaml
-    -   id: end-of-file-fixer
-    -   id: trailing-whitespace
-    -   id: check-builtin-literals
-    -   id: check-ast
-    -   id: check-docstring-first
-    -   id: check-json
-    -   id: detect-private-key
-    -   id: check-toml
-    -   id: pretty-format-json
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-builtin-literals
+      - id: check-ast
+      - id: check-docstring-first
+      - id: check-json
+      - id: detect-private-key
+      - id: check-toml
+      - id: pretty-format-json
         args:
           - "--autofix"
           - "--indent=4"
           - "--no-sort-keys"
-    -   id: requirements-txt-fixer
-    -   id: trailing-whitespace
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
 
--   repo: https://github.com/psf/black
-    rev: '22.3.0'
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.15.6
     hooks:
-      - id: black
--   repo: https://github.com/Pierre-Sassoulas/black-disable-checker
-    rev: '1.0.1'
-    hooks:
-      - id: black-disable-checker
--   repo: https://github.com/pycqa/isort
-    rev: '5.10.1'
-    hooks:
-      - id: isort
+      # Run the linter.
+      - id: ruff-check
+        args: [--fix]
+      # Run the formatter.
+      - id: ruff-format
