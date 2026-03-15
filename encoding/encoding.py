@@ -27,7 +27,7 @@ class Encoding(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.1"
+    __version__ = "1.3.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -127,11 +127,14 @@ class Encoding(commands.Cog):
         Decode binary sequences of 8
         """
         try:
-            message = re.sub(r"[\s]+", "", message)
-            bin_ascii = "".join(
-                [chr(int(message[i : i + 8], 2)) for i in range(0, len(message), 8)]
-            )
-            await ctx.send(bin_ascii)
+            ret = ""
+            for match in re.finditer(r"([01]{8})|((?:(?![01]{8}).)+)", message):
+                hex_part, text_part = match.groups()
+                if hex_part:
+                    ret += chr(int(hex_part, 2))
+                else:
+                    ret += text_part
+            await ctx.send(ret)
         except Exception:
             await ctx.send("That does not look like valid binary.")
 
@@ -149,11 +152,16 @@ class Encoding(commands.Cog):
         Decode a hexadecimal sequence to text
         """
         try:
-            message = re.sub(r"[\s]+", "", message)
-            ascii_bin = "".join(
-                chr(int("0x" + message[x : x + 2], 16)) for x in range(0, len(message), 2)
-            )
-            await ctx.send(ascii_bin)
+            ret = ""
+            for match in re.finditer(
+                r"(?i)(?:0x)?([0-9A-F]{2})|((?:(?!0x|[0-9A-F]{2}).)+)", message, re.I
+            ):
+                hex_part, text_part = match.groups()
+                if hex_part:
+                    ret += chr(int(hex_part, 16))
+                else:
+                    ret += text_part
+            await ctx.send(ret)
         except Exception:
             await ctx.send("That does not look like valid hex.")
 
