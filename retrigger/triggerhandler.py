@@ -534,9 +534,9 @@ class TriggerHandler(ReTriggerMixin):
             elif isinstance(value, list):
                 for field_index, embedfields in enumerate(value):
                     emfield_name = embedfields["name"].lower()
-                    flattened_embed_dict[
-                        f"{field.lower()}-{field_index}-{emfield_name}"
-                    ] = embedfields["value"]
+                    flattened_embed_dict[f"{field.lower()}-{field_index}-{emfield_name}"] = (
+                        embedfields["value"]
+                    )
             else:
                 flattened_embed_dict[field.lower()] = value
         return "\n".join(
@@ -982,6 +982,19 @@ class TriggerHandler(ReTriggerMixin):
                     await author.kick(reason=reason)
                     if await self.config.guild(guild).kick_logs():
                         await self.modlog_action(message, trigger, find, _("Kicked"))
+                    else:
+                        try:
+                            await modlog.create_case(
+                                self.bot,
+                                guild,
+                                message.created_at,
+                                "kick",
+                                author,
+                                discord.Object(id=trigger.author),
+                                reason,
+                            )
+                        except Exception:
+                            pass
                 except discord.errors.Forbidden:
                     log.debug(
                         "Retrigger encountered an error in %r with trigger %r", guild, trigger
@@ -1001,6 +1014,19 @@ class TriggerHandler(ReTriggerMixin):
                     await author.ban(reason=reason, delete_message_days=0)
                     if await self.config.guild(guild).ban_logs():
                         await self.modlog_action(message, trigger, find, _("Banned"))
+                    else:
+                        try:
+                            await modlog.create_case(
+                                self.bot,
+                                guild,
+                                message.created_at,
+                                "ban",
+                                author,
+                                discord.Object(id=trigger.author),
+                                reason,
+                            )
+                        except Exception:
+                            pass
                 except discord.errors.Forbidden:
                     log.debug("Discord forbidden error when banning %s", author, exc_info=True)
                 except Exception:
