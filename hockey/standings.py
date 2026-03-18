@@ -950,8 +950,8 @@ class Standings:
 
 class StandingsPage:
     def __init__(self, embed: discord.Embed, files: List[discord.File]):
-        self.embed = embed
-        self.files = files
+        self.embed: discord.Embed = embed
+        self.files: List[discord.File] = files
 
     def to_edit(self) -> Dict[str, Union[discord.Embed, List[discord.File]]]:
         return {"embed": self.embed, "attachments": self.files}
@@ -1076,7 +1076,7 @@ class StandingsMenu(discord.ui.View):
         """
         if self.search is not None:
             for page in self.pages:
-                if self.search.lower() in page.author.name.lower():
+                if self.search.lower() in page.embed.author.name.lower():
                     self.current_page = self.pages.index(page)
         page = await self.source.get_page(self.current_page)
         kwargs = await self._get_kwargs_from_page(page, is_send=True)
