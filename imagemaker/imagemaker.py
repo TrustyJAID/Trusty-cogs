@@ -129,9 +129,6 @@ class ImageMaker(commands.Cog):
         _, tresh_al = cv2.threshold(blur_al, 245, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         # Invert the black and the white
         inverted_original = cv2.subtract(255, tresh_im)
-        inverted_GaussianBlur = cv2.subtract(255, tresh_gb)
-        inverted_MedianBlur = cv2.subtract(255, tresh_mb)
-        inverted_Bilateral = cv2.subtract(255, tresh_al)
         template = self.cvImageToPillow(inverted_original)
         temp = BytesIO()
         template.save(temp, format=WEBP_OR_PNG)
@@ -141,7 +138,7 @@ class ImageMaker(commands.Cog):
 
     # @commands.command()
     # @commands.bot_has_permissions(attach_files=True)
-    async def scrybe(self, ctx: commands.Context, user: Optional[discord.User] = None):
+    async def scrybe(self, ctx: commands.Context, user: Optional[discord.Member] = None):
         """
         Scrybe your own card
 
@@ -162,7 +159,7 @@ class ImageMaker(commands.Cog):
         self,
         ctx: commands.Context,
         *,
-        text: Optional[Union[discord.Member, discord.User, str]] = None,
+        text: Optional[Union[discord.Member, str]] = None,
     ) -> None:
         """
         Generate a wheeze image with text or a user avatar.
@@ -280,7 +277,7 @@ class ImageMaker(commands.Cog):
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
     async def gwheeze(
-        self, ctx: commands.Context, member: Optional[Union[discord.Member, discord.User]] = None
+        self, ctx: commands.Context, member: Optional[discord.Member] = None
     ) -> None:
         """
         Generate a gif wheeze image if user has a gif avatar.
@@ -307,7 +304,7 @@ class ImageMaker(commands.Cog):
     async def beautiful(
         self,
         ctx: commands.Context,
-        user: Optional[Union[discord.Member, discord.User]] = None,
+        user: Optional[discord.Member] = None,
         is_gif: bool = False,
     ) -> None:
         """
@@ -335,7 +332,7 @@ class ImageMaker(commands.Cog):
     async def feels(
         self,
         ctx: commands.Context,
-        user: Optional[Union[discord.Member, discord.User]] = None,
+        user: Optional[discord.Member] = None,
         is_gif: bool = False,
     ) -> None:
         """
@@ -368,9 +365,7 @@ class ImageMaker(commands.Cog):
         - `<message>` will be what is pasted on the gif.
         """
         if not TRUMP:
-            msg = (
-                "The bot owner needs to run " "`pip3 install opencv-python` " "to run this command"
-            )
+            msg = "The bot owner needs to run `pip3 install opencv-python` to run this command"
             await ctx.send(msg)
             return
         async with ctx.channel.typing():
@@ -438,7 +433,7 @@ class ImageMaker(commands.Cog):
     # Below are all the task handlers so the code is not blocking
 
     async def make_beautiful(
-        self, user: Union[discord.Member, discord.User], is_gif: bool
+        self, user: discord.Member, is_gif: bool
     ) -> Tuple[Optional[discord.File], int]:
         image_path = cog_data_path(self) / "beautiful.png"
         if not os.path.isfile(image_path) or os.path.getsize(image_path) == 0:
@@ -478,7 +473,7 @@ class ImageMaker(commands.Cog):
         return file, file_size
 
     async def make_feels(
-        self, user: discord.User, is_gif: bool
+        self, user: discord.Member, is_gif: bool
     ) -> Tuple[Optional[discord.File], int]:
         image_path = cog_data_path(self) / "feels.png"
         if not os.path.isfile(image_path) or os.path.getsize(image_path) == 0:
@@ -522,7 +517,7 @@ class ImageMaker(commands.Cog):
         return file, file_size
 
     async def make_wheeze(
-        self, text: Union[discord.Member, discord.User, str], is_gif=False
+        self, text: Union[discord.Member, str], is_gif=False
     ) -> Tuple[Optional[discord.File], int]:
         image_path = cog_data_path(self) / "wheeze.jpg"
         if not os.path.isfile(image_path) or os.path.getsize(image_path) == 0:
@@ -539,8 +534,8 @@ class ImageMaker(commands.Cog):
 
         template = Image.open(image_path)
         avatar = None
-        if type(text) == discord.Member:
-            user = cast(discord.User, text)
+        if isinstance(text, discord.Member):
+            user = cast(discord.Member, text)
             if user.display_avatar.is_animated() and is_gif:
                 asset = BytesIO(await user.display_avatar.replace(format="gif", size=64).read())
                 avatar = Image.open(asset)
@@ -737,7 +732,7 @@ class ImageMaker(commands.Cog):
         # print(template.info)
         template = template.convert("RGBA")
 
-        if type(avatar) != str:
+        if not isinstance(avatar, str):
             avatar = avatar.convert("RGBA")
             template.paste(avatar, (60, 470), avatar)
         else:
@@ -839,7 +834,6 @@ class ImageMaker(commands.Cog):
         frames = json.load(open(jsonPath))
 
         # Used to compute motion blur
-        lastCorners = None
         textImage = self.generateText(text)
 
         # Will store all gif frames
