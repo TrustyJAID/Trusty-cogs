@@ -99,7 +99,7 @@ class HockeySetCommands(HockeyMixin):
             await ctx.send(embed=em)
         else:
             msg = _(
-                "{guild} Hockey Settings\n {channels}\nNotifications\n{notifications}"
+                "{guild} Hockey Settings\n {channels}\n"
                 "\nStandings Settings\n{standings_chn}: {standings}\n"
             ).format(
                 guild=guild.name,
