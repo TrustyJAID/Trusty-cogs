@@ -34,6 +34,8 @@ class RoleToolsEvents(RoleToolsMixin):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         await self._ready.wait()
+        if payload.guild_id is None:
+            return
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
@@ -56,7 +58,7 @@ class RoleToolsEvents(RoleToolsMixin):
             if not role:
                 return
 
-            member = guild.get_member(payload.user_id)
+            member = payload.member or guild.get_member(payload.user_id)
 
             if not member:
                 if not self.is_discord:
@@ -65,7 +67,11 @@ class RoleToolsEvents(RoleToolsMixin):
                     try:
                         member = await guild.fetch_member(payload.user_id)
                     except Exception:
-                        log.error("Error fetching user on raw reaction event.")
+                        log.exception(
+                            "Error fetching user %s on raw reaction add event %s",
+                            payload.user_id,
+                            payload,
+                        )
                         return
                 else:
                     return
@@ -110,7 +116,11 @@ class RoleToolsEvents(RoleToolsMixin):
                     try:
                         member = await guild.fetch_member(payload.user_id)
                     except Exception:
-                        log.error("Error fetching user on raw reaction event.")
+                        log.exception(
+                            "Error fetching user %s in reaction remove event on %s",
+                            payload.user_id,
+                            payload,
+                        )
                         return
                 else:
                     return
