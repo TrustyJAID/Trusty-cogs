@@ -2,7 +2,7 @@ import asyncio
 import datetime
 from collections import deque
 from enum import Enum
-from typing import Any, Deque, Dict, List, Optional, Sequence, Tuple, Union, cast
+from typing import Any, Deque, Dict, List, Optional, Sequence, Union, cast
 
 import discord
 from discord.ext import tasks
@@ -513,8 +513,7 @@ class EventMixin:
             )
         else:
             infomessage = _(
-                "{emoji} {time} {perp} deleted a message from "
-                "**{author}** (`{a_id}`) in {channel}"
+                "{emoji} {time} {perp} deleted a message from **{author}** (`{a_id}`) in {channel}"
             ).format(
                 emoji=settings["emoji"],
                 time=discord.utils.format_dt(time),
@@ -829,7 +828,7 @@ class EventMixin:
         else:
             time = datetime.datetime.now(datetime.timezone.utc)
             msg = _(
-                "{emoji} {time} **{member}**(`{m_id}`) " "joined the guild. Total members: {users}"
+                "{emoji} {time} **{member}**(`{m_id}`) joined the guild. Total members: {users}"
             ).format(
                 emoji=self.settings[guild.id]["user_join"]["emoji"],
                 time=discord.utils.format_dt(time),
@@ -963,7 +962,7 @@ class EventMixin:
                     guild, before, discord.AuditLogAction.overwrite_delete
                 )
                 perp = getattr(entry, "user", None)
-                reason = getattr(entry, "reason", None)
+                # reason = getattr(entry, "reason", None)
                 if perp:
                     p_msg += _("{name} Removed overwrites:\n").format(name=perp.mention)
                 p_msg += _("{name} Overwrites removed:\n").format(name=name)
@@ -979,7 +978,7 @@ class EventMixin:
                     guild, before, discord.AuditLogAction.overwrite_update
                 )
                 perp = getattr(entry, "user", None)
-                reason = getattr(entry, "reason", None)
+                #  = getattr(entry, "reason", None)
 
                 if perp:
                     p_msg += _("{name} Updated overwrites:\n").format(name=perp.mention)
@@ -1003,7 +1002,7 @@ class EventMixin:
                     guild, before, discord.AuditLogAction.overwrite_update
                 )
                 perp = getattr(entry, "user", None)
-                reason = getattr(entry, "reason", None)
+                # reason = getattr(entry, "reason", None)
                 if perp:
                     p_msg += _("{name} Added overwrites:\n").format(name=perp.mention)
                 p_msg += _("{name} Overwrites added.\n").format(name=name)

@@ -352,8 +352,7 @@ class Spotify(
         if ctx.interaction:
             is_slash = True
         msg = _(
-            "Please accept the authorization [here]({auth}) and **DM "
-            "me** with the final full url."
+            "Please accept the authorization [here]({auth}) and **DM me** with the final full url."
         ).format(auth=auth.url)
 
         if is_slash:

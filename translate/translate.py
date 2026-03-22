@@ -11,6 +11,7 @@ Support the developer                               https://goo.gl/Brchj4
 Invite the bot to your guild                       https://goo.gl/aQm2G7
 Join the official development guild                https://discord.gg/uekTNPj
 """
+
 from typing import Optional
 
 import discord

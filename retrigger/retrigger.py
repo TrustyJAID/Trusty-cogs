@@ -519,7 +519,7 @@ class ReTrigger(
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
         if style not in ["guild", "server", "channel", "user", "member"]:
-            msg = _("Style must be either `guild`, " "`server`, `channel`, `user`, or `member`.")
+            msg = _("Style must be either `guild`, `server`, `channel`, `user`, or `member`.")
             await ctx.send(msg)
             return
         msg = _("Cooldown of {time}s per {style} set for Trigger `{name}`.")

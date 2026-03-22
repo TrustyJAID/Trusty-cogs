@@ -104,27 +104,19 @@ class MeasurementConverter(discord.app_commands.Transformer):
 
 def get_xray_wavelength(element: mendeleev.models.Element) -> str:
     try:
-        ka = 1239.84 / (
-            13.6057 * ((element.atomic_number - 1) ** 2) * ((1 / 1**2) - (1 / 2**2))
-        )
+        ka = 1239.84 / (13.6057 * ((element.atomic_number - 1) ** 2) * ((1 / 1**2) - (1 / 2**2)))
     except Exception:
         ka = ""
     try:
-        kb = 1239.84 / (
-            13.6057 * ((element.atomic_number - 1) ** 2) * ((1 / 1**2) - (1 / 3**2))
-        )
+        kb = 1239.84 / (13.6057 * ((element.atomic_number - 1) ** 2) * ((1 / 1**2) - (1 / 3**2)))
     except Exception:
         kb = ""
     try:
-        la = 1239.84 / (
-            13.6057 * ((element.atomic_number - 7.4) ** 2) * ((1 / 1**2) - (1 / 2**3))
-        )
+        la = 1239.84 / (13.6057 * ((element.atomic_number - 7.4) ** 2) * ((1 / 1**2) - (1 / 2**3)))
     except Exception:
         la = ""
     try:
-        lb = 1239.84 / (
-            13.6057 * ((element.atomic_number - 7.4) ** 2) * ((1 / 1**2) - (1 / 2**4))
-        )
+        lb = 1239.84 / (13.6057 * ((element.atomic_number - 7.4) ** 2) * ((1 / 1**2) - (1 / 2**4)))
     except Exception:
         lb = ""
 

@@ -572,7 +572,7 @@ class PlayerStats:
                 if attr == "height" and self.height:
                     msg += (
                         name
-                        + f"{self.height//12}' {self.height%12}\" / {int(self.height * 2.54)} cm\n"
+                        + f"{self.height // 12}' {self.height % 12}\" / {int(self.height * 2.54)} cm\n"
                     )
                 elif attr == "birth_date" and self.birth_date is not None:
                     years = int(
@@ -752,7 +752,7 @@ class SimplePlayer:
                 if attr == "height" and self.height:
                     msg += (
                         name
-                        + f"{self.height//12}' {self.height%12}\" / {int(self.height * 2.54)} cm\n"
+                        + f"{self.height // 12}' {self.height % 12}\" / {int(self.height * 2.54)} cm\n"
                     )
                 elif attr == "birth_date" and self.birth_date is not None:
                     years = int(
@@ -1056,7 +1056,7 @@ class Skater(SimplePlayer):
             team_id = self.last_nhl_team_id
             log.debug("Skater get_embed team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
-            emoji = f'<:{TEAMS[team_name]["emoji"]}>'
+            emoji = f"<:{TEAMS[team_name]['emoji']}>"
         except IndexError:
             team_name = _("No Team")
             emoji = ""
@@ -1148,7 +1148,7 @@ class SkaterPlayoffs(Skater):
             team_id = self.last_nhl_team_id
             log.debug("SkaterPlayoffs get_embed team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
-            emoji = f'<:{TEAMS[team_name]["emoji"]}>'
+            emoji = f"<:{TEAMS[team_name]['emoji']}>"
         except IndexError:
             team_name = _("No Team")
             emoji = ""
@@ -1258,7 +1258,7 @@ class Goalie(SimplePlayer):
             team_id = self.last_nhl_team_id
             log.verbose("Goalie team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
-            emoji = f'<:{TEAMS[team_name]["emoji"]}>'
+            emoji = f"<:{TEAMS[team_name]['emoji']}>"
         except IndexError:
             team_name = _("No Team")
             emoji = ""
@@ -1331,7 +1331,7 @@ class GoaliePlayoffs(Goalie):
             team_id = self.last_nhl_team_id
             log.verbose("GoaliePlayoffs team_id: %s", team_id)
             team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
-            emoji = f'<:{TEAMS[team_name]["emoji"]}>'
+            emoji = f"<:{TEAMS[team_name]['emoji']}>"
         except IndexError:
             team_name = _("No Team")
             emoji = ""

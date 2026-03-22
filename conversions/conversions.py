@@ -194,8 +194,7 @@ class Conversions(commands.Cog):
                 )
             else:
                 raise CoinMarketCapError(
-                    "Something went wrong, the error code is "
-                    "{code}\n`{error_message}`".format(
+                    "Something went wrong, the error code is {code}\n`{error_message}`".format(
                         code=resp.status, error_message=data["error_message"]
                     )
                 )
@@ -215,8 +214,7 @@ class Conversions(commands.Cog):
                 )
             else:
                 raise CoinMarketCapError(
-                    "Something went wrong, the error code is "
-                    "{code}\n`{error_message}`".format(
+                    "Something went wrong, the error code is {code}\n`{error_message}`".format(
                         code=resp.status, error_message=data["error_message"]
                     )
                 )

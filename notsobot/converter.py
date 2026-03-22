@@ -6,7 +6,6 @@ from typing import Dict, List, Pattern, Union
 
 import aiohttp
 import discord
-import unidecode
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 from red_commons.logging import getLogger

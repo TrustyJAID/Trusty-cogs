@@ -1687,13 +1687,9 @@ class SpotifyCommands(SpotifyMixin):
             if not user_token:
                 return await self.no_user_token(ctx)
             try:
-                is_playing = False
                 user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
                     devices = await user_spotify.playback_devices()
-                    now = await user_spotify.playback()
-                    if now and now.is_playing:
-                        is_playing = True
                 new_device = None
                 if device_name:
                     for d in devices:
@@ -1799,16 +1795,12 @@ class SpotifyCommands(SpotifyMixin):
             return await self.no_user_token(ctx)
         await ctx.defer(ephemeral=True)
         try:
-            is_playing = False
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 devices = await user_spotify.playback_devices()
-                now = await user_spotify.playback()
-                if now and now.is_playing:
-                    is_playing = True
             devices_msg = _("{author}'s Spotify Devices:\n").format(author=ctx.author.display_name)
             for c, d in enumerate(devices):
-                devices_msg += f"{c+1}. `{d.name}` - {d.type} - {d.volume_percent}% "
+                devices_msg += f"{c + 1}. `{d.name}` - {d.type} - {d.volume_percent}% "
                 if d.is_active:
                     devices_msg += str(
                         spotify_emoji_handler.get_emoji(

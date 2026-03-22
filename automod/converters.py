@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 from datetime import timedelta
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import discord
 from discord.ext.commands import Converter, FlagConverter, flag

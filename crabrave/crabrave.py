@@ -167,7 +167,7 @@ class CrabRave(commands.Cog):
 
         https://github.com/DankMemer/meme-server/blob/master/endpoints/crab.py
         """
-        fp = str(cog_data_path(self) / f"Verdana.ttf")
+        fp = str(cog_data_path(self) / "Verdana.ttf")
         clip = VideoFileClip(str(cog_data_path(self)) + style.video_path())
         # clip.volume(0.5)
         top_text = (
@@ -208,7 +208,7 @@ class CrabRave(commands.Cog):
             threads=1,
             preset="superfast",
             logger=None,
-            temp_audiofile=str(cog_data_path(self) / f"{u_id}{style.audio_path()}")
+            temp_audiofile=str(cog_data_path(self) / f"{u_id}{style.audio_path()}"),
             # ffmpeg_params=["-filter:a", "volume=0.5"]
         )
         clip.close()

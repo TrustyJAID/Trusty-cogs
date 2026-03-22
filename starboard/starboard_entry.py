@@ -6,7 +6,6 @@ from typing import Dict, List, Optional, Union
 
 import discord
 from red_commons.logging import getLogger
-from redbot import VersionInfo, version_info
 from redbot.core.bot import Red
 from redbot.core.utils import AsyncIter
 

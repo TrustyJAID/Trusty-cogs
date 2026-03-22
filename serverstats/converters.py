@@ -1,5 +1,5 @@
 import re
-from typing import List, Union
+from typing import List
 
 import discord
 from discord.ext.commands.converter import IDConverter

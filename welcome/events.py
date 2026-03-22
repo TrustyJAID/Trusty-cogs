@@ -327,7 +327,7 @@ class Events:
                         await member.send(await self.convert_parms(member, guild, msg, False))  # type: ignore
                 except discord.errors.Forbidden:
                     log.info(
-                        "welcome.py: unable to whisper %s. Probably " "doesn't want to be PM'd",
+                        "welcome.py: unable to whisper %s. Probably doesn't want to be PM'd",
                         member,
                     )
                 except Exception:

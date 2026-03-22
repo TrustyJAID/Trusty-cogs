@@ -123,7 +123,7 @@ class Rekt(commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def rekt(self, ctx: commands.Context):
         """Post embed with random rekt messages"""
-        rektemoji = ["\u2611", "\U0001F1F7", "\U0001F1EA", "\U0001F1F0", "\U0001F1F9"]
+        rektemoji = ["\u2611", "\U0001f1f7", "\U0001f1ea", "\U0001f1f0", "\U0001f1f9"]
         embed = discord.Embed(colour=discord.Colour.blue())
         embed.add_field(name=_("NOT REKT"), value=_("⬜ Not Rekt"), inline=True)
         message = "\n".join(choice(rektlist) for line in range(10))

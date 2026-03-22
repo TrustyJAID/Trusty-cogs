@@ -192,7 +192,7 @@ class Starboard(StarboardEvents, commands.Cog):
         name = name.lower()
         if channel is None:
             channel = ctx.message.channel
-        if type(emoji) == discord.Emoji:
+        if isinstance(emoji, discord.Emoji):
             if emoji not in guild.emojis:
                 await ctx.send(_("That emoji is not on this guild!"))
                 return
@@ -253,7 +253,7 @@ class Starboard(StarboardEvents, commands.Cog):
                         channels += 1
         await self._save_starboards(guild)
         msg = _(
-            "Removed {channels} channels and roles, and {boards} boards " "that no longer exist"
+            "Removed {channels} channels and roles, and {boards} boards that no longer exist"
         ).format(channels=channels, boards=boards)
         await ctx.send(msg)
 
@@ -881,7 +881,7 @@ class Starboard(StarboardEvents, commands.Cog):
                 )
                 return
             starboard = list(self.starboards[guild.id].values())[0]
-        if type(emoji) == discord.Emoji:
+        if isinstance(emoji, discord.Emoji):
             if emoji not in guild.emojis:
                 await ctx.send(_("That emoji is not on this guild!"))
                 return

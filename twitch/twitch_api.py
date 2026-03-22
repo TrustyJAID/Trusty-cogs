@@ -242,7 +242,7 @@ class TwitchAPI:
                 except Exception:
                     log.exception(f"Error getting twitch profile {follow.from_id}", exc_info=True)
                 log.info(
-                    "%s Followed! %s " "has %s followers now.",
+                    "%s Followed! %s has %s followers now.",
                     profile.login,
                     followed.display_name,
                     total,
@@ -256,7 +256,7 @@ class TwitchAPI:
                         await channel.send(embed=em)
                     else:
                         text_msg = (
-                            f"{profile.display_name} has just " f"followed {account.display_name}!"
+                            f"{profile.display_name} has just followed {account.display_name}!"
                         )
                         await channel.send(text_msg)
                 async with self.config.twitch_accounts() as check_accounts:

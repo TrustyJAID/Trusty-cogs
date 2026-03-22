@@ -40,6 +40,7 @@ TIME_RE_STRING = r"|".join(
 )
 TIME_RE = re.compile(TIME_RE_STRING, re.I)
 TIMESTAMP_RE = re.compile(r"<t:(?P<timestamp>\d+):?(?P<format>R|t|T|d|D|f|F)?>")
+START_SPLIT = re.compile(r"(on|in|at)", re.I)
 
 
 class TimezoneConverter(discord.app_commands.Transformer):
@@ -501,14 +502,18 @@ class Event(discord.ui.View):
             for k, v in time.groupdict().items():
                 if v:
                     time_data[k] = int(v)
+        time_split = START_SPLIT.search(self.event)
 
         if time_data:
+            event_title = START_SPLIT.sub("", self.event)
             date = datetime.now(timezone.utc) + timedelta(**time_data)
-            self.event = TIME_RE.sub("", self.event) + " " + format_dt(date, style="R")
-        else:
+            self.event = TIME_RE.sub("", event_title) + " " + format_dt(date, style="R")
+        elif time_split:
             try:
+                split_event = START_SPLIT.split(self.event)
+                log.debug(split_event)
                 date, tokens = parser.parse(
-                    self.event, fuzzy_with_tokens=True, tzinfos=TIMEZONES.get_zones()
+                    split_event[-1], fuzzy_with_tokens=True, tzinfos=TIMEZONES.get_zones()
                 )
                 if date and "tomorrow" in self.event.lower():
                     date += timedelta(days=1)
@@ -524,15 +529,12 @@ class Event(discord.ui.View):
                 )
                 date = time.astimezone(ZoneInfo("UTC"))
                 new_event_title = ""
-                added_date = False
-                for t in tokens:
-                    if not t.strip():
-                        added_date = True
-                        new_event_title += format_dt(date, style="F")
-                        continue
-                    new_event_title += t.strip() + " "
-                if not added_date:
-                    new_event_title += format_dt(date, style="F")
+                style = "F"
+                if split_event[-2].lower() == "in":
+                    style = "R"
+                for token in split_event[:-2]:
+                    new_event_title += token
+                new_event_title += format_dt(date, style=style)
                 self.event = new_event_title
             except Exception:
                 log.debug("Error parsing datetime.")

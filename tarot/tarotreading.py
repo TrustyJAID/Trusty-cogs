@@ -467,7 +467,9 @@ class TarotReading(commands.Cog):
         cards = []
         cards = random.sample((range(1, 78)), 5)
         random.setstate(state)
-        if version_info < VersionInfo.from_str("3.5.21"):
+        if version_info < VersionInfo.from_str("3.5.21") or not discord.utils.oauth_url(
+            ""
+        ).startswith("https://discord.com/"):
             await self.tarot_reading_old(ctx, member, cards)
             return
         await self.tarot_reading(ctx, member, cards)
@@ -483,7 +485,9 @@ class TarotReading(commands.Cog):
         member = user or ctx.message.author
         cards = []
         cards = random.sample((range(1, 78)), 5)
-        if version_info < VersionInfo.from_str("3.5.21"):
+        if version_info < VersionInfo.from_str("3.5.21") or not discord.utils.oauth_url(
+            ""
+        ).startswith("https://discord.com/"):
             await self.tarot_reading_old(ctx, member, cards)
             return
         await self.tarot_reading(ctx, member, cards)

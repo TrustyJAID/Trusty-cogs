@@ -28,7 +28,9 @@ class ExplainReTriggerPages(menus.ListPageSource):
         self.pages = pages
         self.select_options = []
         for count, page in enumerate(pages):
-            self.select_options.append(discord.SelectOption(label=f"Page {count+1}", value=count))
+            self.select_options.append(
+                discord.SelectOption(label=f"Page {count + 1}", value=count)
+            )
 
     def is_paginating(self):
         return True

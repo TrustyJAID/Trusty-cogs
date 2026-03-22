@@ -461,7 +461,7 @@ class HockeyCommands(HockeyMixin):
         """
         await ctx.typing()
         if season is None:
-            season = f"{datetime.now().year}{datetime.now().year+1}"
+            season = f"{datetime.now().year}{datetime.now().year + 1}"
         if "-" in season:
             start, end = season.split("-")
             season = f"{start}{end}"
@@ -497,7 +497,7 @@ class HockeyCommands(HockeyMixin):
             away_emoji = "<:" + TEAMS[away_team]["emoji"] + ">"
             date_str = f"<t:{int(game_start.timestamp())}:d>"
             time_str = f"<t:{int(game_start.timestamp())}:t>"
-            msg += f"{date_str} - {away_emoji} @ " f"{home_emoji} - {time_str}\n"
+            msg += f"{date_str} - {away_emoji} @ {home_emoji} - {time_str}\n"
         for page in pagify(msg):
             await ctx.channel.send(page)
             break

@@ -13,7 +13,7 @@ RUNEDATE_EPOCH = datetime(year=2002, month=2, day=27, hour=0, tzinfo=timezone.ut
 
 IMAGE_URL = "https://runescape.wiki/w/Special:FilePath/"
 
-HEADERS = {"User-Agent": f"Red-DiscordBot Trusty-cogs Runescape Cog"}
+HEADERS = {"User-Agent": "Red-DiscordBot Trusty-cogs Runescape Cog"}
 
 
 def get_runedate(date: Optional[datetime] = None) -> float:

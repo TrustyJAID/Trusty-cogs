@@ -16,7 +16,6 @@ if TYPE_CHECKING:
 
 
 class SpotifyMixin(ABC):
-
     """
     Base class for well behaved type hint detection with composite class.
 
@@ -208,7 +207,7 @@ class SpotifyMixin(ABC):
         self,
         ctx: commands.Context,
         detailed: Optional[bool] = False,
-        search_type: Optional[SearchTypes] = "track",
+        search_type: Optional[tekore.SearchTypes] = "track",
         *,
         query: str,
     ):

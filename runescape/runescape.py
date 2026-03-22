@@ -266,7 +266,7 @@ class Runescape(commands.Cog):
             post_author: str = latest_post["author"]
             post_flair = latest_post["link_flair_text"]
             post_title: str = (
-                latest_post["title"] if not post_flair else f"[Depleted] " + latest_post["title"]
+                latest_post["title"] if not post_flair else "[Depleted] " + latest_post["title"]
             )
             post_url: str = latest_post["url"]
             post_time = int(latest_post["created_utc"])

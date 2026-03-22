@@ -170,8 +170,7 @@ class ServerStats(commands.GroupCog):
             joined_at, "R"
         )  # f"<t:{int(joined_at.timestamp())}:R>"
         joined_on = _(
-            "**{bot_name}** joined this server on **{bot_join}**.\n"
-            "That's over **{since_join}**!"
+            "**{bot_name}** joined this server on **{bot_join}**.\nThat's over **{since_join}**!"
         ).format(bot_name=self.bot.user.mention, bot_join=bot_joined, since_join=since_joined)
 
         shard = (
@@ -191,8 +190,8 @@ class ServerStats(commands.GroupCog):
             "\N{LARGE ORANGE CIRCLE}": lambda x: x.status is discord.Status.idle,
             "\N{LARGE RED CIRCLE}": lambda x: x.status is discord.Status.do_not_disturb,
             "\N{MEDIUM WHITE CIRCLE}": lambda x: x.status is discord.Status.offline,
-            "\N{LARGE PURPLE CIRCLE}": lambda x: (
-                any(a.type is discord.ActivityType.streaming for a in x.activities)
+            "\N{LARGE PURPLE CIRCLE}": lambda x: any(
+                a.type is discord.ActivityType.streaming for a in x.activities
             ),
             "\N{HEADPHONE}": lambda x: any(
                 a.type is discord.ActivityType.listening for a in x.activities
@@ -479,7 +478,7 @@ class ServerStats(commands.GroupCog):
             total_warnings = len(bad_inner_tasks)
             em.add_field(
                 name="Inner Tasks",
-                value=f'Total: {len(inner_tasks)}\nFailed: {bad_inner_tasks_str or "None"}',
+                value=f"Total: {len(inner_tasks)}\nFailed: {bad_inner_tasks_str or 'None'}",
             )
             em.add_field(name="Events Waiting", value=f"Total: {len(event_tasks)}")
 
@@ -803,7 +802,7 @@ class ServerStats(commands.GroupCog):
         if reinvite is True
         """
         msg_send = _(
-            "Please provide a reinvite link/message.\n" "Type `exit` for no invite link/message."
+            "Please provide a reinvite link/message.\nType `exit` for no invite link/message."
         )
         await ctx.send(msg_send)
         try:
@@ -898,7 +897,7 @@ class ServerStats(commands.GroupCog):
                     role_msg = _("Role: {role.name}").format(role=role)
                 members = "\n".join(str(m) for m in page)
                 msg = _(
-                    "Estimated members to be pruned {num_members}\n" "{role}\n{members}\n"
+                    "Estimated members to be pruned {num_members}\n{role}\n{members}\n"
                 ).format(num_members=len(member_list), role=role_msg, members=members)
 
                 msg += "Page {} of {}".format(count, len(x))
@@ -972,8 +971,7 @@ class ServerStats(commands.GroupCog):
             return
         if any([r >= ctx.me.top_role for r in new_roles]):
             msg = _(
-                "At least one of those roles is higher than my "
-                "role so I cannot add those roles."
+                "At least one of those roles is higher than my role so I cannot add those roles."
             )
             await ctx.send(msg)
             return

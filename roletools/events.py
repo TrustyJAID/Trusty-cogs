@@ -262,13 +262,13 @@ class RoleToolsEvents(RoleToolsMixin):
                 Whether we actually want to check required roles when giving the roles.
                 Defaults to True.
             check_exclusive: bool
-                Wheter we actually want to check exclusivity when giving the roles.
+                whether we actually want to check exclusivity when giving the roles.
                 Defaults to True.
             check_inclusive: bool
-                Wheter we actually want to check inclusivity when giving the roles.
+                whether we actually want to check inclusivity when giving the roles.
                 Defaults to True.
             check_cost: bool
-                Wheter we actually want to check the cost for the role when giving the roles.
+                whether we actually want to check the cost for the role when giving the roles.
                 Defaults to True.
             atomic: bool
                 Whether to apply each role individually to prevent race conditions
@@ -489,7 +489,7 @@ class RoleToolsEvents(RoleToolsMixin):
         Keyword Arguments
         -----------------
             check_inclusive: bool
-                Wheter we actually want to check inclusivity when giving the roles.
+                whether we actually want to check inclusivity when giving the roles.
                 Defaults to True.
             atomic: bool
                 Whether to apply each role individually to prevent race conditions

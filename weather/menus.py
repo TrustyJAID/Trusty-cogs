@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import aiohttp
 import discord

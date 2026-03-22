@@ -64,7 +64,7 @@ class SpotifyTrackPages(menus.ListPageSource):
             description = artist
             self.select_options.append(
                 discord.SelectOption(
-                    label=f"{count+1}. {label}", value=count, description=description
+                    label=f"{count + 1}. {label}", value=count, description=description
                 )
             )
 
@@ -189,7 +189,7 @@ class SpotifyAlbumPages(menus.ListPageSource):
             description = artist
             self.select_options.append(
                 discord.SelectOption(
-                    label=f"{count+1}. {label}", value=count, description=description
+                    label=f"{count + 1}. {label}", value=count, description=description
                 )
             )
 
@@ -287,7 +287,7 @@ class SpotifyNewPages(menus.ListPageSource):
             description = artist
             self.select_options.append(
                 discord.SelectOption(
-                    label=f"{count+1}. {label}", value=count, description=description
+                    label=f"{count + 1}. {label}", value=count, description=description
                 )
             )
 
@@ -405,7 +405,7 @@ class SpotifyRecentSongPages(menus.ListPageSource):
             description = artist
             self.select_options.append(
                 discord.SelectOption(
-                    label=f"{count+1}. {label}", value=count, description=description
+                    label=f"{count + 1}. {label}", value=count, description=description
                 )
             )
 

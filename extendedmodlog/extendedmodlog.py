@@ -1,4 +1,3 @@
-from collections import deque
 from typing import Deque, Dict, Union
 
 import discord
@@ -105,7 +104,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             for entry, default in inv_settings.items():
                 if entry not in data:
                     all_data[guild_id][entry] = inv_settings[entry]
-                if type(default) == dict:
+                if isinstance(default, dict):
                     for key, _default in inv_settings[entry].items():
                         if not isinstance(all_data[guild_id][entry], dict):
                             all_data[guild_id][entry] = default

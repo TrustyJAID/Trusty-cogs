@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import functools
 import json
-import re
 from base64 import b64encode
 from datetime import datetime
 from pathlib import Path
@@ -254,7 +253,6 @@ class DestinyAPI:
                 return posts
             if data.get("feed", None):
                 for post in data["feed"]:
-
                     posts.append(BungieBSKYPost(**post["post"]))
         return posts
 
@@ -1185,8 +1183,7 @@ class DestinyAPI:
         else:
             author = ctx.author
         msg = _(
-            "There are multiple destiny memberships "
-            "available, which one would you like to use?\n"
+            "There are multiple destiny memberships available, which one would you like to use?\n"
         )
         count = 1
         membership = None
@@ -1367,9 +1364,7 @@ class DestinyAPI:
             data = db.execute(
                 """
             SELECT * from {name}
-            """.format(
-                    name=name
-                )
+            """.format(name=name)
             ).fetchall()
             for _id, datas in data:
                 # log.debug(datas)

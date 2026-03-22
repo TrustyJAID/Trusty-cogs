@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import discord
-from aiohttp.abc import AbstractMatchInfo
 from red_commons.logging import getLogger
 from redbot.core import Config, commands
 from redbot.core.bot import Red

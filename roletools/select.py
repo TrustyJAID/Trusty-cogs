@@ -130,7 +130,7 @@ class RoleToolsSelect(RoleToolsMixin):
             await ctx.send(msg)
             return
         if len(await self.config.guild(ctx.guild).select_options()) < 1:
-            msg = _("You must setup some options first with " "`{prefix}{command}`.").format(
+            msg = _("You must setup some options first with `{prefix}{command}`.").format(
                 prefix=ctx.clean_prefix, command=self.create_select_option.qualified_name
             )
             await ctx.send(msg)

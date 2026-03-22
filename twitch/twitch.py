@@ -215,7 +215,7 @@ class Twitch(TwitchAPI, commands.Cog):
             }
             if str(profile.id) not in cur_accounts:
                 try:
-                    clips = await self.get_new_clips(profile.id)
+                    await self.get_new_clips(profile.id)
                 except TwitchError as e:
                     return await ctx.send(e)
 
@@ -311,7 +311,7 @@ class Twitch(TwitchAPI, commands.Cog):
         if channel.permissions_for(channel.guild.me).embed_links:
             await channel.send(embed=em)
         else:
-            text_msg = f"{profile.display_name} has just " f"followed {account.display_name}!"
+            text_msg = f"{follower.display_name} has just followed {profile.display_name}!"
             await channel.send(text_msg)
 
     @twitchhelp.command(name="remfollow", aliases=["remove", "delete", "del"])

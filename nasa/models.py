@@ -905,7 +905,7 @@ class EPICData:
         return f"https://epic.gsfc.nasa.gov/archive/enhanced/{url_date}/png/{self.image}.png"
 
     def get_distance(self, distance: float) -> str:
-        return f"{humanize_number(int(distance))} km ({humanize_number(int(distance*0.621371))} Miles)"
+        return f"{humanize_number(int(distance))} km ({humanize_number(int(distance * 0.621371))} Miles)"
 
     def embed(self, enhanced: bool = False) -> discord.Embed:
         url = self.natural_url if not enhanced else self.enhanced_url

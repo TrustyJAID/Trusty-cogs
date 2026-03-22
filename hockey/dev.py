@@ -18,7 +18,6 @@ from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .abc import HockeyMixin
 from .constants import TEAMS
-from .errors import InvalidFileError
 from .game import Game
 from .helper import get_channel_obj
 from .menu import BaseMenu, SimplePages
@@ -604,7 +603,7 @@ class HockeyDev(HockeyMixin):
 
             for team in teams.get("data", []):
                 name = team["fullName"]
-                idx = 0
+                # idx = 0
                 static_info = TEAMS.get(name, None)
                 if static_info is None:
                     # ignore teams I haven't accounted for yet

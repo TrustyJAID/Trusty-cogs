@@ -3,13 +3,11 @@ from typing import List, Optional
 
 import discord
 from red_commons.logging import getLogger
-from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.vendored.discord.ext import menus
 
 from .api import GameEventTypeCode, ScheduledGame
-from .components import GamesExtrasActions, MenuActionRow
 from .constants import TEAMS
 from .errors import NoSchedule
 from .helper import utc_to_local
@@ -115,7 +113,7 @@ class Schedule(menus.PageSource):
         # include_plays=self.include_plays, include_goals=self.include_goals
         # )
         ret = {"files": []}
-        file_path = cog_data_path(menu.cog).joinpath("teamlogos")
+        # file_path = cog_data_path(menu.cog).joinpath("teamlogos")
 
         for t in [game_obj.home, game_obj.away]:
             if t.file is not None:
@@ -552,16 +550,16 @@ class ScheduleList(menus.PageSource):
             days_to_check = 7
 
         if date:
-            date_str = date.strftime("%Y-%m-%d")
+            # date_str = date.strftime("%Y-%m-%d")
             date_timestamp = int(utc_to_local(date, "UTC").timestamp())
-            end_date_str = (date + timedelta(days=days_to_check)).strftime("%Y-%m-%d")
+            # end_date_str = (date + timedelta(days=days_to_check)).strftime("%Y-%m-%d")
             end_date_timestamp = int(
                 utc_to_local((date + timedelta(days=days_to_check)), "UTC").timestamp()
             )
         else:
-            date_str = self.date.strftime("%Y-%m-%d")
+            # date_str = self.date.strftime("%Y-%m-%d")
             date_timestamp = int(utc_to_local(date, "UTC").timestamp())
-            end_date_str = (self.date + timedelta(days=days_to_check)).strftime("%Y-%m-%d")
+            # end_date_str = (self.date + timedelta(days=days_to_check)).strftime("%Y-%m-%d")
             end_date_timestamp = int(
                 utc_to_local((self.date + timedelta(days=days_to_check)), "UTC").timestamp()
             )

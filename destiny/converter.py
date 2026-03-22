@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum, EnumMeta
-from typing import List, NamedTuple, Optional, Union
+from typing import List, Optional, Union
 
 import discord
 from discord.ext.commands.converter import Converter

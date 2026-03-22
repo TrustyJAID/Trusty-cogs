@@ -14,7 +14,6 @@ from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 from yarl import URL
 
-from .constants import TEAMS
 from .goal import Goal
 from .helper import Team, check_to_post, get_channel_obj, get_team, get_team_role
 
@@ -493,7 +492,7 @@ class Game:
     ):
         container = discord.ui.Container()
 
-        team_url = self.home.team_url
+        # team_url = self.home.team_url
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
         title = "{away} @ {home} {state}".format(
             away=self.away_team, home=self.home_team, state=str(self.game_state)
@@ -603,11 +602,11 @@ class Game:
             if self.game_state.is_live():
                 period = self.period_ord
                 if self.period_time_left[0].isdigit():
-                    msg = _("{time} Left in the {ordinal} period").format(
+                    description += _("{time} Left in the {ordinal} period").format(
                         time=self.period_time_left, ordinal=period
                     )
                 else:
-                    msg = _("{time} Left of the {ordinal} period").format(
+                    description += _("{time} Left of the {ordinal} period").format(
                         time=self.period_time_left, ordinal=period
                     )
                 if include_plays:
@@ -990,7 +989,7 @@ class Game:
             return
         try:
             files = self.files()
-            msg = await channel.send(embed=embed, files=files)
+            await channel.send(embed=embed, files=files)
             if publish and channel.is_news():
                 pass
                 # await msg.publish()

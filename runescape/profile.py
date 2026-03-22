@@ -6,7 +6,7 @@ from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import aiohttp
 import discord
@@ -230,7 +230,7 @@ class Activity:
         return f"{profile.name}: {text}\n{details}\n\n{ts}"
 
     def embed(self, profile: Profile) -> discord.Embed:
-        url = f"https://apps.runescape.com/runemetrics/app/overview/player/{profile.name}"
+        # url = f"https://apps.runescape.com/runemetrics/app/overview/player/{profile.name}"
         # msg = f"{profile.name}: {activity.text}\n{activity.details}\n\n"
         ts = discord.utils.format_dt(self.date)
         text, details, image_url = self._get_image_details_text()
@@ -421,7 +421,7 @@ class Profile:
         top_row_len = len(table.split("\n")[1])
         top_row = top_row_len * "-"
         title = f"RS3 Stats for {self.name}".center(top_row_len - 2)
-        skills = ("```css\n{top_row}\n|{title}|" "\n{top_row}\n{skills}\n{top_row}```").format(
+        skills = ("```css\n{top_row}\n|{title}|\n{top_row}\n{skills}\n{top_row}```").format(
             top_row=top_row, title=title, skills=table
         )
         return skills
@@ -1186,7 +1186,7 @@ class OSRSProfile:
         top_row_len = len(table.split("\n")[1])
         top_row = top_row_len * "-"
         title = f"OSRS Stats For {self.name}".center(top_row_len - 2)
-        skills = ("{top_row}\n|{title}|\n{top_row}\n" "{skills}\n{top_row}").format(
+        skills = ("{top_row}\n|{title}|\n{top_row}\n{skills}\n{top_row}").format(
             top_row=top_row, title=title, skills=table
         )
         return skills
@@ -1197,7 +1197,7 @@ class OSRSProfile:
         top_row_len = len(table.split("\n")[1])
         top_row = top_row_len * "-"
         title = f"OSRS Activities For {self.name}".center(top_row_len - 2)
-        skills = ("{top_row}\n|{title}|\n{top_row}\n" "{skills}\n{top_row}").format(
+        skills = ("{top_row}\n|{title}|\n{top_row}\n{skills}\n{top_row}").format(
             top_row=top_row, title=title, skills=table
         )
         return skills

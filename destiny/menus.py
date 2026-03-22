@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any, List, Optional
 
 import discord
@@ -467,7 +466,7 @@ class LoadoutPages(menus.ListPageSource):
         for index, page in enumerate(self.pages):
             self.select_options.append(
                 discord.SelectOption(
-                    label=f"{index+1}. {page.title}", value=index, description=page.description
+                    label=f"{index + 1}. {page.title}", value=index, description=page.description
                 )
             )
         self.current_index = 0

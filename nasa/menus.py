@@ -104,7 +104,7 @@ class MarsRoverManifest(menus.ListPageSource):
         super().__init__(manifest.photos, per_page=10)
         self.select_options = [
             discord.SelectOption(
-                label=f"Page {i+1}",
+                label=f"Page {i + 1}",
                 value=i,
             )
             for i in range(0, self._max_pages)
@@ -127,7 +127,7 @@ class MarsRoverPhotos(menus.ListPageSource):
         super().__init__(photos, per_page=1)
         self.select_options = [
             discord.SelectOption(
-                label=f"Page {i+1}",
+                label=f"Page {i + 1}",
                 description=f"{page.rover.name} - {page.camera.full_name}",
                 value=i,
             )

@@ -265,8 +265,7 @@ class RoleToolsSettings(RoleToolsMixin):
             else:
                 command = f"{ctx.clean_prefix}roletools sticky yes {role.name}"
                 msg = _(
-                    "The {role} role is not sticky. Run the command "
-                    "{command} to make it sticky."
+                    "The {role} role is not sticky. Run the command {command} to make it sticky."
                 ).format(role=role.mention, command=command)
                 await ctx.send(msg)
             return

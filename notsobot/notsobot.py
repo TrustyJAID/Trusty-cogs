@@ -238,7 +238,7 @@ class NotSoBot(commands.Cog):
             return "image/gif"
         elif "\x89PNG" in image_header:
             return "image/png"
-        elif "\xFF\xD8\xFF" in image_header:
+        elif "\xff\xd8\xff" in image_header:
             return "image/jpeg"
         elif "\x00\x00\x01\x00" in image_header:
             return "image/x-icon"
@@ -353,7 +353,7 @@ class NotSoBot(commands.Cog):
                 return await ctx.send(
                     "That image is either too large or given image format is unsupported."
                 )
-            if type(file) == str:
+            if isinstance(file, str):
                 await ctx.send(file)
                 return
 
@@ -712,7 +712,7 @@ class NotSoBot(commands.Cog):
         final = ""
         pre = " ".join(text)
         for char in pre:
-            if not ord(char) in range(33, 127):
+            if ord(char) not in range(33, 127):
                 final += char
                 continue
             final += chr(ord(char) + 65248)
@@ -789,7 +789,7 @@ class NotSoBot(commands.Cog):
         for lines in screen.render().splitlines():
             draw.text((0, y), lines, (0, 0, 0), font=font)
             y += 15
-        imagefit = ImageOps.fit(img, (image_width, image_height), Image.ANTIALIAS)
+        ImageOps.fit(img, (image_width, image_height), Image.ANTIALIAS)
 
         final = BytesIO()
         img.save(final, "png")

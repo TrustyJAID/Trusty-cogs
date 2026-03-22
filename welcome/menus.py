@@ -8,7 +8,7 @@ import discord
 from red_commons.logging import getLogger
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import box, escape
+from redbot.core.utils.chat_formatting import escape
 from redbot.vendored.discord.ext import menus
 
 IMAGE_LINKS = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png|webp))")
@@ -38,7 +38,9 @@ class WelcomePages(menus.ListPageSource):
         self.pages = pages
         self.select_options = []
         for count, page in enumerate(pages):
-            self.select_options.append(discord.SelectOption(label=f"Page {count+1}", value=count))
+            self.select_options.append(
+                discord.SelectOption(label=f"Page {count + 1}", value=count)
+            )
         self.current_page = None
         self.current_selection = None
 

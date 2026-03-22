@@ -349,8 +349,9 @@ class SVGWriter(BaseWriter):
         attributes = dict(
             x=SIZE.format(xpos),
             y=SIZE.format(ypos),
-            style="fill:{0};font-size:{1}pt;text-anchor:"
-            "middle;".format(self.foreground, self.font_size),
+            style="fill:{0};font-size:{1}pt;text-anchor:middle;".format(
+                self.foreground, self.font_size
+            ),
         )
         _set_attributes(element, **attributes)
         # check option to override self.text with self.human (barcode as human readable data, can be used to print own formats)
@@ -524,8 +525,9 @@ def check_code(code, name, allowed):
             wrong.append(char)
     if wrong:
         raise IllegalCharacterError(
-            "The following characters are not "
-            "valid for {name}: {wrong}".format(name=name, wrong=", ".join(wrong))
+            "The following characters are not valid for {name}: {wrong}".format(
+                name=name, wrong=", ".join(wrong)
+            )
         )
 
 
@@ -582,7 +584,7 @@ def get_barcode(name, code=None, writer=None):
     try:
         barcode = Code39
     except KeyError:
-        raise BarcodeNotFoundError("The barcode {0!r} you requested is not " "known.".format(name))
+        raise BarcodeNotFoundError("The barcode {0!r} you requested is not known.".format(name))
     if code is not None:
         return barcode(code, writer)
     return barcode

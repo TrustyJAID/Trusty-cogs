@@ -102,14 +102,12 @@ class CleverbotAPI:
         try:
             response = await self.get_response(author, message)
         except NoCredentials:
-            msg = _(
-                "The owner needs to set the credentials first.\n" "See: [p]cleverbotset apikey"
-            )
+            msg = _("The owner needs to set the credentials first.\nSee: [p]cleverbotset apikey")
             await ctx.send(msg)
         except APIError as e:
             await ctx.send("Error contacting the API. Error code: {}".format(e))
         except InvalidCredentials:
-            msg = _("The token that has been set is not valid.\n" "See: [p]cleverbotset")
+            msg = _("The token that has been set is not valid.\nSee: [p]cleverbotset")
             await ctx.send(msg)
         except OutOfRequests:
             msg = _(
@@ -180,7 +178,7 @@ class CleverbotAPI:
         if tweak1 < 0:
             msg += f"{100}% sensible, "
         if tweak1 >= 0 and tweak1 < 50:
-            msg += f"{100-tweak1}% sensible, "
+            msg += f"{100 - tweak1}% sensible, "
         if tweak1 > 50:
             msg += f"{tweak1}% wacky, "
         if tweak1 == 50:
@@ -189,7 +187,7 @@ class CleverbotAPI:
         if tweak2 < 0:
             msg += f"{100}% shy, and "
         if tweak2 >= 0 and tweak2 < 50:
-            msg += f"{100-tweak2}% shy, and "
+            msg += f"{100 - tweak2}% shy, and "
         if tweak2 > 50:
             msg += f"{tweak2}% talkative, and "
         if tweak2 == 50:
@@ -198,7 +196,7 @@ class CleverbotAPI:
         if tweak3 < 0:
             msg += f"{100}% self-centered "
         if tweak3 >= 0 and tweak3 < 50:
-            msg += f"{100-tweak3}% self-centered "
+            msg += f"{100 - tweak3}% self-centered "
         if tweak3 > 50:
             msg += f"{tweak3}% attentive "
         if tweak3 == 50:

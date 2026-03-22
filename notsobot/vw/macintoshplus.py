@@ -1,9 +1,10 @@
 # encoding: utf-8
 # https://github.com/rickyhan/macintoshplus
 """Vaporwaveは音楽のジャンルや芸術運動である[3] [4]このようなバウンスハウス、またはchillwave、そして、より広く、エレクトロニックダンスミュージック、などのインディーseapunkから2010年代初頭のダンスのジャンルに出現した。 、その態度やメッセージに多くの多様性と曖昧さ、vaporwaveがありますが：時々の両方が、大量消費社会の批判とパロディとして機能し80年代のヤッピー文化、[5]とニューエイジの音楽、音響的および審美的に彼らのノスタルジックで好奇心の魅力を紹介しながら、アーティファクト。"""
+
 import hashlib
 import os
-from math import cos, sin, tan
+from math import cos, sin
 from random import Random, choice, randint
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
@@ -36,9 +37,7 @@ japanese_corpus = """それは20年前の今日だった
 そして、私はあなたのすべてを一緒に歌うことを望んでいる
 だから私はあなたに紹介しましょう
 唯一無二のビリー·シアーズ
-そして、サージェント·ペパーズ·ロンリー·ハーツ·クラブ·バンド""".split(
-    "\n"
-)
+そして、サージェント·ペパーズ·ロンリー·ハーツ·クラブ·バンド""".split("\n")
 main_dir = str(__file__)[:-16]
 bubbles = [
     main_dir + "/img/png/bubbles/" + i
@@ -182,7 +181,7 @@ def insert_window_as_background2(foreground_path, im):
     foreground = Image.open(foreground_path)
     background_size = im.size
     foreground_size = foreground.size
-    ratio = float(foreground_size[0]) / float(foreground_size[1])
+    # ratio = float(foreground_size[0]) / float(foreground_size[1])
     for i in range(0, 100, 10):  # the step determines the distances between
         pos = (
             int((background_size[0] - foreground_size[0]) / 2 + i),
@@ -206,9 +205,9 @@ def insert_pic(foreground_path, im, k=0, x=0, y=1000):
     log.verbose("adding pic: %s", foreground_path)
 
     foreground = Image.open(foreground_path)
-    background_size = im.size
-    foreground_size = foreground.size
-    ratio = float(foreground_size[0]) / float(foreground_size[1])
+    # background_size = im.size
+    # foreground_size = foreground.size
+    # ratio = float(foreground_size[0]) / float(foreground_size[1])
     pos = (x, y)
     foreground = foreground.rotate(k * 100)
     im.paste(foreground, pos, foreground)
@@ -249,7 +248,7 @@ def draw_method1(k, name, im):
         seedvalue = str(randint(0, 999999))
     else:
         seedvalue = hashseed(name)
-    x, y = size = (1000, 1000)
+    x, y = (1000, 1000)
     # im = horizon(choice(backgrounds),im)
     im = im.convert("RGB")
     im = insert_cascade(Random(seedvalue + str(0)).choice(windows), im, k=0.5)

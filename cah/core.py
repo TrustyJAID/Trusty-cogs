@@ -1,6 +1,5 @@
 import json
 import os
-from pathlib import Path
 from typing import Dict, List, Optional
 
 import aiohttp
@@ -72,12 +71,9 @@ class CardSetTransformer(discord.app_commands.Transformer):
     ) -> List[discord.app_commands.Choice]:
         card_sets = interaction.client.get_cog("CardsAgainstHumanity").card_sets
         supplied_sets = []
-        new_sets = ""
         for sup in current.split("|"):
             if sup in card_sets:
                 supplied_sets.append(sup)
-            else:
-                new_sets = sup
         choices = [
             discord.app_commands.Choice(name="all", value="all"),
             discord.app_commands.Choice(name="official", value="official"),

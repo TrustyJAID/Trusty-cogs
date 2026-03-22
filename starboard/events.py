@@ -371,9 +371,7 @@ class StarboardEvents:
                                 del starboard.starboarded_messages[m]
                             if len(to_rem) > 0:
                                 log.info(
-                                    "Starboard pruned %s messages that are "
-                                    "%s old from "
-                                    "%s (%s)",
+                                    "Starboard pruned %s messages that are %s old from %s (%s)",
                                     len(to_rem),
                                     humanize_timedelta(timedelta=purge),
                                     guild.name,

@@ -450,8 +450,7 @@ class EventPoster(commands.Cog):
                 return
             em = await event.make_event_embed(ctx)
             msg = _(
-                "{author}, you're currently hosting. "
-                "Type `{prefix}event clear yes` to clear it."
+                "{author}, you're currently hosting. Type `{prefix}event clear yes` to clear it."
             ).format(author=ctx.author.display_name, prefix=ctx.clean_prefix)
             await ctx.send(
                 msg,

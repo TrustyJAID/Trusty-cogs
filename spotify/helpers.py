@@ -182,12 +182,12 @@ class RecommendationsFlags(discord.ext.commands.FlagConverter, case_insensitive=
         name="energy",
         description="Energy is a measure from 0 to 100 and represents a perceptual measure of intensity and activity",
     )
-    instrumentalness: Optional[
-        discord.ext.commands.Range[int, 0, 100]
-    ] = discord.ext.commands.flag(
-        name="instrumentalness",
-        aliases=["instrument"],
-        description="A value from 0 to 100 representing whether or not a track contains vocals.",
+    instrumentalness: Optional[discord.ext.commands.Range[int, 0, 100]] = (
+        discord.ext.commands.flag(
+            name="instrumentalness",
+            aliases=["instrument"],
+            description="A value from 0 to 100 representing whether or not a track contains vocals.",
+        )
     )
     key: Optional[int] = discord.ext.commands.flag(
         name="key", description="The target key of the tracks."

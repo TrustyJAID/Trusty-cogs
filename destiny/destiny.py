@@ -848,7 +848,7 @@ class Destiny(commands.Cog):
             clan_info["detail"]["creationDate"], "%Y-%m-%dT%H:%M:%S.%fZ"
         ).replace(tzinfo=datetime.timezone.utc)
         clan_xp_str = _(
-            "Level: {level}/{level_cap}\nWeekly Progress: " "{weekly_progress}/{weekly_limit}"
+            "Level: {level}/{level_cap}\nWeekly Progress: {weekly_progress}/{weekly_limit}"
         ).format(
             level=level,
             level_cap=level_cap,
@@ -1314,7 +1314,6 @@ class Destiny(commands.Cog):
                 info = await self.get_character_description(char)
                 embed = discord.Embed(title=_("Postmaster"))
                 embed.set_author(name=info)
-                msg = ""
                 postmaster_items = [
                     i for i in items["items"] if "bucketHash" in i and i["bucketHash"] == 215593132
                 ]
@@ -1391,7 +1390,7 @@ class Destiny(commands.Cog):
             msg = ""
             emoji = emojis.get(info["hash"])
             score_value = profile_commendations["commendationNodeScoresByHash"].get(info["hash"])
-            percent = f"{score_value/scores_total:.0%}"
+            percent = f"{score_value / scores_total:.0%}"
             em_name = f"{emoji} {name} - {percent}"
             total = 0
             for com_name, details in info["commendations"].items():
@@ -2350,9 +2349,9 @@ class Destiny(commands.Cog):
                 log.error(e, exc_info=True)
                 await self.send_error_msg(ctx, e)
                 return
-            bnet_display_name = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayName"]
-            bnet_code = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayNameCode"]
-            bnet_name = f"{bnet_display_name}#{bnet_code}"
+            # bnet_display_name = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayName"]
+            # bnet_code = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayNameCode"]
+            # bnet_name = f"{bnet_display_name}#{bnet_code}"
             await self.api.save(chars, "characters.json")
             craftables = chars["profileRecords"]["data"]
             hashes = []
@@ -2579,7 +2578,7 @@ class Destiny(commands.Cog):
             ]
         if ctx.author.id in self._loadout_temp:
             del self._loadout_temp[ctx.author.id]
-        await ctx.send(f"Equipped loadout {loadout+1}. {loadout_name}")
+        await ctx.send(f"Equipped loadout {loadout + 1}. {loadout_name}")
 
     @loadout_equip.autocomplete("loadout")
     async def find_loadout(self, interaction: discord.Interaction, current: str):
@@ -2611,7 +2610,7 @@ class Destiny(commands.Cog):
             chars["characterLoadouts"]["data"][str(character_id)]["loadouts"]
         ):
             name = loadout_names.get(str(loadout["nameHash"]), {}).get("name", _("Empty Loadout"))
-            full_name = f"{index+1}. {name}"
+            full_name = f"{index + 1}. {name}"
             if current.lower() in full_name.lower():
                 choices.append(app_commands.Choice(name=full_name, value=index + 1))
         return choices[:25]
@@ -2736,7 +2735,7 @@ class Destiny(commands.Cog):
                         continue
                     name = data["displayProperties"]["name"]
                     if data["equippable"] and data["itemType"] == 3:
-                        desc = data["displayProperties"]["description"]
+                        # desc = data["displayProperties"]["description"]
                         item_type = data["itemTypeAndTierDisplayName"]
                         try:
                             light = item_instance["primaryStat"]["value"]
