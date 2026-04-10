@@ -123,6 +123,11 @@ class EventMixin:
     allowed_mentions: discord.AllowedMentions
     audit_log: Dict[int, Deque[discord.AuditLogEntry]]
 
+    async def save(self, guild: discord.Guild) -> None:
+        async with self.config.guild(guild).all() as all_settings:
+            for key, value in self.settings[guild.id].items():
+                all_settings[key] = value
+
     async def get_event_colour(
         self, guild: discord.Guild, event_type: str, changed_object: Optional[discord.Role] = None
     ) -> discord.Colour:
@@ -159,19 +164,27 @@ class EventMixin:
         return colour
 
     async def is_ignored_channel(
-        self, guild: discord.Guild, channel: Union[discord.abc.GuildChannel, discord.Thread, int]
+        self,
+        guild: discord.Guild,
+        channel: Union[discord.abc.Messageable, discord.abc.GuildChannel, int],
     ) -> bool:
         ignored_channels = self.settings[guild.id]["ignored_channels"]
-        if isinstance(channel, int):
+        if isinstance(channel, (int, discord.PartialMessageable)):
             # This is mainly here because you can have threads parent channel
             # deleted which would make the return of `thread.parent` be `None`.
             # The `thread.parent_id` will always be an `int` and we can use that to check if
             # we should be ignoring the event
+            if isinstance(channel, discord.PartialMessageable):
+                channel = channel.id
             return channel in ignored_channels
         if channel.id in ignored_channels:
             return True
-        if channel.category and channel.category.id in ignored_channels:
+        if isinstance(channel, (discord.CategoryChannel, discord.DMChannel, discord.GroupChannel)):
             return True
+        category: Optional[discord.CategoryChannel] = getattr(channel, "category", None)
+        if category is not None:
+            if category.id in ignored_channels:
+                return True
         if (
             isinstance(channel, discord.Thread)
             and channel.parent
@@ -216,6 +229,8 @@ class EventMixin:
                 raise RuntimeError("No Modlog set")
         if not channel.permissions_for(guild.me).send_messages:
             raise RuntimeError("No permission to send messages in channel")
+        if not isinstance(channel, discord.TextChannel):
+            raise RuntimeError("Set modlog channel is not valid")
         return channel
 
     @commands.Cog.listener()
@@ -228,6 +243,8 @@ class EventMixin:
         if await self.bot.cog_disabled_in_guild(self, ctx.guild):
             return
         if not self.settings[guild.id]["commands_used"]["enabled"]:
+            return
+        if isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
             return
         if await self.is_ignored_channel(guild, ctx.channel):
             return
@@ -257,7 +274,7 @@ class EventMixin:
         )
         logger.verbose("on_command name: %s", ctx.command.qualified_name)
         if ctx.interaction:
-            data = ctx.interaction.data
+            data = ctx.interaction.data or {}
             com_id = data.get("id")
             root_command = data.get("name")
             sub_commands = ""
@@ -357,7 +374,7 @@ class EventMixin:
                 colour=await self.get_event_colour(guild, "commands_used"),
                 timestamp=time,
             )
-            embed.add_field(name=_("Channel"), value=message.channel.mention)
+            embed.add_field(name=_("Channel"), value=ctx.channel.mention)
             embed.add_field(name=_("Author"), value=message.author.mention)
             embed.add_field(name=_("Can"), value=str(can_x))
             embed.add_field(name=_("Requires"), value=role)
@@ -377,7 +394,7 @@ class EventMixin:
                 time=message.created_at.strftime("%H:%M:%S"),
                 author=message.author,
                 a_id=message.author.id,
-                channel=message.channel.mention,
+                channel=ctx.channel.mention,
                 com=com_str,
             )
             await channel.send(infomessage[:2000], allowed_mentions=self.allowed_mentions)
@@ -489,12 +506,12 @@ class EventMixin:
                     return
 
         replying = ""
-        if message.reference and message.reference.resolved:
+        if message.reference and message.reference.resolved is not None:
             if isinstance(message.reference.resolved, discord.Message):
                 ref_author = message.reference.resolved.author
                 ref_jump = message.reference.resolved.jump_url
                 replying = f"[{ref_author}]({ref_jump})"
-            else:
+            elif isinstance(message.reference.resolved, discord.DeletedReferencedMessage):
                 ref_guild = message.reference.resolved.guild_id
                 ref_chan = message.reference.resolved.channel_id
                 ref_msg = message.reference.resolved.id
@@ -548,7 +565,7 @@ class EventMixin:
                         files += f"- [{inline(sticker.name)}]({sticker.url})"
                 embed.add_field(name=_("Stickers"), value=files[:1024])
             if getattr(message, "poll", None) is not None:
-                poll = message.poll
+                poll: discord.Poll = cast(discord.Poll, message.poll)
                 poll_info = _("Poll Question: {question}\n").format(question=poll.question)
                 for answer in poll.answers:
                     poll_info += f"- {answer.text}\n"
@@ -741,9 +758,7 @@ class EventMixin:
                         invite = await self.bot.fetch_invite(code)
                     except Exception:
                         logger.error("Error getting invite {code}".format(code=code))
-                        invite = None
                         pass
-                    if invite is None:
                         if (data["max_uses"] - data["uses"]) == 1:
                             # The invite link was on its last uses and subsequently
                             # deleted so we're fairly sure this was the one used
@@ -764,10 +779,11 @@ class EventMixin:
         if check_logs and not possible_link:
             action = discord.AuditLogAction.invite_create
             entry = await self.get_audit_log_entry(guild, None, action)
-            if entry:
+            if entry and entry.target is not None:
+                invite: discord.Invite = cast(discord.Invite, entry.target)
                 possible_link = _("https://discord.gg/{code}\nInvited by: {inviter}").format(
-                    code=entry.target.code,
-                    inviter=getattr(entry.target.inviter, "mention", _("Unknown")),
+                    code=invite.code,
+                    inviter=getattr(invite.inviter, "mention", _("Unknown")),
                 )
         return possible_link
 
@@ -1159,6 +1175,7 @@ class EventMixin:
         guild: discord.Guild,
         target: Union[
             discord.abc.GuildChannel,
+            discord.Thread,
             discord.Member,
             discord.User,
             discord.Role,
@@ -1334,10 +1351,10 @@ class EventMixin:
 
         if before.is_nsfw() != after.is_nsfw():  # type: ignore
             worth_updating = True
-            msg += _("Before ") + f"NSFW {before.is_nsfw()}\n"
-            msg += _("After ") + f"NSFW {after.is_nsfw()}\n"
-            before_text += _("- Age Restricted: {value}").format(value=before.is_nsfw())
-            after_text += _("- Age Restricted: {value}").format(value=after.is_nsfw())
+            msg += _("Before ") + f"NSFW {before.is_nsfw()}\n"  # type: ignore
+            msg += _("After ") + f"NSFW {after.is_nsfw()}\n"  # type: ignore
+            before_text += _("- Age Restricted: {value}").format(value=before.is_nsfw())  # type: ignore
+            after_text += _("- Age Restricted: {value}").format(value=after.is_nsfw())  # type: ignore
             # embed.add_field(name=_("Before ") + "NSFW", value=str(before.is_nsfw()))
             # embed.add_field(name=_("After ") + "NSFW", value=str(after.is_nsfw()))
             entry = await self.get_audit_log_entry(
@@ -1456,16 +1473,30 @@ class EventMixin:
                 cdn_fmt = (
                     "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/{codepoint:x}.png"
                 )
-                url = cdn_fmt.format(codepoint=ord(str(before.display_icon)))
-                embed.set_image(url=url)
+                try:
+                    url = cdn_fmt.format(codepoint=ord(str(before.display_icon)))
+                    embed.set_image(url=url)
+                except TypeError:
+                    logger.info(
+                        "Found a role icon %r using multiple emojis %s",
+                        before,
+                        before.display_icon,
+                    )
         if isinstance(after.display_icon, discord.Asset):
             embed.set_thumbnail(url=after.display_icon)
         elif isinstance(after.display_icon, str):
             cdn_fmt = (
                 "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/{codepoint:x}.png"
             )
-            url = cdn_fmt.format(codepoint=ord(str(after.display_icon)))
-            embed.set_thumbnail(url=url)
+            try:
+                url = cdn_fmt.format(codepoint=ord(str(after.display_icon)))
+                embed.set_thumbnail(url=url)
+            except TypeError:
+                logger.info(
+                    "Found a role icon %r using multiple emojis %s",
+                    after,
+                    after.display_icon,
+                )
 
         p_msg = await self.get_role_permission_change(before, after)
         if p_msg != "":
@@ -1589,6 +1620,8 @@ class EventMixin:
         guild = before.guild
         if guild is None:
             return
+        if isinstance(before.channel, (discord.DMChannel, discord.GroupChannel)):
+            return
         if guild.id not in self.settings:
             return
         if await self.bot.cog_disabled_in_guild(self, guild):
@@ -1619,12 +1652,12 @@ class EventMixin:
         time = datetime.datetime.now(datetime.timezone.utc)
         fmt = "%H:%M:%S"
         replying = ""
-        if before.reference and before.reference.resolved:
+        if before.reference is not None and before.reference.resolved is not None:
             if isinstance(before.reference.resolved, discord.Message):
                 ref_author = before.reference.resolved.author
                 ref_jump = before.reference.resolved.jump_url
                 replying = f"[{ref_author}]({ref_jump})"
-            else:
+            elif isinstance(before.reference.resolved, discord.DeletedReferencedMessage):
                 ref_guild = before.reference.resolved.guild_id
                 ref_chan = before.reference.resolved.channel_id
                 ref_msg = before.reference.resolved.id
@@ -1769,10 +1802,10 @@ class EventMixin:
 
         time = datetime.datetime.now(datetime.timezone.utc)
         embed = discord.Embed(
-            description="",
             timestamp=time,
             colour=await self.get_event_colour(guild, "emoji_change"),
         )
+        embed.description = ""
         embed.set_author(name=_("Updated Server Emojis"))
         msg = _("{emoji} {time} Updated Server Emojis").format(
             emoji=self.settings[guild.id]["emoji_change"]["emoji"],
@@ -1794,7 +1827,7 @@ class EventMixin:
             pass
         # changed emojis have their name and/or allowed roles changed while keeping id unchanged
         if added_emoji is not None:
-            to_iter = before + (added_emoji,)
+            to_iter = before + (added_emoji,)  # type: ignore
         else:
             to_iter = before
         changed_emoji = set((e, e.name, tuple(e.roles)) for e in after)
@@ -1966,7 +1999,7 @@ class EventMixin:
             change_type = "channel"
             if before.channel is None:
                 channel_name = (
-                    f"`{after.channel.name}` ({after.channel.id}) {after.channel.mention}"
+                    f"`{after.channel.name}` ({after.channel.id}) {after.channel.mention}"  # type: ignore # after channel must not be None by this point
                 )
                 chan_msg = _("{member} has joined {after_channel}").format(
                     member=member.mention, after_channel=channel_name
@@ -2342,9 +2375,14 @@ class EventMixin:
             colour=await self.get_event_colour(guild, "invite_deleted"),
             timestamp=invite_time,
         )
-        if getattr(invite, "inviter", None):
+        inviter = getattr(invite, "inviter", None)
+        invite_channel = getattr(invite, "channel", None)
+        if inviter is not None:
             embed.description = _("{author} deleted or used up an invite for {channel}.").format(
-                author=invite.inviter.mention, channel=invite.channel.mention
+                author=inviter.mention,
+                channel=invite_channel.mention
+                if invite_channel is not None
+                else _("Unknown channel"),
             )
         elif guild.widget_enabled and guild.widget_channel:
             embed.description = _("Widget in {channel} invite deleted or used up.").format(
@@ -2607,14 +2645,16 @@ class EventMixin:
             embed.add_field(name=_("Before"), value="".join(i for i in before_changes))
             embed.add_field(name=_("After"), value="".join(i for i in after_changes))
         if before.archiver_id != after.archiver_id:
-            worth_updating = True
-            member = before.guild.get_member(after.archiver_id)
-            embed.add_field(name=_("Archived by:"), value=f"{member.mention}")
-            entry = await self.get_audit_log_entry(
-                guild, before, discord.AuditLogAction.channel_update
-            )
-            perp = getattr(entry, "user", None)
-            reason = getattr(entry, "reason", None)
+            if after.archiver_id is not None:
+                worth_updating = True
+                member = before.guild.get_member(after.archiver_id)
+                member_mention = member.mention if member is not None else _("Unknown user")
+                embed.add_field(name=_("Archived by:"), value=f"{member_mention}")
+                entry = await self.get_audit_log_entry(
+                    guild, before, discord.AuditLogAction.channel_update
+                )
+                perp = getattr(entry, "user", None)
+                reason = getattr(entry, "reason", None)
 
         if perp:
             if await self.is_ignored_mod(guild, perp):
@@ -2634,7 +2674,10 @@ class EventMixin:
 
     @commands.Cog.listener()
     async def on_guild_stickers_update(
-        self, guild: discord.Guild, before: Sequence[discord.Emoji], after: Sequence[discord.Emoji]
+        self,
+        guild: discord.Guild,
+        before: Sequence[discord.GuildSticker],
+        after: Sequence[discord.GuildSticker],
     ) -> None:
         if guild.id not in self.settings:
             return
@@ -2658,10 +2701,10 @@ class EventMixin:
 
         time = datetime.datetime.now(datetime.timezone.utc)
         embed = discord.Embed(
-            description="",
             timestamp=time,
             colour=await self.get_event_colour(guild, "stickers_change"),
         )
+        embed.description = ""
         embed.set_author(name=_("Updated Server Stickers"))
         msg = _("{emoji} {time} Updated Server Stickers").format(
             emoji=self.settings[guild.id]["stickers_change"]["emoji"],
@@ -2683,7 +2726,7 @@ class EventMixin:
             pass
         # changed emojis have their name and/or allowed roles changed while keeping id unchanged
         if added_emoji is not None:
-            to_iter = before + (added_emoji,)
+            to_iter = before + (added_emoji,)  # type: ignore
         else:
             to_iter = before
         changed_emoji = set((e, e.name) for e in after)
