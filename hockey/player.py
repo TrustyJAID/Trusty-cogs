@@ -84,62 +84,62 @@ GOALIE_STATS = {
 }
 
 FLAG_LOOKUP = {
-    "CAN": ":flag_ca:",
-    "USA": ":flag_us:",
-    "SWE": ":flag_se:",
-    "GBR": ":flag_gb:",
-    "CZE": ":flag_cz:",
-    "LVA": ":flag_lv:",
-    "NLD": ":flag_nl:",
-    "FIN": ":flag_fi:",
-    "UKR": ":flag_ua:",
-    "SRB": ":flag_rs:",
-    "FRA": ":flag_fr:",
-    "ITA": ":flag_it:",
-    "VEN": ":flag_si:",
-    "SVK": ":flag_sk:",
-    "IRL": ":flag_ie:",
-    "RUS": ":flag_ru:",
-    "POL": ":flag_pl:",
-    "LBN": ":flag_lb:",
-    "DEU": ":flag_de:",
-    "GER": ":flag_de:",  # why they have both for this I have no clue
-    "BRA": ":flag_gi:",
-    "CHE": ":flag_ch:",
-    "DNK": ":flag_dk:",
-    "ZAF": ":flag_za:",
-    "TWN": ":flag_tw:",
-    "JAM": ":flag_jm:",
-    "KOR": ":flag_kr:",
-    "PRY": ":flag_py:",
-    "NOR": ":flag_no:",
-    "HTI": ":flag_ht:",
-    "MKD": ":flag_mk:",
-    "GUY": ":flag_gy:",
-    "HUN": ":flag_hu:",
-    "AUS": ":flag_au:",
-    "AUT": ":flag_at:",
-    "BLR": ":flag_by:",
-    "GRC": ":flag_gr:",
-    "LTU": ":flag_lt:",
-    "BHS": ":flag_bs:",
-    "JPN": ":flag_jp:",
-    "KAZ": ":flag_kz:",
-    "NGA": ":flag_ng:",
-    "EST": ":flag_ee:",
-    "BEL": ":flag_be:",
-    "BRN": ":flag_bn:",
-    "TZA": ":flag_tz:",
-    "SVN": ":flag_si:",
-    "HRV": ":flag_hr:",
-    "ROU": ":flag_ro:",
-    "THA": ":flag_th:",
-    "IDN": ":flag_id:",
-    "MNE": ":flag_me:",
-    "CHN": ":flag_cn:",
-    "BGR": ":flag_bg:",
-    "MEX": ":flag_mx:",
-    "ISR": ":flag_il:",
+    "CAN": "\N{REGIONAL INDICATOR SYMBOL LETTER C}\N{REGIONAL INDICATOR SYMBOL LETTER A}",
+    "USA": "\N{REGIONAL INDICATOR SYMBOL LETTER U}\N{REGIONAL INDICATOR SYMBOL LETTER S}",
+    "SWE": "\N{REGIONAL INDICATOR SYMBOL LETTER S}\N{REGIONAL INDICATOR SYMBOL LETTER E}",
+    "GBR": "\N{REGIONAL INDICATOR SYMBOL LETTER G}\N{REGIONAL INDICATOR SYMBOL LETTER B}",
+    "CZE": "\N{REGIONAL INDICATOR SYMBOL LETTER C}\N{REGIONAL INDICATOR SYMBOL LETTER Z}",
+    "LVA": "\N{REGIONAL INDICATOR SYMBOL LETTER L}\N{REGIONAL INDICATOR SYMBOL LETTER V}",
+    "NLD": "\N{REGIONAL INDICATOR SYMBOL LETTER N}\N{REGIONAL INDICATOR SYMBOL LETTER L}",
+    "FIN": "\N{REGIONAL INDICATOR SYMBOL LETTER F}\N{REGIONAL INDICATOR SYMBOL LETTER I}",
+    "UKR": "\N{REGIONAL INDICATOR SYMBOL LETTER U}\N{REGIONAL INDICATOR SYMBOL LETTER A}",
+    "SRB": "\N{REGIONAL INDICATOR SYMBOL LETTER R}\N{REGIONAL INDICATOR SYMBOL LETTER S}",
+    "FRA": "\N{REGIONAL INDICATOR SYMBOL LETTER F}\N{REGIONAL INDICATOR SYMBOL LETTER R}",
+    "ITA": "\N{REGIONAL INDICATOR SYMBOL LETTER I}\N{REGIONAL INDICATOR SYMBOL LETTER T}",
+    "VEN": "\N{REGIONAL INDICATOR SYMBOL LETTER S}\N{REGIONAL INDICATOR SYMBOL LETTER I}",
+    "SVK": "\N{REGIONAL INDICATOR SYMBOL LETTER S}\N{REGIONAL INDICATOR SYMBOL LETTER K}",
+    "IRL": "\N{REGIONAL INDICATOR SYMBOL LETTER I}\N{REGIONAL INDICATOR SYMBOL LETTER E}",
+    "RUS": "\N{REGIONAL INDICATOR SYMBOL LETTER R}\N{REGIONAL INDICATOR SYMBOL LETTER U}",
+    "POL": "\N{REGIONAL INDICATOR SYMBOL LETTER P}\N{REGIONAL INDICATOR SYMBOL LETTER L}",
+    "LBN": "\N{REGIONAL INDICATOR SYMBOL LETTER L}\N{REGIONAL INDICATOR SYMBOL LETTER B}",
+    "DEU": "\N{REGIONAL INDICATOR SYMBOL LETTER D}\N{REGIONAL INDICATOR SYMBOL LETTER E}",
+    "GER": "\N{REGIONAL INDICATOR SYMBOL LETTER D}\N{REGIONAL INDICATOR SYMBOL LETTER E}",
+    "BRA": "\N{REGIONAL INDICATOR SYMBOL LETTER G}\N{REGIONAL INDICATOR SYMBOL LETTER I}",
+    "CHE": "\N{REGIONAL INDICATOR SYMBOL LETTER C}\N{REGIONAL INDICATOR SYMBOL LETTER H}",
+    "DNK": "\N{REGIONAL INDICATOR SYMBOL LETTER D}\N{REGIONAL INDICATOR SYMBOL LETTER K}",
+    "ZAF": "\N{REGIONAL INDICATOR SYMBOL LETTER Z}\N{REGIONAL INDICATOR SYMBOL LETTER A}",
+    "TWN": "\N{REGIONAL INDICATOR SYMBOL LETTER T}\N{REGIONAL INDICATOR SYMBOL LETTER W}",
+    "JAM": "\N{REGIONAL INDICATOR SYMBOL LETTER J}\N{REGIONAL INDICATOR SYMBOL LETTER M}",
+    "KOR": "\N{REGIONAL INDICATOR SYMBOL LETTER K}\N{REGIONAL INDICATOR SYMBOL LETTER R}",
+    "PRY": "\N{REGIONAL INDICATOR SYMBOL LETTER P}\N{REGIONAL INDICATOR SYMBOL LETTER Y}",
+    "NOR": "\N{REGIONAL INDICATOR SYMBOL LETTER N}\N{REGIONAL INDICATOR SYMBOL LETTER O}",
+    "HTI": "\N{REGIONAL INDICATOR SYMBOL LETTER H}\N{REGIONAL INDICATOR SYMBOL LETTER T}",
+    "MKD": "\N{REGIONAL INDICATOR SYMBOL LETTER M}\N{REGIONAL INDICATOR SYMBOL LETTER K}",
+    "GUY": "\N{REGIONAL INDICATOR SYMBOL LETTER G}\N{REGIONAL INDICATOR SYMBOL LETTER Y}",
+    "HUN": "\N{REGIONAL INDICATOR SYMBOL LETTER H}\N{REGIONAL INDICATOR SYMBOL LETTER U}",
+    "AUS": "\N{REGIONAL INDICATOR SYMBOL LETTER A}\N{REGIONAL INDICATOR SYMBOL LETTER U}",
+    "AUT": "\N{REGIONAL INDICATOR SYMBOL LETTER A}\N{REGIONAL INDICATOR SYMBOL LETTER T}",
+    "BLR": "\N{REGIONAL INDICATOR SYMBOL LETTER B}\N{REGIONAL INDICATOR SYMBOL LETTER Y}",
+    "GRC": "\N{REGIONAL INDICATOR SYMBOL LETTER G}\N{REGIONAL INDICATOR SYMBOL LETTER R}",
+    "LTU": "\N{REGIONAL INDICATOR SYMBOL LETTER L}\N{REGIONAL INDICATOR SYMBOL LETTER T}",
+    "BHS": "\N{REGIONAL INDICATOR SYMBOL LETTER B}\N{REGIONAL INDICATOR SYMBOL LETTER S}",
+    "JPN": "\N{REGIONAL INDICATOR SYMBOL LETTER J}\N{REGIONAL INDICATOR SYMBOL LETTER P}",
+    "KAZ": "\N{REGIONAL INDICATOR SYMBOL LETTER K}\N{REGIONAL INDICATOR SYMBOL LETTER Z}",
+    "NGA": "\N{REGIONAL INDICATOR SYMBOL LETTER N}\N{REGIONAL INDICATOR SYMBOL LETTER G}",
+    "EST": "\N{REGIONAL INDICATOR SYMBOL LETTER E}\N{REGIONAL INDICATOR SYMBOL LETTER E}",
+    "BEL": "\N{REGIONAL INDICATOR SYMBOL LETTER B}\N{REGIONAL INDICATOR SYMBOL LETTER E}",
+    "BRN": "\N{REGIONAL INDICATOR SYMBOL LETTER B}\N{REGIONAL INDICATOR SYMBOL LETTER N}",
+    "TZA": "\N{REGIONAL INDICATOR SYMBOL LETTER T}\N{REGIONAL INDICATOR SYMBOL LETTER Z}",
+    "SVN": "\N{REGIONAL INDICATOR SYMBOL LETTER S}\N{REGIONAL INDICATOR SYMBOL LETTER I}",
+    "HRV": "\N{REGIONAL INDICATOR SYMBOL LETTER H}\N{REGIONAL INDICATOR SYMBOL LETTER R}",
+    "ROU": "\N{REGIONAL INDICATOR SYMBOL LETTER R}\N{REGIONAL INDICATOR SYMBOL LETTER O}",
+    "THA": "\N{REGIONAL INDICATOR SYMBOL LETTER T}\N{REGIONAL INDICATOR SYMBOL LETTER H}",
+    "IDN": "\N{REGIONAL INDICATOR SYMBOL LETTER I}\N{REGIONAL INDICATOR SYMBOL LETTER D}",
+    "MNE": "\N{REGIONAL INDICATOR SYMBOL LETTER M}\N{REGIONAL INDICATOR SYMBOL LETTER E}",
+    "CHN": "\N{REGIONAL INDICATOR SYMBOL LETTER C}\N{REGIONAL INDICATOR SYMBOL LETTER N}",
+    "BGR": "\N{REGIONAL INDICATOR SYMBOL LETTER B}\N{REGIONAL INDICATOR SYMBOL LETTER G}",
+    "MEX": "\N{REGIONAL INDICATOR SYMBOL LETTER M}\N{REGIONAL INDICATOR SYMBOL LETTER X}",
+    "ISR": "\N{REGIONAL INDICATOR SYMBOL LETTER I}\N{REGIONAL INDICATOR SYMBOL LETTER L}",
     None: "",
 }
 
@@ -581,20 +581,20 @@ class PlayerStats:
                     )
                     msg += name + f"{getattr(self, attr)} ({years})\n"
                     flag = FLAG_LOOKUP.get(self.birth_country, "")
-                    msg += (
-                        ", ".join(
-                            [
-                                i
-                                for i in [self.birth_city, self.birth_state_province]
-                                if i is not None
-                            ]
-                        )
-                        + f" {flag}\n"
-                    )
+                    birth_loc_order = [
+                        self.birth_city,
+                        self.birth_state_province,
+                    ]
+                    for loc in birth_loc_order:
+                        if not loc:
+                            continue
+                        msg += f"{loc}, "
+                    msg += f"{self.birth_country} {flag}\n"
+
                 elif attr == "weight" and self.weight:
                     msg += name + f"{self.weight} lbs / {int(self.weight * 0.453592)} kg\n"
                 elif attr == "home_town":
-                    flag = FLAG_LOOKUP[self.nationality]
+                    flag = FLAG_LOOKUP.get(self.nationality, "")
                     msg += name + f"{getattr(self, attr)} {flag}\n"
                 elif attr == "position":
                     shoots = f"({getattr(self, 'shoots_catches', '')})"
@@ -760,21 +760,20 @@ class SimplePlayer:
                         / 365.25
                     )
                     msg += name + f"{getattr(self, attr)} ({years})\n"
-                    flag = FLAG_LOOKUP[self.birth_country]
-                    msg += (
-                        ", ".join(
-                            [
-                                i
-                                for i in [self.birth_city, self.birth_state_province]
-                                if i is not None
-                            ]
-                        )
-                        + f" {flag}\n"
-                    )
+                    flag = FLAG_LOOKUP.get(self.birth_country, "")
+                    birth_loc_order = [
+                        self.birth_city,
+                        self.birth_state_province,
+                    ]
+                    for loc in birth_loc_order:
+                        if not loc:
+                            continue
+                        msg += f"{loc}, "
+                    msg += f"{self.birth_country} {flag}\n"
                 elif attr == "weight" and self.weight:
                     msg += name + f"{self.weight} lbs / {int(self.weight * 0.453592)} kg\n"
                 elif attr == "home_town":
-                    flag = FLAG_LOOKUP[self.nationality]
+                    flag = FLAG_LOOKUP.get(self.nationality, "")
                     msg += name + f"{getattr(self, attr)} {flag}\n"
                 elif attr == "position":
                     shoots = f"({getattr(self, 'shoots_catches', '')})"
