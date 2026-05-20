@@ -19,7 +19,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box
 
-from .api import GameState, NewAPI, Schedule
+from .api import GameState, NewAPI
 from .constants import BASE_URL, CONFIG_ID, CONTENT_URL, HEADSHOT_URL, TEAMS
 from .dev import HockeyDev
 from .errors import InvalidFileError
@@ -428,14 +428,13 @@ class Hockey(
             try:
                 schedule = await self.api.get_schedule()
                 if schedule.days == []:
-                    await asyncio.sleep(30)
+                    await asyncio.sleep(300)
                     continue
             except aiohttp.client_exceptions.ClientConnectorError:
                 # this will most likely happen if there's a temporary failure in name resolution
                 # this ends up calling the check_new_day earlier than expected causing
                 # game day channels and pickems to fail to update prpoperly
                 # continue after waiting 30 seconds should prevent that.
-                schedule = Schedule([])
                 await asyncio.sleep(30)
                 continue
             except Exception:

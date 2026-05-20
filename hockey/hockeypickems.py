@@ -525,6 +525,9 @@ class HockeyPickems(HockeyMixin):
         except discord.Forbidden:
             log.error("Could not send pickems message in %s", repr(channel))
             return
+        except discord.HTTPException:
+            log.exception("Error sending pickems %s", pickem.to_components())
+            return
         pickem.messages.append(f"{channel.id}-{new_msg.id}")
         pickem._should_save = True
         # Create new pickems object for the game
@@ -630,7 +633,7 @@ class HockeyPickems(HockeyMixin):
         save_data = {}
         now = datetime.now(timezone.utc)
         today = datetime(year=now.year, month=now.month, day=now.day, tzinfo=timezone.utc)
-        tasks = []
+        # tasks = []
         guild_data = []
         for days in range(7):
             guild_data.append(
@@ -819,8 +822,8 @@ class HockeyPickems(HockeyMixin):
             await ctx.send(_("This command can only work inside a server."))
             return
         data = await self.pickems_config.guild(ctx.guild).all()
-        category_channel = ctx.guild.get_channel(data.get("pickems_category"))
-        category = category_channel.mention if category_channel else None
+        # category_channel = ctx.guild.get_channel(data.get("pickems_category"))
+        # category = category_channel.mention if category_channel else None
         channel = ctx.guild.get_channel(data.get("pickems_channel"))
         channel = channel.mention if channel else None
         global_bank = await bank.is_global()

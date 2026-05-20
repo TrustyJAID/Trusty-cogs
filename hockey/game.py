@@ -15,7 +15,7 @@ from redbot.core.utils.chat_formatting import humanize_list, pagify
 from yarl import URL
 
 from .goal import Goal
-from .helper import Team, check_to_post, get_channel_obj, get_team, get_team_role
+from .helper import Team, check_to_post, get_channel_obj, get_team, get_team_role, utc_to_local
 
 if TYPE_CHECKING:
     from .api import Event, Player
@@ -203,6 +203,39 @@ class Game:
         return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
             self
         )
+
+    def __str__(self):
+        start = utc_to_local(self.game_start).strftime("%B %d, %Y %I:%M %p %Z")
+        ret = (
+            f"Away Team: {self.away} @ Home Team: {self.home}\n"
+            f"Status: {self.game_state} (Game Type: {self.game_type.name})\n"
+            f"Game Start: {start} [Discord Timestamp: <t:{self.timestamp}>]\n"
+        )
+        if self.away_score or self.home_score:
+            ret += f"Score: {self.away} {self.away_score} - {self.home} {self.home_score}\n"
+        if self.away_shots or self.home_shots:
+            ret += f"Shots: {self.away} {self.away_shots} - {self.home} {self.home_shots}\n"
+        if self.period_ord:
+            ret += f"Period: {self.period_time_left} left in the {self.period_ord} period\n"
+        if self.goals:
+            ret += "Game Goals:\n"
+            for goal in self.goals:
+                left = ""
+                if goal.time_remaining:
+                    left = _("\n{time} left in the {ord} period").format(
+                        time=goal.time_remaining, ord=goal.period_ord
+                    )
+                ret += _("{team} {strength} Goal By {description} {left}\n").format(
+                    team=goal.team_name,
+                    strength=goal.strength,
+                    description=goal.description,
+                    left=left,
+                )
+
+        if self.plays:
+            last_play = self.plays[-1]
+            ret += f"Last Event: {last_play.when()} {last_play.what()} {last_play.who(False)}\n"
+        return ret
 
     @property
     def home_team(self) -> str:
@@ -399,7 +432,9 @@ class Game:
         return fields
 
     async def goal_fields(
-        self, period_goals: Optional[Literal["1st", "2nd", "3rd"]] = None
+        self,
+        period_goals: Optional[Literal["1st", "2nd", "3rd"]] = None,
+        include_links: bool = True,
     ) -> List[Dict[str, str]]:
         goal_msg = ""
         first_goals = [goal for goal in self.goals if goal.period_ord == "1st"]
@@ -433,7 +468,7 @@ class Game:
                     left = _("\n{time} left in the {ord} period").format(
                         time=goal.time_remaining, ord=goal.period_ord
                     )
-                if goal.link:
+                if include_links and goal.link:
                     goal_msg += _(
                         "{emoji} [{team} {strength} Goal By {description} {left}]({link})\n\n"
                     ).format(

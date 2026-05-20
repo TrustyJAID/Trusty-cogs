@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import discord
@@ -139,11 +139,11 @@ class Pickems(discord.ui.View):
         self.votes = votes
         self._api = _api
         self.home_emoji = self._api.get_team_emoji(self.home_team)
-        if not str(self.home_emoji):
+        if not str(self.home_emoji) or str(self.home_emoji) == "_":
             self.home_emoji = discord.PartialEmoji.from_str("\N{HOUSE BUILDING}")
         self.away_emoji = self._api.get_team_emoji(self.away_team)
         log.debug("%s @ %s %s", self.away_emoji, self.home_emoji, name)
-        if not str(self.away_emoji):
+        if not str(self.away_emoji) or str(self.away_emoji) == "_":
             self.away_emoji = discord.PartialEmoji.from_str("\N{AIRPLANE}")
         self.winner = winner
         self.name = name
@@ -214,10 +214,10 @@ class Pickems(discord.ui.View):
 
     def update_emojis(self):
         self.home_emoji = self._api.get_team_emoji(self.home_team)
-        if not str(self.home_emoji):
+        if not str(self.home_emoji) or str(self.home_emoji) == "_":
             self.home_emoji = discord.PartialEmoji.from_str("\N{HOUSE BUILDING}")
         self.away_emoji = self._api.get_team_emoji(self.away_team)
-        if not str(self.away_emoji):
+        if not str(self.away_emoji) or str(self.away_emoji) == "_":
             self.away_emoji = discord.PartialEmoji.from_str("\N{AIRPLANE}")
 
     def __repr__(self):
@@ -372,7 +372,7 @@ class Pickems(discord.ui.View):
 
         This realistically only gets called once all the games are done playing
         """
-        after_game = datetime.now(tz=timezone.utc) >= (self.game_start + timedelta(hours=2))
+        # after_game = datetime.now(tz=timezone.utc) >= (self.game_start + timedelta(hours=2))
         if self.winner:
             return True
         if game is not None:

@@ -293,8 +293,10 @@ class Player:
     def name(self) -> str:
         return f"{self.first_name} {self.last_name}"
 
-    def as_link(self):
-        return f"[{str(self)}]({self.url})"
+    def as_link(self, include_link: bool = True):
+        if include_link:
+            return f"[{str(self)}]({self.url})"
+        return str(self)
 
     @classmethod
     def from_json(cls, data: dict) -> Player:
@@ -431,7 +433,7 @@ class Event:
     def description(self) -> str:
         return f"__{self.when()} {self.what()}__\n{self.who()}"
 
-    def who(self) -> str:
+    def who(self, include_links: bool = True) -> str:
         shot_type = ""
         description = ""
         if self.team:
@@ -443,60 +445,62 @@ class Event:
                 if key in ["scoringPlayerId", "shootingPlayerId"]:
                     player = self.get_player(value)
                     total = self.details.get("scoringPlayerTotal", 0)
-                    description += f"- {player.as_link() if player else ''} ({total}) {shot_type}"
+                    description += f"- {player.as_link(include_links) if player else ''} ({total}) {shot_type}"
 
                 if key == "assist1PlayerId":
                     player = self.get_player(value)
                     total = self.details.get("assist1PlayerTotal", 0)
                     description += _(" assists: {player} ({total})").format(
-                        player=player.as_link() if player else _("Unknown"), total=total
+                        player=player.as_link(include_links) if player else _("Unknown"),
+                        total=total,
                     )
                 if key == "assist2PlayerId":
                     player = self.get_player(value)
                     total = self.details.get("assist2PlayerTotal", 0)
                     description += _(", {player} ({total})").format(
-                        player=player.as_link() if player else _("Unknown"), total=total
+                        player=player.as_link(include_links) if player else _("Unknown"),
+                        total=total,
                     )
         else:
             if self.details:
                 if "playerId" in self.details:
                     player = self.get_player(self.details["playerId"])
-                    description += player.as_link() if player else ""
+                    description += player.as_link(include_links) if player else ""
                 if self.type_code is GameEventTypeCode.FACEOFF:
                     winner = self.get_player(self.details.get("winningPlayerId", 0))
                     loser = self.get_player(self.details.get("losingPlayerId", 0))
                     description += _("- {winner} won faceoff against {loser}").format(
-                        winner=winner.as_link() if winner else winner,
-                        loser=loser.as_link() if loser else loser,
+                        winner=winner.as_link(include_links) if winner else winner,
+                        loser=loser.as_link(include_links) if loser else loser,
                     )
                 if self.type_code is GameEventTypeCode.HIT:
                     hitting = self.get_player(self.details.get("hittingPlayerId", 0))
                     hittee = self.get_player(self.details.get("hitteePlayerId", 0))
                     description += _("- {hitting} hit {hittee}").format(
-                        hitting=hitting.as_link() if hitting else hitting,
-                        hittee=hittee.as_link() if hittee else hittee,
+                        hitting=hitting.as_link(include_links) if hitting else hitting,
+                        hittee=hittee.as_link(include_links) if hittee else hittee,
                     )
                 if self.type_code is GameEventTypeCode.BLOCKED_SHOT:
                     shooter = self.get_player(self.details.get("shootingPlayerId", 0))
                     blocker = self.get_player(self.details.get("blockingPlayerId", 0))
                     description += _("- {blocker} blocked shot from {shooter}").format(
-                        blocker=blocker.as_link() if blocker else blocker,
-                        shooter=shooter.as_link() if shooter else shooter,
+                        blocker=blocker.as_link(include_links) if blocker else blocker,
+                        shooter=shooter.as_link(include_links) if shooter else shooter,
                     )
                 if self.type_code is GameEventTypeCode.SHOT_ON_GOAL:
                     shooter = self.get_player(self.details.get("shootingPlayerId", 0))
                     goalie = self.get_player(self.details.get("goalieInNetId", 0))
                     description += _("- {goalie} saved shot from {shooter}").format(
-                        goalie=goalie.as_link() if goalie else goalie,
-                        shooter=shooter.as_link() if shooter else shooter,
+                        goalie=goalie.as_link(include_links) if goalie else goalie,
+                        shooter=shooter.as_link(include_links) if shooter else shooter,
                     )
                 if self.type_code is GameEventTypeCode.MISSED_SHOT:
                     shooter = self.get_player(self.details.get("shootingPlayerId", 0))
                     goalie = self.get_player(self.details.get("goalieInNetId", 0))
                     shot_type = self.details.get("shotType", _("Unknown"))
                     description += _("- {shooter} missed {shot_type} shot on {goalie}").format(
-                        goalie=goalie.as_link() if goalie else goalie,
-                        shooter=shooter.as_link() if shooter else shooter,
+                        goalie=goalie.as_link(include_links) if goalie else goalie,
+                        shooter=shooter.as_link(include_links) if shooter else shooter,
                         shot_type=shot_type,
                     )
                 if self.type_code is GameEventTypeCode.PENALTY:
@@ -508,10 +512,12 @@ class Event:
                     description += _("- {committed} {duration} for {desc}.").format(
                         desc=desc,
                         duration=duration_str,
-                        committed=committed.as_link() if committed else committed,
+                        committed=committed.as_link(include_links) if committed else committed,
                     )
                     if drawn:
-                        description += _(" Drawn by {drawn}.").format(drawn=drawn.as_link())
+                        description += _(" Drawn by {drawn}.").format(
+                            drawn=drawn.as_link(include_links)
+                        )
                 if self.type_code is GameEventTypeCode.STOPPAGE:
                     reason = self.details.get("reason")
                     if reason:
