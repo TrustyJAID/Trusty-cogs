@@ -41,6 +41,15 @@ class GameEnum(Enum):
             GameEnum.osrs_fsw_2022: "https://oldschool.runescape.wiki/",
         }[self]
 
+    @property
+    def prices_url(self):
+        return {
+            GameEnum.runescape: "https://prices.runescape.wiki/rs/",
+            GameEnum.oldschool: "https://prices.runescape.wiki/osrs/",
+            GameEnum.rs_fsw_2022: "https://prices.runescape.wiki/rs-fsw-2022/",
+            GameEnum.osrs_fsw_2022: "https://prices.runescape.wiki/osrs-fsw-2022/",
+        }[self]
+
 
 class WikiAPIError(Exception):
     pass
@@ -195,7 +204,7 @@ class Exchange:
 
     @property
     def url(self):
-        return self._game.wiki_url + "/w/" + self.name.replace(" ", "_")
+        return self._game.prices_url + f"item/{self.id}"
 
     @classmethod
     def from_json(cls, data: dict, game: GameEnum, endpoint: FiltersEndpoint) -> List[Exchange]:
@@ -226,15 +235,16 @@ def format_price_ticks(x, pos):
 def plot_exchange(items: List[Exchange]):
     prices = [i.price for i in items]
     times = [i.datetime for i in items]
-    game = items[0]._game
+    # game = items[0]._game
     data_set = items[0]._endpoint
-    plotcolour = "#081021" if game is GameEnum.runescape else "#E2DBC9"
-    facecolour = "#182135" if game is GameEnum.runescape else "#BFA888"
-    font_colour = "w" if game is GameEnum.runescape else "black"
+    plotcolour = "#212121"
+    facecolour = "#343434"
+    line_colour = "#2BDC51"
+    font_colour = "w"
     fig, ax = plt.subplots(facecolor=plotcolour, tight_layout=True)
     ax.set_facecolor(facecolour)
     # outline_effect = patheffects.withStroke(linewidth=3, foreground="w")
-    ax.plot(times, prices)
+    ax.plot(times, prices, color=line_colour)
     plt.ylabel("Prices", color=font_colour)
     plt.xlabel("Days", color=font_colour)
     plt.grid(True)
