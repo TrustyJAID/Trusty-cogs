@@ -1188,8 +1188,8 @@ class EventMixin:
         action: discord.AuditLogAction,
         *,
         extra: Optional[str] = None,
-        before_roles: Optional[List[discord.Role]] = None,
-        after_roles: Optional[List[discord.Role]] = None,
+        removed_roles: Optional[List[discord.Role]] = None,
+        added_roles: Optional[List[discord.Role]] = None,
         channel_id: Optional[int] = None,
     ) -> Optional[discord.AuditLogEntry]:
         entry = None
@@ -1214,25 +1214,45 @@ class EventMixin:
                         # to reduce instances of false positives
                         continue
                     if channel_id is not None and action is discord.AuditLogAction.message_delete:
-                        if ex := getattr(log, "extra", None):
-                            if ex.channel is not None and ex.channel.id == channel_id:
+                        ex = getattr(log, "extra", None)
+                        if (
+                            ex is not None
+                            and ex.channel is not None
+                            and ex.channel.id == channel_id
+                        ):
+                            entry = log
+
+                    if extra is not None and getattr(log.after, extra, None) is None:
+                        continue
+                    if log.action is discord.AuditLogAction.member_role_update:
+                        log_before = getattr(log.before, "roles", [])
+                        log_after = getattr(log.after, "roles", [])
+                        log_removed = [r.id for r in set(set(log_before) - set(log_after))]
+                        log_added = [r.id for r in set(set(log_after) - set(log_before))]
+                        if added_roles:
+                            a_roles = [r.id for r in added_roles]
+                            if set(a_roles) == set(log_added):
                                 entry = log
-                    if extra is not None:
-                        if getattr(log.after, extra, None) is None:
-                            continue
-                    if log.action is discord.AuditLogAction.member_role_update and before_roles:
-                        if log_before := getattr(log.before, "roles", []):
-                            for role in log_before:
-                                if role in before_roles:
-                                    entry = log
-                            continue
-                    if log.action is discord.AuditLogAction.member_role_update and after_roles:
-                        if log_after := getattr(log.after, "roles", []):
-                            for role in log_after:
-                                if role in after_roles:
-                                    entry = log
-                            continue
-                    if target_id == getattr(log.target, "id", None):
+                                # This entry matches identically
+                                continue
+                            else:
+                                for role in added_roles:
+                                    if role.id in log_added:
+                                        entry = log
+                                        # this may be the correct log entry
+                        if removed_roles:
+                            r_roles = [r.id for r in removed_roles]
+                            if set(r_roles) == set(log_removed):
+                                entry = log
+                                # This entry matches identically
+                                continue
+                            else:
+                                for role in removed_roles:
+                                    if role.id in log_added:
+                                        entry = log
+                                        # this may be the correct log entry
+
+                    if target_id == getattr(log.target, "id", None) and entry is None:
                         logger.trace("Found entry through cache")
                         entry = log
                     if target_id == getattr(log.target, "code", None):
@@ -1247,32 +1267,50 @@ class EventMixin:
                         # ignore audit log actions older than 10 minutes
                         # to reduce instances of false positives
                         continue
-                    if extra is not None:
-                        if getattr(log.after, extra, None) is None:
-                            continue
                     if channel_id is not None and action is discord.AuditLogAction.message_delete:
-                        if ex := getattr(log, "extra", None):
-                            if ex.channel is not None and ex.channel.id == channel_id:
+                        ex = getattr(log, "extra", None)
+                        if (
+                            ex is not None
+                            and ex.channel is not None
+                            and ex.channel.id == channel_id
+                        ):
+                            entry = log
+
+                    if extra is not None and getattr(log.after, extra, None) is None:
+                        continue
+                    if log.action is discord.AuditLogAction.member_role_update:
+                        log_before = getattr(log.before, "roles", [])
+                        log_after = getattr(log.after, "roles", [])
+                        log_removed = [r.id for r in set(set(log_before) - set(log_after))]
+                        log_added = [r.id for r in set(set(log_after) - set(log_before))]
+                        if added_roles:
+                            a_roles = [r.id for r in added_roles]
+                            if set(a_roles) == set(log_added):
                                 entry = log
-                    if log.action is discord.AuditLogAction.member_role_update and before_roles:
-                        if log_before := getattr(log.before, "roles", []):
-                            for role in log_before:
-                                if role in before_roles:
-                                    entry = log
-                            continue
-                    if log.action is discord.AuditLogAction.member_role_update and after_roles:
-                        if log_after := getattr(log.after, "roles", []):
-                            for role in log_after:
-                                if role in after_roles:
-                                    entry = log
-                            continue
-                    if target_id == getattr(log.target, "id", None):
-                        logger.trace("Found perp through fetch")
+                                # This entry matches identically
+                            else:
+                                for role in added_roles:
+                                    if role.id in log_added:
+                                        entry = log
+                                        # this may be the correct log entry
+                        if removed_roles:
+                            r_roles = [r.id for r in removed_roles]
+                            if set(r_roles) == set(log_removed):
+                                entry = log
+                                # This entry matches identically
+                            else:
+                                for role in removed_roles:
+                                    if role.id in log_added:
+                                        entry = log
+                                        # this may be the correct log entry
+                    if target_id == getattr(log.target, "id", None) and entry is None:
+                        logger.trace("Found entry through fetch")
                         entry = log
                         break
                     if target_id == getattr(log.target, "code", None):
                         logger.trace("Found invite code entry through fetch")
                         entry = log
+        logger.info("Returning %s reason", entry.reason if entry is not None else None)
         return entry
 
     @commands.Cog.listener()
@@ -2104,18 +2142,18 @@ class EventMixin:
                 if attr == "roles":
                     b = set(before.roles)
                     a = set(after.roles)
-                    before_roles = list(b - a)
-                    after_roles = list(a - b)
-                    logger.debug("on_member_update after_roles: %s", after_roles)
+                    removed_roles = list(b - a)
+                    added_roles = list(a - b)
+                    logger.debug("on_member_update added_roles: %s", added_roles)
                     perps = set()
                     reasons = set()
-                    if before_roles:
-                        for role in before_roles:
+                    if removed_roles:
+                        for role in removed_roles:
                             entry = await self.get_audit_log_entry(
                                 guild,
                                 before,
                                 discord.AuditLogAction.member_role_update,
-                                before_roles=[role],
+                                removed_roles=[role],
                             )
                             perp = getattr(entry, "user", None)
                             reason = getattr(entry, "reason", None)
@@ -2131,13 +2169,13 @@ class EventMixin:
                                 reasons.add(reason)
                             worth_sending = True
 
-                    if after_roles:
-                        for role in after_roles:
+                    if added_roles:
+                        for role in added_roles:
                             entry = await self.get_audit_log_entry(
                                 guild,
                                 before,
                                 discord.AuditLogAction.member_role_update,
-                                after_roles=[role],
+                                added_roles=[role],
                             )
                             perp = getattr(entry, "user", None)
                             reason = getattr(entry, "reason", None)
