@@ -1225,13 +1225,13 @@ class EventMixin:
                             for role in log_before:
                                 if role in before_roles:
                                     entry = log
-                            continue
+                        continue
                     if log.action is discord.AuditLogAction.member_role_update and after_roles:
                         if log_after := getattr(log.after, "roles", []):
                             for role in log_after:
                                 if role in after_roles:
                                     entry = log
-                            continue
+                        continue
                     if target_id == getattr(log.target, "id", None):
                         logger.trace("Found entry through cache")
                         entry = log
@@ -1259,13 +1259,13 @@ class EventMixin:
                             for role in log_before:
                                 if role in before_roles:
                                     entry = log
-                            continue
+                        continue
                     if log.action is discord.AuditLogAction.member_role_update and after_roles:
                         if log_after := getattr(log.after, "roles", []):
                             for role in log_after:
                                 if role in after_roles:
                                     entry = log
-                            continue
+                        continue
                     if target_id == getattr(log.target, "id", None):
                         logger.trace("Found perp through fetch")
                         entry = log
