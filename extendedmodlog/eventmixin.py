@@ -131,7 +131,10 @@ class EventMixin:
                 all_settings[key] = value
 
     async def get_event_colour(
-        self, guild: discord.Guild, event_type: str, changed_object: Optional[discord.Role] = None
+        self,
+        guild: discord.Guild,
+        event_type: str,
+        changed_object: Optional[discord.Role] = None,
     ) -> discord.Colour:
         if guild.text_channels:
             cmd_colour = await self.bot.get_embed_colour(guild.text_channels[0])
@@ -602,7 +605,8 @@ class EventMixin:
         else:
             clean_msg = message.clean_content[: (1990 - len(infomessage))]
             await channel.send(
-                f"{infomessage}\n>>> {clean_msg}", allowed_mentions=self.allowed_mentions
+                f"{infomessage}\n>>> {clean_msg}",
+                allowed_mentions=self.allowed_mentions,
             )
 
     @commands.Cog.listener()
@@ -957,7 +961,10 @@ class EventMixin:
             await channel.send(msg, allowed_mentions=self.allowed_mentions)
 
     async def get_permission_change(
-        self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel, embed_links: bool
+        self,
+        before: discord.abc.GuildChannel,
+        after: discord.abc.GuildChannel,
+        embed_links: bool,
     ) -> str:
         p_msg = ""
         before_perms = {}
@@ -1818,7 +1825,10 @@ class EventMixin:
 
     @commands.Cog.listener()
     async def on_guild_emojis_update(
-        self, guild: discord.Guild, before: Sequence[discord.Emoji], after: Sequence[discord.Emoji]
+        self,
+        guild: discord.Guild,
+        before: Sequence[discord.Emoji],
+        after: Sequence[discord.Emoji],
     ) -> None:
         if guild.id not in self.settings:
             return
@@ -1965,7 +1975,10 @@ class EventMixin:
 
     @commands.Cog.listener()
     async def on_voice_state_update(
-        self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState
+        self,
+        member: discord.Member,
+        before: discord.VoiceState,
+        after: discord.VoiceState,
     ) -> None:
         guild = member.guild
         if guild.id not in self.settings:
@@ -2193,7 +2206,8 @@ class EventMixin:
                     if perps:
                         msg += _("Updated by ") + humanize_list(list(perps)) + "."
                         embed.add_field(
-                            name=_("Updated by "), value="\n".join(f"- {p}" for p in perps)
+                            name=_("Updated by "),
+                            value="\n".join(f"- {p}" for p in perps),
                         )
                     if reasons:
                         reason_str = "\n".join(f"- {r}" for r in reasons)
@@ -2230,7 +2244,7 @@ class EventMixin:
                         relative = discord.utils.format_dt(after_attr, "R")
                         embed.description += _(
                             "- {author} has subscribed to the guild since {since} ({relative})."
-                        ).format(author=after.mention, since=since)
+                        ).format(author=after.mention, since=since, relative=relative)
                     elif before_attr:
                         since = discord.utils.format_dt(before_attr, "F")
                         relative = discord.utils.format_dt(before_attr, "R")
