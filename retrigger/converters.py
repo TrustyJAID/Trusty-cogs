@@ -66,7 +66,8 @@ class MentionStyle(Enum):
             return cls.user
         raise commands.BadArgument(
             _("`{argument}` is not a valid MentionStyle. Choose one of {available}.").format(
-                argument=argument, available=humanize_list([i.name for i in MentionStyle])
+                argument=argument,
+                available=humanize_list([i.name for i in MentionStyle]),
             )
         )
 
@@ -307,6 +308,7 @@ class Trigger:
         "_last_modified_at",
         "_last_modified",
         "suppress",
+        "delete_days",
     )
 
     def __init__(
@@ -358,6 +360,7 @@ class Trigger:
         self._last_modified_at: Optional[int] = kwargs.get("_last_modified_at", None)
         self._last_modified: Optional[str] = kwargs.get("_last_modified", None)
         self.suppress: bool = kwargs.get("suppress", False)
+        self.delete_days: int = kwargs.get("delete_days", 0)
 
     def enable(self):
         """Explicitly enable this trigger"""
@@ -413,7 +416,11 @@ class Trigger:
         return msg
 
     def modify(
-        self, attr: str, value: Any, author: Union[discord.Member, discord.User], message_id: int
+        self,
+        attr: str,
+        value: Any,
+        author: Union[discord.Member, discord.User],
+        message_id: int,
     ):
         if attr in ("suppress", "check_edits"):
             other = "suppress" if attr == "check_edits" else "check_edits"
@@ -583,6 +590,7 @@ class Trigger:
             "_last_modified_at": self._last_modified_at,
             "_last_modified": self._last_modified,
             "suppress": self.suppress,
+            "delete_days": self.delete_days,
         }
 
     @classmethod

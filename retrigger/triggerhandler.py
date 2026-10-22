@@ -231,7 +231,12 @@ class TriggerHandler(ReTriggerMixin):
                 img_list.append(frame)
         byte_array = BytesIO()
         img_list[0].save(
-            byte_array, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0
+            byte_array,
+            format="GIF",
+            save_all=True,
+            append_images=img_list,
+            duration=0,
+            loop=0,
         )
         byte_array.seek(0)
         return discord.File(byte_array, filename="resize.gif")
@@ -350,12 +355,16 @@ class TriggerHandler(ReTriggerMixin):
                 is_mod = await self.is_mod_or_admin(thread.owner)
             if not allowed_trigger:
                 log.debug(
-                    "ReTrigger: %r is immune from allowlist/blocklist %r", thread.owner, trigger
+                    "ReTrigger: %r is immune from allowlist/blocklist %r",
+                    thread.owner,
+                    trigger,
                 )
                 continue
             if allowed_trigger and (is_auto_mod and is_mod):
                 log.debug(
-                    "ReTrigger: %r is immune from automated actions %r", thread.owner, trigger
+                    "ReTrigger: %r is immune from automated actions %r",
+                    thread.owner,
+                    trigger,
                 )
                 continue
 
@@ -377,15 +386,21 @@ class TriggerHandler(ReTriggerMixin):
                         await self.modlog_action(thread, trigger, search[1], _("Deleted Thread"))
                 except discord.errors.NotFound:
                     log.debug(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
                 except discord.errors.Forbidden:
                     log.debug(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
                 except Exception:
                     log.exception(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
                 return
 
@@ -421,7 +436,11 @@ class TriggerHandler(ReTriggerMixin):
             allowed_trigger = await trigger.check_bw_list(author=author, channel=channel)
             is_auto_mod = any(r.is_automod for r in trigger.response_type)
             if not allowed_trigger:
-                log.debug("ReTrigger: %r is immune from allowlist/blocklist %r", author, trigger)
+                log.debug(
+                    "ReTrigger: %r is immune from allowlist/blocklist %r",
+                    author,
+                    trigger,
+                )
                 continue
             if allowed_trigger and (is_auto_mod and is_mod):
                 log.debug("ReTrigger: %r is immune from automated actions %r", author, trigger)
@@ -429,13 +448,19 @@ class TriggerHandler(ReTriggerMixin):
             # log.debug(f"Checking trigger {trigger.name}")
             if is_command and not trigger.ignore_commands:
                 log.debug(
-                    "ReTrigger: %r is ignored because they used a command %r", author, trigger
+                    "ReTrigger: %r is ignored because they used a command %r",
+                    author,
+                    trigger,
                 )
                 continue
 
             if any(r.is_automod for r in trigger.response_type):
                 if await self.bot.is_automod_immune(message):
-                    log.debug("ReTrigger: %r is immune from automated actions %r", author, trigger)
+                    log.debug(
+                        "ReTrigger: %r is immune from automated actions %r",
+                        author,
+                        trigger,
+                    )
                     continue
             if TriggerResponse.delete in trigger.response_type:
                 if channel_perms.manage_messages or is_mod:
@@ -522,7 +547,14 @@ class TriggerHandler(ReTriggerMixin):
     def convert_embed_to_string(embed: discord.Embed, embed_index: int = 0) -> str:
         embed_dict = embed.to_dict()
         flattened_embed_dict = {}
-        field_blacklist = ["type", "color", "proxy_url", "height", "width", "proxy_icon_url"]
+        field_blacklist = [
+            "type",
+            "color",
+            "proxy_url",
+            "height",
+            "width",
+            "proxy_icon_url",
+        ]
         for field, value in embed_dict.items():
             if field in field_blacklist:
                 continue
@@ -663,7 +695,9 @@ class TriggerHandler(ReTriggerMixin):
                 await message.edit(suppress=True)
             except Exception:
                 log.exception(
-                    "Error suppressing embeds on a message: %r with trigger %r", message, trigger
+                    "Error suppressing embeds on a message: %r with trigger %r",
+                    message,
+                    trigger,
                 )
 
         if isinstance(channel, discord.TextChannel):
@@ -682,7 +716,9 @@ class TriggerHandler(ReTriggerMixin):
                     )
                 elif trigger.thread.public is False and own_permissions.create_private_threads:
                     channel = await channel.create_thread(
-                        name=thread_name[:100], invitable=trigger.thread.invitable, reason=reason
+                        name=thread_name[:100],
+                        invitable=trigger.thread.invitable,
+                        reason=reason,
                     )
                     if trigger.thread.invitable or (
                         trigger.thread.invitable is False and own_permissions.manage_messages
@@ -713,10 +749,16 @@ class TriggerHandler(ReTriggerMixin):
             try:
                 await channel.send(file=file)
             except discord.errors.Forbidden:
-                log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                log.debug(
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
+                )
             except Exception:
                 log.exception(
-                    "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
                 )
 
         if TriggerResponse.rename in trigger.response_type and own_permissions.manage_nicknames:
@@ -741,11 +783,15 @@ class TriggerHandler(ReTriggerMixin):
                     await author.edit(nick=response[:32], reason=reason)
                 except discord.errors.Forbidden:
                     log.debug(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
                 except Exception:
                     log.exception(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
 
         if TriggerResponse.publish in trigger.response_type and own_permissions.manage_messages:
@@ -754,7 +800,9 @@ class TriggerHandler(ReTriggerMixin):
                     await message.publish()
                 except Exception:
                     log.exception(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
 
         if TriggerResponse.text in trigger.response_type and own_permissions.send_messages:
@@ -782,10 +830,16 @@ class TriggerHandler(ReTriggerMixin):
                     **kwargs,
                 )
             except discord.errors.Forbidden:
-                log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                log.debug(
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
+                )
             except Exception:
                 log.exception(
-                    "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
                 )
 
         if TriggerResponse.randtext in trigger.response_type and own_permissions.send_messages:
@@ -808,10 +862,16 @@ class TriggerHandler(ReTriggerMixin):
                     **kwargs,
                 )
             except discord.errors.Forbidden:
-                log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                log.debug(
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
+                )
             except Exception:
                 log.exception(
-                    "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
                 )
 
         if TriggerResponse.image in trigger.response_type and own_permissions.attach_files:
@@ -838,10 +898,16 @@ class TriggerHandler(ReTriggerMixin):
                     **kwargs,
                 )
             except discord.errors.Forbidden:
-                log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                log.debug(
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
+                )
             except Exception:
                 log.exception(
-                    "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
                 )
 
         if TriggerResponse.randimage in trigger.response_type and own_permissions.attach_files:
@@ -870,10 +936,16 @@ class TriggerHandler(ReTriggerMixin):
                     **kwargs,
                 )
             except discord.errors.Forbidden:
-                log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                log.debug(
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
+                )
             except Exception:
                 log.exception(
-                    "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
                 )
 
         if TriggerResponse.dm in trigger.response_type:
@@ -889,10 +961,16 @@ class TriggerHandler(ReTriggerMixin):
             try:
                 await author.send(response, allowed_mentions=trigger.allowed_mentions())
             except discord.errors.Forbidden:
-                log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                log.debug(
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
+                )
             except Exception:
                 log.exception(
-                    "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
                 )
 
         if TriggerResponse.dmme in trigger.response_type:
@@ -911,16 +989,24 @@ class TriggerHandler(ReTriggerMixin):
                     trigger_author = await self.bot.fetch_user(trigger.author)
                 except Exception:
                     log.exception(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
             try:
                 await trigger_author.send(response, allowed_mentions=trigger.allowed_mentions())
             except discord.errors.Forbidden:
                 trigger.enabled = False
-                log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                log.debug(
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
+                )
             except Exception:
                 log.exception(
-                    "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
                 )
 
         if TriggerResponse.react in trigger.response_type and own_permissions.add_reactions:
@@ -929,11 +1015,15 @@ class TriggerHandler(ReTriggerMixin):
                     await message.add_reaction(emoji)
                 except (discord.errors.Forbidden, discord.errors.NotFound):
                     log.debug(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
                 except Exception:
                     log.exception(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
 
         if TriggerResponse.add_role in trigger.response_type and own_permissions.manage_roles:
@@ -947,11 +1037,15 @@ class TriggerHandler(ReTriggerMixin):
                         await self.modlog_action(message, trigger, find, _("Added Role"))
                 except discord.errors.Forbidden:
                     log.debug(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
                 except Exception:
                     log.exception(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
 
         if TriggerResponse.remove_role in trigger.response_type and own_permissions.manage_roles:
@@ -965,11 +1059,15 @@ class TriggerHandler(ReTriggerMixin):
                         await self.modlog_action(message, trigger, find, _("Removed Role"))
                 except discord.errors.Forbidden:
                     log.debug(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
                 except Exception:
                     log.exception(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
 
         if TriggerResponse.kick in trigger.response_type and own_permissions.kick_members:
@@ -997,11 +1095,15 @@ class TriggerHandler(ReTriggerMixin):
                             pass
                 except discord.errors.Forbidden:
                     log.debug(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
                 except Exception:
                     log.exception(
-                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                        "Retrigger encountered an error in %r with trigger %r",
+                        guild,
+                        trigger,
                     )
 
         if TriggerResponse.ban in trigger.response_type and own_permissions.ban_members:
@@ -1011,7 +1113,7 @@ class TriggerHandler(ReTriggerMixin):
                 return
             if guild.me.top_role > author.top_role:
                 try:
-                    await author.ban(reason=reason, delete_message_days=0)
+                    await author.ban(reason=reason, delete_message_days=trigger.delete_days)
                     if await self.config.guild(guild).ban_logs():
                         await self.modlog_action(message, trigger, find, _("Banned"))
                     else:
@@ -1089,16 +1191,30 @@ class TriggerHandler(ReTriggerMixin):
                 if await self.config.guild(guild).filter_logs():
                     await self.modlog_action(message, trigger, find, _("Deleted Message"))
             except discord.errors.NotFound:
-                log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                log.debug(
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
+                )
             except discord.errors.Forbidden:
-                log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                log.debug(
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
+                )
             except Exception:
                 log.exception(
-                    "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    "Retrigger encountered an error in %r with trigger %r",
+                    guild,
+                    trigger,
                 )
 
     async def convert_parms(
-        self, message: discord.Message, raw_response: str, trigger: Trigger, find: List[str]
+        self,
+        message: discord.Message,
+        raw_response: str,
+        trigger: Trigger,
+        find: List[str],
     ) -> str:
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/customcom/customcom.py
         # ctx = await self.bot.get_context(message)
@@ -1235,7 +1351,9 @@ class TriggerHandler(ReTriggerMixin):
                         found_triggers=humanize_list(find)[:1024],
                     )
                     msg = escape(
-                        infomessage.replace("@&", ""), mass_mentions=True, formatting=True
+                        infomessage.replace("@&", ""),
+                        mass_mentions=True,
+                        formatting=True,
                     )
                     await modlog_channel.send(msg)
             except Exception:
@@ -1271,7 +1389,9 @@ class TriggerHandler(ReTriggerMixin):
                                     os.remove(path)
                                 except Exception:
                                     log.error(
-                                        "Error deleting saved image in %s", guild_id, exc_info=True
+                                        "Error deleting saved image in %s",
+                                        guild_id,
+                                        exc_info=True,
                                     )
                         else:
                             path = str(cog_data_path(self)) + f"/{guild_id}/{image}"
@@ -1279,7 +1399,9 @@ class TriggerHandler(ReTriggerMixin):
                                 os.remove(path)
                             except Exception:
                                 log.error(
-                                    "Error deleting saved image in %s", guild_id, exc_info=True
+                                    "Error deleting saved image in %s",
+                                    guild_id,
+                                    exc_info=True,
                                 )
                     del trigger_list[triggers]
                     del self.triggers[guild_id][trigger_name]

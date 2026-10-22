@@ -95,7 +95,7 @@ class ReTrigger(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.29.1"
+    __version__ = "2.29.2"
 
     def __init__(self, bot):
         super().__init__()
@@ -747,7 +747,9 @@ class ReTrigger(
     @checks.mod_or_permissions(manage_messages=True)
     @wrapped_additional_help()
     async def toggle_ocr_search(
-        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
     ) -> None:
         """
         Toggle whether to use Optical Character Recognition to search for text within images.
@@ -772,7 +774,9 @@ class ReTrigger(
     @checks.mod_or_permissions(manage_messages=True)
     @wrapped_additional_help()
     async def toggle_nsfw(
-        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
     ) -> None:
         """
         Toggle whether a trigger is considered NSFW.
@@ -791,11 +795,41 @@ class ReTrigger(
         msg = _("Trigger {name} NSFW set to: {nsfw}").format(name=trigger.name, nsfw=trigger.nsfw)
         await ctx.send(msg)
 
+    @_edit.command(name="deletedays")
+    @checks.mod_or_permissions(manage_messages=True)
+    @wrapped_additional_help()
+    async def set_delete_days(
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
+        days: int = 0,
+    ) -> None:
+        """
+        Set the number of days worth of messages to delete with a ban trigger.
+
+        `<trigger>` The name of the trigger that can ban users.
+        `[days]` A number of days to delete.
+        """
+        if type(trigger) is str:
+            return await self._no_trigger(ctx, trigger)
+        if TriggerResponse.ban not in trigger.response_type:
+            await ctx.send(_("Delete Days can only be added to a trigger that bans members."))
+            return
+        trigger.modify("delete_days", days, ctx.author, ctx.message.id)
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
+        # self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} Delete Days set to: {days}").format(name=trigger.name, days=days)
+        await ctx.send(msg)
+
     @_edit.command(name="readembeds")
     @checks.mod_or_permissions(manage_messages=True)
     @wrapped_additional_help()
     async def toggle_read_embeds(
-        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
     ) -> None:
         """
         Toggle whether a trigger will check embeds.
@@ -820,7 +854,9 @@ class ReTrigger(
     @checks.mod_or_permissions(manage_messages=True)
     @wrapped_additional_help()
     async def toggle_suppress_embeds(
-        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
     ) -> None:
         """
         Toggle whether a trigger will suppress original message embeds.
@@ -850,7 +886,9 @@ class ReTrigger(
     @checks.mod_or_permissions(manage_messages=True)
     @wrapped_additional_help()
     async def toggle_read_threads(
-        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
     ) -> None:
         """
         Toggle whether a filter trigger will check thread titles.
@@ -868,7 +906,10 @@ class ReTrigger(
 
         # trigger.read_thread_title = not trigger.read_thread_title
         trigger.modify(
-            "read_thread_title", not trigger.read_thread_title, ctx.author, ctx.message.id
+            "read_thread_title",
+            not trigger.read_thread_title,
+            ctx.author,
+            ctx.message.id,
         )
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
@@ -883,7 +924,9 @@ class ReTrigger(
     @checks.mod_or_permissions(manage_messages=True)
     @wrapped_additional_help()
     async def toggle_include_threads(
-        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
     ) -> None:
         """
         Toggle whether the allowlist/blocklist will include threads within the channel.
@@ -912,7 +955,9 @@ class ReTrigger(
     @checks.mod_or_permissions(manage_messages=True)
     @wrapped_additional_help()
     async def toggle_filename_search(
-        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
     ) -> None:
         """
         Toggle whether to search message attachment filenames.
@@ -1082,7 +1127,9 @@ class ReTrigger(
     @checks.mod_or_permissions(manage_messages=True)
     @wrapped_additional_help()
     async def toggle_check_edits(
-        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
     ) -> None:
         """
         Toggle whether the bot will listen to edited messages as well as on_message for
@@ -1223,7 +1270,9 @@ class ReTrigger(
     @checks.mod_or_permissions(manage_messages=True)
     @wrapped_additional_help()
     async def edit_ignore_commands(
-        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
     ) -> None:
         """
         Toggle the trigger ignoring command messages entirely.
@@ -1394,7 +1443,9 @@ class ReTrigger(
     @checks.mod_or_permissions(manage_messages=True)
     @wrapped_additional_help()
     async def enable_trigger(
-        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
     ) -> None:
         """
         Enable a trigger
@@ -1415,7 +1466,9 @@ class ReTrigger(
     @checks.mod_or_permissions(manage_messages=True)
     @wrapped_additional_help()
     async def disable_trigger(
-        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
     ) -> None:
         """
         Disable a trigger
@@ -1561,7 +1614,9 @@ class ReTrigger(
     @checks.mod_or_permissions(manage_messages=True)
     @wrapped_additional_help()
     async def remove(
-        self, ctx: commands.Context, trigger: Trigger = commands.parameter(converter=TriggerExists)
+        self,
+        ctx: commands.Context,
+        trigger: Trigger = commands.parameter(converter=TriggerExists),
     ) -> None:
         """
         Remove a specified trigger
