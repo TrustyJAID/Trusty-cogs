@@ -50,10 +50,10 @@ class TeamLogo:
     def __init__(self, data: bytes, name: str, background: str, logos_path: Path):
         self.data = data
         self.name = name
-        self.filename = re.sub(r"[^A-Za-z0-9\_]", "", f"{self.name}_{self.background}")
         self.background = background
         self.logos_path = logos_path
         self.emoji: Optional[BytesIO] = None
+        self.filename = re.sub(r"[^A-Za-z0-9\_]", "", f"{self.name}_{self.background}")
 
     async def check(self) -> bool:
         temp = BytesIO()

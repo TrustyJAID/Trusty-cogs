@@ -256,7 +256,8 @@ class PlayoffSeries:
     @property
     def description(self) -> str:
         return _("{top_team} vs. {bottom_team}").format(
-            top_team=self.topSeedTeam or _("TBD"), bottom_team=self.bottomSeedTeam or _("TBD")
+            top_team=self.topSeedTeam or _("TBD"),
+            bottom_team=self.bottomSeedTeam or _("TBD"),
         )
 
     @property
@@ -394,7 +395,8 @@ class PlayoffsView(discord.ui.View):
         """Just extends the default reaction_check to use owner_ids"""
         if self.author and interaction.user.id != self.author.id:
             await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
+                content=_("You are not authorized to interact with this."),
+                ephemeral=True,
             )
             return False
         return True
@@ -487,7 +489,10 @@ class TeamRecord:
             row=int(data["row"]),
             games_played=int(data["gamesPlayed"]),
             streak=Streak(
-                **data.get("streak", {"streakType": "wins", "streakNumber": 0, "streakCode": ""})
+                **data.get(
+                    "streak",
+                    {"streakType": "wins", "streakNumber": 0, "streakCode": ""},
+                )
             ),
             points_percentage=float(data["pointsPercentage"]),
             pp_division_rank=int(data["ppDivisionRank"]),
@@ -568,7 +573,10 @@ class Standings:
         for team, record in self.all_records.items():
             if division and division in [record.division.name.lower(), "division"]:
                 continue
-            if conference and conference in [record.conference.name.lower(), "conference"]:
+            if conference and conference in [
+                record.conference.name.lower(),
+                "conference",
+            ]:
                 continue
             if latest is None:
                 latest = record.last_updated
@@ -666,7 +674,10 @@ class Standings:
 
     @staticmethod
     async def edit_standings_message(
-        page: StandingsPage, guild: discord.Guild, message: discord.Message, config: Config
+        page: StandingsPage,
+        guild: discord.Guild,
+        message: discord.Message,
+        config: Config,
     ) -> None:
         try:
             await message.edit(embed=page.embed, attachments=page.files)
@@ -925,10 +936,12 @@ class Standings:
         em.colour = int(TEAMS[record.team.name]["home"].replace("#", ""), 16)
         # em.set_thumbnail(url=TEAMS[record.team.name]["logo"])
         em.add_field(
-            name=f"{record.division.name} Division", value=box(division_table, lang="ansi")
+            name=f"{record.division.name} Division",
+            value=box(division_table, lang="ansi"),
         )
         em.add_field(
-            name=f"{record.conference.name} Conference", value=box(conference_table, lang="ansi")
+            name=f"{record.conference.name} Conference",
+            value=box(conference_table, lang="ansi"),
         )
         em.add_field(name="League", value=box(league_table, lang="ansi"))
         em.add_field(
@@ -976,7 +989,11 @@ class StandingsPages(menus.ListPageSource):
 
 
 class StandingsMenu(discord.ui.View):
-    def __init__(self, standings: Standings, start: str):
+    def __init__(
+        self,
+        standings: Standings,
+        start: str,
+    ):
         super().__init__()
         self.standings = standings
         self.pages: List[StandingsPages] = []
@@ -1109,7 +1126,8 @@ class StandingsMenu(discord.ui.View):
         """Just extends the default reaction_check to use owner_ids"""
         if self.author and interaction.user.id != self.author.id:
             await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
+                content=_("You are not authorized to interact with this."),
+                ephemeral=True,
             )
             return False
         return True
