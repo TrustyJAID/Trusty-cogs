@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+import bisect
 import json
 import re
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, List, NamedTuple, Optional
 
 import aiohttp
 import discord
-import pytz
 from red_commons.logging import getLogger
 from redbot.core.utils.chat_formatting import humanize_number, pagify
 from tabulate import tabulate
@@ -101,152 +101,12 @@ class ZamorakHiScores:
         return cls.from_json(data)
 
 
-class Skills(Enum):
-    Attack = 0
-    Defence = 1
-    Strength = 2
-    Constitution = 3
-    Ranged = 4
-    Prayer = 5
-    Magic = 6
-    Cooking = 7
-    Woodcutting = 8
-    Fletching = 9
-    Fishing = 10
-    Firemaking = 11
-    Crafting = 12
-    Smithing = 13
-    Mining = 14
-    Herblore = 15
-    Agility = 16
-    Thieving = 17
-    Slayer = 18
-    Farming = 19
-    Runecrafting = 20
-    Hunter = 21
-    Construction = 22
-    Summoning = 23
-    Dungeoneering = 24
-    Divination = 25
-    Invention = 26
-    Archaeology = 27
-    Necromancy = 28
-
-    @property
-    def is_elite(self):
-        return self is Skills.Invention
-
-    @property
-    def is_120(self):
-        return self in (
-            Skills.Herblore,
-            Skills.Slayer,
-            Skills.Farming,
-            Skills.Dungeoneering,
-            Skills.Invention,
-            Skills.Archaeology,
-            Skills.Necromancy,
-        )
-
-
-class Item:
-    def __init__(self, *args, **kwargs):
-        self.id = kwargs.get("id")
-        self.icon = kwargs.get("icon")
-        self.icon_large = kwargs.get("icon_large")
-        self.type = kwargs.get("type")
-        self.type_icon = kwargs.get("type_icon")
-        self.name = kwargs.get("name")
-        self.description = kwargs.get("description")
-        self.members = kwargs.get("members")
-        self.trend = kwargs.get("trend")
-        self.price = kwargs.get("price")
-        self.change = kwargs.get("change")
-        self.current = kwargs.get("current")
-        self.today = kwargs.get("today")
-        self.day30 = kwargs.get("day30")
-        self.day90 = kwargs.get("day90")
-        self.day180 = kwargs.get("day180")
-
-
-@dataclass
-class Activity:
-    date: datetime
-    details: str
-    text: str
-    id: str
-
-    @classmethod
-    def from_json(cls, data: dict):
-        tz = pytz.timezone("Europe/London")
-        date_info = data.get("date")
-        if date_info is not None:
-            date = datetime.strptime(date_info, "%d-%b-%Y %H:%M")
-        else:
-            date = datetime.now()
-        date = tz.localize(date)
-        text = data.get("text")
-        activity_id = f"{int(date.timestamp())}-{text}"
-        return cls(
-            date=date,
-            details=data.get("details"),
-            text=text,
-            id=activity_id,
-        )
-
-    def _get_image_details_text(self):
-        text = self.text
-        details = self.details
-        image_url = None
-        page = None
-        if match := KILLED_RE.search(self.text):
-            page = match.group(1).strip()
-            if page.endswith("s"):
-                page = page[:-1]
-            page = page.replace(" ", "_")
-            if "-" in page:
-                page = page.title()
-            else:
-                page = page.capitalize()
-            image_url = IMAGE_URL + page + ".png"
-        if match := XP_RE.search(self.text):
-            page = match.group(2).strip()
-            if xp := match.group("xp"):
-                number = humanize_number(int(xp))
-                text = self.text.replace(xp, number)
-                details = self.details.replace(xp, number)
-            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
-        if match := LVL_RE.search(self.text):
-            page = match.group(1).strip()
-            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
-        if match := FOUND_RE.search(self.text):
-            page = match.group(1).strip() + " detail"
-            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
-        return text, details, image_url
-
-    def format_text(self, profile: Profile) -> str:
-        text, details, image_url = self._get_image_details_text()
-        ts = discord.utils.format_dt(self.date)
-        return f"{profile.name}: {text}\n{details}\n\n{ts}"
-
-    def embed(self, profile: Profile) -> discord.Embed:
-        # url = f"https://apps.runescape.com/runemetrics/app/overview/player/{profile.name}"
-        # msg = f"{profile.name}: {activity.text}\n{activity.details}\n\n"
-        ts = discord.utils.format_dt(self.date)
-        text, details, image_url = self._get_image_details_text()
-        embed = discord.Embed(title=text, description=f"{details}\n\n{ts}")
-        embed.set_author(name=profile.name, url=profile.metrics, icon_url=profile.avatar)
-        if image_url is not None:
-            embed.set_thumbnail(url=image_url)
-        return embed
-
-
 class Activities:
     def __init__(self, *args, **kwargs):
-        self.channels = kwargs.get("channels")
-        self.last_id: str = kwargs.get("last_id")
+        self.channels: Dict[str, int] = kwargs.get("channels", {})
+        self.last_id: str = kwargs.get("last_id", "")
         self.last_timestamp = kwargs.get("last_timestamp")
-        self.username: str = kwargs.get("username")
+        self.username: str = kwargs.get("username", "")
         self.posted_activities: deque = deque(kwargs.get("posted_activities", []), 40)
 
     def to_json(self) -> dict:
@@ -257,49 +117,6 @@ class Activities:
             "username": self.username,
             "posted_activities": list(self.posted_activities),
         }
-
-
-@dataclass
-class Skill:
-    level: int
-    xp: int
-    rank: int
-    id: int
-    name: str
-    # sort of a pseudo cached property
-    _virtual_level: Optional[int] = None
-
-    def virtual_level(self) -> Optional[int]:
-        if self._virtual_level is not None:
-            return self._virtual_level
-        table = XP_TABLE
-        max_level = 120
-        if self.skill.is_elite:
-            table = ELITE_XP
-            max_level = 150
-        # since this is for virtual levels we can reduce iterations
-        # by just slicing the list to only values after the start of virtual
-        # level calculations. This should reduce our iterations from
-        # 120(150 for elite) per skill to only 22 (52 for elite) per skill
-        split = 99
-        for level, xp in enumerate(table[split - 1 :], start=split):
-            if self.xp >= xp:
-                self._virtual_level = min(level, max_level)
-        return self._virtual_level
-
-    @property
-    def skill(self):
-        return Skills(self.id)
-
-    @classmethod
-    def from_json(cls, data: dict):
-        return cls(
-            level=data.get("level", 1),
-            xp=int(data.get("xp", 1) * 0.1),
-            rank=data.get("rank", 0),
-            id=data.get("id"),
-            name=Skills(int(data.get("id"))).name,
-        )
 
 
 @dataclass
@@ -340,213 +157,142 @@ class PlayerDetails:
         return cls.from_str(data)
 
 
+class PlogType(Enum):
+    UNKNOWN = "unknown_plog_type"
+    XP_MILESTONE = "rs_plog_xp_milestone"
+    LEVELUP_COUNT = "rs_plog_levelup_count"
+    LEVELUP_ALL_MILESTONE = "rs_plog_levelup_all_milestone"
+    LEVELUP_TOTAL_MILESTONE = "rs_plog_levelup_total_milestone"
+    ITEM_DROP = "rs_plog_item_drop"
+    NPC_KILL_COUNT = "rs_plog_npc_kill_count"
+    NPC_DEFEAT = "rs_plog_npc_defeat"
+    ITEM_FOUND = "rs_plog_item_found"
+    ITEM_FOUND_NOWHERE = "rs_plog_item_found_nowhere"
+    QUEST = "rs_plog_quest"
+    QP_MILESTONE = "rs_plog_qp_milestone"
+    CHAMPIONS_CHALLENGE = "rs_plog_champions_challenge"
+    COURTCASE = "rs_plog_courtcase"
+    FINISHED_TRAIL = "rs_plog_finished_trail"
+    DUNGEONS_DEEPEST_LEVEL = "rs_plog_dungeons_deepest_level"
+    DUNGEONS_BOSS_KILLS = "rs_plog_dungeons_boss_kills"
+    DUNGEONS_FOUND_BOOK = "rs_plog_dungeons_found_book"
+    MUSIC_MILESTONE = "rs_plog_music_milestone"
+    SPECIAL_EVENT = "rs_plog_special_event"
+    # Depracated evnents that might still show up
+    LEVEL_UPS = "rs_plog_levelup"
+    NPC_KILLS = "rs_plog_npc_kill"
+    PVP_KILL = "rs_plog_pvp_kill"
+    HOLIDAY_EVENTS = "rs_plog_events"
+    TREASURE_HUNTER_DROP = "rs_plog_wof_drop"
+    DUNGEONEERING_TOKEN_SPENT = "rs_plog_dungeons_spend_token"
+
+    @classmethod
+    def from_str(cls, data: str):
+        try:
+            return PlogType(data)
+        except ValueError:
+            return PlogType.UNKNOWN
+
+
 @dataclass
-class Profile:
-    name: str
-    combatlevel: int
-    logged_in: bool
-    rank: int
-    melee_total: int
-    magic_total: int
-    ranged_total: int
-    totalskill: int
-    totalxp: int
-    questsstarted: int
-    questscomplete: int
-    questsnotstarted: int
-    activities: List[Activity]
-    attack: Skill
-    defence: Skill
-    strength: Skill
-    constitution: Skill
-    ranged: Skill
-    prayer: Skill
-    magic: Skill
-    cooking: Skill
-    woodcutting: Skill
-    fletching: Skill
-    fishing: Skill
-    firemaking: Skill
-    crafting: Skill
-    smithing: Skill
-    mining: Skill
-    herblore: Skill
-    agility: Skill
-    thieving: Skill
-    slayer: Skill
-    farming: Skill
-    runecrafting: Skill
-    hunter: Skill
-    construction: Skill
-    summoning: Skill
-    dungeoneering: Skill
-    divination: Skill
-    invention: Skill
-    archaeology: Skill
-    necromancy: Skill
-
-    def __str__(self):
-        skills_list = [["Overall", self.totalskill, "{:,}".format(self.totalxp), self.rank]]
-        for skill_name in Skills:
-            skill = getattr(self, skill_name.name.lower(), None)
-            if not skill:
-                level = 1
-                xp = 0
-                rank = "Unranked"
-                skills_list.append([skill_name.name, level, xp, rank])
-                continue
-            level = skill.level
-            virtual = skill.virtual_level()
-            if virtual is not None and virtual != level:
-                level = f"{skill.level} ({virtual})"
-            xp = skill.xp
-            rank = "Unranked"
-            if skill.rank:
-                rank = humanize_number(skill.rank)
-            skills_list.append([skill.name, level, humanize_number(xp), rank])
-        return tabulate(skills_list, headers=["Skill", "Level", "Experience", "Rank"])
-
-    @property
-    def avatar(self):
-        return "http://secure.runescape.com/m=avatar-rs/{}/chat.png".format(
-            self.name.replace(" ", "%20")
-        )
-
-    @property
-    def metrics(self):
-        return f"https://apps.runescape.com/runemetrics/app/overview/player/{self.name}"
-
-    def stats_table(self) -> str:
-        table = str(self)
-        top_row_len = len(table.split("\n")[1])
-        top_row = top_row_len * "-"
-        title = f"RS3 Stats for {self.name}".center(top_row_len - 2)
-        skills = ("```css\n{top_row}\n|{title}|\n{top_row}\n{skills}\n{top_row}```").format(
-            top_row=top_row, title=title, skills=table
-        )
-        return skills
-
-    async def embed(self, details: Optional[PlayerDetails] = None) -> discord.Embed:
-        em = discord.Embed()
-        if details and details.isSuffix:
-            em.set_author(name="{} {}".format(self.name, details.title))
-        elif details:
-            em.set_author(name="{} {}".format(details.title, self.name))
-        else:
-            em.set_author(name=self.name)
-        activities = ""
-        for activity in self.activities:
-            activities += f"[<t:{int(activity.date.timestamp())}>] {activity.details}\n"
-
-        # em.colour = int(teams[_teams.name]["home"].replace("#", ""), 16)
-        em.set_thumbnail(url=self.avatar)
-        em.add_field(name="Combat Level", value=self.combatlevel)
-        em.add_field(name="Total Level", value=humanize_number(self.totalskill))
-        em.add_field(name="Total XP", value=humanize_number(self.totalxp))
-        quests = tabulate(
-            [[self.questsstarted, self.questsnotstarted, self.questscomplete]],
-            headers=["Started", "Not Started", "Complete"],
-        )
-        combat_xp = tabulate(
-            [
-                [
-                    humanize_number(self.magic_total),
-                    humanize_number(self.melee_total),
-                    humanize_number(self.ranged_total),
-                ]
-            ],
-            headers=["Magic", "Melee", "Ranged"],
-        )
-        em.add_field(
-            name="Combat XP Totals",
-            value=f"```\n{combat_xp}\n```",
-            inline=False,
-        )
-        em.add_field(
-            name="Quests",
-            value=f"```\n{quests}\n```",
-            inline=False,
-        )
-        if activities:
-            activities = list(pagify(activities, page_length=1024))[0]
-            em.add_field(name="Activities", value=activities)
-        if self.logged_in:
-            em.set_footer(
-                text="\N{LARGE GREEN CIRCLE} Online",
-            )
-        else:
-            em.set_footer(
-                text="\N{LARGE RED CIRCLE} Offline",
-            )
-        return em
+class PlayerEvent:
+    date: datetime
+    details: str
+    text: str
+    type: PlogType
+    id: str
 
     @classmethod
     def from_json(cls, data: dict):
-        logged_in = True if data["loggedIn"] == "true" else False
-        skills = {skill.value: 0 for skill in Skills}
-        if "skillvalues" in data:
-            for skill in data["skillvalues"]:
-                skills[skill["id"]] = Skill.from_json(skill)
+        plog_type = data.pop("type", "unknown_plog_type")
+        try:
+            date = datetime.fromisoformat(data.pop("date"))
+        except (ValueError, KeyError, TypeError):
+            date = datetime.now(tz=timezone.utc)
+        event_text = data.get("text", "")
+        event_id = f"{int(date.timestamp())}-{event_text}"
 
-        return cls(
-            name=data["name"],
-            combatlevel=data["combatlevel"],
-            logged_in=logged_in,
-            rank=data["rank"],
-            melee_total=data["melee"],
-            magic_total=data["magic"],
-            ranged_total=data["ranged"],
-            totalskill=data["totalskill"],
-            totalxp=data["totalxp"],
-            questsstarted=data["questsstarted"],
-            questscomplete=data["questscomplete"],
-            questsnotstarted=data["questsnotstarted"],
-            activities=[Activity.from_json(i) for i in data["activities"]],
-            attack=skills[0],
-            defence=skills[1],
-            strength=skills[2],
-            constitution=skills[3],
-            ranged=skills[4],
-            prayer=skills[5],
-            magic=skills[6],
-            cooking=skills[7],
-            woodcutting=skills[8],
-            fletching=skills[9],
-            fishing=skills[10],
-            firemaking=skills[11],
-            crafting=skills[12],
-            smithing=skills[13],
-            mining=skills[14],
-            herblore=skills[15],
-            agility=skills[16],
-            thieving=skills[17],
-            slayer=skills[18],
-            farming=skills[19],
-            runecrafting=skills[20],
-            hunter=skills[21],
-            construction=skills[22],
-            summoning=skills[23],
-            dungeoneering=skills[24],
-            divination=skills[25],
-            invention=skills[26],
-            archaeology=skills[27],
-            necromancy=skills[28],
-        )
+        return cls(**data, date=date, type=PlogType.from_str(plog_type), id=event_id)
+
+    def _get_image_details_text(self):
+        text = self.text
+        details = self.details
+        image_url = None
+        page = None
+        if match := KILLED_RE.search(self.text):
+            page = match.group(1).strip()
+            if page.endswith("s"):
+                page = page[:-1]
+            page = page.replace(" ", "_")
+            if "-" in page:
+                page = page.title()
+            else:
+                page = page.capitalize()
+            image_url = IMAGE_URL + page + ".png"
+        if match := XP_RE.search(self.text):
+            page = match.group(2).strip()
+            if xp := match.group("xp"):
+                number = humanize_number(int(xp))
+                text = self.text.replace(xp, number)
+                details = self.details.replace(xp, number)
+            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
+        if match := LVL_RE.search(self.text):
+            page = match.group(1).strip()
+            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
+        if match := FOUND_RE.search(self.text):
+            page = match.group(1).strip() + " detail"
+            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
+        return text, details, image_url
+
+    def format_text(self) -> str:
+        text, details, _image_url = self._get_image_details_text()
+        ts = discord.utils.format_dt(self.date)
+        return f"- {text}\n  - {details}\n  - -# {ts}\n"
+
+    def embed(self, username: str) -> discord.Embed:
+        # url = f"https://apps.runescape.com/runemetrics/app/overview/player/{profile.name}"
+        # msg = f"{profile.name}: {activity.text}\n{activity.details}\n\n"
+        ts = discord.utils.format_dt(self.date)
+        text, details, image_url = self._get_image_details_text()
+        embed = discord.Embed(title=text, description=f"{details}\n\n{ts}")
+        name_url = username.replace(" ", "%20")
+        avatar = f"http://secure.runescape.com/m=avatar-rs/{name_url}/chat.png"
+        embed.set_author(name=username, icon_url=avatar)
+        if image_url is not None:
+            embed.set_thumbnail(url=image_url)
+        return embed
+
+
+@dataclass
+class PlayerEvents:
+    name: str
+    events: List[PlayerEvent]
+
+    @property
+    def avatar(self) -> str:
+        name_url = self.name.replace(" ", "%20")
+        return f"http://secure.runescape.com/m=avatar-rs/{name_url}/chat.png"
+
+    @classmethod
+    def from_json(cls, data: dict):
+        name = data.get("name", "")
+        events = [PlayerEvent.from_json(e) for e in data.get("events", [])]
+        return cls(name=name, events=events)
 
     @classmethod
     async def get(
         cls,
         runescape_name: str,
-        number_of_activities: int = 5,
         *,
         session: Optional[aiohttp.ClientSession] = None,
-    ) -> Profile:
-        url = "https://apps.runescape.com/runemetrics/profile/profile"
+    ) -> PlayerEvents:
+        url = (
+            f"https://secure.runescape.com/m=adventurers-log/api/v1/playerEvents/{runescape_name}"
+        )
         close_session = session is None
-        params = {"user": runescape_name, "activities": number_of_activities}
         if session is None:
             session = aiohttp.ClientSession(headers=HEADERS)
-        async with session.get(url, params=params) as resp:
+        async with session.get(url) as resp:
             if resp.status != 200:
                 raise APIError
             data = await resp.json()
@@ -559,8 +305,52 @@ class Profile:
                 raise APIError(data["error"])
         return cls.from_json(data)
 
+    def embed(self) -> discord.Embed:
+        em = discord.Embed(title="Adventure Log")
+        em.set_author(name=self.name, icon_url=self.avatar)
+        em.set_thumbnail(url=self.avatar)
+        desc = ""
+        for event in self.events:
+            to_add = event.format_text()
+            if len(desc) + len(to_add) < 1024:
+                desc += to_add
+            else:
+                break
+        em.description = desc
+        return em
 
-class OSRSSkill(NamedTuple):
+
+class HiscoreInstance(Enum):
+    # RS3
+    HISCORE = "hiscore"
+    HISCORE_IRONMAN = "hiscore_ironman"
+    HISCORE_HARDCORE_IRONMAN = "hiscore_hardcore_ironman"
+    HISCORE_LEAGUE = "hiscore_leagues"
+    # OSRS
+    HISCORE_OLDSCHOOL = "hiscore_oldschool"
+    HISCORE_OLDSCHOOL_SKILLER_DEFENCE = "hiscore_oldschool_skiller_defence"
+    HISCORE_OLDSCHOOL_SKILLER = "hiscore_oldschool_skiller"
+    HISCORE_OLDSCHOOL_IRONMAN = "hiscore_oldschool_ironman"
+    HISCORE_OLDSCHOOL_HARDCORE_IRONMAN = "hiscore_oldschool_hardcore_ironman"
+    HISCORE_OLDSCHOOL_UTMIATE = "hiscore_oldschool_ultimate"
+    HISCORE_OLDSCHOOL_HARDCORE_MAINS = "hiscore_oldschool_hardcore_mains"
+    HISCORE_OLDSCHOOL_DEADMAN = "hiscore_oldschool_deadman"
+    HISCORE_OLDSCHOOL_SEASONAL = "hiscore_oldschool_seasonal"
+    HISCORE_OLDSCHOOL_TOURNAMENT = "hiscore_oldschool_tournament"
+    HISCORE_OLDSCHOOL_FRESH_START = "hiscore_oldschool_fresh_start"
+
+    @property
+    def is_rs3(self) -> bool:
+        return "oldschool" not in self.value
+
+    @property
+    def to_str(self) -> str:
+        game = "RS3" if self.is_rs3 else "OSRS"
+        name_str = " ".join(self.value.replace("_", " ").replace("oldschool", "").title().split())
+        return f"{game} {name_str}"
+
+
+class HiscoreSkill(NamedTuple):
     id: int
     name: str
     rank: int
@@ -570,8 +360,24 @@ class OSRSSkill(NamedTuple):
     def __str__(self):
         return self.name
 
+    @property
+    def virtual_level(self) -> int:
+        if self.level < 99:
+            return self.level
+        table = XP_TABLE
+        max_level = 126
+        if self.name == "Invention":
+            table = ELITE_XP
+            max_level = 150
+        idx = bisect.bisect_right(table, self.xp, lo=98)
+        # Since the xp list is already sorted we can bisect and
+        # do a binary search for where our xp fits in the level brackets.
+        # Since we only care about levels above 99
+        # the lo sets the lowest index to start looking
+        return min(idx, max_level)
 
-class OSRSActivity(NamedTuple):
+
+class HiscoreActivity(NamedTuple):
     id: int
     name: str
     rank: int
@@ -582,24 +388,26 @@ class OSRSActivity(NamedTuple):
 
 
 @dataclass
-class OSRSProfile:
+class HiscoreProfile:
     def __init__(
         self,
         name: str,
-        skills: Dict[int, OSRSSkill],
-        activities: Dict[int, OSRSActivity],
+        skills: Dict[int, HiscoreSkill],
+        activities: Dict[int, HiscoreActivity],
+        instance: HiscoreInstance,
     ):
-        self.skills: Dict[int, OSRSSkill] = skills
-        self.activities: Dict[int, OSRSActivity] = activities
+        self.skills: Dict[int, HiscoreSkill] = skills
+        self.activities: Dict[int, HiscoreActivity] = activities
         self.name: str = name
+        self.instance = instance
 
-    def get_skill(self, skill_name: str) -> Optional[OSRSSkill]:
+    def get_skill(self, skill_name: str) -> Optional[HiscoreSkill]:
         for skill in self.skills.values():
             if skill.name == skill_name:
                 return skill
         return None
 
-    def get_activity(self, activity_name: str) -> Optional[OSRSActivity]:
+    def get_activity(self, activity_name: str) -> Optional[HiscoreActivity]:
         for activity in self.activities.values():
             if activity.name == activity_name:
                 return activity
@@ -607,9 +415,13 @@ class OSRSProfile:
 
     @classmethod
     async def get(
-        cls, runescape_name: str, *, session: Optional[aiohttp.ClientSession] = None
-    ) -> OSRSProfile:
-        url = "https://secure.runescape.com/m=hiscore_oldschool/index_lite.json"
+        cls,
+        runescape_name: str,
+        instance: HiscoreInstance,
+        *,
+        session: Optional[aiohttp.ClientSession] = None,
+    ) -> HiscoreProfile:
+        url = f"https://secure.runescape.com/m={instance.value}/index_lite.json"
         close_session = session is None
         params = {"player": runescape_name}
         if session is None:
@@ -623,18 +435,21 @@ class OSRSProfile:
         skills = {}
         activities = {}
         for skill in data.get("skills", []):
-            skills[skill["id"]] = OSRSSkill(**skill)
+            skills[skill["id"]] = HiscoreSkill(**skill)
         for activity in data.get("activities", []):
-            activities[activity["id"]] = OSRSActivity(**activity)
-        return cls(runescape_name, skills, activities)
+            activities[activity["id"]] = HiscoreActivity(**activity)
+        return cls(runescape_name, skills, activities, instance)
 
     async def get_stats_table(self) -> str:
         skills_list = []
         for skill in self.skills.values():
+            skill_level = skill.level
+            if skill.level != skill.virtual_level and skill.id != 0:
+                skill_level = f"{skill.level} ({skill.virtual_level})"
             skills_list.append(
                 [
                     skill.name,
-                    skill.level,
+                    skill_level,
                     humanize_number(skill.xp),
                     humanize_number(skill.rank),
                 ]
@@ -642,10 +457,11 @@ class OSRSProfile:
         table = tabulate(skills_list, headers=["Skill", "Level", "Experience", "Rank"])
         top_row_len = len(table.split("\n")[1])
         top_row = top_row_len * "-"
-        title = f"OSRS Stats For {self.name}".center(top_row_len - 2)
-        skills = ("{top_row}\n|{title}|\n{top_row}\n{skills}\n{top_row}").format(
-            top_row=top_row, title=title, skills=table
-        )
+        title = f"{self.instance.to_str} For {self.name}"
+        skills = f"{top_row}\n"
+        for page in pagify(title, delims=[" "], page_length=top_row_len - 2):
+            skills += f"|{page.center(top_row_len - 2)}|\n"
+        skills += f"{top_row}\n{table}\n{top_row}"
         return skills
 
     async def get_profile_table(self) -> str:
@@ -655,8 +471,9 @@ class OSRSProfile:
         table = tabulate(activities_list, headers=["Activity", "Completed"])
         top_row_len = len(table.split("\n")[1])
         top_row = top_row_len * "-"
-        title = f"OSRS Activities For {self.name}".center(top_row_len - 2)
-        skills = ("{top_row}\n|{title}|\n{top_row}\n{skills}\n{top_row}").format(
-            top_row=top_row, title=title, skills=table
-        )
+        title = f"{self.instance.to_str} For {self.name}"
+        skills = f"{top_row}\n"
+        for page in pagify(title, delims=[" "], page_length=top_row_len - 2):
+            skills += f"|{page.center(top_row_len - 2)}|\n"
+        skills += f"{top_row}\n{table}\n{top_row}"
         return skills
