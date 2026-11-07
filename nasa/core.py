@@ -52,7 +52,7 @@ log = getLogger("red.trusty-cogs.NASACog")
 @cog_i18n(_)
 class NASACog(commands.Cog):
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -177,7 +177,7 @@ class NASACog(commands.Cog):
             )
             return
         if await self.config.channel(channel).apod():
-            await self.config.channel.clear()
+            await self.config.channel(channel).clear()
             await ctx.send(
                 _("I will no longer post NASA's Astronomy Photo of the Day in {channel}.").format(
                     channel=channel.mention
@@ -194,7 +194,7 @@ class NASACog(commands.Cog):
             tokens = await self.bot.get_shared_api_tokens("nasa")
             api_key = tokens.get("api_key", "DEMO_KEY")
             apod = await NASAAstronomyPictureOfTheDay.today(api_key, session=self.session)
-            await channel.send(embed=apod.embed())
+            await channel.send(embed=apod[0].embed())
 
     @nasa.command(name="apod")
     @commands.bot_has_permissions(embed_links=True)
@@ -213,16 +213,18 @@ class NASACog(commands.Cog):
         async with ctx.typing():
             params = query.parameters
             if params.get("count", None) and any(
-                params.get(k) for k in ["start_date", "end_date", "date"]
+                params.get(k) for k in ["from_date", "to_date", "date"]
             ):
                 await ctx.send(_("You cannot include count and any date parameters."))
                 return
-            if params.get("start_date", None) and params.get("date", None):
+            if params.get("from_date", None) and params.get("date", None):
                 await ctx.send(_("You cannot include date and start_date parameters."))
                 return
             params["thumbs"] = "True"
             try:
-                data = await self.request("https://api.nasa.gov/planetary/apod", parameters=params)
+                data = await self.request(
+                    "https://science.nasa.gov/wp-json/wp/v2/apod-basic", parameters=params
+                )
             except APIError as e:
                 await ctx.send(e)
                 return

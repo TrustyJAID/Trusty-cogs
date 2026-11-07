@@ -66,13 +66,13 @@ class NASAapodAPI(QueryConverter):
         name="date", default=None, description="YYYY-MM-DD The date of the APOD image to retrieve"
     )
     start_date: Optional[str] = discord.ext.commands.flag(
-        name="start_date",
+        name="from_date",
         default=None,
         description="YYYY-MM-DD The start of a date range. Cannot be used with date.",
         converter=DateFinder,
     )
     end_date: Optional[str] = discord.ext.commands.flag(
-        name="end_date",
+        name="to_date",
         default=None,
         description="YYYY-MM-DD The end of the date range, when used with start_date.",
         converter=DateFinder,
@@ -947,28 +947,38 @@ class Asset:
 @dataclass
 class NASAAstronomyPictureOfTheDay:
     date: datetime
-    explanation: str
-    media_type: str
-    service_version: str
+    post_id: int
     title: str
+    permalink: str
+    media_type: str
+    explanation: str
+    credit: str
+    copyright: str
+    alt: str
     url: str
-    hdurl: Optional[str] = None
-    copyright: Optional[str] = None
-    thumbnail_url: Optional[str] = None
+    hdurl: str
+    basic_html: str
+    basic_html_url: str
 
     @classmethod
     def from_json(cls, data: dict) -> NASAAstronomyPictureOfTheDay:
-        date = datetime.fromisoformat(data.pop("date"))
+        date = datetime.fromisoformat(data.get("date", datetime.now().isoformat())).replace(
+            tzinfo=timezone.utc
+        )
         return cls(
             date=date,
-            explanation=data.get("explanation", ""),
-            media_type=data.get("media_type", ""),
-            service_version=data.get("service_version", ""),
+            post_id=data.get("post_id", -1),
             title=data.get("title", ""),
+            permalink=data.get("permalink", ""),
+            media_type=data.get("media_type", ""),
+            explanation=data.get("explanation", ""),
+            credit=data.get("credit", ""),
+            copyright=data.get("copyright", ""),
+            alt=data.get("alt", ""),
             url=data.get("url", ""),
-            hdurl=data.get("hdurl"),
-            copyright=data.get("copyright"),
-            thumbnail_url=data.get("thumbnail_url"),
+            hdurl=data.get("hdurl", ""),
+            basic_html=data.get("basic_html", ""),
+            basic_html_url=data.get("basic_html_url", ""),
         )
 
     @classmethod
@@ -1002,17 +1012,37 @@ class NASAAstronomyPictureOfTheDay:
         session: Optional[aiohttp.ClientSession] = None,
     ) -> Union[NASAAstronomyPictureOfTheDay, List[NASAAstronomyPictureOfTheDay]]:
         params = {}
+        url = "https://science.nasa.gov/wp-json/wp/v2/apod-basic/"
         if date:
-            params["date"] = date.strftime("%Y-%m-%d")
+            url += date.strftime("%y%m%d")
         if start_date:
-            params["start_date"] = start_date.strftime("%Y-%m-%d")
+            params["date_from"] = start_date.strftime("%Y-%m-%d")
         if end_date:
-            params["end_date"] = end_date.strftime("%Y-%m-%d")
+            params["date_to"] = end_date.strftime("%Y-%m-%d")
         if count:
-            params["count"] = count
+            params["per_page"] = count
+
         return await cls.from_url(
-            "https://api.nasa.gov/planetary/apod", api_key, params=params, session=session
+            url,
+            api_key,
+            params=params,
+            session=session,
         )
+
+    def html_to_markdown(self, html_content: str) -> str:
+        # Don't use Regex to parse HTML
+        # Don't pass HTML through JSON 🙃
+
+        content = re.sub(r'<a\s+href="([^"]*?)">(.*?)</a>', r"[\2](\1)", html_content)
+        # replace hrefs with markdown links
+        content = re.sub(r"<strong>(.*?)</strong>", r"**\1**", content)
+        # replace bold
+        content = re.sub(r"<b>(.*?)</b>", r"**\1**", content)
+        # replace new lines
+        content = re.sub(r"<br\s*/?>", "\n", content)
+        content = re.sub(r"\n\s*\n", "\n\n", content)
+
+        return content.strip()
 
     @classmethod
     async def today(
@@ -1024,13 +1054,14 @@ class NASAAstronomyPictureOfTheDay:
 
     def embed(self) -> discord.Embed:
         em = discord.Embed(
-            title=self.title, description=self.explanation, timestamp=self.date, url=self.url
+            title=self.title,
+            description=self.html_to_markdown(self.explanation),
+            timestamp=self.date,
+            url=self.url,
         )
-        em.set_image(url=self.url)
-        if self.thumbnail_url:
-            em.set_thumbnail(url=self.thumbnail_url)
+        em.set_image(url=self.hdurl)
         if self.copyright:
-            em.add_field(name="Copyright (c)", value=self.copyright)
+            em.add_field(name="Copyright (c)", value=self.html_to_markdown(self.copyright))
         if self.hdurl:
             em.add_field(name="HD URL", value=f"[Click here]({self.hdurl})")
         return em
