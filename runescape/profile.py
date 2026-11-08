@@ -206,8 +206,10 @@ class PlayerEvent:
     def from_json(cls, data: dict):
         plog_type = data.pop("type", "unknown_plog_type")
         try:
-            date = datetime.fromisoformat(data.pop("date"))
+            date_str = data.pop("date").replace("Z", "+00:00")
+            date = datetime.fromisoformat(date_str)
         except (ValueError, KeyError, TypeError):
+            log.exception("Error getting date from data")
             date = datetime.now(tz=timezone.utc)
         event_text = data.get("text", "")
         event_id = f"{int(date.timestamp())}-{event_text}"
