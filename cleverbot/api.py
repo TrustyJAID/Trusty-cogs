@@ -260,7 +260,7 @@ class CleverbotAPI:
         return can_run
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message) -> None:
+    async def on_message_without_command(self, message: discord.Message) -> None:
         guild = message.guild
         if message.author.bot:
             return
