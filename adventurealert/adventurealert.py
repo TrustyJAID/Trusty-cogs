@@ -20,8 +20,6 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L23
     """
 
-    pass
-
 
 @cog_i18n(_)
 class AdventureAlert(
@@ -126,7 +124,6 @@ class AdventureAlert(
     @commands.hybrid_group()
     async def adventurealert(self, ctx: commands.Context) -> None:
         """Set notifications for all adventures"""
-        pass
 
     @adventurealert.command()
     async def removeall(self, ctx: commands.Context) -> None:
@@ -205,14 +202,14 @@ class AdventureAlert(
         Add or remove a role to be pinged when a dragon appears
 
         `alert_style` - Must be one of:
-            - `adventure` (default)
-            - `boss` or `dragon`
-            - `cart`
-            - `immortal`
-            - `miniboss`
-            - `possessed`
-            - `ascended`
-            - `transcended`
+        - `adventure` (default)
+        - `boss` or `dragon`
+        - `cart`
+        - `immortal`
+        - `miniboss`
+        - `possessed`
+        - `ascended`
+        - `transcended`
         """
         if alert_style is None:
             style = AlertTypes.adventure
@@ -247,14 +244,14 @@ class AdventureAlert(
         Toggle adventure notifications in this server
 
         `alert_style` - Must be one of:
-            - `adventure` (default)
-            - `boss` or `dragon`
-            - `cart`
-            - `immortal`
-            - `miniboss`
-            - `possessed`
-            - `ascended`
-            - `transcended`
+        - `adventure` (default)
+        - `boss` or `dragon`
+        - `cart`
+        - `immortal`
+        - `miniboss`
+        - `possessed`
+        - `ascended`
+        - `transcended`
         """
         if alert_style is None:
             style = AlertTypes.adventure
@@ -286,14 +283,14 @@ class AdventureAlert(
         Toggle adventure notifications in all shared servers
 
         `alert_style` - Must be one of:
-            - `adventure` (default)
-            - `boss` or `dragon`
-            - `cart`
-            - `immortal`
-            - `miniboss`
-            - `possessed`
-            - `ascended`
-            - `transcended`
+        - `adventure` (default)
+        - `boss` or `dragon`
+        - `cart`
+        - `immortal`
+        - `miniboss`
+        - `possessed`
+        - `ascended`
+        - `transcended`
         """
         if alert_style is None:
             style = AlertTypes.adventure
@@ -327,14 +324,14 @@ class AdventureAlert(
         Remove a specific user ID from adventure alerts
 
         `alert_style` - Must be one of:
-            - `adventure` (default)
-            - `boss` or `dragon`
-            - `cart`
-            - `immortal`
-            - `miniboss`
-            - `possessed`
-            - `ascended`
-            - `transcended`
+        - `adventure` (default)
+        - `boss` or `dragon`
+        - `cart`
+        - `immortal`
+        - `miniboss`
+        - `possessed`
+        - `ascended`
+        - `transcended`
         """
         if alert_style is None:
             style = AlertTypes.adventure
