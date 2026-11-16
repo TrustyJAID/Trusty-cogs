@@ -345,7 +345,7 @@ class DestinyAPI:
             "utf8"
         )
         header = {
-            "Authorization": "Basic {0}".format(tokens),
+            "Authorization": f"Basic {tokens}",
             "Content-Type": "application/x-www-form-urlencoded",
         }
         data = f"grant_type=authorization_code&code={code}"
@@ -369,7 +369,7 @@ class DestinyAPI:
             "utf8"
         )
         header = {
-            "Authorization": "Basic {0}".format(tokens),
+            "Authorization": f"Basic {tokens}",
             "Content-Type": "application/x-www-form-urlencoded",
         }
         oauth = await self.config.user(user).oauth()
@@ -464,7 +464,7 @@ class DestinyAPI:
             raise Destiny2MissingAPITokens(
                 "The user has some tokens saved but the access token is missing."
             )
-        header["Authorization"] = "{} {}".format(token_type, access_token)
+        header["Authorization"] = f"{token_type} {access_token}"
         return header
 
     async def get_user_profile(self, user: discord.abc.User) -> dict:
@@ -1362,9 +1362,9 @@ class DestinyAPI:
             json_data = {}
             name = dict(row)["name"]
             data = db.execute(
-                """
+                f"""
             SELECT * from {name}
-            """.format(name=name)
+            """
             ).fetchall()
             for _id, datas in data:
                 # log.debug(datas)

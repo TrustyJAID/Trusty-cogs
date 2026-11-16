@@ -707,9 +707,10 @@ class DestinyEververseItemType(Converter):
     """Returns the correct item type code if provided a named one"""
 
     ITEM_TYPE_RE = re.compile(
-        r"(ghosts?|ships?|vehicles?|sparrows?|finishers?|packages?|consumables?)", flags=re.I
+        r"(ghosts?|ships?|vehicles?|sparrows?|finishers?|packages?|consumables?)",
+        flags=re.IGNORECASE,
     )
-    ITEM_SUB_TYPE_RE = re.compile(r"(shaders?|ornaments?)", flags=re.I)
+    ITEM_SUB_TYPE_RE = re.compile(r"(shaders?|ornaments?)", flags=re.IGNORECASE)
 
     async def convert(self, ctx: commands.Context, argument: str) -> dict:
         ret = {"item_types": [], "item_sub_types": []}

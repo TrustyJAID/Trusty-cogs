@@ -455,7 +455,7 @@ class LoadoutPages(menus.ListPageSource):
         self.character = str(char_id)
         self.membership_type = loadout_info.get("membership_type")
         if char_id is None or str(char_id) not in self.loadout_info:
-            for key in loadout_info.keys():
+            for key in loadout_info:
                 if not key.isdigit():
                     continue
                 self.character = str(key)

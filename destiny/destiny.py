@@ -239,7 +239,9 @@ class Destiny(commands.Cog):
     async def on_message(self, message: discord.Message):
         if message.author.id not in self.waiting_auth:
             return
-        match = re.search(r"\?code=(?P<code>[a-z0-9]+)|(exit|stop)", message.content, flags=re.I)
+        match = re.search(
+            r"\?code=(?P<code>[a-z0-9]+)|(exit|stop)", message.content, flags=re.IGNORECASE
+        )
         if match:
             self.message_authed[message.author.id] = {"code": match.group(1)}
             self.waiting_auth[message.author.id].set()
@@ -485,7 +487,7 @@ class Destiny(commands.Cog):
         else:
             await self.config.guild(ctx.guild).posted_news.clear()
             await self.config.guild(ctx.guild).news_channel.clear()
-            await ctx.send(_("I will no longer automaticall post news articles in this server."))
+            await ctx.send(_("I will no longer automatically post news articles in this server."))
 
     @destiny_set.command(name="tweets")
     @commands.mod_or_permissions(manage_messages=True)
@@ -783,7 +785,7 @@ class Destiny(commands.Cog):
         async with ctx.typing(ephemeral=False):
             if clan_id:
                 clan_re = re.compile(
-                    r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.I
+                    r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.IGNORECASE
                 )
                 clan_invite = clan_re.search(clan_id)
                 if clan_invite:
@@ -887,7 +889,9 @@ class Destiny(commands.Cog):
         await ctx.defer()
         if not await self.api.has_oauth(ctx):
             return
-        clan_re = re.compile(r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.I)
+        clan_re = re.compile(
+            r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.IGNORECASE
+        )
         clan_invite = clan_re.search(clan_id)
         if clan_invite:
             clan_id = clan_invite.group(4)
@@ -1157,9 +1161,7 @@ class Destiny(commands.Cog):
                 if record["hash"] == data["completionRecordHash"]:
                     node = data["displayProperties"]
                     break
-            if node and not node["hasIcon"]:
-                return record["icon"]
-            elif not node:
+            if node and not node["hasIcon"] or not node:
                 return record["icon"]
             else:
                 if node["iconSequences"]:
@@ -1784,7 +1786,6 @@ class Destiny(commands.Cog):
         """
         Commands for looking up various vendor information
         """
-        pass
 
     @vendor.command()
     @commands.bot_has_permissions(embed_links=True)
@@ -1903,7 +1904,6 @@ class Destiny(commands.Cog):
     @destiny.group(name="random")
     async def destiny_random(self, ctx: commands.Context):
         """Get Random Items"""
-        pass
 
     async def get_random_item(self, weapons_or_class: DestinyRandomConverter, tier_type: int):
         data = await self.api.get_entities("DestinyInventoryItemDefinition")
@@ -2518,7 +2518,6 @@ class Destiny(commands.Cog):
         """
         Commands for interacting with your loadouts
         """
-        pass
 
     @loadout.command(name="equip")
     async def loadout_equip(
@@ -2773,7 +2772,6 @@ class Destiny(commands.Cog):
                                 mods += properties["name"] + "\n"
                         field = f"{name}\n{mods}"
                         embed.add_field(name=data["itemTypeDisplayName"], value=field)
-                        pass
                 if weapons:
                     embed.add_field(name=_("Weapons"), value=weapons)
                     # embed.add_field(name=name, value=value, inline=True)
@@ -3124,13 +3122,13 @@ class Destiny(commands.Cog):
         motes_dep = data["motesDeposited"]["basic"]["value"]
         try:
             lost = 1 - (motes_dep / data["motesPickedUp"]["basic"]["value"])
-            motes_lost = "{:.2%}".format(lost)
+            motes_lost = f"{lost:.2%}"
         except ZeroDivisionError:
             motes_lost = "0%"
         motes = _("{motes:,} ({lost} Lost)").format(motes=motes_dep, lost=motes_lost)
         embed.add_field(name=_("Motes Deposited"), value=motes)
         motes_denied = data["motesDenied"]["basic"]["value"]
-        embed.add_field(name=_("Motes Denied"), value="{:,}".format(motes_denied))
+        embed.add_field(name=_("Motes Denied"), value=f"{motes_denied:,}")
         mob_kills = data["mobKills"]["basic"]["value"]
         primeval_kills = data["primevalKills"]["basic"]["value"]
         high_kills = data["highValueKills"]["basic"]["value"]
@@ -3239,7 +3237,6 @@ class Destiny(commands.Cog):
         The manifest is useful at improving lookup speed of items and other
         various functions of the cog.
         """
-        pass
 
     @manifest.command(name="auto", with_app_command=False)
     @commands.is_owner()
