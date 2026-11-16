@@ -49,10 +49,10 @@ _ = Translator("ReTrigger", __file__)
 RE_CTX: re.Pattern = re.compile(r"{([^}]+)\}")
 RE_POS: re.Pattern = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")
 LINK_REGEX: re.Pattern = re.compile(
-    r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|mp3|mp4|webp)).*", flags=re.I
+    r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|mp3|mp4|webp)).*", flags=re.IGNORECASE
 )
 IMAGE_REGEX: re.Pattern = re.compile(
-    r"(?:(?:https?):\/\/)?[\w\/\-?=%.]+\.(?:png|jpg|jpeg|webp)+", flags=re.I
+    r"(?:(?:https?):\/\/)?[\w\/\-?=%.]+\.(?:png|jpg|jpeg|webp)+", flags=re.IGNORECASE
 )
 
 
@@ -112,7 +112,7 @@ class TriggerHandler(ReTriggerMixin):
         self, attachment: discord.Attachment, guild: discord.Guild
     ) -> Optional[str]:
         seed = "".join(random.sample(string.ascii_uppercase + string.digits, k=5))
-        filename = "{}-{}".format(seed, attachment.filename)
+        filename = f"{seed}-{attachment.filename}"
         directory = cog_data_path(self).joinpath(str(guild.id))
         file_path = cog_data_path(self).joinpath(str(guild.id), str(filename))
         await self.make_guild_folder(directory)
@@ -125,7 +125,7 @@ class TriggerHandler(ReTriggerMixin):
             return None
         seed = "".join(random.sample(string.ascii_uppercase + string.digits, k=5))
         filename = good_image_url.group(1).split("/")[-1]
-        filename = "{}-{}".format(seed, filename)
+        filename = f"{seed}-{filename}"
         directory = cog_data_path(self).joinpath(str(guild.id))
         file_path = cog_data_path(self).joinpath(str(guild.id), str(filename))
         await self.make_guild_folder(directory)
@@ -517,7 +517,6 @@ class TriggerHandler(ReTriggerMixin):
                         channel.id,
                         message.id,
                     )
-                    pass
             if trigger.read_embeds and len(message.embeds) > 0:
                 content += "\n".join(
                     self.convert_embed_to_string(embed, index)
@@ -601,11 +600,10 @@ class TriggerHandler(ReTriggerMixin):
         good_image_url = IMAGE_REGEX.findall(message.content)
         for link in good_image_url:
             temp = BytesIO()
-            async with aiohttp.ClientSession() as session:
-                async with session.get(link) as resp:
-                    data = await resp.read()
-                    temp.write(data)
-                    temp.seek(0)
+            async with aiohttp.ClientSession() as session, session.get(link) as resp:
+                data = await resp.read()
+                temp.write(data)
+                temp.seek(0)
             task = functools.partial(pytesseract.image_to_string, Image.open(temp))
             loop = asyncio.get_running_loop()
             new_task = loop.run_in_executor(None, task)

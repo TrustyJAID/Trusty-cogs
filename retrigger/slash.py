@@ -66,9 +66,7 @@ class TriggerTransformer(app_commands.Transformer):
     async def autocomplete(self, interaction: discord.Interaction, value: str):
         guild_id = interaction.guild.id
         cog = interaction.client.get_cog("ReTrigger")
-        if getattr(interaction.namespace, "guild_id") and await interaction.client.is_owner(
-            interaction.user
-        ):
+        if interaction.namespace.guild_id and await interaction.client.is_owner(interaction.user):
             guild_id = int(interaction.namespace.guild_id)
         triggers = interaction.client.get_cog("ReTrigger").triggers
         choices = []
@@ -91,9 +89,7 @@ class TriggerStarTransformer(app_commands.Transformer):
 
     async def autocomplete(self, interaction: discord.Interaction, value: str):
         guild_id = interaction.guild.id
-        if getattr(interaction.namespace, "guild_id") and await interaction.client.is_owner(
-            interaction.user
-        ):
+        if interaction.namespace.guild_id and await interaction.client.is_owner(interaction.user):
             guild_id = int(interaction.namespace.guild_id)
         triggers = interaction.client.get_cog("ReTrigger").triggers
         include_all = True

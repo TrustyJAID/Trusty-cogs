@@ -66,7 +66,7 @@ def wrapped_additional_help():
 
     def decorator(func):
         old = func.__doc__ or ""
-        setattr(func, "__doc__", old.strip() + added_doc)
+        func.__doc__ = old.strip() + added_doc
         return func
 
     return decorator
@@ -77,8 +77,6 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     This allows the metaclass used for proper type detection to
     coexist with discord.py's metaclass
     """
-
-    pass
 
 
 @cog_i18n(_)
@@ -216,7 +214,6 @@ class ReTrigger(
                 await ctx.response.send_message(msg)
         else:
             await ctx.send(msg)
-        return
 
     async def _no_multi(self, ctx: Union[commands.Context, discord.Interaction]):
         msg = _("You cannot edit multi triggers response.")
@@ -1207,8 +1204,7 @@ class ReTrigger(
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
 
-        if chance < 0:
-            chance = 0
+        chance = max(chance, 0)
         # trigger.chance = chance
         trigger.modify("chance", chance, ctx.author, ctx.message.id)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -1521,8 +1517,7 @@ class ReTrigger(
             )
             return
         else:
-            if timeout < 1:
-                timeout = 1
+            timeout = max(timeout, 1)
             await self.config.trigger_timeout.set(timeout)
             self.trigger_timeout = timeout
             await ctx.send(_("Regex search timeout set to {timeout}").format(timeout=timeout))

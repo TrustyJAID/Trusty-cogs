@@ -129,11 +129,9 @@ class ReTriggerPages(menus.ListPageSource):
             else:
                 text_response = trigger.text
             if len(text_response) < 200:
-                info += _("__Text__: ") + "**{response}**\n".format(response=text_response)
+                info += _("__Text__: ") + f"**{text_response}**\n"
         if trigger.reply is not None:
-            info += _("__Replies with Notification__:") + "**{response}**\n".format(
-                response=trigger.reply
-            )
+            info += _("__Replies with Notification__:") + f"**{trigger.reply}**\n"
         if TriggerResponse.rename in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(
@@ -143,7 +141,7 @@ class ReTriggerPages(menus.ListPageSource):
                 )
             else:
                 response = trigger.text
-            info += _("__Rename__: ") + "**{response}**\n".format(response=response)
+            info += _("__Rename__: ") + f"**{response}**\n"
         if TriggerResponse.dm in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(
@@ -153,7 +151,7 @@ class ReTriggerPages(menus.ListPageSource):
                 )
             else:
                 response = trigger.text
-            info += _("__DM__: ") + "**{response}**\n".format(response=response)
+            info += _("__DM__: ") + f"**{response}**\n"
         if TriggerResponse.dmme in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(
@@ -163,7 +161,7 @@ class ReTriggerPages(menus.ListPageSource):
                 )
             else:
                 response = trigger.text
-            info += _("__Self DM__: ") + "**{response}**\n".format(response=response)
+            info += _("__Self DM__: ") + f"**{response}**\n"
         if TriggerResponse.command in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(
@@ -173,7 +171,7 @@ class ReTriggerPages(menus.ListPageSource):
                 )
             else:
                 response = trigger.text
-            info += _("__Command__: ") + "**{response}**\n".format(response=response)
+            info += _("__Command__: ") + f"**{response}**\n"
         if TriggerResponse.react in trigger.response_type:
             server_emojis = "".join(str(e) for e in trigger.reactions)
             info += _("__Emojis__: ") + server_emojis + "\n"
@@ -204,7 +202,7 @@ class ReTriggerPages(menus.ListPageSource):
         if trigger.cooldown:
             time = trigger.cooldown["time"]
             style = trigger.cooldown["style"]
-            info += _("__Cooldown__: ") + "**{}s per {}**\n".format(time, style)
+            info += _("__Cooldown__: ") + f"**{time}s per {style}**\n"
         if trigger.ocr_search:
             info += _("__OCR__: **Enabled**\n")
         if trigger.check_edits:
@@ -466,7 +464,6 @@ class ReTriggerEditModal(discord.ui.Modal):
                     log.error(
                         "ReTrigger attempted to send a modal edit with more text inputs than expected."
                     )
-                    pass
 
         # if TriggerResponse.text in trigger.response_type:
         # self.add_item(self.replies)

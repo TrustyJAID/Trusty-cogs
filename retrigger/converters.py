@@ -271,44 +271,44 @@ class Trigger:
     """
 
     __slots__ = (
-        "name",
-        "regex",
+        "_created_at",
+        "_last_modified",
+        "_last_modified_at",
+        "_last_modified_by",
         "_raw_regex",
-        "response_type",
+        "add_roles",
         "author",
-        "enabled",
-        "text",
-        "count",
-        "image",
-        "whitelist",
         "blacklist",
-        "cooldown",
-        "multi_payload",
-        "ignore_commands",
-        "check_edits",
-        "ocr_search",
-        "delete_after",
-        "read_filenames",
         "chance",
+        "check_edits",
+        "cooldown",
+        "count",
+        "delete_after",
+        "delete_days",
+        "enabled",
+        "everyone_mention",
+        "ignore_commands",
+        "image",
+        "include_threads",
+        "multi_payload",
+        "name",
+        "nsfw",
+        "ocr_search",
+        "reactions",
+        "read_embeds",
+        "read_filenames",
+        "read_thread_title",
+        "regex",
+        "remove_roles",
         "reply",
+        "response_type",
+        "role_mention",
+        "suppress",
+        "text",
+        "thread",
         "tts",
         "user_mention",
-        "role_mention",
-        "everyone_mention",
-        "nsfw",
-        "read_embeds",
-        "read_thread_title",
-        "include_threads",
-        "_created_at",
-        "thread",
-        "remove_roles",
-        "add_roles",
-        "reactions",
-        "_last_modified_by",
-        "_last_modified_at",
-        "_last_modified",
-        "suppress",
-        "delete_days",
+        "whitelist",
     )
 
     def __init__(
@@ -325,7 +325,6 @@ class Trigger:
             self.regex: Pattern = re.compile(self._raw_regex)
         except Exception:
             self.regex: Optional[Pattern] = None
-            pass
         self.response_type: List[TriggerResponse] = response_type
         self.author: int = author
         self.enabled: bool = kwargs.get("enabled", True)
@@ -530,9 +529,7 @@ class Trigger:
         )
 
     def __repr__(self):
-        return "<ReTrigger name={0.name} author={0.author} response={0.response_type} pattern={0._raw_regex}>".format(
-            self
-        )
+        return f"<ReTrigger name={self.name} author={self.author} response={self.response_type} pattern={self._raw_regex}>"
 
     def __str__(self):
         """This is defined moreso for debugging purposes but may prove useful for elaborating
