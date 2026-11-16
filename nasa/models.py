@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from math import hypot, sqrt
-from typing import Dict, List, NamedTuple, Optional, Union
+from typing import Dict, List, NamedTuple, Optional
 
 import aiohttp
 import discord
@@ -327,27 +327,22 @@ class NASATLEFeed:
         cls, params: Dict[str, str] = {}, session: Optional[aiohttp.ClientSession] = None
     ) -> NASATLEFeed:
         if session is None:
-            async with aiohttp.ClientSession(headers=HEADERS) as session:
-                async with session.get(
-                    "http://tle.ivanstanojevic.me/api/tle", params=params
-                ) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                    else:
-                        raise APIError(
-                            "There was an error in that request. Response code {code}".format(
-                                code=resp.status
-                            )
-                        )
+            async with aiohttp.ClientSession(headers=HEADERS) as local_session, local_session.get(
+                "http://tle.ivanstanojevic.me/api/tle", params=params
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                else:
+                    raise APIError(
+                        f"There was an error in that request. Response code {resp.status}"
+                    )
         else:
             async with session.get("http://tle.ivanstanojevic.me/api/tle", params=params) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                 else:
                     raise APIError(
-                        "There was an error in that request. Response code {code}".format(
-                            code=resp.status
-                        )
+                        f"There was an error in that request. Response code {resp.status}"
                     )
         return cls.from_json(data)
 
@@ -487,9 +482,10 @@ class MarsInsightFeed:
     ) -> MarsInsightFeed:
         url = f"https://api.nasa.gov/insight_weather/?api_key={api_key}&feedtype=json&ver=1.0"
         if session is None:
-            async with aiohttp.ClientSession(headers=HEADERS) as session:
-                async with session.get(url) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession(headers=HEADERS) as local_session, local_session.get(
+                url
+            ) as resp:
+                data = await resp.json()
         else:
             async with session.get(url) as resp:
                 data = await resp.json()
@@ -661,9 +657,10 @@ class NEOFeed:
             params["end_date"] = end_date.strftime("%Y-%m-%d")
         url = "https://api.nasa.gov/neo/rest/v1/feed"
         if session is None:
-            async with aiohttp.ClientSession(headers=HEADERS) as session:
-                async with session.get(url, params=params) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession(headers=HEADERS) as local_session, local_session.get(
+                url, params=params
+            ) as resp:
+                data = await resp.json()
         else:
             async with session.get(url, params=params) as resp:
                 data = await resp.json()
@@ -988,18 +985,19 @@ class NASAAstronomyPictureOfTheDay:
         api_key: str = "DEMO_KEY",
         params: dict = {},
         session: Optional[aiohttp.ClientSession] = None,
-    ) -> Union[NASAAstronomyPictureOfTheDay, List[NASAAstronomyPictureOfTheDay]]:
+    ) -> List[NASAAstronomyPictureOfTheDay]:
         params.update({"api_key": api_key, "thumbs": "True"})
         if session is None:
-            async with aiohttp.ClientSession(headers=HEADERS) as session:
-                async with session.get(url, params=params) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession(headers=HEADERS) as local_session, local_session.get(
+                url, params=params
+            ) as resp:
+                data = await resp.json()
         else:
             async with session.get(url, params=params) as resp:
                 data = await resp.json()
         if isinstance(data, list):
             return [cls.from_json(i) for i in data]
-        return cls.from_json(data)
+        return [cls.from_json(data)]
 
     @classmethod
     async def get(
@@ -1010,9 +1008,9 @@ class NASAAstronomyPictureOfTheDay:
         end_date: Optional[datetime] = None,
         count: Optional[int] = None,
         session: Optional[aiohttp.ClientSession] = None,
-    ) -> Union[NASAAstronomyPictureOfTheDay, List[NASAAstronomyPictureOfTheDay]]:
-        params = {}
+    ) -> List[NASAAstronomyPictureOfTheDay]:
         url = "https://science.nasa.gov/wp-json/wp/v2/apod-basic/"
+        params = {}
         if date:
             url += date.strftime("%y%m%d")
         if start_date:
@@ -1050,7 +1048,8 @@ class NASAAstronomyPictureOfTheDay:
         api_key: str = "DEMO_KEY",
         session: Optional[aiohttp.ClientSession] = None,
     ) -> NASAAstronomyPictureOfTheDay:
-        return await cls.get(api_key, session=session)  # type: ignore
+        ret = await cls.get(api_key, session=session)  # type: ignore
+        return ret[0]
 
     def embed(self) -> discord.Embed:
         em = discord.Embed(
@@ -1131,27 +1130,22 @@ class Collection:
         cls, params: Dict[str, str] = {}, session: Optional[aiohttp.ClientSession] = None
     ) -> Collection:
         if session is None:
-            async with aiohttp.ClientSession(headers=HEADERS) as session:
-                async with session.get(
-                    "https://images-api.nasa.gov/search", params=params
-                ) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                    else:
-                        raise APIError(
-                            "There was an error in that request. Response code {code}".format(
-                                code=resp.status
-                            )
-                        )
+            async with aiohttp.ClientSession(headers=HEADERS) as local_session, local_session.get(
+                "https://images-api.nasa.gov/search", params=params
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                else:
+                    raise APIError(
+                        f"There was an error in that request. Response code {resp.status}"
+                    )
         else:
             async with session.get("https://images-api.nasa.gov/search", params=params) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                 else:
                     raise APIError(
-                        "There was an error in that request. Response code {code}".format(
-                            code=resp.status
-                        )
+                        f"There was an error in that request. Response code {resp.status}"
                     )
         return cls.from_json(data)
 

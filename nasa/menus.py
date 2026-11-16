@@ -76,7 +76,6 @@ class NASAImagesCollection(menus.ListPageSource):
                 media_links = await view.cog.request(page.href, include_api_key=False)
             except Exception:
                 log.exception("Error getting video response data")
-                pass
             for link in media_links:
                 if link.endswith("orig.mp4"):
                     url = link.replace(" ", "%20")
@@ -107,7 +106,7 @@ class MarsRoverManifest(menus.ListPageSource):
                 label=f"Page {i + 1}",
                 value=i,
             )
-            for i in range(0, self._max_pages)
+            for i in range(self._max_pages)
         ]
 
     async def format_page(self, view: BaseMenu, photos: List[ManifestPhoto]):

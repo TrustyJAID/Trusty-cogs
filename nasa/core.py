@@ -88,19 +88,12 @@ class NASACog(commands.Cog):
 
     @tasks.loop(seconds=3600)
     async def apod_loop(self):
-        parameters = {"thumbs": "True"}
         try:
-            data = await self.request("https://api.nasa.gov/planetary/apod", parameters=parameters)
-        except APIError:
+            tokens = await self.bot.get_shared_api_tokens("nasa")
+            api_key = tokens.get("api_key", "DEMO_KEY")
+            apod = await NASAAstronomyPictureOfTheDay.today(api_key, session=self.session)
+        except Exception:
             log.exception("Error in Astronomy Photo of the Day loop")
-            return
-        try:
-            apod = NASAAstronomyPictureOfTheDay.from_json(data)
-        except (KeyError, TypeError):
-            if "msg" in data:
-                log.exception(f"Error in Astronomy Photo of the Day loop {data['msg']}")
-            else:
-                log.exception("Error in Astronomy Photo of the Day loop")
             return
         try:
             embed = apod.embed()
@@ -137,7 +130,6 @@ class NASACog(commands.Cog):
     @commands.hybrid_group(name="nasa")
     async def nasa(self, ctx: commands.Context):
         """Commands for interacting with NASA's API"""
-        pass
 
     @nasa.command(name="creds", with_app_command=False)
     @commands.is_owner()
@@ -264,7 +256,6 @@ class NASACog(commands.Cog):
     @nasa.group(name="mars")
     async def mars(self, ctx: commands.Context):
         """Pull images from Mars Rovers Curiosity, Opportunity, Perseverance, and Spirit"""
-        pass
 
     @nasa.command(name="neo")
     @commands.bot_has_permissions(embed_links=True)
@@ -411,7 +402,6 @@ class NASACog(commands.Cog):
     @nasa.group(name="epic")
     async def nasa_epic(self, ctx: commands.Context):
         """Images from DSCOVR's Earth Polychromatic Imaging Camera"""
-        pass
 
     @nasa_epic.command(name="natural")
     @commands.bot_has_permissions(embed_links=True)
