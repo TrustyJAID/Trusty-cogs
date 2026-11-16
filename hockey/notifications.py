@@ -73,7 +73,6 @@ class HockeyNotifications(HockeyMixin):
         """
         Settings related to role notifications
         """
-        pass
 
     @hockey_notifications.command(name="info", aliases=["settings"], with_app_command=False)
     @commands.mod_or_permissions(manage_roles=True)

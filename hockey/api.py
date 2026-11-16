@@ -295,7 +295,7 @@ class Player:
 
     def as_link(self, include_link: bool = True):
         if include_link:
-            return f"[{str(self)}]({self.url})"
+            return f"[{self!s}]({self.url})"
         return str(self)
 
     @classmethod
@@ -365,9 +365,7 @@ class Event:
         )
 
     def is_goal_or_shot(self) -> bool:
-        if self.type_code is GameEventTypeCode.GOAL:
-            return True
-        elif (
+        if self.type_code is GameEventTypeCode.GOAL or (
             self.type_code in [GameEventTypeCode.MISSED_SHOT, GameEventTypeCode.SHOT_ON_GOAL]
             and self.period_descriptor.get("periodType", None) == "SO"
         ):

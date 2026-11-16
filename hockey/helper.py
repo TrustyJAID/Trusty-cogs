@@ -52,12 +52,14 @@ except Exception:
 DATE_RE = re.compile(
     r"((19|20)\d\d)[- \/.](0[1-9]|1[012]|[1-9])[- \/.](0[1-9]|[12][0-9]|3[01]|[1-9])"
 )
-DAY_REF_RE = re.compile(r"(yesterday|tomorrow|today)", re.I)
+DAY_REF_RE = re.compile(r"(yesterday|tomorrow|today)", re.IGNORECASE)
 
 YEAR_RE = re.compile(r"((19|20)\d\d)-?\/?((19|20)\d\d)?")
 # https://www.regular-expressions.info/dates.html
 
-TIMEZONE_RE = re.compile(r"|".join(re.escape(zone) for zone in pytz.common_timezones), flags=re.I)
+TIMEZONE_RE = re.compile(
+    r"|".join(re.escape(zone) for zone in pytz.common_timezones), flags=re.IGNORECASE
+)
 
 TIMESTAMP_RE = re.compile(r"<t:(-?\d+)(?::[tTdDfFsSR])?>")
 
@@ -69,9 +71,9 @@ for team, data in TEAMS.items():
     nicks = "|".join(f"\b{n}\b" for n in data["nickname"])
     ACTIVE_TEAM_RE_STR += rf"\b{team}\b|\b{data['tri_code']}\b|{nicks}"
 
-ACTIVE_TEAM_RE = re.compile(ACTIVE_TEAM_RE_STR, flags=re.I)
+ACTIVE_TEAM_RE = re.compile(ACTIVE_TEAM_RE_STR, flags=re.IGNORECASE)
 
-VERSUS_RE = re.compile(r"vs\.?|versus", flags=re.I)
+VERSUS_RE = re.compile(r"vs\.?|versus", flags=re.IGNORECASE)
 
 NHL_LOGO = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
 
@@ -256,9 +258,7 @@ def get_chn_name(game: Game) -> str:
     Creates game day channel name
     """
     timestamp = utc_to_local(game.game_start)
-    chn_name = "{}-vs-{}-{}-{}-{}".format(
-        game.home.tri_code, game.away.tri_code, timestamp.year, timestamp.month, timestamp.day
-    )
+    chn_name = f"{game.home.tri_code}-vs-{game.away.tri_code}-{timestamp.year}-{timestamp.month}-{timestamp.day}"
     return chn_name.lower()
 
 
@@ -344,7 +344,7 @@ class TeamFinder(discord.app_commands.Transformer):
             if nick:
                 pattern += r"|" + r"|".join(rf"\b{i}\b" for i in nick)
             # log.debug(pattern)
-            reg: Pattern = re.compile(rf"\b{pattern}", flags=re.I)
+            reg: Pattern = re.compile(rf"\b{pattern}", flags=re.IGNORECASE)
             for pot in potential_teams:
                 find = reg.findall(pot)
                 if find:
@@ -615,7 +615,7 @@ class StateFinder(discord.app_commands.Transformer):
     async def convert(cls, ctx: Context, argument: str) -> HockeyStates:
         state_list = [i.value for i in HockeyStates]
         if argument.title() not in state_list:
-            raise BadArgument('"{}" is not a valid game state.'.format(argument))
+            raise BadArgument(f'"{argument}" is not a valid game state.')
         return HockeyStates(argument.title())
 
     @classmethod
@@ -730,11 +730,12 @@ async def check_to_post(
         return False
     should_post = False
     state_ints = game_states_to_int(channel_data["game_states"])
-    if not is_goal and game_state.value in state_ints:
-        for team in channel_teams:
-            if team in post_state:
-                should_post = True
-    elif is_goal and "Goal" in channel_data["game_states"]:
+    if (
+        not is_goal
+        and game_state.value in state_ints
+        or is_goal
+        and "Goal" in channel_data["game_states"]
+    ):
         for team in channel_teams:
             if team in post_state:
                 should_post = True

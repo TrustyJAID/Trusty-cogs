@@ -1046,14 +1046,14 @@ class HockeyCommands(HockeyMixin):
             )
             await ctx.channel.send(msg1)
             for division in team_list:
-                msg = "# {div} DIVISION".format(div=division.upper())
+                msg = f"# {division.upper()} DIVISION"
                 await ctx.channel.send(msg)
                 for team in team_list[division]:
                     team_emoji = self.api.get_team_emoji(team)
                     if team_emoji is None:
                         team_emoji = ""
                     team_link = TEAMS[team]["invite"]
-                    msg = "## {emoji} {link} {emoji}".format(emoji=team_emoji, link=team_link)
+                    msg = f"## {team_emoji} {team_link} {team_emoji}"
                     await ctx.channel.send(msg)
             if ctx.interaction:
                 await ctx.send(_("Done."))

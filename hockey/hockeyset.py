@@ -71,7 +71,6 @@ class HockeySetCommands(HockeyMixin):
                     standings_msg = await standings_channel.fetch_message(standings_message)
                 except (discord.errors.NotFound, discord.errors.Forbidden):
                     standings_msg = None
-                    pass
             else:
                 standings_msg = None
             if standings_msg is not None:

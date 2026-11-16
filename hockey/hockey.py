@@ -48,8 +48,6 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     coexist with discord.py's metaclass
     """
 
-    pass
-
 
 @cog_i18n(_)
 class Hockey(
@@ -295,9 +293,7 @@ class Hockey(
 
     def hockey_loop_error(self, future: asyncio.Future):
         if not future.cancelled() and future.exception():
-            message = "Hockey encountered an error: `{exception}`\n{stack}".format(
-                exception=future.exception(), stack=box(str(future.get_stack()))
-            )
+            message = f"Hockey encountered an error: `{future.exception()}`\n{box(str(future.get_stack()))}"
             log.exception(message)
             asyncio.create_task(self.hockey_send_error_task(message))
 
@@ -558,7 +554,6 @@ class Hockey(
                     # about the results
                 except Exception:
                     log.exception("Error tallying leaderboard:")
-                    pass
                 self.games_playing = False
 
             # Final cleanup of config incase something went wrong

@@ -517,11 +517,9 @@ class TeamRecord:
             wins=data["wins"], losses=data["losses"], ot=data["otLosses"], type="league"
         )
         streak = Streak(
-            **{
-                "streakType": "wins",
-                "streakNumber": data.get("streakCount", 0),
-                "streakCode": data.get("streakCode", "N/A"),
-            }
+            streakType="wins",
+            streakNumber=data.get("streakCount", 0),
+            streakCode=data.get("streakCode", "N/A"),
         )
         return cls(
             team=team,
@@ -580,8 +578,7 @@ class Standings:
                 continue
             if latest is None:
                 latest = record.last_updated
-            if record.last_updated > latest:
-                latest = record.last_updated
+            latest = max(latest, record.last_updated)
         return latest or datetime.now(timezone.utc)
 
     @classmethod
@@ -687,7 +684,7 @@ class Standings:
             await config.guild(guild).standings_channel.clear()
             await config.guild(guild).standings_msg.clear()
         except Exception:
-            log.exception(f"Error editing standings message in {repr(guild)}")
+            log.exception(f"Error editing standings message in {guild!r}")
 
     async def all_standing_embed(self, table: bool = True) -> StandingsPage:
         """
@@ -842,8 +839,8 @@ class Standings:
         else:
             msg = self.get_division_str(division)
         em.description = msg
-        division_logo = TEAMS["Team {}".format(division.name)]["logo"]
-        em.colour = int(TEAMS["Team {}".format(division.name)]["home"].replace("#", ""), 16)
+        division_logo = TEAMS[f"Team {division.name}"]["logo"]
+        em.colour = int(TEAMS[f"Team {division.name}"]["home"].replace("#", ""), 16)
         em.set_author(
             name=division.name + " Division",
             url="https://www.nhl.com/standings",
@@ -904,7 +901,7 @@ class Standings:
 
         em = discord.Embed()
         em.set_author(
-            name="# {} {}".format(record.league_rank, record.team.name),
+            name=f"# {record.league_rank} {record.team.name}",
             url="https://www.nhl.com/standings",
             icon_url=record.team.file_url,
         )
@@ -1016,12 +1013,12 @@ class StandingsMenu(discord.ui.View):
 
     async def set_context(self, search: str):
         context_re = {
-            "conference": re.compile(r"conference|eastern|western", flags=re.I),
+            "conference": re.compile(r"conference|eastern|western", flags=re.IGNORECASE),
             "division": re.compile(
-                r"division|metro(?=politan)?|pacific|atlantic|central", flags=re.I
+                r"division|metro(?=politan)?|pacific|atlantic|central", flags=re.IGNORECASE
             ),
-            "all": re.compile(r"all", flags=re.I),
-            "league": re.compile(r"league", flags=re.I),
+            "all": re.compile(r"all", flags=re.IGNORECASE),
+            "league": re.compile(r"league", flags=re.IGNORECASE),
             "team": ACTIVE_TEAM_RE,
         }
         if search is None:

@@ -222,9 +222,9 @@ class Pickems(discord.ui.View):
 
     def __repr__(self):
         return (
-            "<Pickems game_id={0.game_id} game_state={0.game_state} "
-            "game_type={0.game_type} name={0.name} guild={0.guild} winner={0.winner}>"
-        ).format(self)
+            f"<Pickems game_id={self.game_id} game_state={self.game_state} "
+            f"game_type={self.game_type} name={self.name} guild={self.guild} winner={self.winner}>"
+        )
 
     async def on_error(
         self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item
@@ -283,7 +283,7 @@ class Pickems(discord.ui.View):
                 if choice != team_choice:
                     self.votes[str(user_id)] = team_choice
                     self._should_save = True
-                    raise UserHasVotedError("{} {}".format(team, team_choice))
+                    raise UserHasVotedError(f"{team} {team_choice}")
         if time_now > self.game_start:
             raise VotingHasEndedError(_("You did not vote on this game!"))
         if str(user_id) not in self.votes:

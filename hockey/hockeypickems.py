@@ -92,16 +92,15 @@ class HockeyPickems(HockeyMixin):
                         data[name] = pickem.to_json()
                     self.all_pickems[guild_id][name]._should_save = False
                     days_old = datetime.now(timezone.utc) - pickem.game_start
-                    if pickem.game_type in [
-                        GameType.pre_season,
-                        GameType.playoffs,
-                    ] and days_old >= timedelta(days=7):
-                        del data[name]
-                        if guild_id not in to_del:
-                            to_del[guild_id] = [name]
-                        else:
-                            to_del[guild_id].append(name)
-                    elif days_old >= timedelta(days=30):
+                    if (
+                        pickem.game_type
+                        in [
+                            GameType.pre_season,
+                            GameType.playoffs,
+                        ]
+                        and days_old >= timedelta(days=7)
+                        or days_old >= timedelta(days=30)
+                    ):
                         del data[name]
                         if guild_id not in to_del:
                             to_del[guild_id] = [name]
@@ -273,7 +272,7 @@ class HockeyPickems(HockeyMixin):
         """
         new_name = Pickems.name_from_game(game)
         if str(guild.id) not in self.all_pickems:
-            self.all_pickems[str((guild.id))] = {}
+            self.all_pickems[str(guild.id)] = {}
         old_pickem = self.all_pickems[str(guild.id)].get(str(game.game_id))
 
         if old_pickem is None:
@@ -502,16 +501,9 @@ class HockeyPickems(HockeyMixin):
             time_str = _("Postponed")
 
         msg = (
-            "__**{away_emoji} {away_name}**__ @ "
-            "__**{home_emoji} {home_name}**__ "
-            "{start_time}\n{winner}"
-        ).format(
-            away_emoji=game.away_emoji,
-            away_name=game.away_team,
-            home_emoji=game.home_emoji,
-            home_name=game.home_team,
-            start_time=time_str,
-            winner=winner,
+            f"__**{game.away_emoji} {game.away_team}**__ @ "
+            f"__**{game.home_emoji} {game.home_team}**__ "
+            f"{time_str}\n{winner}"
         )
         return msg
 
@@ -610,7 +602,6 @@ class HockeyPickems(HockeyMixin):
                         await old_chan.edit(archived=True)
                     except Exception:
                         log.exception("Error deleting channel %s", repr(old_chan))
-                        pass
                 async with self.pickems_config.guild(guild).pickems_channels() as chans:
                     try:
                         del chans[str(earliest_chan)]
@@ -688,9 +679,8 @@ class HockeyPickems(HockeyMixin):
                         # requiring us to reload over time
             except discord.errors.Forbidden:
                 log.error("Missing permissions to delete old pickems channel in %r", guild)
-                pass
             except Exception:
-                log.exception(f"Error deleting old pickems channels in {repr(guild)}")
+                log.exception(f"Error deleting old pickems channels in {guild!r}")
 
     async def tally_guild_leaderboard(self, guild: discord.Guild) -> None:
         """
@@ -811,7 +801,6 @@ class HockeyPickems(HockeyMixin):
         """
         Commands for managing pickems
         """
-        pass
 
     @pickems_commands.command(name="settings")
     async def pickems_settings(self, ctx: commands.Context) -> None:
@@ -858,7 +847,6 @@ class HockeyPickems(HockeyMixin):
         """
         Settings for awarding credits on correct pickems votes
         """
-        pass
 
     @pickems_credits.command(name="base")
     async def pickems_credits_base(
@@ -1191,7 +1179,6 @@ class HockeyPickems(HockeyMixin):
         """
         Settings for clearing/resetting pickems leaderboards
         """
-        pass
 
     @pickems_leaderboard_commands.command(name="clear")
     async def clear_server_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:

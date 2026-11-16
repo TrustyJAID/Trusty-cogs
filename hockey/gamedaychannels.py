@@ -71,7 +71,7 @@ class GameDayChannels(HockeyMixin):
                     if chn is not None:
                         created_channels += chn.mention
                     else:
-                        created_channels += "<#{}>\n".format(channel)
+                        created_channels += f"<#{channel}>\n"
                 if len(channels) == 0:
                     created_channels = "None"
             else:
@@ -465,7 +465,7 @@ class GameDayChannels(HockeyMixin):
             log.error("Error creating channel in %r", guild)
             return
         except Exception:
-            log.exception(f"Error creating channels in {repr(guild)}")
+            log.exception(f"Error creating channels in {guild!r}")
             return
         async with self.config.guild(guild).gdc_chans() as current_gdc:
             current_gdc[str(next_game.game_id)] = new_chn.id

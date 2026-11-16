@@ -103,7 +103,6 @@ class HockeyDev(HockeyMixin):
         Most of these probably shouldn't be run unless you
         know exactly what they do.
         """
-        pass
 
     @hockeydev.group(name="cleanup")
     async def cleanup(self, ctx: commands.Context):
@@ -140,15 +139,11 @@ class HockeyDev(HockeyMixin):
         Specify an error channel for the hockey loop.
         """
         if not channel.permissions_for(ctx.me).send_messages:
-            await ctx.send(
-                "I need permission to send messages in {channel}".format(channel=channel.mention)
-            )
+            await ctx.send(f"I need permission to send messages in {channel.mention}")
             return
         await self.config.loop_error_channel.set(channel.id)
         await self.config.loop_error_guild.set(channel.guild.id)
-        await ctx.send(
-            "I will attempt to send error messages in {channel}.".format(channel=channel.mention)
-        )
+        await ctx.send(f"I will attempt to send error messages in {channel.mention}.")
 
     @hockeydev.command(with_app_command=False)
     async def getgoals(self, ctx: commands.Context) -> None:
@@ -183,7 +178,6 @@ class HockeyDev(HockeyMixin):
         """
         Dev commands for testing and building pickems
         """
-        pass
 
     @pickems_dev_commands.command(name="backup")
     async def backup_pickems(self, ctx: commands.Context):
@@ -448,8 +442,7 @@ class HockeyDev(HockeyMixin):
         oldest = datetime.now(timezone.utc)
         for guild_id, pickems in self.all_pickems.items():
             for name, p in pickems.items():
-                if p.game_start < oldest:
-                    oldest = p.game_start
+                oldest = min(oldest, p.game_start)
         games = await Game.get_games(None, oldest, datetime.now(timezone.utc))
         for game in games:
             await self.set_guild_pickem_winner(game)
@@ -676,15 +669,11 @@ class HockeyDev(HockeyMixin):
             await self.load_bot_emojis()
         if added:
             await ctx.send(
-                "I have uploaded the following team emojis: {teams}".format(
-                    teams=humanize_list(list(added))
-                )
+                f"I have uploaded the following team emojis: {humanize_list(list(added))}"
             )
         elif changed_logos:
             await ctx.send(
-                "The following team logos have changed since I last downloaded them: {teams}".format(
-                    teams=humanize_list(list(changed_logos))
-                )
+                f"The following team logos have changed since I last downloaded them: {humanize_list(list(changed_logos))}"
             )
         else:
             await ctx.send("None of the logos have changed since I last downloaded team logos.")

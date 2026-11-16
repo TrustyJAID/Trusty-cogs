@@ -200,9 +200,7 @@ class Game:
         self.right_rail: Optional[dict] = kwargs.get("right_rail", None)
 
     def __repr__(self):
-        return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
-            self
-        )
+        return f"<Hockey Game home={self.home_team} away={self.away_team} state={self.game_state}>"
 
     def __str__(self):
         start = utc_to_local(self.game_start).strftime("%B %d, %Y %I:%M %p %Z")
@@ -529,9 +527,7 @@ class Game:
 
         # team_url = self.home.team_url
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
-        title = "{away} @ {home} {state}".format(
-            away=self.away_team, home=self.home_team, state=str(self.game_state)
-        )
+        title = f"{self.away_team} @ {self.home_team} {self.game_state!s}"
         colour = self.home.colour
 
         # em = discord.Embed(timestamp=self.game_start)
@@ -668,9 +664,7 @@ class Game:
         """
         team_url = self.home.team_url
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
-        title = "{away} @ {home} {state}".format(
-            away=self.away_team, home=self.home_team, state=str(self.game_state)
-        )
+        title = f"{self.away_team} @ {self.home_team} {self.game_state!s}"
         colour = self.home.colour
 
         em = discord.Embed(timestamp=self.game_start)
@@ -754,7 +748,7 @@ class Game:
         """
         # post_state = ["all", self.home_team, self.away_team]
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
-        title = f"{self.away_team} @ {self.home_team} {str(self.game_state)}"
+        title = f"{self.away_team} @ {self.home_team} {self.game_state!s}"
         em = discord.Embed(timestamp=self.game_start)
         home_field = f"{self.home_emoji} {self.home_team}"
         away_field = f"{self.away_emoji} {self.away_team}"
@@ -808,7 +802,7 @@ class Game:
         time_string = f"<t:{self.timestamp}>"
         em = (
             f"{self.away_emoji}{self.away_team} @ {self.home_emoji}{self.home_team} "
-            f"{str(self.game_state)}\n({time_string})"
+            f"{self.game_state!s}\n({time_string})"
         )
         if not self.game_state.is_preview():
             em = (
@@ -853,7 +847,6 @@ class Game:
                         )
             except Exception:
                 log.exception("Error pulling stats")
-                pass
         else:
             try:
                 msg = _("GP:**{gp}** W:**{wins}** L:**{losses}**")
@@ -874,7 +867,6 @@ class Game:
                     desc = f"[{series.title}]({series.url})"
             except Exception:
                 log.exception("Error pulling playoffs stats")
-                pass
         return home_str, away_str, desc, url
 
     async def check_game_state(self, bot: Red, count: int = 0) -> bool:
@@ -1315,9 +1307,12 @@ class Game:
                     continue
 
                 if self.game_state not in [GameState.final, GameState.official_final]:
-                    if self.game_state.is_preview() and time_to_game_start != "0":
-                        team["game_state"] = game_state
-                    elif self.game_state.is_live() and time_to_game_start != "0":
+                    if (
+                        self.game_state.is_preview()
+                        and time_to_game_start != "0"
+                        or self.game_state.is_live()
+                        and time_to_game_start != "0"
+                    ):
                         team["game_state"] = game_state
                     else:
                         team["game_state"] = game_state

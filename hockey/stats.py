@@ -127,9 +127,8 @@ class LeagueLeaders:
         cls, url: str, /, *, session: Optional[aiohttp.ClientSession] = None
     ) -> LeagueLeaders:
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.get(url) as resp:
+                data = await resp.json()
         else:
             async with session.get(url) as resp:
                 data = await resp.json()

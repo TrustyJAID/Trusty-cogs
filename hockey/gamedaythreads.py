@@ -71,7 +71,7 @@ class GameDayThreads(HockeyMixin):
                 if chn is not None:
                     created_threads += f"{chn.mention}\n"
                 else:
-                    created_threads += "<#{}>\n".format(channel)
+                    created_threads += f"<#{channel}>\n"
             if len(threads) == 0:
                 created_threads = "None"
         else:
@@ -636,13 +636,11 @@ class GameDayThreads(HockeyMixin):
                         tags.append(await channel.create_tag(name=next_game.home_team))
                     except Exception:
                         log.exception("Error creating tag for %s", next_game.home_team)
-                        pass
                 if not any([next_game.away_team in t.name for t in tags]):
                     try:
                         tags.append(await channel.create_tag(name=next_game.away_team))
                     except Exception:
                         log.exception("Error creating tag for %s", next_game.away_team)
-                        pass
             try:
                 if channel.permissions_for(guild.me).embed_links:
                     thread_with_message = await channel.create_thread(

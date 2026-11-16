@@ -440,7 +440,7 @@ class PlayerStats:
         current_team = data.pop("currentTeamRoster", [])
         draft = data.pop("draftDetails", {})
         to_rem = []
-        for key in data.keys():
+        for key in data:
             if key not in cls.__dataclass_fields__:
                 to_rem.append(key)
         for key in to_rem:
@@ -728,10 +728,10 @@ class SimplePlayer:
     dda_id: Optional[int]
 
     def __str__(self) -> str:
-        return "{0.full_name}, born {0.birth_date}".format(self)
+        return f"{self.full_name}, born {self.birth_date}"
 
     def __repr__(self) -> str:
-        return "<Player name={0.full_name} id={0.id} number={0.sweater_number}>".format(self)
+        return f"<Player name={self.full_name} id={self.id} number={self.sweater_number}>"
 
     def description(self) -> str:
         desc = {
@@ -777,7 +777,7 @@ class SimplePlayer:
                     msg += name + f"{getattr(self, attr)} {flag}\n"
                 elif attr == "position":
                     shoots = f"({getattr(self, 'shoots_catches', '')})"
-                    ir = "\N{ADHESIVE BANDAGE}" if getattr(self, "long_term_injury") == "Y" else ""
+                    ir = "\N{ADHESIVE BANDAGE}" if self.long_term_injury == "Y" else ""
                     msg += name + f"{getattr(self, attr)} {shoots if shoots != '()' else ''}{ir}\n"
                 elif attr == "deceased":
                     death_date = getattr(self, "date_of_death", "")
@@ -796,7 +796,7 @@ class SimplePlayer:
             _("[Capwages]({cf_url})").format(cf_url=self.capwages_url()),
             # _("[Cap Friendly]({cf_url})").format(cf_url=self.cap_friendly_url()),
         ]
-        if getattr(self, "dda_id"):
+        if self.dda_id:
             links.append(
                 _(
                     "[HHOF]( https://www.hhof.com/LegendsOfHockey/jsp/SearchPlayer.jsp?player={dda_id})"
@@ -846,7 +846,7 @@ class SimplePlayer:
                 continue
             stats_season = seasons["season"]
             if season in [stats_season, None]:
-                setattr(self, "last_nhl_team_id", seasons["team"].get("id", None))
+                self.last_nhl_team_id = seasons["team"].get("id", None)
                 if self.position == "G":
                     stats = [seasons["stat"].get(v, "") for k, v in GOALIE_STATS.items()]
                     player = Goalie(
@@ -997,10 +997,10 @@ class Skater(SimplePlayer):
     powerplay_time_on_ice_per_game: str
 
     def __str__(self) -> str:
-        return "{0.full_name}, goals {0.goals}, games {0.games}".format(self)
+        return f"{self.full_name}, goals {self.goals}, games {self.games}"
 
     def __repr__(self) -> str:
-        return "<Skater name={0.full_name} id={0.id} number={0.sweater_number}>".format(self)
+        return f"<Skater name={self.full_name} id={self.id} number={self.sweater_number}>"
 
     async def get_full_stats(
         self, season: Optional[str], session: Optional[aiohttp.ClientSession] = None
@@ -1116,10 +1116,10 @@ class SkaterPlayoffs(Skater):
     p_powerplay_time_on_ice_per_game: str
 
     def __str__(self) -> str:
-        return "{0.full_name}, goals {0.goals}, games {0.games}".format(self)
+        return f"{self.full_name}, goals {self.goals}, games {self.games}"
 
     def __repr__(self) -> str:
-        return "<Skater name={0.full_name} id={0.id} number={0.sweater_number}>".format(self)
+        return f"<Skater name={self.full_name} id={self.id} number={self.sweater_number}>"
 
     def p_time_on_ice_average(self) -> str:
         if self.p_time_on_ice:
@@ -1210,10 +1210,10 @@ class Goalie(SimplePlayer):
     even_strength_save_percentage: float
 
     def __str__(self) -> str:
-        return "{0.full_name}, GAA {0.goals_against_average}, games {0.games}".format(self)
+        return f"{self.full_name}, GAA {self.goals_against_average}, games {self.games}"
 
     def __repr__(self) -> str:
-        return "<Goalie name={0.full_name} id={0.id} number={0.sweater_number}>".format(self)
+        return f"<Goalie name={self.full_name} id={self.id} number={self.sweater_number}>"
 
     async def get_full_stats(
         self, season: Optional[str], session: Optional[aiohttp.ClientSession] = None
@@ -1310,10 +1310,10 @@ class GoaliePlayoffs(Goalie):
     p_even_strength_save_percentage: float
 
     def __str__(self) -> str:
-        return "{0.full_name}, GAA {0.goals_against_average}, games {0.games}".format(self)
+        return f"{self.full_name}, GAA {self.goals_against_average}, games {self.games}"
 
     def __repr__(self) -> str:
-        return "<Goalie name={0.full_name} id={0.id} number={0.sweater_number}>".format(self)
+        return f"<Goalie name={self.full_name} id={self.id} number={self.sweater_number}>"
 
     def get_embed(self) -> discord.Embed:
         try:

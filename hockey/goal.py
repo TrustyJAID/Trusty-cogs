@@ -59,7 +59,7 @@ class Goal:
         self.nhle_event = kwargs.get("nhle_event")
 
     def __repr__(self):
-        return "<Hockey Goal team={0.team_name} id={0.goal_id} >".format(self)
+        return f"<Hockey Goal team={self.team_name} id={self.goal_id} >"
 
     @property
     def team_name(self):
@@ -263,7 +263,11 @@ class Goal:
         return msg_list
 
     async def actually_post_goal(
-        self, bot: Red, channel: discord.TextChannel, goal_embed: discord.Embed, goal_text: str
+        self,
+        bot: Red,
+        channel: Union[discord.TextChannel, discord.Thread],
+        goal_embed: discord.Embed,
+        goal_text: str,
     ) -> Optional[Tuple[int, int, int]]:
         try:
             guild = channel.guild
@@ -313,14 +317,12 @@ class Goal:
                         roles.add(role.mention)
             allowed_mentions = discord.AllowedMentions(roles=list(mention_roles))
             roles_text = humanize_list(list(roles))
-            if game_day_channels is not None:
+            if game_day_channels is not None and channel.id in game_day_channels:
                 # We don't want to ping people in the game day channels twice
-                if channel.id in game_day_channels:
-                    role = None
+                role = None
 
-            if game_day_threads is not None:
-                if channel.id in game_day_threads:
-                    role = None
+            if game_day_threads is not None and channel.id in game_day_threads:
+                role = None
 
             if not can_embed and can_manage_webhooks:
                 # try to create a webhook with the teams info to bypass embed permissions

@@ -14,19 +14,19 @@ _ = Translator("Hockey", __file__)
 log = getLogger("red.trusty-cogs.hockey")
 
 __all__ = (
-    "StopButton",
-    "ForwardButton",
     "BackButton",
-    "LastItemButton",
-    "FirstItemButton",
-    "SkipForwardButton",
-    "SkipBackButton",
-    "FilterModal",
     "FilterButton",
-    "HeatmapButton",
+    "FilterModal",
+    "FirstItemButton",
+    "ForwardButton",
     "GameflowButton",
+    "HeatmapButton",
     "HockeySelectGame",
     "HockeySelectPlayer",
+    "LastItemButton",
+    "SkipBackButton",
+    "SkipForwardButton",
+    "StopButton",
 )
 
 
@@ -190,7 +190,7 @@ class FilterModal(discord.ui.Modal):
                 if nick:
                     pattern += r"|" + r"|".join(rf"\b{i}\b" for i in nick)
                 log.trace("FilterModal pattern: %s", pattern)
-                reg: Pattern = re.compile(rf"\b{pattern}", flags=re.I)
+                reg: Pattern = re.compile(rf"\b{pattern}", flags=re.IGNORECASE)
                 for pot in potential_teams:
                     find = reg.findall(pot)
                     if find:
@@ -233,7 +233,7 @@ class TeamModal(discord.ui.Modal):
                 continue
             pattern = rf"{team}|{data['tri_code']}|{'|'.join(n for n in data['nickname'])}"
             log.trace("TeamModal pattern: %s", pattern)
-            reg: Pattern = re.compile(pattern, flags=re.I)
+            reg: Pattern = re.compile(pattern, flags=re.IGNORECASE)
             find = reg.search(self.team.value)
             if find:
                 teams.append(team)
