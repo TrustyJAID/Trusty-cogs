@@ -147,7 +147,6 @@ class Runescape(commands.Cog):
     @commands.hybrid_group(name="runescape", aliases=["rs"])
     async def runescape(self, ctx: commands.Context):
         """Search for a user account or profile"""
-        pass
 
     @runescape.command(name="wiki")
     async def runescape_wiki(self, ctx: commands.Context, *, search: str):
@@ -195,7 +194,6 @@ class Runescape(commands.Cog):
         """
         Set various runescape cog settings
         """
-        pass
 
     @runescape_set.command(name="metrics", with_app_command=False)
     @commands.mod_or_permissions(manage_channels=True)
@@ -374,7 +372,6 @@ class Runescape(commands.Cog):
     @runescape.group(name="osrs")
     async def osrs(self, ctx: commands.Context) -> None:
         """Search for OSRS highscores"""
-        pass
 
     @osrs.command(name="wiki")
     async def osrs_wiki(self, ctx: commands.Context, *, search: str):

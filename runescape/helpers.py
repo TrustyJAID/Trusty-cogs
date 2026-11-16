@@ -2,11 +2,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 __all__ = [
-    "RUNEDATE_EPOCH",
+    "HEADERS",
     "IMAGE_URL",
+    "RUNEDATE_EPOCH",
     "get_runedate",
     "name_to_image",
-    "HEADERS",
 ]
 
 RUNEDATE_EPOCH = datetime(year=2002, month=2, day=27, hour=0, tzinfo=timezone.utc)

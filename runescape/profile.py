@@ -20,10 +20,12 @@ from .xp import ELITE_XP, XP_TABLE
 
 log = getLogger("red.trusty-cogs.runescape")
 
-LVL_RE = re.compile(r"Levelled Up (\w+)", flags=re.I)
-XP_RE = re.compile(r"(?P<xp>\d+)XP IN (.+)", flags=re.I)
-KILLED_RE = re.compile(r"(?:I )?(?:killed|defeated) (?:\d+ |the )?([a-z \-,]+)", flags=re.I)
-FOUND_RE = re.compile(r"I found (?:a pair of|some|a|an) (.+)", flags=re.I)
+LVL_RE = re.compile(r"Levelled Up (\w+)", flags=re.IGNORECASE)
+XP_RE = re.compile(r"(?P<xp>\d+)XP IN (.+)", flags=re.IGNORECASE)
+KILLED_RE = re.compile(
+    r"(?:I )?(?:killed|defeated) (?:\d+ |the )?([a-z \-,]+)", flags=re.IGNORECASE
+)
+FOUND_RE = re.compile(r"I found (?:a pair of|some|a|an) (.+)", flags=re.IGNORECASE)
 
 
 class APIError(Exception):
@@ -84,13 +86,12 @@ class ZamorakHiScores:
         session: Optional[aiohttp.ClientSession] = None,
     ) -> ZamorakHiScores:
         if session is None:
-            async with aiohttp.ClientSession(headers=HEADERS) as session:
-                async with session.get(
-                    cls.url.format(groupSize=groupSize, size=size, page=page)
-                ) as resp:
-                    if resp.status != 200:
-                        raise APIError
-                    data = await resp.json()
+            async with aiohttp.ClientSession(headers=HEADERS) as session, session.get(
+                cls.url.format(groupSize=groupSize, size=size, page=page)
+            ) as resp:
+                if resp.status != 200:
+                    raise APIError
+                data = await resp.json()
         else:
             async with session.get(
                 cls.url.format(groupSize=groupSize, size=size, page=page)
