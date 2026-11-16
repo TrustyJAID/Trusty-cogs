@@ -31,3 +31,10 @@ requires-python = ">=3.8"
 
 [tool.ruff]
     line-length = 99
+    target-version = "py38"
+
+[tool.ruff.lint]
+    future-annotations = false
+    ignore = [
+        "I001", # Example: Ignore specific import sorting/future constraints if needed
+    ]
